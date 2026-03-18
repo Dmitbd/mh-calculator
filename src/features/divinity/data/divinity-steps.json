@@ -1,0 +1,106 @@
+[
+  {
+    "fromLevel": 0,
+    "toLevel": 1,
+    "label": "18-19",
+    "tapCost": { "stone5": 50, "stone6": 0, "stone7": 0 },
+    "finishCost": { "stone5": 20, "stone6": 0, "stone7": 0 },
+    "totalCost": { "stone5": 70, "stone6": 0, "stone7": 0 }
+  },
+  {
+    "fromLevel": 1,
+    "toLevel": 2,
+    "label": "19-20",
+    "tapCost": { "stone5": 48, "stone6": 12, "stone7": 0 },
+    "finishCost": { "stone5": 16, "stone6": 4, "stone7": 0 },
+    "totalCost": { "stone5": 64, "stone6": 16, "stone7": 0 }
+  },
+  {
+    "fromLevel": 2,
+    "toLevel": 3,
+    "label": "20-21",
+    "tapCost": { "stone5": 48, "stone6": 18, "stone7": 0 },
+    "finishCost": { "stone5": 18, "stone6": 4, "stone7": 0 },
+    "totalCost": { "stone5": 66, "stone6": 22, "stone7": 0 }
+  },
+  {
+    "fromLevel": 3,
+    "toLevel": 4,
+    "label": "21-22",
+    "tapCost": { "stone5": 60, "stone6": 18, "stone7": 0 },
+    "finishCost": { "stone5": 18, "stone6": 6, "stone7": 0 },
+    "totalCost": { "stone5": 78, "stone6": 24, "stone7": 0 }
+  },
+  {
+    "fromLevel": 4,
+    "toLevel": 5,
+    "label": "22-23",
+    "tapCost": { "stone5": 60, "stone6": 24, "stone7": 0 },
+    "finishCost": { "stone5": 18, "stone6": 6, "stone7": 0 },
+    "totalCost": { "stone5": 78, "stone6": 30, "stone7": 0 }
+  },
+  {
+    "fromLevel": 5,
+    "toLevel": 6,
+    "label": "23-24",
+    "tapCost": { "stone5": 50, "stone6": 25, "stone7": 0 },
+    "finishCost": { "stone5": 0, "stone6": 14, "stone7": 4 },
+    "totalCost": { "stone5": 60, "stone6": 44, "stone7": 4 }
+  },
+  {
+    "fromLevel": 6,
+    "toLevel": 7,
+    "label": "24-25",
+    "tapCost": { "stone5": 0, "stone6": 48, "stone7": 18 },
+    "finishCost": { "stone5": 0, "stone6": 14, "stone7": 5 },
+    "totalCost": { "stone5": 0, "stone6": 62, "stone7": 23 }
+  },
+  {
+    "fromLevel": 7,
+    "toLevel": 8,
+    "label": "25-26",
+    "tapCost": { "stone5": 0, "stone6": 48, "stone7": 24 },
+    "finishCost": { "stone5": 0, "stone6": 16, "stone7": 5 },
+    "totalCost": { "stone5": 0, "stone6": 64, "stone7": 29 }
+  },
+  {
+    "fromLevel": 8,
+    "toLevel": 9,
+    "label": "26-27",
+    "tapCost": { "stone5": 0, "stone6": 60, "stone7": 24 },
+    "finishCost": { "stone5": 0, "stone6": 16, "stone7": 6 },
+    "totalCost": { "stone5": 0, "stone6": 76, "stone7": 30 }
+  },
+  {
+    "fromLevel": 9,
+    "toLevel": 10,
+    "label": "27-28",
+    "tapCost": { "stone5": 0, "stone6": 60, "stone7": 30 },
+    "finishCost": { "stone5": 0, "stone6": 0, "stone7": 18 },
+    "totalCost": { "stone5": 0, "stone6": 60, "stone7": 48 }
+  },
+  {
+    "fromLevel": 10,
+    "toLevel": 11,
+    "label": "28-29",
+    "tapCost": { "stone5": 0, "stone6": 0, "stone7": 84 },
+    "finishCost": { "stone5": 0, "stone6": 0, "stone7": 18 },
+    "totalCost": { "stone5": 0, "stone6": 0, "stone7": 102 }
+  },
+  {
+    "fromLevel": 11,
+    "toLevel": 12,
+    "label": "29-30",
+    "tapCost": { "stone5": 0, "stone6": 0, "stone7": 84 },
+    "finishCost": { "stone5": 0, "stone6": 0, "stone7": 18 },
+    "totalCost": { "stone5": 0, "stone6": 0, "stone7": 102 }
+  },
+  {
+    "fromLevel": 12,
+    "toLevel": 13,
+    "label": "30-full",
+    "tapCost": { "stone5": 0, "stone6": 0, "stone7": 84 },
+    "finishCost": { "stone5": 0, "stone6": 0, "stone7": 0 },
+    "totalCost": { "stone5": 0, "stone6": 0, "stone7": 84 }
+  }
+]

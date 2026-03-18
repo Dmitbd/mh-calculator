@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "MH Calculator",
+    "slug": "mh-calculator",
+    "scheme": "mhcalculator",
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

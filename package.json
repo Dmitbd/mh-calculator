@@ -1,0 +1,38 @@
+{
+  "name": "mh-calculator",
+  "version": "1.0.0",
+  "description": "Mythic Heroes resource calculator",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "test": "jest"
+  },
+  "keywords": [
+    "expo",
+    "react-native",
+    "mythic-heroes"
+  ],
+  "author": "Dmitbd",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^3.0.1",
+    "expo": "^55.0.7",
+    "expo-router": "^55.0.6",
+    "react": "^19.2.4",
+    "react-native": "^0.84.1",
+    "react-native-safe-area-context": "^5.7.0",
+    "react-native-screens": "^4.24.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.3.3",
+    "@types/react": "^19.2.14",
+    "jest": "^29.7.0",
+    "jest-expo": "^55.0.10",
+    "react-test-renderer": "^19.2.4",
+    "typescript": "^5.9.3"
+  }
+}

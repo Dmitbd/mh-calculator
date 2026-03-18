@@ -1,0 +1,7 @@
+module.exports = {
+  preset: "jest-expo",
+  testPathIgnorePatterns: ["/node_modules/", "/.expo/"],
+  transformIgnorePatterns: [
+    "node_modules/(?!((jest-)?react-native|@react-native|expo(nent)?|@expo(nent)?/.*|expo-router|@expo/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg))",
+  ],
+};
