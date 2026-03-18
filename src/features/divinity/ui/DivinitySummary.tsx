@@ -1,22 +1,35 @@
 import { StyleSheet, Text, View } from "react-native";
 
 import type { StoneCosts } from "../model/types";
+import { GemIcon } from "./GemIcon";
 
 type DivinitySummaryProps = {
-  currentLevel: number;
   totalCost: StoneCosts;
 };
 
-export function DivinitySummary({
-  currentLevel,
-  totalCost,
-}: DivinitySummaryProps) {
+export function DivinitySummary({ totalCost }: DivinitySummaryProps) {
+  const metrics = [
+    { label: "1 ур.", value: totalCost.stone1 },
+    { label: "2 ур.", value: totalCost.stone2 },
+    { label: "3 ур.", value: totalCost.stone3 },
+    { label: "4 ур.", value: totalCost.stone4 },
+    { label: "5 ур.", value: totalCost.stone5 },
+  ];
+
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Текущий уровень: {currentLevel}</Text>
-      <Text style={styles.value}>5 ур.: {totalCost.stone5}</Text>
-      <Text style={styles.value}>6 ур.: {totalCost.stone6}</Text>
-      <Text style={styles.value}>7 ур.: {totalCost.stone7}</Text>
+      <Text style={styles.title}>Расход ресурсов</Text>
+      <View style={styles.grid}>
+        {metrics.map((metric, index) => (
+          <View key={metric.label} style={styles.metric}>
+            <View style={styles.metricHeader}>
+              <GemIcon level={(index + 1) as 1 | 2 | 3 | 4 | 5} />
+              <Text style={styles.metricLabel}>{metric.label}</Text>
+            </View>
+            <Text style={styles.value}>{metric.value}</Text>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
@@ -24,18 +37,47 @@ export function DivinitySummary({
 const styles = StyleSheet.create({
   card: {
     width: "100%",
-    borderRadius: 20,
-    backgroundColor: "#fff7ed",
+    borderRadius: 24,
+    backgroundColor: "#2a160e",
     padding: 20,
-    gap: 8,
+    gap: 14,
+    borderWidth: 1,
+    borderColor: "#734227",
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#fff3d1",
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  metric: {
+    width: "30%",
+    minWidth: 86,
+    borderRadius: 18,
+    backgroundColor: "#3b2114",
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+  },
+  metricLabel: {
+    fontSize: 13,
     fontWeight: "700",
-    color: "#17212b",
+    color: "#e9c46a",
+  },
+  metricHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
   },
   value: {
-    fontSize: 18,
-    color: "#334155",
+    marginTop: 6,
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
+    color: "#fff8e7",
   },
 });

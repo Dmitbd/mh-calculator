@@ -1,14 +1,22 @@
 export type StoneCosts = {
+  stone1: number;
+  stone2: number;
+  stone3: number;
+  stone4: number;
   stone5: number;
-  stone6: number;
-  stone7: number;
 };
 
-export type DivinityStep = {
-  fromLevel: number;
-  toLevel: number;
-  label: string;
-  tapCost: StoneCosts;
-  finishCost: StoneCosts;
-  totalCost: StoneCosts;
+export type DivinityLevel = {
+  level: number;
+  segmentCount: number;
+  segmentCost: StoneCosts;
+  transitionCost: StoneCosts;
+  note?: string;
+};
+
+export type DivinityProgress = {
+  startLevel: number;
+  endLevel: number;
+  currentLevel: number;
+  filledSegments: number;
 };

@@ -1,0 +1,263 @@
+# Divinity Screen Spec
+
+Этот документ фиксирует текущую продуктовую и техническую логику экрана `Божественность`.
+Его цель:
+- сохранить поведение при рефакторинге;
+- не допустить лишних изменений от будущих агентов или разработчиков;
+- дать опору для переноса на другой стек, включая SPA, без потери функциональности.
+
+## Scope
+
+Экран `Божественность` сейчас реализует:
+- выбор диапазона расчета `От -> До`;
+- локально сохраняемый прогресс прокачки внутри выбранного диапазона;
+- кольцо прогресса по делениям текущего уровня;
+- расчет суммарного расхода ресурсов только по выбранному диапазону;
+- ограничение прогресса правой границей диапазона.
+
+Экран не реализует:
+- ручной текстовый ввод значений;
+- произвольные прыжки по уровням;
+- серверную синхронизацию;
+- несколько профилей прогресса;
+- альтернативные калькуляторы внутри этого же экрана.
+
+## Source Files
+
+Текущая логика распределена так:
+- [app/divinity.tsx](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/app/divinity.tsx)
+- [src/features/divinity/data/divinity-levels.json](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/data/divinity-levels.json)
+- [src/features/divinity/hooks/useDivinityProgress.ts](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/hooks/useDivinityProgress.ts)
+- [src/features/divinity/model/calculateDivinityTotals.ts](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/model/calculateDivinityTotals.ts)
+- [src/features/divinity/model/getCurrentDivinityStep.ts](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/model/getCurrentDivinityStep.ts)
+- [src/features/divinity/storage/divinityProgressStorage.ts](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/storage/divinityProgressStorage.ts)
+- [src/features/divinity/ui/DivinityRangeSelector.tsx](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/ui/DivinityRangeSelector.tsx)
+- [src/features/divinity/ui/DivinityRing.tsx](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/ui/DivinityRing.tsx)
+- [src/features/divinity/ui/DivinitySummary.tsx](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/ui/DivinitySummary.tsx)
+- [src/features/divinity/ui/GemIcon.tsx](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/ui/GemIcon.tsx)
+
+## Data Model
+
+### DivinityLevel
+
+Каждый уровень описывается как:
+
+```ts
+type DivinityLevel = {
+  level: number;
+  segmentCount: number;
+  segmentCost: StoneCosts;
+  transitionCost: StoneCosts;
+  note?: string;
+};
+```
+
+Смысл:
+- `level` — номер уровня божественности;
+- `segmentCount` — сколько делений нужно заполнить внутри этого уровня;
+- `segmentCost` — стоимость одного деления;
+- `transitionCost` — дополнительная стоимость перехода на следующий уровень после заполнения всех делений;
+- `note` — допустим только как пояснение к сомнительным данным, не как часть механики.
+
+### StoneCosts
+
+```ts
+type StoneCosts = {
+  stone1: number;
+  stone2: number;
+  stone3: number;
+  stone4: number;
+  stone5: number;
+};
+```
+
+Важно:
+- в UI и расчетах используются именно `stone1`–`stone5`;
+- нельзя возвращаться к старой модели `stone5`–`stone7`;
+- пустое значение камня выражается `0`, а не `null` и не отсутствующим полем.
+
+### DivinityProgress
+
+```ts
+type DivinityProgress = {
+  startLevel: number;
+  endLevel: number;
+  currentLevel: number;
+  filledSegments: number;
+};
+```
+
+Смысл:
+- `startLevel` — левая граница диапазона расчета;
+- `endLevel` — правая граница диапазона расчета;
+- `currentLevel` — текущий активный уровень внутри диапазона;
+- `filledSegments` — сколько делений уже заполнено у `currentLevel`.
+
+## Range Logic
+
+На экране есть секция `Рассчитать` с двумя полями:
+- `От`
+- `До`
+
+Оба поля редактируются только через `+ / -`.
+
+### Constraints
+
+Ограничения диапазона обязательны:
+- минимальный `От` = `1`;
+- максимальный `От` = `maxLevel - 1`;
+- минимальный `До` = `От + 1`;
+- максимальный `До` = `maxLevel`;
+- между `От` и `До` всегда остается минимум один шаг.
+
+Для текущего набора данных:
+- `maxLevel = 19`;
+- значит стартовый диапазон по умолчанию: `1 -> 19`.
+
+### Update Rules
+
+При изменении диапазона:
+- если новый диапазон по-прежнему включает текущий прогресс, прогресс сохраняется;
+- если новый диапазон отрезает текущий прогресс, `currentLevel` зажимается в новый диапазон, а `filledSegments` сбрасывается.
+
+Примеры:
+- было `1 -> 5`, пользователь дошел до `5`, затем поднял `До` до `6` или выше: прогресс сохраняется;
+- было `5 -> 14`, пользователь начал прогресс, затем уменьшил `От` до `4`: прогресс сохраняется;
+- было `5 -> 14`, затем диапазон сузили так, что текущий уровень оказался вне него: прогресс корректируется под новую границу.
+
+## Ring Logic
+
+Кольцо на экране не является абстрактным индикатором.
+
+Оно обязано работать так:
+- кольцо разбивается ровно на `segmentCount` частей;
+- если у уровня `3` деления, кольцо визуально делится на `3` равные секции;
+- если `4`, то на `4`;
+- если `5`, то на `5`;
+- между секциями есть явные разделители;
+- каждая секция либо полностью пустая, либо полностью заполненная;
+- частично заполненных секций быть не должно.
+
+### Important UX Rule
+
+Кольцо показывает прогресс только текущего уровня, а не суммарную прокачку по всем уровням диапазона.
+
+То есть:
+- если пользователь находится на `Lv.6` и у него заполнено `2` деления из `4`, кольцо должно показать ровно `4` секции, из которых `2` заполнены;
+- кольцо не должно превращаться в “общий прогресс по маршруту `От -> До`”.
+
+## Progress Logic
+
+Нажатие на круг работает так:
+
+1. Если текущий уровень имеет незаполненные деления:
+   - увеличиваем `filledSegments` на `1`;
+   - списываем стоимость одного деления.
+
+2. Если все деления заполнены:
+   - следующее нажатие делает переход на следующий уровень;
+   - применяется `transitionCost`;
+   - `currentLevel` становится следующим уровнем;
+   - `filledSegments` сбрасывается в `0`.
+
+### Right Boundary Rule
+
+Правая граница диапазона является жестким лимитом.
+
+Если выбран диапазон `1 -> 5`, то:
+- можно дойти до `5`;
+- нельзя начать прогресс `6`;
+- после достижения `5` круг должен стать неактивным;
+- пользователь явно просит расчет только до `5`, и это поведение нельзя менять.
+
+Это правило зафиксировано в [getCurrentDivinityStep.ts](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/model/getCurrentDivinityStep.ts).
+
+## Resource Calculation
+
+Блок `Расход ресурсов` обязан считать:
+- только уровни внутри выбранного диапазона `startLevel -> endLevel`;
+- все полностью завершенные уровни внутри диапазона;
+- плюс частичный прогресс по текущему активному уровню.
+
+### Important Clarification
+
+Если выбран диапазон `4 -> 8`, то:
+- расходы с уровней `1`, `2`, `3` не должны попадать в расчет;
+- если пользователь начал прокачку внутри этого диапазона, считается только путь от `4` до текущего состояния;
+- при расширении диапазона влево, например `5 -> 14` в `4 -> 14`, к сумме добавляются более ранние уровни без потери уже накопленного прогресса.
+
+## Reset Logic
+
+Кнопка `Сбросить прогресс` возвращает экран к дефолту:
+- `startLevel = 1`
+- `endLevel = 19`
+- `currentLevel = 1`
+- `filledSegments = 0`
+
+Это именно reset прогресса и диапазона, а не только кольца.
+
+## UI Contract
+
+На экране сейчас должны оставаться только такие основные секции:
+- `Рассчитать`
+- круг божественности
+- `Расход ресурсов`
+- `Сбросить прогресс`
+
+Убраны намеренно и не должны самовольно возвращаться:
+- `Mythic Heroes`
+- `Прогресс кольца`
+- служебные подписи под кругом
+- `Текущий уровень: n`
+- `Заполнено делений...`
+- отдельная секция `Следующий шаг`
+- лишние текстовые статусы вроде `Максимальный ранг`
+
+Если будущему разработчику нужен дополнительный текст, он должен сначала доказать, что это улучшает UX, а не просто “добавляет информации”.
+
+## Gem Icon Contract
+
+Иконки камней рядом с расходами не декоративны, а смысловые:
+- `stone1` — треугольник;
+- `stone2` — ромб;
+- `stone3` — пятиугольник;
+- `stone4` — шестиугольник;
+- `stone5` — восьмиугольник.
+
+Ориентация фигур тоже зафиксирована:
+- `1` и `2` уровни не должны выглядеть как квадратная плоскость;
+- фигуры должны читаться как отдельные геометрические типы.
+
+## Porting Rules
+
+При переносе на SPA, web, другой mobile stack, desktop или backend-driven UI нельзя терять следующие инварианты:
+
+1. Диапазон `От -> До` обязателен и ограничивает и расчет, и доступный прогресс.
+2. Круг всегда показывает деления именно текущего уровня, а не общую прогрессию по всему пути.
+3. Нажатие сначала заполняет деления, а затем отдельным действием делает переход уровня.
+4. Достижение правой границы диапазона отключает дальнейшую прокачку.
+5. Расход ресурсов считается только внутри выбранного диапазона.
+6. Расширение диапазона не должно сбрасывать валидный текущий прогресс.
+7. Если диапазон сужается и отрезает текущий прогресс, состояние должно корректно зажиматься в новый диапазон.
+
+Если любой перенос ломает хотя бы один из этих пунктов, это считается потерей функциональности, а не “допустимой адаптацией”.
+
+## Change Guardrails
+
+Будущим агентам и разработчикам нельзя без отдельного запроса:
+- менять смысл `currentLevel`;
+- возвращать ручной ввод вместо stepper-контролов;
+- считать ресурсы вне диапазона;
+- превращать кольцо в непрерывный прогресс-бар;
+- позволять начать уровень выше `До`;
+- сбрасывать прогресс при каждом изменении диапазона;
+- удалять `DivinityLevel.segmentCount` и заменять его приблизительным визуальным индикатором.
+
+## Verification
+
+Текущее поведение покрыто тестами:
+- [calculateDivinityTotals.test.ts](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/__tests__/calculateDivinityTotals.test.ts)
+- [divinityProgressStorage.test.ts](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/__tests__/divinityProgressStorage.test.ts)
+- [divinityScreen.test.tsx](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/__tests__/divinityScreen.test.tsx)
+
+Любая правка этого экрана должна сохранять эти инварианты или осознанно обновлять и код, и этот документ, и тесты одновременно.

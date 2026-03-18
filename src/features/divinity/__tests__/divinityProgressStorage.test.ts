@@ -18,15 +18,35 @@ import {
 
 test("loads the saved current level", async () => {
   mockStorage.clear();
-  await saveDivinityProgress({ currentLevel: 3 });
+  await saveDivinityProgress({
+    startLevel: 4,
+    endLevel: 8,
+    currentLevel: 5,
+    filledSegments: 2,
+  });
 
-  await expect(loadDivinityProgress()).resolves.toMatchObject({ currentLevel: 3 });
+  await expect(loadDivinityProgress()).resolves.toMatchObject({
+    startLevel: 4,
+    endLevel: 8,
+    currentLevel: 5,
+    filledSegments: 2,
+  });
 });
 
 test("resets the saved current level", async () => {
   mockStorage.clear();
-  await saveDivinityProgress({ currentLevel: 4 });
+  await saveDivinityProgress({
+    startLevel: 4,
+    endLevel: 8,
+    currentLevel: 4,
+    filledSegments: 1,
+  });
   await resetDivinityProgress();
 
-  await expect(loadDivinityProgress()).resolves.toMatchObject({ currentLevel: 0 });
+  await expect(loadDivinityProgress()).resolves.toMatchObject({
+    startLevel: 1,
+    endLevel: 19,
+    currentLevel: 1,
+    filledSegments: 0,
+  });
 });

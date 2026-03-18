@@ -23,6 +23,6 @@ Mobile calculator for Mythic Heroes progression, starting with the Divinity scre
 ## Data
 
 Divinity progression data lives in:
-`src/features/divinity/data/divinity-steps.json`
+`src/features/divinity/data/divinity-levels.json`
 
 User progress is stored locally on the device through AsyncStorage.

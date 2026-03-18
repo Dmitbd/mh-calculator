@@ -1,31 +1,115 @@
-import steps from "../data/divinity-steps.json";
+import levels from "../data/divinity-levels.json";
 import { calculateDivinityTotals } from "../model/calculateDivinityTotals";
-import { getNextDivinityStep } from "../model/getNextDivinityStep";
+import { getCurrentDivinityStep } from "../model/getCurrentDivinityStep";
 
-test("divinity steps expose progress indices and stone costs", () => {
-  expect(steps[0]).toMatchObject({
-    fromLevel: 0,
-    toLevel: 1,
-    label: "18-19",
-    totalCost: { stone5: 70, stone6: 0, stone7: 0 },
+test("divinity levels expose segment counts and stone costs", () => {
+  expect(levels[0]).toMatchObject({
+    level: 1,
+    segmentCount: 3,
+    segmentCost: { stone1: 1, stone2: 0, stone3: 0, stone4: 0, stone5: 0 },
+    transitionCost: { stone1: 0, stone2: 2, stone3: 0, stone4: 0, stone5: 0 },
   });
 });
 
-test("calculates cumulative costs up to the selected level", () => {
-  expect(calculateDivinityTotals(steps, 2)).toEqual({
+test("calculates cumulative costs for fully completed levels", () => {
+  expect(
+    calculateDivinityTotals(levels, {
+      startLevel: 1,
+      endLevel: 19,
+      currentLevel: 3,
+      filledSegments: 0,
+    }),
+  ).toEqual({
+    startLevel: 1,
+    endLevel: 19,
+    currentLevel: 3,
+    filledSegments: 0,
+    totalCost: { stone1: 9, stone2: 6, stone3: 0, stone4: 0, stone5: 0 },
+  });
+});
+
+test("calculates partial costs inside the current level", () => {
+  expect(
+    calculateDivinityTotals(levels, {
+      startLevel: 1,
+      endLevel: 19,
+      currentLevel: 2,
+      filledSegments: 2,
+    }),
+  ).toEqual({
+    startLevel: 1,
+    endLevel: 19,
     currentLevel: 2,
-    totalCost: { stone5: 134, stone6: 16, stone7: 0 },
+    filledSegments: 2,
+    totalCost: { stone1: 7, stone2: 2, stone3: 0, stone4: 0, stone5: 0 },
   });
 });
 
-test("returns the next step for the current level", () => {
-  expect(getNextDivinityStep(steps, 2)).toMatchObject({
-    fromLevel: 2,
-    toLevel: 3,
-    label: "20-21",
+test("returns the current target level progress", () => {
+  expect(
+    getCurrentDivinityStep(levels, {
+      startLevel: 1,
+      endLevel: 19,
+      currentLevel: 2,
+      filledSegments: 2,
+    }),
+  ).toMatchObject({
+    level: 2,
+    segmentCount: 3,
+    filledSegments: 2,
+    transitionReady: false,
   });
 });
 
-test("returns null when there is no next step", () => {
-  expect(getNextDivinityStep(steps, 13)).toBeNull();
+test("returns transition ready when all segments are filled", () => {
+  expect(
+    getCurrentDivinityStep(levels, {
+      startLevel: 1,
+      endLevel: 19,
+      currentLevel: 2,
+      filledSegments: 3,
+    }),
+  ).toMatchObject({
+    level: 2,
+    transitionReady: true,
+  });
+});
+
+test("returns null at the maximum completed level", () => {
+  expect(
+    getCurrentDivinityStep(levels, {
+      startLevel: 1,
+      endLevel: 19,
+      currentLevel: 20,
+      filledSegments: 0,
+    }),
+  ).toBeNull();
+});
+
+test("returns null when the selected range maximum is reached", () => {
+  expect(
+    getCurrentDivinityStep(levels, {
+      startLevel: 1,
+      endLevel: 5,
+      currentLevel: 5,
+      filledSegments: 0,
+    }),
+  ).toBeNull();
+});
+
+test("limits totals to the selected range", () => {
+  expect(
+    calculateDivinityTotals(levels, {
+      startLevel: 4,
+      endLevel: 8,
+      currentLevel: 6,
+      filledSegments: 1,
+    }),
+  ).toEqual({
+    startLevel: 4,
+    endLevel: 8,
+    currentLevel: 6,
+    filledSegments: 1,
+    totalCost: { stone1: 44, stone2: 18, stone3: 0, stone4: 0, stone5: 0 },
+  });
 });
