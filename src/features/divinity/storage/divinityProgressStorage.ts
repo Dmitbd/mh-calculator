@@ -12,7 +12,7 @@ export type DivinityProgressRecord = {
 
 const defaultRecord = (): DivinityProgressRecord => ({
   startLevel: 1,
-  endLevel: 19,
+  endLevel: 30,
   currentLevel: 1,
   filledSegments: 0,
   updatedAt: new Date(0).toISOString(),
@@ -29,7 +29,7 @@ export async function loadDivinityProgress(): Promise<DivinityProgressRecord> {
 
   return {
     startLevel: parsed.startLevel ?? 1,
-    endLevel: parsed.endLevel ?? 19,
+    endLevel: parsed.endLevel ?? 30,
     currentLevel: parsed.currentLevel ?? 1,
     filledSegments: parsed.filledSegments ?? 0,
     updatedAt: parsed.updatedAt ?? new Date(0).toISOString(),

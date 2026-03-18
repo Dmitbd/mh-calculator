@@ -45,7 +45,7 @@ test("resets the saved current level", async () => {
 
   await expect(loadDivinityProgress()).resolves.toMatchObject({
     startLevel: 1,
-    endLevel: 19,
+    endLevel: 30,
     currentLevel: 1,
     filledSegments: 0,
   });

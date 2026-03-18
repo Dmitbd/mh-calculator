@@ -33,8 +33,10 @@ test("increments level and shows updated totals", async () => {
   await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
   expect(screen.getByText("От")).toBeTruthy();
   expect(screen.getByText("До")).toBeTruthy();
-  expect(screen.getByText("19")).toBeTruthy();
+  expect(screen.getByText("30")).toBeTruthy();
   expect(screen.getByText("Расход ресурсов")).toBeTruthy();
+  expect(screen.getByText("6 ур.")).toBeTruthy();
+  expect(screen.getByText("7 ур.")).toBeTruthy();
   expect(screen.getByLabelText("Повысить божественность")).toBeTruthy();
 
   fireEvent.press(screen.getByLabelText("Повысить божественность"));
@@ -97,11 +99,12 @@ test("decreasing end level also decreases start level when the range would colla
 
   await waitFor(() => {
     expect(screen.getByText("16")).toBeTruthy();
-    expect(screen.getByText("19")).toBeTruthy();
+    expect(screen.getByText("30")).toBeTruthy();
   });
 
-  fireEvent.press(screen.getByLabelText("Уменьшить конечный уровень"));
-  fireEvent.press(screen.getByLabelText("Уменьшить конечный уровень"));
+  for (let index = 0; index < 13; index += 1) {
+    fireEvent.press(screen.getByLabelText("Уменьшить конечный уровень"));
+  }
 
   await waitFor(() => {
     expect(screen.getByText("16")).toBeTruthy();

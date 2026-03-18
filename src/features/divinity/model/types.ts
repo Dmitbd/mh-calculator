@@ -4,6 +4,8 @@ export type StoneCosts = {
   stone3: number;
   stone4: number;
   stone5: number;
+  stone6: number;
+  stone7: number;
 };
 
 export type DivinityLevel = {

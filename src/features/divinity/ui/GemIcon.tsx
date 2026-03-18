@@ -1,7 +1,7 @@
 import Svg, { Defs, LinearGradient, Polygon, Stop } from "react-native-svg";
 
 type GemIconProps = {
-  level: 1 | 2 | 3 | 4 | 5;
+  level: 1 | 2 | 3 | 4 | 5 | 6 | 7;
   size?: number;
 };
 
@@ -11,6 +11,8 @@ const sidesByLevel: Record<GemIconProps["level"], number> = {
   3: 5,
   4: 6,
   5: 8,
+  6: 9,
+  7: 10,
 };
 
 const rotationByLevel: Record<GemIconProps["level"], number> = {
@@ -19,6 +21,8 @@ const rotationByLevel: Record<GemIconProps["level"], number> = {
   3: -Math.PI / 2,
   4: -Math.PI / 2,
   5: -Math.PI / 2,
+  6: -Math.PI / 2,
+  7: -Math.PI / 2,
 };
 
 const paletteByLevel: Record<
@@ -30,6 +34,8 @@ const paletteByLevel: Record<
   3: { edge: "#fff0b8", top: "#ffd86d", bottom: "#d49a28", inner: "#fff4ca" },
   4: { edge: "#ffe0b8", top: "#ffb566", bottom: "#db7930", inner: "#fff0da" },
   5: { edge: "#ffd4dc", top: "#ff8b96", bottom: "#c84958", inner: "#ffe4e8" },
+  6: { edge: "#d6f4ff", top: "#8ee6ff", bottom: "#2ca5db", inner: "#e9fbff" },
+  7: { edge: "#efe0ff", top: "#c59bff", bottom: "#6f4bcc", inner: "#f5edff" },
 };
 
 function polygonPoints(sides: number, size: number, rotation: number, scale = 1) {

@@ -66,7 +66,13 @@ function formatCosts(costs: DivinityLevel["segmentCost"]) {
     costs.stone3 ? { level: 3 as const, label: "3 ур.", value: costs.stone3 } : null,
     costs.stone4 ? { level: 4 as const, label: "4 ур.", value: costs.stone4 } : null,
     costs.stone5 ? { level: 5 as const, label: "5 ур.", value: costs.stone5 } : null,
-  ].filter(Boolean) as Array<{ level: 1 | 2 | 3 | 4 | 5; label: string; value: number }>;
+    costs.stone6 ? { level: 6 as const, label: "6 ур.", value: costs.stone6 } : null,
+    costs.stone7 ? { level: 7 as const, label: "7 ур.", value: costs.stone7 } : null,
+  ].filter(Boolean) as Array<{
+    level: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+    label: string;
+    value: number;
+  }>;
 }
 
 const styles = StyleSheet.create({

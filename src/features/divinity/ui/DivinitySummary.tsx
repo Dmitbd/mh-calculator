@@ -14,6 +14,8 @@ export function DivinitySummary({ totalCost }: DivinitySummaryProps) {
     { label: "3 ур.", value: totalCost.stone3 },
     { label: "4 ур.", value: totalCost.stone4 },
     { label: "5 ур.", value: totalCost.stone5 },
+    { label: "6 ур.", value: totalCost.stone6 },
+    { label: "7 ур.", value: totalCost.stone7 },
   ];
 
   return (
@@ -21,9 +23,9 @@ export function DivinitySummary({ totalCost }: DivinitySummaryProps) {
       <Text style={styles.title}>Расход ресурсов</Text>
       <View style={styles.grid}>
         {metrics.map((metric, index) => (
-          <View key={metric.label} style={styles.metric}>
-            <View style={styles.metricHeader}>
-              <GemIcon level={(index + 1) as 1 | 2 | 3 | 4 | 5} />
+            <View key={metric.label} style={styles.metric}>
+              <View style={styles.metricHeader}>
+                <GemIcon level={(index + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7} />
               <Text style={styles.metricLabel}>{metric.label}</Text>
             </View>
             <Text style={styles.value}>{metric.value}</Text>

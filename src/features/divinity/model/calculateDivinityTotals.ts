@@ -14,6 +14,8 @@ const emptyCosts = (): StoneCosts => ({
   stone3: 0,
   stone4: 0,
   stone5: 0,
+  stone6: 0,
+  stone7: 0,
 });
 
 const addCosts = (left: StoneCosts, right: StoneCosts): StoneCosts => ({
@@ -22,6 +24,8 @@ const addCosts = (left: StoneCosts, right: StoneCosts): StoneCosts => ({
   stone3: left.stone3 + right.stone3,
   stone4: left.stone4 + right.stone4,
   stone5: left.stone5 + right.stone5,
+  stone6: left.stone6 + right.stone6,
+  stone7: left.stone7 + right.stone7,
 });
 
 const multiplyCosts = (costs: StoneCosts, count: number): StoneCosts => ({
@@ -30,6 +34,8 @@ const multiplyCosts = (costs: StoneCosts, count: number): StoneCosts => ({
   stone3: costs.stone3 * count,
   stone4: costs.stone4 * count,
   stone5: costs.stone5 * count,
+  stone6: costs.stone6 * count,
+  stone7: costs.stone7 * count,
 });
 
 export function calculateDivinityTotals(

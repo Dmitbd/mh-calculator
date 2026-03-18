@@ -68,12 +68,14 @@ type StoneCosts = {
   stone3: number;
   stone4: number;
   stone5: number;
+  stone6: number;
+  stone7: number;
 };
 ```
 
 Важно:
-- в UI и расчетах используются именно `stone1`–`stone5`;
-- нельзя возвращаться к старой модели `stone5`–`stone7`;
+- в UI и расчетах используются именно `stone1`–`stone7`;
+- уровни `6` и `7` уже участвуют в реальных расчетах, даже если их иконки пока временные;
 - пустое значение камня выражается `0`, а не `null` и не отсутствующим полем.
 
 ### DivinityProgress
@@ -111,8 +113,8 @@ type DivinityProgress = {
 - между `От` и `До` всегда остается минимум один шаг.
 
 Для текущего набора данных:
-- `maxLevel = 19`;
-- значит стартовый диапазон по умолчанию: `1 -> 19`.
+- `maxLevel = 30`;
+- значит стартовый диапазон по умолчанию: `1 -> 30`.
 
 ### Update Rules
 
@@ -175,6 +177,15 @@ type DivinityProgress = {
 
 Это правило зафиксировано в [getCurrentDivinityStep.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/model/getCurrentDivinityStep.ts).
 
+### Maximum Level Rule
+
+Для текущего verified dataset:
+- уровень `30` является последним доступным уровнем;
+- у `Lv.30` еще есть `6` делений;
+- после их заполнения дальнейшего перехода нет;
+- `transitionCost` у `Lv.30` равен нулю;
+- после полного завершения `Lv.30` круг становится неактивным так же, как и на любой другой правой границе диапазона.
+
 ## Resource Calculation
 
 Блок `Расход ресурсов` обязан считать:
@@ -193,7 +204,7 @@ type DivinityProgress = {
 
 Кнопка `Сбросить прогресс` возвращает экран к дефолту:
 - `startLevel = 1`
-- `endLevel = 19`
+- `endLevel = 30`
 - `currentLevel = 1`
 - `filledSegments = 0`
 
@@ -226,10 +237,13 @@ type DivinityProgress = {
 - `stone3` — пятиугольник;
 - `stone4` — шестиугольник;
 - `stone5` — восьмиугольник.
+- `stone6` — временная заглушка;
+- `stone7` — временная заглушка.
 
 Ориентация фигур тоже зафиксирована:
 - `1` и `2` уровни не должны выглядеть как квадратная плоскость;
 - фигуры должны читаться как отдельные геометрические типы.
+- для `6` и `7` уровня допускается временная форма до получения игровых референсов, но они уже должны быть визуально отличимы друг от друга.
 
 ## Porting Rules
 
@@ -255,6 +269,8 @@ type DivinityProgress = {
 - позволять начать уровень выше `До`;
 - сбрасывать прогресс при каждом изменении диапазона;
 - удалять `DivinityLevel.segmentCount` и заменять его приблизительным визуальным индикатором.
+- откатывать dataset обратно к максимуму `19`;
+- убирать `stone6` и `stone7` из модели стоимости без миграции всех расчетов и UI.
 
 ## Verification
 
@@ -262,6 +278,12 @@ type DivinityProgress = {
 - [calculateDivinityTotals.test.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/__tests__/calculateDivinityTotals.test.ts)
 - [divinityProgressStorage.test.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/__tests__/divinityProgressStorage.test.ts)
 - [divinityScreen.test.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/__tests__/divinityScreen.test.tsx)
+
+Тесты отдельно подтверждают:
+- новый максимум `30`;
+- reset к диапазону `1 -> 30`;
+- расчет ресурсов с `stone6` и `stone7`;
+- отображение `6 ур.` и `7 ур.` в UI.
 - [divinityScreen.test.tsx](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/__tests__/divinityScreen.test.tsx)
 
 Любая правка этого экрана должна сохранять эти инварианты или осознанно обновлять и код, и этот документ, и тесты одновременно.
