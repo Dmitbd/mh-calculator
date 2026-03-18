@@ -1,0 +1,7 @@
+.worktrees/
+node_modules/
+.expo/
+.expo-shared/
+dist/
+coverage/
+*.log
