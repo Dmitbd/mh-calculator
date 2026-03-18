@@ -157,7 +157,7 @@ test("limits totals to the selected range", () => {
 test("includes level 30 as the maximum divinity level", () => {
   expect(levels[levels.length - 1]).toMatchObject({
     level: 30,
-    segmentCount: 6,
+    segmentCount: 0,
   });
 });
 

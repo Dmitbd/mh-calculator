@@ -23,6 +23,7 @@ test("loads the saved current level", async () => {
     endLevel: 8,
     currentLevel: 5,
     filledSegments: 2,
+    autofillEnabled: true,
   });
 
   await expect(loadDivinityProgress()).resolves.toMatchObject({
@@ -30,6 +31,7 @@ test("loads the saved current level", async () => {
     endLevel: 8,
     currentLevel: 5,
     filledSegments: 2,
+    autofillEnabled: true,
   });
 });
 
@@ -40,6 +42,7 @@ test("resets the saved current level", async () => {
     endLevel: 8,
     currentLevel: 4,
     filledSegments: 1,
+    autofillEnabled: true,
   });
   await resetDivinityProgress();
 
@@ -48,5 +51,6 @@ test("resets the saved current level", async () => {
     endLevel: 30,
     currentLevel: 1,
     filledSegments: 0,
+    autofillEnabled: false,
   });
 });

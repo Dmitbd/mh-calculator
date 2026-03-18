@@ -18,6 +18,7 @@ export default function DivinityScreen() {
     endLevel,
     currentLevel,
     filledSegments,
+    autofillEnabled,
     decrementEndLevel,
     decrementStartLevel,
     incrementEndLevel,
@@ -25,19 +26,31 @@ export default function DivinityScreen() {
     incrementStartLevel,
     isLoaded,
     resetLevel,
+    toggleAutofill,
   } = useDivinityProgress(levels);
-  const totalCost = calculateDivinityTotals(levels, {
-    startLevel,
-    endLevel,
-    currentLevel,
-    filledSegments,
-  });
-  const nextStep = getCurrentDivinityStep(levels, {
-    startLevel,
-    endLevel,
-    currentLevel,
-    filledSegments,
-  });
+  const autofillLevel = levels.find((level) => level.level === endLevel) ?? null;
+  const effectiveProgress = autofillEnabled
+    ? {
+        startLevel,
+        endLevel,
+        currentLevel: endLevel,
+        filledSegments: 0,
+      }
+    : {
+        startLevel,
+        endLevel,
+        currentLevel,
+        filledSegments,
+      };
+  const totalCost = calculateDivinityTotals(levels, effectiveProgress);
+  const nextStep = autofillEnabled
+    ? null
+    : getCurrentDivinityStep(levels, {
+        startLevel,
+        endLevel,
+        currentLevel,
+        filledSegments,
+      });
 
   if (!isLoaded) {
     return (
@@ -59,6 +72,7 @@ export default function DivinityScreen() {
       <DivinityRangeSelector
         startLevel={startLevel}
         endLevel={endLevel}
+        autofillEnabled={autofillEnabled}
         onDecrementStart={() => {
           void decrementStartLevel();
         }}
@@ -71,13 +85,16 @@ export default function DivinityScreen() {
         onIncrementEnd={() => {
           void incrementEndLevel();
         }}
+        onToggleAutofill={() => {
+          void toggleAutofill();
+        }}
       />
       <DivinityRing
-        canIncrement={Boolean(nextStep)}
-        currentLevel={currentLevel}
-        filledSegments={filledSegments}
-        segmentCount={nextStep?.segmentCount ?? 0}
-        targetLevel={nextStep?.level ?? null}
+        canIncrement={!autofillEnabled && Boolean(nextStep)}
+        currentLevel={effectiveProgress.currentLevel}
+        filledSegments={effectiveProgress.filledSegments}
+        segmentCount={autofillEnabled ? (autofillLevel?.segmentCount ?? 0) : (nextStep?.segmentCount ?? 0)}
+        targetLevel={autofillEnabled ? endLevel : nextStep?.level ?? null}
         transitionReady={nextStep?.transitionReady ?? false}
         onIncrement={() => {
           void incrementLevel();

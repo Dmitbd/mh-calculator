@@ -7,6 +7,7 @@ export type DivinityProgressRecord = {
   endLevel: number;
   currentLevel: number;
   filledSegments: number;
+  autofillEnabled: boolean;
   updatedAt: string;
 };
 
@@ -15,6 +16,7 @@ const defaultRecord = (): DivinityProgressRecord => ({
   endLevel: 30,
   currentLevel: 1,
   filledSegments: 0,
+  autofillEnabled: false,
   updatedAt: new Date(0).toISOString(),
 });
 
@@ -32,6 +34,7 @@ export async function loadDivinityProgress(): Promise<DivinityProgressRecord> {
     endLevel: parsed.endLevel ?? 30,
     currentLevel: parsed.currentLevel ?? 1,
     filledSegments: parsed.filledSegments ?? 0,
+    autofillEnabled: parsed.autofillEnabled ?? false,
     updatedAt: parsed.updatedAt ?? new Date(0).toISOString(),
   };
 }
@@ -39,7 +42,7 @@ export async function loadDivinityProgress(): Promise<DivinityProgressRecord> {
 export async function saveDivinityProgress(
   progress: Pick<
     DivinityProgressRecord,
-    "startLevel" | "endLevel" | "currentLevel" | "filledSegments"
+    "startLevel" | "endLevel" | "currentLevel" | "filledSegments" | "autofillEnabled"
   >,
 ): Promise<DivinityProgressRecord> {
   const record: DivinityProgressRecord = {
@@ -47,6 +50,7 @@ export async function saveDivinityProgress(
     endLevel: progress.endLevel,
     currentLevel: progress.currentLevel,
     filledSegments: progress.filledSegments,
+    autofillEnabled: progress.autofillEnabled,
     updatedAt: new Date().toISOString(),
   };
 

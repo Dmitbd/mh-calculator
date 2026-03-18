@@ -14,6 +14,7 @@ export function useDivinityProgress(levels: DivinityLevel[]) {
   const [endLevel, setEndLevel] = useState(maxLevel);
   const [currentLevel, setCurrentLevel] = useState(1);
   const [filledSegments, setFilledSegments] = useState(0);
+  const [autofillEnabled, setAutofillEnabled] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -33,6 +34,7 @@ export function useDivinityProgress(levels: DivinityLevel[]) {
       setEndLevel(safeEndLevel);
       setCurrentLevel(Math.min(Math.max(record.currentLevel, safeStartLevel), safeEndLevel));
       setFilledSegments(record.filledSegments);
+      setAutofillEnabled(record.autofillEnabled);
       setIsLoaded(true);
     });
 
@@ -61,6 +63,7 @@ export function useDivinityProgress(levels: DivinityLevel[]) {
         endLevel,
         currentLevel,
         filledSegments: nextFilledSegments,
+        autofillEnabled,
       });
       return;
     }
@@ -73,15 +76,16 @@ export function useDivinityProgress(levels: DivinityLevel[]) {
       endLevel,
       currentLevel: nextLevel,
       filledSegments: 0,
+      autofillEnabled,
     });
   };
 
   const updateRange = async (nextStartLevel: number, nextEndLevel: number) => {
-    const clampedCurrentLevel = Math.min(
-      Math.max(currentLevel, nextStartLevel),
-      nextEndLevel,
-    );
-    const shouldPreserveProgress = clampedCurrentLevel === currentLevel;
+    const clampedCurrentLevel = autofillEnabled
+      ? nextStartLevel
+      : Math.min(Math.max(currentLevel, nextStartLevel), nextEndLevel);
+    const shouldPreserveProgress =
+      !autofillEnabled && clampedCurrentLevel === currentLevel;
     const nextFilledSegments = shouldPreserveProgress ? filledSegments : 0;
 
     setStartLevel(nextStartLevel);
@@ -94,6 +98,7 @@ export function useDivinityProgress(levels: DivinityLevel[]) {
       endLevel: nextEndLevel,
       currentLevel: clampedCurrentLevel,
       filledSegments: nextFilledSegments,
+      autofillEnabled,
     });
   };
 
@@ -129,12 +134,27 @@ export function useDivinityProgress(levels: DivinityLevel[]) {
     setEndLevel(record.endLevel);
     setCurrentLevel(record.currentLevel);
     setFilledSegments(record.filledSegments);
+    setAutofillEnabled(record.autofillEnabled);
+  };
+
+  const toggleAutofill = async () => {
+    const nextAutofillEnabled = !autofillEnabled;
+    setAutofillEnabled(nextAutofillEnabled);
+
+    await saveDivinityProgress({
+      startLevel,
+      endLevel,
+      currentLevel,
+      filledSegments,
+      autofillEnabled: nextAutofillEnabled,
+    });
   };
 
   return {
     startLevel,
     endLevel,
     currentLevel,
+    autofillEnabled,
     filledSegments,
     decrementEndLevel,
     decrementStartLevel,
@@ -143,5 +163,6 @@ export function useDivinityProgress(levels: DivinityLevel[]) {
     incrementStartLevel,
     isLoaded,
     resetLevel,
+    toggleAutofill,
   };
 }

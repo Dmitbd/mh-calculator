@@ -12,10 +12,12 @@ type RangeFieldProps = {
 type DivinityRangeSelectorProps = {
   startLevel: number;
   endLevel: number;
+  autofillEnabled: boolean;
   onDecrementStart: () => void;
   onIncrementStart: () => void;
   onDecrementEnd: () => void;
   onIncrementEnd: () => void;
+  onToggleAutofill: () => void;
 };
 
 function RangeField({
@@ -55,10 +57,12 @@ function RangeField({
 export function DivinityRangeSelector({
   startLevel,
   endLevel,
+  autofillEnabled,
   onDecrementStart,
   onIncrementStart,
   onDecrementEnd,
   onIncrementEnd,
+  onToggleAutofill,
 }: DivinityRangeSelectorProps) {
   return (
     <View style={styles.card}>
@@ -81,6 +85,18 @@ export function DivinityRangeSelector({
           onIncrement={onIncrementEnd}
         />
       </View>
+      <Pressable
+        accessibilityLabel="Переключить автозаполнение"
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: autofillEnabled }}
+        onPress={onToggleAutofill}
+        style={styles.checkboxRow}
+      >
+        <View style={[styles.checkbox, autofillEnabled && styles.checkboxChecked]}>
+          {autofillEnabled ? <View style={styles.checkboxInner} /> : null}
+        </View>
+        <Text style={styles.checkboxLabel}>Автозаполнение</Text>
+      </Pressable>
     </View>
   );
 }
@@ -140,5 +156,36 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "800",
     color: "#fff8ef",
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingTop: 4,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderColor: "#d7c19a",
+    backgroundColor: "#3b2114",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxChecked: {
+    borderColor: "#fff3d1",
+    backgroundColor: "#6c4125",
+  },
+  checkboxInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 3,
+    backgroundColor: "#fff3d1",
+  },
+  checkboxLabel: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#fff3d1",
   },
 });

@@ -176,8 +176,8 @@
   },
   {
     "level": 30,
-    "segmentCount": 6,
-    "segmentCost": { "stone1": 0, "stone2": 0, "stone3": 0, "stone4": 0, "stone5": 0, "stone6": 0, "stone7": 14 },
+    "segmentCount": 0,
+    "segmentCost": { "stone1": 0, "stone2": 0, "stone3": 0, "stone4": 0, "stone5": 0, "stone6": 0, "stone7": 0 },
     "transitionCost": { "stone1": 0, "stone2": 0, "stone3": 0, "stone4": 0, "stone5": 0, "stone6": 0, "stone7": 0 }
   }
 ]

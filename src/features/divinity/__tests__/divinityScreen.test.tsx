@@ -33,6 +33,7 @@ test("increments level and shows updated totals", async () => {
   await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
   expect(screen.getByText("От")).toBeTruthy();
   expect(screen.getByText("До")).toBeTruthy();
+  expect(screen.getByText("Автозаполнение")).toBeTruthy();
   expect(screen.getByText("30")).toBeTruthy();
   expect(screen.getByText("Расход ресурсов")).toBeTruthy();
   expect(screen.getByText("6 ур.")).toBeTruthy();
@@ -147,5 +148,104 @@ test("adds bottom safe area space below the reset button", async () => {
     right: 0,
     bottom: 0,
     left: 0,
+  });
+});
+
+test("autofill completes the selected range and disables manual circle progress", async () => {
+  mockStorage.clear();
+  render(<DivinityScreen />);
+
+  await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
+
+  for (let index = 0; index < 28; index += 1) {
+    fireEvent.press(screen.getByLabelText("Уменьшить конечный уровень"));
+  }
+
+  await waitFor(() => {
+    expect(screen.getByText("1")).toBeTruthy();
+    expect(screen.getByText("2")).toBeTruthy();
+  });
+
+  fireEvent.press(screen.getByLabelText("Переключить автозаполнение"));
+
+  await waitFor(() => {
+    expect(screen.getByText("3")).toBeTruthy();
+    expect(screen.getAllByText("2")[0]).toBeTruthy();
+    expect(
+      screen.getByLabelText("Повысить божественность").props.accessibilityState.disabled,
+    ).toBe(true);
+  });
+
+  fireEvent.press(screen.getByLabelText("Повысить божественность"));
+
+  await waitFor(() => {
+    expect(screen.getByText("3")).toBeTruthy();
+    expect(screen.getAllByText("2")[0]).toBeTruthy();
+  });
+});
+
+test("autofill leaves the selected end level empty", async () => {
+  mockStorage.clear();
+  render(<DivinityScreen />);
+
+  await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
+
+  for (let index = 0; index < 7; index += 1) {
+    fireEvent.press(screen.getByLabelText("Увеличить начальный уровень"));
+  }
+
+  for (let index = 0; index < 18; index += 1) {
+    fireEvent.press(screen.getByLabelText("Уменьшить конечный уровень"));
+  }
+
+  await waitFor(() => {
+    expect(screen.getByText("8")).toBeTruthy();
+    expect(screen.getByText("12")).toBeTruthy();
+  });
+
+  fireEvent.press(screen.getByLabelText("Переключить автозаполнение"));
+
+  await waitFor(() => {
+    expect(screen.getByText("40")).toBeTruthy();
+    expect(screen.getByText("78")).toBeTruthy();
+    expect(screen.getByText("20")).toBeTruthy();
+    expect(
+      screen.getByLabelText("Повысить божественность").props.accessibilityState.disabled,
+    ).toBe(true);
+  });
+});
+
+test("changing range during autofill resets manual progress when autofill is turned off", async () => {
+  mockStorage.clear();
+  render(<DivinityScreen />);
+
+  await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
+
+  for (let index = 0; index < 28; index += 1) {
+    fireEvent.press(screen.getByLabelText("Уменьшить конечный уровень"));
+  }
+
+  fireEvent.press(screen.getByLabelText("Переключить автозаполнение"));
+
+  await waitFor(() => {
+    expect(screen.getByText("3")).toBeTruthy();
+    expect(screen.getAllByText("2")[0]).toBeTruthy();
+  });
+
+  fireEvent.press(screen.getByLabelText("Увеличить начальный уровень"));
+
+  await waitFor(() => {
+    expect(screen.getAllByText("2")[0]).toBeTruthy();
+    expect(screen.getByText("3")).toBeTruthy();
+  });
+
+  fireEvent.press(screen.getByLabelText("Переключить автозаполнение"));
+
+  await waitFor(() => {
+    expect(screen.getByText("1 ур.")).toBeTruthy();
+    expect(screen.getByText("3")).toBeTruthy();
+    expect(
+      screen.getByLabelText("Повысить божественность").props.accessibilityState.disabled,
+    ).toBe(false);
   });
 });
