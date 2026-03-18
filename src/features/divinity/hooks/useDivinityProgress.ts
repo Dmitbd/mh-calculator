@@ -110,8 +110,12 @@ export function useDivinityProgress(levels: DivinityLevel[]) {
   };
 
   const decrementEndLevel = async () => {
-    const nextEndLevel = Math.max(startLevel + 1, endLevel - 1);
-    await updateRange(startLevel, nextEndLevel);
+    const candidateEndLevel = Math.max(2, endLevel - 1);
+    const nextStartLevel =
+      candidateEndLevel <= startLevel ? Math.max(1, candidateEndLevel - 1) : startLevel;
+    const nextEndLevel = Math.max(nextStartLevel + 1, candidateEndLevel);
+
+    await updateRange(nextStartLevel, nextEndLevel);
   };
 
   const incrementEndLevel = async () => {

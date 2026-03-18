@@ -25,16 +25,16 @@
 ## Source Files
 
 Текущая логика распределена так:
-- [app/divinity.tsx](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/app/divinity.tsx)
-- [src/features/divinity/data/divinity-levels.json](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/data/divinity-levels.json)
-- [src/features/divinity/hooks/useDivinityProgress.ts](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/hooks/useDivinityProgress.ts)
-- [src/features/divinity/model/calculateDivinityTotals.ts](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/model/calculateDivinityTotals.ts)
-- [src/features/divinity/model/getCurrentDivinityStep.ts](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/model/getCurrentDivinityStep.ts)
-- [src/features/divinity/storage/divinityProgressStorage.ts](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/storage/divinityProgressStorage.ts)
-- [src/features/divinity/ui/DivinityRangeSelector.tsx](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/ui/DivinityRangeSelector.tsx)
-- [src/features/divinity/ui/DivinityRing.tsx](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/ui/DivinityRing.tsx)
-- [src/features/divinity/ui/DivinitySummary.tsx](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/ui/DivinitySummary.tsx)
-- [src/features/divinity/ui/GemIcon.tsx](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/ui/GemIcon.tsx)
+- [app/divinity.tsx](/Users/mymaughem/Desktop/work/mh-calculator/app/divinity.tsx)
+- [src/features/divinity/data/divinity-levels.json](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/data/divinity-levels.json)
+- [src/features/divinity/hooks/useDivinityProgress.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/hooks/useDivinityProgress.ts)
+- [src/features/divinity/model/calculateDivinityTotals.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/model/calculateDivinityTotals.ts)
+- [src/features/divinity/model/getCurrentDivinityStep.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/model/getCurrentDivinityStep.ts)
+- [src/features/divinity/storage/divinityProgressStorage.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/storage/divinityProgressStorage.ts)
+- [src/features/divinity/ui/DivinityRangeSelector.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/ui/DivinityRangeSelector.tsx)
+- [src/features/divinity/ui/DivinityRing.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/ui/DivinityRing.tsx)
+- [src/features/divinity/ui/DivinitySummary.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/ui/DivinitySummary.tsx)
+- [src/features/divinity/ui/GemIcon.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/ui/GemIcon.tsx)
 
 ## Data Model
 
@@ -119,10 +119,13 @@ type DivinityProgress = {
 При изменении диапазона:
 - если новый диапазон по-прежнему включает текущий прогресс, прогресс сохраняется;
 - если новый диапазон отрезает текущий прогресс, `currentLevel` зажимается в новый диапазон, а `filledSegments` сбрасывается.
+- увеличение `От` может автоматически подтянуть `До` вверх, если между ними иначе не останется одного шага;
+- уменьшение `До` должно работать симметрично: если после уменьшения не остается минимального зазора в один шаг, `От` автоматически уменьшается вместе с ним, но не ниже `1`.
 
 Примеры:
 - было `1 -> 5`, пользователь дошел до `5`, затем поднял `До` до `6` или выше: прогресс сохраняется;
 - было `5 -> 14`, пользователь начал прогресс, затем уменьшил `От` до `4`: прогресс сохраняется;
+- было `16 -> 17`, пользователь уменьшает `До`: диапазон должен стать `15 -> 16`, а не остаться заблокированным на `16 -> 17`;
 - было `5 -> 14`, затем диапазон сузили так, что текущий уровень оказался вне него: прогресс корректируется под новую границу.
 
 ## Ring Logic
@@ -170,7 +173,7 @@ type DivinityProgress = {
 - после достижения `5` круг должен стать неактивным;
 - пользователь явно просит расчет только до `5`, и это поведение нельзя менять.
 
-Это правило зафиксировано в [getCurrentDivinityStep.ts](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/model/getCurrentDivinityStep.ts).
+Это правило зафиксировано в [getCurrentDivinityStep.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/model/getCurrentDivinityStep.ts).
 
 ## Resource Calculation
 
@@ -256,8 +259,9 @@ type DivinityProgress = {
 ## Verification
 
 Текущее поведение покрыто тестами:
-- [calculateDivinityTotals.test.ts](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/__tests__/calculateDivinityTotals.test.ts)
-- [divinityProgressStorage.test.ts](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/__tests__/divinityProgressStorage.test.ts)
+- [calculateDivinityTotals.test.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/__tests__/calculateDivinityTotals.test.ts)
+- [divinityProgressStorage.test.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/__tests__/divinityProgressStorage.test.ts)
+- [divinityScreen.test.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/__tests__/divinityScreen.test.tsx)
 - [divinityScreen.test.tsx](/Users/mymaughem/Desktop/work/mh-calculator/.worktrees/codex-divinity-mvp/src/features/divinity/__tests__/divinityScreen.test.tsx)
 
 Любая правка этого экрана должна сохранять эти инварианты или осознанно обновлять и код, и этот документ, и тесты одновременно.

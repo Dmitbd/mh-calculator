@@ -73,3 +73,35 @@ test("preserves progress when the selected range expands", async () => {
     expect(screen.getByText("9")).toBeTruthy();
   });
 });
+
+test("decreasing end level also decreases start level when the range would collapse", async () => {
+  mockStorage.clear();
+  render(<DivinityScreen />);
+
+  await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
+
+  for (let index = 0; index < 15; index += 1) {
+    fireEvent.press(screen.getByLabelText("Увеличить начальный уровень"));
+  }
+
+  await waitFor(() => {
+    expect(screen.getByText("16")).toBeTruthy();
+    expect(screen.getByText("19")).toBeTruthy();
+  });
+
+  fireEvent.press(screen.getByLabelText("Уменьшить конечный уровень"));
+  fireEvent.press(screen.getByLabelText("Уменьшить конечный уровень"));
+
+  await waitFor(() => {
+    expect(screen.getByText("16")).toBeTruthy();
+    expect(screen.getByText("17")).toBeTruthy();
+  });
+
+  fireEvent.press(screen.getByLabelText("Уменьшить конечный уровень"));
+
+  await waitFor(() => {
+    expect(screen.getByText("15")).toBeTruthy();
+    expect(screen.getByText("16")).toBeTruthy();
+    expect(screen.queryByText("17")).toBeNull();
+  });
+});
