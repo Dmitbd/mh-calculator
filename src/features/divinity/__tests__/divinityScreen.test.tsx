@@ -1,4 +1,10 @@
 const mockStorage = new Map<string, string>();
+const mockUseSafeAreaInsets = jest.fn(() => ({
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+}));
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   __esModule: true,
@@ -8,6 +14,11 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
       mockStorage.set(key, value);
     }),
   },
+}));
+
+jest.mock("react-native-safe-area-context", () => ({
+  __esModule: true,
+  useSafeAreaInsets: () => mockUseSafeAreaInsets(),
 }));
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
@@ -103,5 +114,35 @@ test("decreasing end level also decreases start level when the range would colla
     expect(screen.getByText("15")).toBeTruthy();
     expect(screen.getByText("16")).toBeTruthy();
     expect(screen.queryByText("17")).toBeNull();
+  });
+});
+
+test("adds bottom safe area space below the reset button", async () => {
+  mockStorage.clear();
+  mockUseSafeAreaInsets.mockReturnValue({
+    top: 0,
+    right: 0,
+    bottom: 34,
+    left: 0,
+  });
+
+  render(<DivinityScreen />);
+
+  await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
+
+  const scrollView = screen.UNSAFE_getByType("RCTScrollView");
+  expect(scrollView.props.contentContainerStyle).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        paddingBottom: 58,
+      }),
+    ]),
+  );
+
+  mockUseSafeAreaInsets.mockReturnValue({
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
   });
 });

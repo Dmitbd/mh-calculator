@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import levels from "../src/features/divinity/data/divinity-levels.json";
 import { useDivinityProgress } from "../src/features/divinity/hooks/useDivinityProgress";
@@ -8,7 +9,10 @@ import { DivinityRing } from "../src/features/divinity/ui/DivinityRing";
 import { DivinityRangeSelector } from "../src/features/divinity/ui/DivinityRangeSelector";
 import { DivinitySummary } from "../src/features/divinity/ui/DivinitySummary";
 
+const SCREEN_PADDING = 24;
+
 export default function DivinityScreen() {
+  const { bottom } = useSafeAreaInsets();
   const {
     startLevel,
     endLevel,
@@ -44,7 +48,14 @@ export default function DivinityScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={[
+        styles.container,
+        {
+          paddingBottom: SCREEN_PADDING + bottom,
+        },
+      ]}
+    >
       <DivinityRangeSelector
         startLevel={startLevel}
         endLevel={endLevel}
@@ -90,7 +101,7 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     gap: 16,
-    padding: 24,
+    padding: SCREEN_PADDING,
     backgroundColor: "#140d0b",
   },
   loadingContainer: {
