@@ -2,32 +2,46 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, G } from "react-native-svg";
 
 type DivinityRingProps = {
+  canDecrement: boolean;
   canIncrement: boolean;
   currentLevel: number;
   filledSegments: number;
   segmentCount: number;
   targetLevel: number | null;
   transitionReady: boolean;
+  onDecrement: () => void;
   onIncrement: () => void;
 };
 
-const ringSize = 260;
-const ringStrokeRadius = 106;
-const ringStrokeWidth = 20;
+const ringSize = 220;
+const ringStrokeRadius = 88;
+const ringStrokeWidth = 18;
 const segmentGapLength = 8;
 
 export function DivinityRing({
+  canDecrement,
   canIncrement,
   currentLevel,
   filledSegments,
   segmentCount,
   targetLevel,
   transitionReady,
+  onDecrement,
   onIncrement,
 }: DivinityRingProps) {
   return (
     <View style={styles.wrapper}>
-      <View style={styles.ringFrame}>
+      <View style={styles.controlsRow}>
+        <Pressable
+          accessibilityLabel="Понизить божественность"
+          accessibilityRole="button"
+          disabled={!canDecrement}
+          onPress={onDecrement}
+          style={[styles.controlButton, !canDecrement && styles.disabledControlButton]}
+        >
+          <Text style={styles.controlButtonText}>-</Text>
+        </Pressable>
+        <View style={styles.ringFrame}>
         <View style={styles.crossHorizontal} />
         <View style={styles.crossVertical} />
         <View style={[styles.cornerMark, styles.cornerTop]} />
@@ -87,18 +101,22 @@ export function DivinityRing({
           </Svg>
         ) : null}
 
-        <Pressable
-          accessibilityLabel="Повысить божественность"
-          accessibilityRole="button"
-          disabled={!canIncrement}
-          onPress={onIncrement}
-          style={[styles.coreButton, !canIncrement && styles.disabledCoreButton]}
-        >
+        <View style={[styles.coreButton, !canIncrement && styles.disabledCoreButton]}>
           <View style={styles.innerGlow} />
           <View style={styles.innerCore} />
           <View style={styles.artDiamond} />
           <View style={[styles.artDiamond, styles.artDiamondSecondary]} />
           <Text style={styles.coreLevelText}>Lv.{targetLevel ?? currentLevel}</Text>
+        </View>
+        </View>
+        <Pressable
+          accessibilityLabel="Повысить божественность"
+          accessibilityRole="button"
+          disabled={!canIncrement}
+          onPress={onIncrement}
+          style={[styles.controlButton, !canIncrement && styles.disabledControlButton]}
+        >
+          <Text style={styles.controlButtonText}>+</Text>
         </Pressable>
       </View>
     </View>
@@ -108,6 +126,32 @@ export function DivinityRing({
 const styles = StyleSheet.create({
   wrapper: {
     alignItems: "center",
+  },
+  controlsRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
+  controlButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#8f6034",
+    backgroundColor: "#2a160e",
+  },
+  disabledControlButton: {
+    opacity: 0.45,
+  },
+  controlButtonText: {
+    fontSize: 28,
+    lineHeight: 28,
+    fontWeight: "900",
+    color: "#f3d38a",
   },
   ringFrame: {
     width: ringSize,
@@ -152,18 +196,18 @@ const styles = StyleSheet.create({
   },
   outerRing: {
     position: "absolute",
-    width: 236,
-    height: 236,
-    borderRadius: 118,
+    width: 196,
+    height: 196,
+    borderRadius: 98,
     borderWidth: 3,
     borderColor: "#dcc58d",
     backgroundColor: "rgba(31, 15, 12, 0.84)",
   },
   innerRing: {
     position: "absolute",
-    width: 212,
-    height: 212,
-    borderRadius: 106,
+    width: 176,
+    height: 176,
+    borderRadius: 88,
     borderWidth: 1.5,
     borderColor: "rgba(242, 226, 185, 0.7)",
     backgroundColor: "rgba(25, 12, 18, 0.88)",
@@ -172,9 +216,9 @@ const styles = StyleSheet.create({
     position: "absolute",
   },
   coreButton: {
-    width: 176,
-    height: 176,
-    borderRadius: 88,
+    width: 146,
+    height: 146,
+    borderRadius: 73,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
@@ -194,38 +238,38 @@ const styles = StyleSheet.create({
   },
   innerGlow: {
     position: "absolute",
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+    width: 126,
+    height: 126,
+    borderRadius: 63,
     backgroundColor: "#241845",
   },
   innerCore: {
     position: "absolute",
-    width: 116,
-    height: 116,
-    borderRadius: 58,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: "#171131",
     borderWidth: 1,
     borderColor: "rgba(109, 219, 255, 0.22)",
   },
   artDiamond: {
     position: "absolute",
-    width: 88,
-    height: 88,
+    width: 72,
+    height: 72,
     borderWidth: 3,
     borderColor: "#7f5cff",
     transform: [{ rotate: "45deg" }],
   },
   artDiamondSecondary: {
-    width: 56,
-    height: 56,
+    width: 46,
+    height: 46,
     borderWidth: 2,
     borderColor: "#3ccfff",
   },
   coreLevelText: {
     position: "absolute",
-    bottom: 20,
-    fontSize: 34,
+    bottom: 16,
+    fontSize: 28,
     fontWeight: "900",
     color: "#fff8ef",
     textShadowColor: "rgba(0, 0, 0, 0.7)",

@@ -43,6 +43,20 @@ export function useDivinityProgress(levels: DivinityLevel[]) {
     };
   }, [maxLevel]);
 
+  const persistProgress = async (
+    nextCurrentLevel: number,
+    nextFilledSegments: number,
+    nextAutofillEnabled = autofillEnabled,
+  ) => {
+    await saveDivinityProgress({
+      startLevel,
+      endLevel,
+      currentLevel: nextCurrentLevel,
+      filledSegments: nextFilledSegments,
+      autofillEnabled: nextAutofillEnabled,
+    });
+  };
+
   const incrementLevel = async () => {
     const step = getCurrentDivinityStep(levels, {
       startLevel,
@@ -58,26 +72,37 @@ export function useDivinityProgress(levels: DivinityLevel[]) {
     if (filledSegments < step.segmentCount) {
       const nextFilledSegments = filledSegments + 1;
       setFilledSegments(nextFilledSegments);
-      await saveDivinityProgress({
-        startLevel,
-        endLevel,
-        currentLevel,
-        filledSegments: nextFilledSegments,
-        autofillEnabled,
-      });
+      await persistProgress(currentLevel, nextFilledSegments);
       return;
     }
 
     const nextLevel = Math.min(step.level + 1, endLevel);
     setCurrentLevel(nextLevel);
     setFilledSegments(0);
-    await saveDivinityProgress({
-      startLevel,
-      endLevel,
-      currentLevel: nextLevel,
-      filledSegments: 0,
-      autofillEnabled,
-    });
+    await persistProgress(nextLevel, 0);
+  };
+
+  const decrementLevel = async () => {
+    if (filledSegments > 0) {
+      const nextFilledSegments = filledSegments - 1;
+      setFilledSegments(nextFilledSegments);
+      await persistProgress(currentLevel, nextFilledSegments);
+      return;
+    }
+
+    if (currentLevel <= startLevel) {
+      return;
+    }
+
+    const previousLevel = levels.find((level) => level.level === currentLevel - 1);
+
+    if (!previousLevel || previousLevel.level < startLevel) {
+      return;
+    }
+
+    setCurrentLevel(previousLevel.level);
+    setFilledSegments(previousLevel.segmentCount);
+    await persistProgress(previousLevel.level, previousLevel.segmentCount);
   };
 
   const updateRange = async (nextStartLevel: number, nextEndLevel: number) => {
@@ -141,14 +166,10 @@ export function useDivinityProgress(levels: DivinityLevel[]) {
     const nextAutofillEnabled = !autofillEnabled;
     setAutofillEnabled(nextAutofillEnabled);
 
-    await saveDivinityProgress({
-      startLevel,
-      endLevel,
-      currentLevel,
-      filledSegments,
-      autofillEnabled: nextAutofillEnabled,
-    });
+    await persistProgress(currentLevel, filledSegments, nextAutofillEnabled);
   };
+
+  const canDecrement = currentLevel > startLevel || filledSegments > 0;
 
   return {
     startLevel,
@@ -157,7 +178,9 @@ export function useDivinityProgress(levels: DivinityLevel[]) {
     autofillEnabled,
     filledSegments,
     decrementEndLevel,
+    decrementLevel,
     decrementStartLevel,
+    canDecrement,
     incrementLevel,
     incrementEndLevel,
     incrementStartLevel,

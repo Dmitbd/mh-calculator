@@ -57,7 +57,9 @@ export default function DivinityScreen() {
     currentLevel,
     filledSegments,
     autofillEnabled,
+    canDecrement,
     decrementEndLevel,
+    decrementLevel,
     decrementStartLevel,
     incrementEndLevel,
     incrementLevel,
@@ -132,12 +134,16 @@ export default function DivinityScreen() {
             }}
           />
           <DivinityRing
+            canDecrement={!autofillEnabled && canDecrement}
             canIncrement={!autofillEnabled && Boolean(nextStep)}
             currentLevel={effectiveProgress.currentLevel}
             filledSegments={effectiveProgress.filledSegments}
             segmentCount={autofillEnabled ? (autofillLevel?.segmentCount ?? 0) : (nextStep?.segmentCount ?? 0)}
             targetLevel={autofillEnabled ? endLevel : nextStep?.level ?? null}
             transitionReady={nextStep?.transitionReady ?? false}
+            onDecrement={() => {
+              void decrementLevel();
+            }}
             onIncrement={() => {
               void incrementLevel();
             }}

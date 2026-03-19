@@ -52,6 +52,7 @@ test("increments level and shows updated totals", async () => {
   expect(screen.getByText("Расход ресурсов")).toBeTruthy();
   expect(screen.getByText("6 ур.")).toBeTruthy();
   expect(screen.getByText("7 ур.")).toBeTruthy();
+  expect(screen.getByLabelText("Понизить божественность")).toBeTruthy();
   expect(screen.getByLabelText("Повысить божественность")).toBeTruthy();
 
   fireEvent.press(screen.getByLabelText("Повысить божественность"));
@@ -71,6 +72,27 @@ test("increments level and shows updated totals", async () => {
     expect(screen.queryByText("Деления: 1 / 3")).toBeNull();
     expect(screen.queryByText("Максимальный ранг")).toBeNull();
     expect(screen.queryByText("Завершено уровней: 0")).toBeNull();
+  });
+});
+
+test("decrements progress with the minus button", async () => {
+  mockStorage.clear();
+
+  render(<DivinityScreen />);
+
+  await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
+
+  fireEvent.press(screen.getByLabelText("Повысить божественность"));
+  fireEvent.press(screen.getByLabelText("Повысить божественность"));
+
+  await waitFor(() => {
+    expect(screen.getByText("2")).toBeTruthy();
+  });
+
+  fireEvent.press(screen.getByLabelText("Понизить божественность"));
+
+  await waitFor(() => {
+    expect(screen.getAllByText("1")[0]).toBeTruthy();
   });
 });
 
@@ -189,9 +211,8 @@ test("autofill completes the selected range and disables manual circle progress"
   await waitFor(() => {
     expect(screen.getByText("3")).toBeTruthy();
     expect(screen.getAllByText("2")[0]).toBeTruthy();
-    expect(
-      screen.getByLabelText("Повысить божественность").props.accessibilityState.disabled,
-    ).toBe(true);
+    expect(screen.getByLabelText("Понизить божественность").props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByLabelText("Повысить божественность").props.accessibilityState.disabled).toBe(true);
   });
 
   fireEvent.press(screen.getByLabelText("Повысить божественность"));
@@ -227,9 +248,8 @@ test("autofill leaves the selected end level empty", async () => {
     expect(screen.getByText("40")).toBeTruthy();
     expect(screen.getByText("78")).toBeTruthy();
     expect(screen.getByText("20")).toBeTruthy();
-    expect(
-      screen.getByLabelText("Повысить божественность").props.accessibilityState.disabled,
-    ).toBe(true);
+    expect(screen.getByLabelText("Понизить божественность").props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByLabelText("Повысить божественность").props.accessibilityState.disabled).toBe(true);
   });
 });
 
@@ -262,8 +282,7 @@ test("changing range during autofill resets manual progress when autofill is tur
   await waitFor(() => {
     expect(screen.getByText("1 ур.")).toBeTruthy();
     expect(screen.getByText("3")).toBeTruthy();
-    expect(
-      screen.getByLabelText("Повысить божественность").props.accessibilityState.disabled,
-    ).toBe(false);
+    expect(screen.getByLabelText("Понизить божественность").props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByLabelText("Повысить божественность").props.accessibilityState.disabled).toBe(false);
   });
 });
