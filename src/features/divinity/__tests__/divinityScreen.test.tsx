@@ -5,6 +5,11 @@ const mockUseSafeAreaInsets = jest.fn(() => ({
   bottom: 0,
   left: 0,
 }));
+const mockRouter = {
+  canGoBack: jest.fn(() => false),
+  back: jest.fn(),
+  replace: jest.fn(),
+};
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   __esModule: true,
@@ -21,6 +26,11 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => mockUseSafeAreaInsets(),
 }));
 
+jest.mock("expo-router", () => ({
+  __esModule: true,
+  router: mockRouter,
+}));
+
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
 import DivinityScreen from "../../../../app/divinity";
@@ -31,6 +41,10 @@ test("increments level and shows updated totals", async () => {
   render(<DivinityScreen />);
 
   await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
+  expect(screen.getByText("Божественность").props.numberOfLines).toBe(1);
+  expect(screen.queryByText(/^divinity$/i)).toBeNull();
+  expect(screen.getByLabelText("Назад")).toBeTruthy();
+  expect(screen.queryByText("Mythic Heroes")).toBeNull();
   expect(screen.getByText("От")).toBeTruthy();
   expect(screen.getByText("До")).toBeTruthy();
   expect(screen.getByText("Автозаполнение")).toBeTruthy();
@@ -43,11 +57,13 @@ test("increments level and shows updated totals", async () => {
   fireEvent.press(screen.getByLabelText("Повысить божественность"));
 
   await waitFor(() => {
+    expect(screen.getByText("Божественность")).toBeTruthy();
+    expect(screen.getByLabelText("Назад")).toBeTruthy();
+    expect(screen.queryByText("Mythic Heroes")).toBeNull();
     expect(screen.getByText("1 ур.")).toBeTruthy();
     expect(screen.getByText("2 ур.")).toBeTruthy();
     expect(screen.getAllByText("1")[0]).toBeTruthy();
     expect(screen.getByText("Расход ресурсов")).toBeTruthy();
-    expect(screen.queryByText("Mythic Heroes")).toBeNull();
     expect(screen.queryByText("Прогресс кольца")).toBeNull();
     expect(screen.queryByText("Текущий уровень: 0")).toBeNull();
     expect(screen.queryByText("Заполнено делений в текущем уровне: 1")).toBeNull();
@@ -124,7 +140,7 @@ test("decreasing end level also decreases start level when the range would colla
 test("adds bottom safe area space below the reset button", async () => {
   mockStorage.clear();
   mockUseSafeAreaInsets.mockReturnValue({
-    top: 0,
+    top: 12,
     right: 0,
     bottom: 34,
     left: 0,
@@ -135,9 +151,11 @@ test("adds bottom safe area space below the reset button", async () => {
   await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
 
   const scrollView = screen.UNSAFE_getByType("RCTScrollView");
+  expect(scrollView.props.stickyHeaderIndices).toBeUndefined();
   expect(scrollView.props.contentContainerStyle).toEqual(
     expect.arrayContaining([
       expect.objectContaining({
+        paddingTop: 88,
         paddingBottom: 58,
       }),
     ]),
