@@ -41,6 +41,7 @@ function createValidDraft(): DivinityBranchBuildDraft {
     heroName: "Western Queen",
     columns,
     weaponAwakening: filledWeaponAwakening,
+    equipment: { artifactId: null, runeId: null },
     majorNodes: template
       .filter((node) => node.nodeType === "majorSkill")
       .map((node) => {

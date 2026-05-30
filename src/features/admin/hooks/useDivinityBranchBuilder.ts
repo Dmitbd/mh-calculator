@@ -12,6 +12,7 @@ import type {
   DivinityBranchId,
   DivinityGameMode,
   DraftBranchColumns,
+  EquipmentSelection,
   WeaponAwakeningColor,
   WeaponAwakeningColorId,
   WeaponAwakeningSlot,
@@ -69,6 +70,8 @@ export function useDivinityBranchBuilder(
     useState<MajorSkillSelections>({});
   const [weaponAwakeningSelections, setWeaponAwakeningSelections] =
     useState<WeaponAwakeningSelections>({});
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
+  const [selectedRuneId, setSelectedRuneId] = useState<string | null>(null);
   const [progressLevels, setProgressLevels] = useState<BranchProgressLevels>({});
 
   const setColumnBranch = useCallback(
@@ -126,6 +129,15 @@ export function useDivinityBranchBuilder(
         weaponAwakeningSelections,
       ),
     [weaponAwakeningCatalog.slots, weaponAwakeningSelections],
+  );
+
+  // Текущий выбор экипировки (артефакт + руна) для выгрузки в JSON
+  const buildEquipment = useCallback(
+    (): EquipmentSelection => ({
+      artifactId: selectedArtifactId,
+      runeId: selectedRuneId,
+    }),
+    [selectedArtifactId, selectedRuneId],
   );
 
   // Установить прогресс столбца точно до уровня (null — снять)
@@ -186,8 +198,16 @@ export function useDivinityBranchBuilder(
         columns: selectedBranches,
         majorNodes: buildMajorNodes(selectedBranches, selectedMajorSkills),
         weaponAwakening: buildWeaponAwakening(),
+        equipment: buildEquipment(),
       };
-    }, [buildWeaponAwakening, gameMode, heroName, selectedBranches, selectedMajorSkills]);
+    }, [
+      buildEquipment,
+      buildWeaponAwakening,
+      gameMode,
+      heroName,
+      selectedBranches,
+      selectedMajorSkills,
+    ]);
 
   const buildExport = useCallback(
     (createdAt = new Date().toISOString()): DivinityBranchBuildExport | null => {
@@ -213,6 +233,7 @@ export function useDivinityBranchBuilder(
         columns: selectedBranches,
         majorNodes,
         weaponAwakening,
+        equipment: buildEquipment(),
         progress: progressLevels,
         activeNodes: buildActiveNodes(progressLevels),
         metadata: {
@@ -222,6 +243,7 @@ export function useDivinityBranchBuilder(
       };
     },
     [
+      buildEquipment,
       buildWeaponAwakening,
       gameMode,
       heroName,
@@ -239,10 +261,14 @@ export function useDivinityBranchBuilder(
       selectedBranches,
       selectedMajorSkills,
       weaponAwakeningSelections,
+      selectedArtifactId,
+      selectedRuneId,
       progressLevels,
       setGameMode,
       setHeroName,
       cycleWeaponAwakeningSlot,
+      setArtifact: setSelectedArtifactId,
+      setRune: setSelectedRuneId,
       setColumnBranch,
       setMajorSkill,
       getMajorSkill,
@@ -264,6 +290,8 @@ export function useDivinityBranchBuilder(
       selectedBranches,
       selectedMajorSkills,
       weaponAwakeningSelections,
+      selectedArtifactId,
+      selectedRuneId,
       setColumnBranch,
       setColumnProgress,
       setGameMode,

@@ -40,7 +40,9 @@ export function WeaponAwakeningPicker({
               onPress={() => onCycleSlot(slot.slot)}
               style={[
                 styles.circle,
-                color ? { backgroundColor: color.color, borderColor: color.color } : styles.circleEmpty,
+                color
+                  ? [styles.circleFilled, { backgroundColor: color.color }]
+                  : styles.circleEmpty,
               ]}
             />
           );
@@ -71,6 +73,9 @@ const styles = StyleSheet.create({
     maxWidth: 44,
     borderRadius: 999,
     borderWidth: 2,
+  },
+  circleFilled: {
+    borderColor: "#644932",
   },
   circleEmpty: {
     backgroundColor: "#1c110d",

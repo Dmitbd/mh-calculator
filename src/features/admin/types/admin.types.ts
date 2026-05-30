@@ -87,6 +87,40 @@ export type WeaponAwakeningSlot = {
   slot: number;
 };
 
+/** Артефакт (оружие/экипировка) из equipment/artifacts.json */
+export type Artifact = {
+  /** Уникальный id артефакта */
+  id: string;
+  /** Название для UI */
+  name: string;
+  /** Путь к иконке */
+  icon: string;
+  /** Описание эффекта по уровням */
+  description: string;
+};
+
+/** Руна из equipment/runes.json */
+export type Rune = {
+  /** Уникальный id руны */
+  id: string;
+  /** Название для UI */
+  name: string;
+  /** Путь к иконке */
+  icon: string;
+  /** Описание эффекта по уровням */
+  description: string;
+  /** Эффект резонанса при 3 одинаковых рунах */
+  elementalResonance: string;
+};
+
+/** Выбор экипировки героя — для сохранения в JSON формы */
+export type EquipmentSelection = {
+  /** Id выбранного артефакта или null */
+  artifactId: string | null;
+  /** Id выбранной руны или null */
+  runeId: string | null;
+};
+
 /** Выбранный цвет в слоте — для export */
 export type WeaponAwakeningSlotSelection = {
   /** Позиция кружка (1–8) */
@@ -112,6 +146,8 @@ export type DivinityBranchBuildDraft = {
   columns: SelectedBranchColumns;
   majorNodes: DivinityBranchBuildMajorNode[];
   weaponAwakening: WeaponAwakeningSlotSelection[];
+  /** Выбранные артефакт и руна */
+  equipment: EquipmentSelection;
 };
 
 export type DivinityBranchBuildValidationDraft = {
@@ -120,6 +156,8 @@ export type DivinityBranchBuildValidationDraft = {
   columns: DraftBranchColumns;
   majorNodes: DivinityBranchBuildMajorNode[];
   weaponAwakening: WeaponAwakeningSlotSelection[];
+  /** Выбранные артефакт и руна */
+  equipment: EquipmentSelection;
 };
 
 export type DivinityBranchBuildExport = DivinityBranchBuildDraft & {

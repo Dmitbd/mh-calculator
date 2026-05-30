@@ -1,0 +1,58 @@
+[
+  {
+    "id": "earth",
+    "name": "Earth Rune",
+    "icon": "/img/equipment/runes/earth.png",
+    "description": "A rune containing the defensive nature of Earth. The wearer gains a rock-like aura. Reduces Damage taken by 2.6/3.9/5.2/6.5/7.8/9.1%.",
+    "elementalResonance": "For the first 10s of battle, increase Defense by 50%."
+  },
+  {
+    "id": "water",
+    "name": "Water Rune",
+    "icon": "/img/equipment/runes/water.png",
+    "description": "A rune containing the life-giving power of water. This supportive rune condenses moisture in the air and provides protection to friendly units. Increases Healing and Shield abilities by 5/7.5/10/12.5/15/17.5%.",
+    "elementalResonance": "Whenever a shield or healing spell is cast, increase Dodge by 30% for 3s."
+  },
+  {
+    "id": "fire",
+    "name": "Fire Rune",
+    "icon": "/img/equipment/runes/fire.png",
+    "description": "A rune containing the raw force of blazing fire. The wearer gains elemental fire in their attack, increasing the overall damage they deal. Increases Damage dealt by 2.6/3.9/5.2/6.5/7.8/9.1%.",
+    "elementalResonance": "For the first 20s of battle, increase Crit Chance by 15%."
+  },
+  {
+    "id": "air",
+    "name": "Air Rune",
+    "icon": "/img/equipment/runes/air.png",
+    "description": "A rune containing the power of a hurricane. The wearer gains the ability to destroy the enemy's defenses with a wind-like destructive power. Reduces skill Cooldown by 6/9/12/15/18/21%.",
+    "elementalResonance": "After using a Hero Skill, increase Damage dealt by the next auto-attack by 70%."
+  },
+  {
+    "id": "thunder",
+    "name": "Thunder Rune",
+    "icon": "/img/equipment/runes/thunder.png",
+    "description": "The rune containing the awe-inspiring power of thunder and lightning. The wearer gains the deadly force of lightning in their attack. Ignores 4.8/7.2/9.6/12/14.4/18.6% of Targets' Defense when attacking.",
+    "elementalResonance": "Every auto-attack has a 20% chance of increasing damage dealt to 135%."
+  },
+  {
+    "id": "forest",
+    "name": "Forest Rune",
+    "icon": "/img/equipment/runes/forest.png",
+    "description": "A rune containing the relentless power of plants. The wearer gains the resistance and resilience of nature. Increases Resistance to Control abilities by 7/10.5/14/17.5/21/24.5%.",
+    "elementalResonance": "At the beginning of the battle, restore 150 Energy."
+  },
+  {
+    "id": "light",
+    "name": "Light Rune",
+    "icon": "/img/equipment/runes/light.png",
+    "description": "A rune containing the enduring power of light. The wearer bathes in the healing force of holy light. Recovers 0.2/0.3/0.4/0.5/0.6/0.7% of max health every second.",
+    "elementalResonance": "When Health is below 50%, all Health restoration effects increase by 35%."
+  },
+  {
+    "id": "dark",
+    "name": "Dark Rune",
+    "icon": "/img/equipment/runes/dark.png",
+    "description": "A rune containing the formidable power of darkness. The wearer improves the deadliness of their skills and spell abilities. Restores 2/3/4/5/6/7% Energy every Second.",
+    "elementalResonance": "Increases Attack by 12% after using an Ultimate. This effect lasts the entire battle and can stack 2 times."
+  }
+]

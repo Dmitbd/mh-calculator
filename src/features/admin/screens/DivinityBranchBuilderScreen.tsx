@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
+import artifactsData from "@/features/game-data/equipment/artifacts.json";
+import runesData from "@/features/game-data/equipment/runes.json";
 import branchesData from "@/features/game-data/divinity/divinity-branches.json";
 import skillsData from "@/features/game-data/divinity/divinity-skills.json";
 import templateData from "@/features/game-data/divinity/tree-template.json";
@@ -9,16 +11,19 @@ import weaponAwakeningSlotsData from "@/features/game-data/weapon-awakening/weap
 
 import { BranchBuilderGrid } from "../components/BranchBuilderGrid";
 import { DownloadJsonButton } from "../components/DownloadJsonButton";
+import { EquipmentSelect } from "../components/EquipmentSelect";
 import { GameModeRadio } from "../components/GameModeRadio";
 import { HeroNameInput } from "../components/HeroNameInput";
 import { WeaponAwakeningPicker } from "../components/WeaponAwakeningPicker";
 import { useDivinityBranchBuilder } from "../hooks/useDivinityBranchBuilder";
 import type {
+  Artifact,
   BranchBuildValidationError,
   BranchColumn,
   BranchColumnId,
   DivinityBranch,
   DivinityMajorSkill,
+  Rune,
   TreeTemplateNode,
   WeaponAwakeningColor,
   WeaponAwakeningSlot,
@@ -38,6 +43,8 @@ const skills = skillsData as DivinityMajorSkill[];
 const template = templateData as TreeTemplateNode[];
 const weaponAwakeningColors = weaponAwakeningColorsData as WeaponAwakeningColor[];
 const weaponAwakeningSlots = weaponAwakeningSlotsData as WeaponAwakeningSlot[];
+const artifacts = artifactsData as Artifact[];
+const runes = runesData as Rune[];
 
 const weaponAwakeningCatalog = {
   colors: weaponAwakeningColors,
@@ -74,6 +81,28 @@ export function DivinityBranchBuilderScreen() {
 
       <View style={styles.section}>
         <HeroNameInput value={builder.heroName} onChange={builder.setHeroName} />
+      </View>
+
+      <View style={styles.section}>
+        <EquipmentSelect
+          label="Оружие"
+          onClear={() => builder.setArtifact(null)}
+          onSelect={builder.setArtifact}
+          options={artifacts}
+          placeholder="Выберите оружие"
+          selectedId={builder.selectedArtifactId}
+        />
+      </View>
+
+      <View style={styles.section}>
+        <EquipmentSelect
+          label="Руна"
+          onClear={() => builder.setRune(null)}
+          onSelect={builder.setRune}
+          options={runes}
+          placeholder="Выберите руну"
+          selectedId={builder.selectedRuneId}
+        />
       </View>
 
       <View style={styles.section}>

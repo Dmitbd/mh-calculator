@@ -52,6 +52,8 @@ describe("useDivinityBranchBuilder", () => {
     });
     expect(result.current.selectedMajorSkills).toEqual({});
     expect(result.current.weaponAwakeningSelections).toEqual({});
+    expect(result.current.selectedArtifactId).toBeNull();
+    expect(result.current.selectedRuneId).toBeNull();
     expect(result.current.buildExport("2026-05-30T00:00:00.000Z")).toBeNull();
   });
 
@@ -77,6 +79,9 @@ describe("useDivinityBranchBuilder", () => {
       for (const slot of weaponAwakeningSlots) {
         result.current.cycleWeaponAwakeningSlot(slot.slot);
       }
+
+      result.current.setArtifact("excalibur");
+      result.current.setRune("fire");
     });
 
     expect(result.current.getMajorSkill("center", 1)).toBe("psyche-maestro");
@@ -86,6 +91,7 @@ describe("useDivinityBranchBuilder", () => {
       heroName: "Western Queen",
       columns: selectedBranches,
       weaponAwakening: filledWeaponAwakening,
+      equipment: { artifactId: "excalibur", runeId: "fire" },
       majorNodes: [
         {
           level: 1,
