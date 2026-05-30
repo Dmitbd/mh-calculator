@@ -62,5 +62,6 @@ const styles = StyleSheet.create({
   emptyText: {
     color: "#c8aa83",
     fontSize: 12,
+    textAlign: "center",
   },
 });

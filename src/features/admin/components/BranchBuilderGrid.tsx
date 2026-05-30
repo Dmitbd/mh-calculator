@@ -10,7 +10,7 @@ import type {
   DraftBranchColumns,
   TreeTemplateNode,
 } from "../types/admin.types";
-import { BranchNodeCard } from "./BranchNodeCard";
+import { MajorNodeCard, MinorStatCard } from "./BranchNodeCard";
 import { IconPreview } from "./IconPreview";
 
 // Отступы сетки: по X (между колонками) и по Y (между уровнями)
@@ -40,6 +40,10 @@ type BranchBuilderGridProps = {
     skillId: string,
   ) => void;
   onClearMajorSkill: (columnId: BranchColumnId, level: number) => void;
+  /** Уровень прогресса по столбцам — до какой ноды включительно подсвечивать активным */
+  progressLevels: Partial<Record<BranchColumnId, number>>;
+  /** Клик по ноде: установить/откатить прогресс столбца */
+  onToggleProgress: (columnId: BranchColumnId, level: number) => void;
 };
 
 export function BranchBuilderGrid({
@@ -54,6 +58,8 @@ export function BranchBuilderGrid({
   onOpenMajorSlot,
   onSelectMajorSkill,
   onClearMajorSkill,
+  progressLevels,
+  onToggleProgress,
 }: BranchBuilderGridProps) {
   const levels = Array.from({ length: 30 }, (_, index) => index + 1);
   const [activeBranchColumn, setActiveBranchColumn] =
@@ -79,6 +85,12 @@ export function BranchBuilderGrid({
     return ranges;
   }, [columns, template]);
 
+  // Нода активна, если уровень не выше прогресса своего столбца
+  const isNodeActive = (columnId: BranchColumnId, level: number) => {
+    const progress = progressLevels[columnId];
+    return progress !== undefined && level <= progress;
+  };
+
   // Линия-«ветка» для ячейки: null до первой и после последней ноды,
   // обрезается у первой (идёт вниз) и последней (идёт вверх) ноды столбца
   const renderBranchLine = (columnId: BranchColumnId, level: number) => {
@@ -94,6 +106,7 @@ export function BranchBuilderGrid({
           styles.branchLine,
           level === range.first && styles.branchLineStart,
           level === range.last && styles.branchLineEnd,
+          isNodeActive(columnId, level) && styles.branchLineActive,
         ]}
       />
     );
@@ -129,6 +142,7 @@ export function BranchBuilderGrid({
       return null;
     }
 
+    const columnId = columns[columnIndex].id;
     const leftId = columns[columnIndex - 1]?.id;
     const rightId = columns[columnIndex + 1]?.id;
     const hasLeft = leftId ? nodeKeys.has(`${level}:${leftId}`) : false;
@@ -138,13 +152,31 @@ export function BranchBuilderGrid({
       return null;
     }
 
+    const selfActive = isNodeActive(columnId, level);
+    const leftActive =
+      hasLeft && leftId ? selfActive && isNodeActive(leftId, level) : false;
+    const rightActive =
+      hasRight && rightId ? selfActive && isNodeActive(rightId, level) : false;
+
     return (
       <>
         {hasLeft ? (
-          <View style={[styles.branchLineH, styles.branchLineHLeft]} />
+          <View
+            style={[
+              styles.branchLineH,
+              styles.branchLineHLeft,
+              leftActive && styles.branchLineActive,
+            ]}
+          />
         ) : null}
         {hasRight ? (
-          <View style={[styles.branchLineH, styles.branchLineHRight]} />
+          <View
+            style={[
+              styles.branchLineH,
+              styles.branchLineHRight,
+              rightActive && styles.branchLineActive,
+            ]}
+          />
         ) : null}
       </>
     );
@@ -259,15 +291,10 @@ export function BranchBuilderGrid({
                   {renderBranchLine(column.id, level)}
                   {renderHorizontalConnectors(columnIndex, level)}
                   <View style={styles.nodeCellContent}>
-                    <BranchNodeCard
-                      availableSkills={[]}
+                    <MinorStatCard
+                      active={isNodeActive(column.id, level)}
                       node={node}
-                      onOpenPicker={() => onOpenMajorSlot(column.id, level)}
-                      onSelectSkill={(skillId) =>
-                        onSelectMajorSkill(column.id, level, skillId)
-                      }
-                      pickerOpen={false}
-                      selectedSkill={null}
+                      onPress={() => onToggleProgress(column.id, level)}
                     />
                   </View>
                 </View>
@@ -279,7 +306,8 @@ export function BranchBuilderGrid({
                 {renderBranchLine(column.id, level)}
                 {renderHorizontalConnectors(columnIndex, level)}
                 <View style={styles.nodeCellContent}>
-                  <BranchNodeCard
+                  <MajorNodeCard
+                    active={isNodeActive(column.id, level)}
                     availableSkills={availableSkills}
                     node={node}
                     onClearSkill={() => onClearMajorSkill(column.id, level)}
@@ -650,5 +678,10 @@ const styles = StyleSheet.create({
   branchLineHRight: {
     left: "50%",
     right: -COLUMN_GAP,
+  },
+  // Активная (открытая) линия-ветка — золотое свечение
+  branchLineActive: {
+    backgroundColor: "#f0c36a",
+    boxShadow: "0 0 6px rgba(240, 195, 106, 0.7)",
   },
 });

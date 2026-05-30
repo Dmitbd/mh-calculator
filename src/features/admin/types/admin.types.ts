@@ -64,6 +64,17 @@ export type DivinityBranchBuildMajorNode = {
   skillId: string;
 };
 
+/** Уровень прогресса (активности) по каждому столбцу: до какой ноды включительно открыто */
+export type BranchProgressLevels = Partial<Record<BranchColumnId, number>>;
+
+/** Активная (открытая) нода — для сохранения в JSON */
+export type ActiveBranchNode = {
+  /** Колонка (ветка), в которой находится нода */
+  columnId: BranchColumnId;
+  /** Уровень ноды */
+  level: number;
+};
+
 export type DivinityBranchBuildDraft = {
   heroName: string;
   columns: SelectedBranchColumns;
@@ -78,6 +89,10 @@ export type DivinityBranchBuildValidationDraft = {
 
 export type DivinityBranchBuildExport = DivinityBranchBuildDraft & {
   schemaVersion: 1;
+  /** Уровень прогресса по каждому столбцу */
+  progress: BranchProgressLevels;
+  /** Полный список активных (открытых) нод */
+  activeNodes: ActiveBranchNode[];
   metadata: {
     createdAt: string;
     source: "manual-branch-builder";

@@ -3,7 +3,9 @@ import { useCallback, useMemo, useState } from "react";
 import template from "@/features/game-data/divinity/tree-template.json";
 
 import type {
+  ActiveBranchNode,
   BranchColumnId,
+  BranchProgressLevels,
   DivinityBranchBuildExport,
   DivinityBranchBuildMajorNode,
   DivinityBranchBuildValidationDraft,
@@ -21,12 +23,36 @@ const emptySelectedBranches: DraftBranchColumns = {
 
 const columnIds: BranchColumnId[] = ["left", "center", "right"];
 
+// Уровни нод по каждому столбцу (отсортированы) — для расчёта прогресса и отката
+const columnNodeLevels: Record<string, number[]> = (() => {
+  const map: Record<string, number[]> = {};
+
+  template.forEach((node) => {
+    (map[node.columnId] ??= []).push(node.level);
+  });
+
+  Object.values(map).forEach((levels) => levels.sort((first, second) => first - second));
+
+  return map;
+})();
+
+// Предыдущий уровень ноды в столбце (строго ниже переданного) или null
+function getPreviousNodeLevel(
+  columnId: BranchColumnId,
+  level: number,
+): number | null {
+  const levels = columnNodeLevels[columnId] ?? [];
+  const below = levels.filter((nodeLevel) => nodeLevel < level);
+  return below.length ? below[below.length - 1] : null;
+}
+
 export function useDivinityBranchBuilder() {
   const [heroName, setHeroName] = useState("");
   const [selectedBranches, setSelectedBranches] =
     useState<DraftBranchColumns>(emptySelectedBranches);
   const [selectedMajorSkills, setSelectedMajorSkills] =
     useState<MajorSkillSelections>({});
+  const [progressLevels, setProgressLevels] = useState<BranchProgressLevels>({});
 
   const setColumnBranch = useCallback(
     (columnId: BranchColumnId, branchId: DivinityBranchId | null) => {
@@ -63,6 +89,56 @@ export function useDivinityBranchBuilder() {
     [selectedMajorSkills],
   );
 
+  // Установить прогресс столбца точно до уровня (null — снять)
+  const setColumnProgress = useCallback(
+    (columnId: BranchColumnId, level: number | null) => {
+      setProgressLevels((current) => {
+        const next = { ...current };
+
+        if (level === null) {
+          delete next[columnId];
+        } else {
+          next[columnId] = level;
+        }
+
+        return next;
+      });
+    },
+    [],
+  );
+
+  // Клик по ноде: до неё — активна; повторный клик по верхней — откат на ноду ниже
+  const toggleColumnProgress = useCallback(
+    (columnId: BranchColumnId, level: number) => {
+      setProgressLevels((current) => {
+        const next = { ...current };
+
+        if (current[columnId] === level) {
+          const previous = getPreviousNodeLevel(columnId, level);
+
+          if (previous === null) {
+            delete next[columnId];
+          } else {
+            next[columnId] = previous;
+          }
+        } else {
+          next[columnId] = level;
+        }
+
+        return next;
+      });
+    },
+    [],
+  );
+
+  // Откат прогресса столбца на ноду ниже переданного уровня (при сбросе мажорной ноды)
+  const rollbackColumnProgress = useCallback(
+    (columnId: BranchColumnId, level: number) => {
+      setColumnProgress(columnId, getPreviousNodeLevel(columnId, level));
+    },
+    [setColumnProgress],
+  );
+
   const buildValidationDraft =
     useCallback((): DivinityBranchBuildValidationDraft => {
       return {
@@ -89,13 +165,15 @@ export function useDivinityBranchBuilder() {
         heroName,
         columns: selectedBranches,
         majorNodes,
+        progress: progressLevels,
+        activeNodes: buildActiveNodes(progressLevels),
         metadata: {
           createdAt,
           source: "manual-branch-builder",
         },
       };
     },
-    [heroName, selectedBranches, selectedMajorSkills],
+    [heroName, selectedBranches, selectedMajorSkills, progressLevels],
   );
 
   return useMemo(
@@ -103,10 +181,14 @@ export function useDivinityBranchBuilder() {
       heroName,
       selectedBranches,
       selectedMajorSkills,
+      progressLevels,
       setHeroName,
       setColumnBranch,
       setMajorSkill,
       getMajorSkill,
+      setColumnProgress,
+      toggleColumnProgress,
+      rollbackColumnProgress,
       buildValidationDraft,
       buildExport,
     }),
@@ -115,16 +197,41 @@ export function useDivinityBranchBuilder() {
       buildExport,
       getMajorSkill,
       heroName,
+      progressLevels,
+      rollbackColumnProgress,
       selectedBranches,
       selectedMajorSkills,
       setColumnBranch,
+      setColumnProgress,
       setMajorSkill,
+      toggleColumnProgress,
     ],
   );
 }
 
 function getMajorSkillKey(columnId: BranchColumnId, level: number): string {
   return `${columnId}:${level}`;
+}
+
+// Все активные ноды: в каждом столбце — все ноды с уровнем не выше прогресса
+function buildActiveNodes(
+  progressLevels: BranchProgressLevels,
+): ActiveBranchNode[] {
+  const activeNodes: ActiveBranchNode[] = [];
+
+  columnIds.forEach((columnId) => {
+    const progress = progressLevels[columnId];
+
+    if (progress === undefined) {
+      return;
+    }
+
+    (columnNodeLevels[columnId] ?? [])
+      .filter((level) => level <= progress)
+      .forEach((level) => activeNodes.push({ columnId, level }));
+  });
+
+  return activeNodes;
 }
 
 function hasSelectedAllBranches(

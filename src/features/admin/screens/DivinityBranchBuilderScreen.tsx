@@ -66,13 +66,17 @@ export function DivinityBranchBuilderScreen() {
           }
           onClearMajorSkill={(columnId, level) => {
             builder.setMajorSkill(columnId, level, null);
+            builder.rollbackColumnProgress(columnId, level);
             setActiveMajorSlot(null);
           }}
           onSelectBranch={builder.setColumnBranch}
           onSelectMajorSkill={(columnId, level, skillId) => {
             builder.setMajorSkill(columnId, level, skillId);
+            builder.setColumnProgress(columnId, level);
             setActiveMajorSlot(null);
           }}
+          onToggleProgress={builder.toggleColumnProgress}
+          progressLevels={builder.progressLevels}
           selectedBranches={builder.selectedBranches}
           selectedMajorSkills={selectedMajorSkills}
           skills={skills}

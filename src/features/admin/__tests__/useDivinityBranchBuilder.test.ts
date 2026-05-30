@@ -121,6 +121,8 @@ describe("useDivinityBranchBuilder", () => {
           skillId: "immortality-symbiosis",
         },
       ],
+      progress: {},
+      activeNodes: [],
       metadata: {
         createdAt: "2026-05-30T00:00:00.000Z",
         source: "manual-branch-builder",
