@@ -15,7 +15,7 @@ export function DownloadJsonButton({ errors, onPress }: DownloadJsonButtonProps)
         onPress={onPress}
         style={styles.button}
       >
-        <Text style={styles.buttonText}>Проверить JSON</Text>
+        <Text style={styles.buttonText}>Скачать JSON</Text>
       </Pressable>
       {errors.length > 0 ? (
         <View style={styles.errors}>

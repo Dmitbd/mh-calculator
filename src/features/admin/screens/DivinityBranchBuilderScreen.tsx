@@ -28,6 +28,8 @@ import type {
   WeaponAwakeningColor,
   WeaponAwakeningSlot,
 } from "../types/admin.types";
+import { downloadJson } from "../utils/downloadJson";
+import { slugifyFileName } from "../utils/slugifyFileName";
 import { validateBranchBuild } from "../utils/validateBranchBuild";
 
 const columns: BranchColumn[] = [
@@ -153,9 +155,19 @@ export function DivinityBranchBuilderScreen() {
               template,
               weaponAwakeningColors,
               weaponAwakeningSlots,
+              artifacts,
+              runes,
             });
 
             setValidationErrors(result.errors);
+
+            if (result.isValid) {
+              const build = builder.buildExport();
+
+              if (build) {
+                downloadJson(build, slugifyFileName(build.heroName));
+              }
+            }
           }}
         />
       </View>

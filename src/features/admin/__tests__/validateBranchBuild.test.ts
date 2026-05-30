@@ -1,6 +1,8 @@
 import branches from "@/features/game-data/divinity/divinity-branches.json";
 import skills from "@/features/game-data/divinity/divinity-skills.json";
 import template from "@/features/game-data/divinity/tree-template.json";
+import artifacts from "@/features/game-data/equipment/artifacts.json";
+import runes from "@/features/game-data/equipment/runes.json";
 import weaponAwakeningColors from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
 import weaponAwakeningSlots from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
 
@@ -35,13 +37,23 @@ const filledWeaponAwakening = weaponAwakeningSlots.map((slot) => ({
   colorId: "red" as const,
 }));
 
+const validationSources = {
+  branches,
+  skills: catalogSkills,
+  template,
+  weaponAwakeningColors,
+  weaponAwakeningSlots,
+  artifacts,
+  runes,
+};
+
 function createValidDraft(): DivinityBranchBuildDraft {
   return {
     gameMode: "pve",
     heroName: "Western Queen",
     columns,
     weaponAwakening: filledWeaponAwakening,
-    equipment: { artifactId: null, runeId: null },
+    equipment: { artifactId: "excalibur", runeId: "fire" },
     majorNodes: template
       .filter((node) => node.nodeType === "majorSkill")
       .map((node) => {
@@ -72,13 +84,7 @@ describe("slugifyFileName", () => {
 
 describe("validateBranchBuild", () => {
   it("accepts a completed branch build", () => {
-    const result = validateBranchBuild(createValidDraft(), {
-      branches,
-      skills: catalogSkills,
-      template,
-      weaponAwakeningColors,
-      weaponAwakeningSlots,
-    });
+    const result = validateBranchBuild(createValidDraft(), validationSources);
 
     expect(result.isValid).toBe(true);
     expect(result.errors).toEqual([]);
@@ -87,19 +93,41 @@ describe("validateBranchBuild", () => {
   it("rejects an empty hero name", () => {
     const result = validateBranchBuild(
       { ...createValidDraft(), heroName: "   " },
-      {
-        branches,
-        skills: catalogSkills,
-        template,
-        weaponAwakeningColors,
-        weaponAwakeningSlots,
-      },
+      validationSources,
     );
 
     expect(result.isValid).toBe(false);
     expect(result.errors).toContainEqual({
       code: "heroName.required",
-      message: "Hero name is required.",
+      message: "Укажите имя героя.",
+    });
+  });
+
+  it("rejects a missing artifact", () => {
+    const result = validateBranchBuild(
+      { ...createValidDraft(), equipment: { artifactId: null, runeId: "fire" } },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "equipment.artifactRequired",
+      message: "Выберите оружие.",
+      path: "equipment.artifactId",
+    });
+  });
+
+  it("rejects a missing rune", () => {
+    const result = validateBranchBuild(
+      { ...createValidDraft(), equipment: { artifactId: "excalibur", runeId: null } },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "equipment.runeRequired",
+      message: "Выберите руну.",
+      path: "equipment.runeId",
     });
   });
 
@@ -109,19 +137,13 @@ describe("validateBranchBuild", () => {
 
     const result = validateBranchBuild(
       { ...draft, majorNodes: remainingNodes },
-      {
-        branches,
-        skills: catalogSkills,
-        template,
-        weaponAwakeningColors,
-        weaponAwakeningSlots,
-      },
+      validationSources,
     );
 
     expect(result.isValid).toBe(false);
     expect(result.errors).toContainEqual({
       code: "majorNode.required",
-      message: "Major skill is required for center level 1.",
+      message: "Выберите крупный навык для центральной колонки на уровне 1.",
       path: `majorNodes.${missingNode.columnId}.${missingNode.level}`,
     });
   });
@@ -143,19 +165,13 @@ describe("validateBranchBuild", () => {
             : node,
         ),
       },
-      {
-        branches,
-        skills: catalogSkills,
-        template,
-        weaponAwakeningColors,
-        weaponAwakeningSlots,
-      },
+      validationSources,
     );
 
     expect(result.isValid).toBe(false);
     expect(result.errors).toContainEqual({
       code: "majorNode.skillBranchMismatch",
-      message: "Selected skill does not belong to asterial.",
+      message: "Выбранный навык не принадлежит ветке левой колонки.",
       path: "majorNodes.left.3",
     });
   });
@@ -165,19 +181,13 @@ describe("validateBranchBuild", () => {
 
     const result = validateBranchBuild(
       { ...draft, weaponAwakening: [{ slot: 1, colorId: "red" }] },
-      {
-        branches,
-        skills: catalogSkills,
-        template,
-        weaponAwakeningColors,
-        weaponAwakeningSlots,
-      },
+      validationSources,
     );
 
     expect(result.isValid).toBe(false);
     expect(result.errors).toContainEqual({
       code: "weaponAwakening.slotRequired",
-      message: "Weapon awakening color is required for slot 2.",
+      message: "Выберите цвет пробуждения оружия для слота 2.",
       path: "weaponAwakening.2",
     });
   });
@@ -188,20 +198,14 @@ describe("validateBranchBuild", () => {
         ...createValidDraft(),
         columns: { ...columns, left: "unknown" as DivinityBranchId },
       },
-      {
-        branches,
-        skills: catalogSkills,
-        template,
-        weaponAwakeningColors,
-        weaponAwakeningSlots,
-      },
+      validationSources,
     );
 
     expect(branchById.has("unknown")).toBe(false);
     expect(result.isValid).toBe(false);
     expect(result.errors).toContainEqual({
       code: "column.branchUnknown",
-      message: "Unknown branch selected for left.",
+      message: "Для левой колонки выбрана неизвестная ветка.",
       path: "columns.left",
     });
   });

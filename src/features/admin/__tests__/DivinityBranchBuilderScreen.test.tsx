@@ -23,14 +23,18 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByText("Lv. 1")).toBeTruthy();
     expect(screen.getAllByText("Divinity skill level").length).toBeGreaterThan(0);
 
-    fireEvent.press(screen.getByText("Проверить JSON"));
+    fireEvent.press(screen.getByText("Скачать JSON"));
 
     expect(
-      screen.getByText("Weapon awakening color is required for slot 1."),
+      screen.getByText("Выберите цвет пробуждения оружия для слота 1."),
     ).toBeTruthy();
-    expect(screen.getByText("Hero name is required.")).toBeTruthy();
-    expect(screen.getByText("Branch is required for left.")).toBeTruthy();
-    expect(screen.getByText("Major skill is required for center level 1.")).toBeTruthy();
+    expect(screen.getByText("Укажите имя героя.")).toBeTruthy();
+    expect(screen.getByText("Выберите оружие.")).toBeTruthy();
+    expect(screen.getByText("Выберите руну.")).toBeTruthy();
+    expect(screen.getByText("Выберите ветку для левой колонки.")).toBeTruthy();
+    expect(
+      screen.getByText("Выберите крупный навык для центральной колонки на уровне 1."),
+    ).toBeTruthy();
   });
 
   it("selects branch types from the grid column headers", () => {

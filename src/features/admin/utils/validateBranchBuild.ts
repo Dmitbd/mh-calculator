@@ -8,6 +8,13 @@ import type {
 } from "../types/admin.types";
 const columnIds: BranchColumnId[] = ["left", "center", "right"];
 
+// Подписи колонок в родительном падеже для сообщений об ошибках
+const columnLabels: Record<BranchColumnId, string> = {
+  left: "левой",
+  center: "центральной",
+  right: "правой",
+};
+
 type ValidationSources = {
   branches: readonly { id: string }[];
   skills: readonly { id: string; branchId: string }[];
@@ -19,6 +26,8 @@ type ValidationSources = {
   }[];
   weaponAwakeningColors: readonly { id: string }[];
   weaponAwakeningSlots: readonly { slot: number }[];
+  artifacts: readonly { id: string }[];
+  runes: readonly { id: string }[];
 };
 
 export function validateBranchBuild(
@@ -46,11 +55,13 @@ export function validateBranchBuild(
   const selectedWeaponSlots = new Map(
     draft.weaponAwakening.map((entry) => [entry.slot, entry]),
   );
+  const artifactIds = new Set(sources.artifacts.map((artifact) => artifact.id));
+  const runeIds = new Set(sources.runes.map((rune) => rune.id));
 
   if (!isDivinityGameMode(draft.gameMode)) {
     errors.push({
       code: "gameMode.invalid",
-      message: "Game mode must be PvP or PvE.",
+      message: "Режим игры должен быть PvP или PvE.",
       path: "gameMode",
     });
   }
@@ -58,7 +69,35 @@ export function validateBranchBuild(
   if (!draft.heroName.trim()) {
     errors.push({
       code: "heroName.required",
-      message: "Hero name is required.",
+      message: "Укажите имя героя.",
+    });
+  }
+
+  if (!draft.equipment.artifactId) {
+    errors.push({
+      code: "equipment.artifactRequired",
+      message: "Выберите оружие.",
+      path: "equipment.artifactId",
+    });
+  } else if (!artifactIds.has(draft.equipment.artifactId)) {
+    errors.push({
+      code: "equipment.artifactUnknown",
+      message: "Выбрано неизвестное оружие.",
+      path: "equipment.artifactId",
+    });
+  }
+
+  if (!draft.equipment.runeId) {
+    errors.push({
+      code: "equipment.runeRequired",
+      message: "Выберите руну.",
+      path: "equipment.runeId",
+    });
+  } else if (!runeIds.has(draft.equipment.runeId)) {
+    errors.push({
+      code: "equipment.runeUnknown",
+      message: "Выбрана неизвестная руна.",
+      path: "equipment.runeId",
     });
   }
 
@@ -68,7 +107,7 @@ export function validateBranchBuild(
     if (!branchId) {
       errors.push({
         code: "column.branchRequired",
-        message: `Branch is required for ${columnId}.`,
+        message: `Выберите ветку для ${columnLabels[columnId]} колонки.`,
         path: `columns.${columnId}`,
       });
       continue;
@@ -77,7 +116,7 @@ export function validateBranchBuild(
     if (!branchIds.has(branchId)) {
       errors.push({
         code: "column.branchUnknown",
-        message: `Unknown branch selected for ${columnId}.`,
+        message: `Для ${columnLabels[columnId]} колонки выбрана неизвестная ветка.`,
         path: `columns.${columnId}`,
       });
     }
@@ -91,7 +130,7 @@ export function validateBranchBuild(
     if (!selectedNode) {
       errors.push({
         code: "majorNode.required",
-        message: `Major skill is required for ${slot.columnId} level ${slot.level}.`,
+        message: `Выберите крупный навык для ${columnLabels[slot.columnId]} колонки на уровне ${slot.level}.`,
         path: getMajorNodePath(slot.columnId, slot.level),
       });
     }
@@ -103,7 +142,7 @@ export function validateBranchBuild(
     if (!selected) {
       errors.push({
         code: "weaponAwakening.slotRequired",
-        message: `Weapon awakening color is required for slot ${slot.slot}.`,
+        message: `Выберите цвет пробуждения оружия для слота ${slot.slot}.`,
         path: `weaponAwakening.${slot.slot}`,
       });
     }
@@ -115,7 +154,7 @@ export function validateBranchBuild(
     if (!weaponSlotNumbers.has(entry.slot)) {
       errors.push({
         code: "weaponAwakening.slotRequired",
-        message: `Unknown weapon awakening slot ${entry.slot}.`,
+        message: `Неизвестный слот пробуждения оружия ${entry.slot}.`,
         path,
       });
       continue;
@@ -124,7 +163,7 @@ export function validateBranchBuild(
     if (!weaponColorIds.has(entry.colorId)) {
       errors.push({
         code: "weaponAwakening.colorUnknown",
-        message: `Unknown weapon awakening color for slot ${entry.slot}.`,
+        message: `Неизвестный цвет пробуждения оружия для слота ${entry.slot}.`,
         path,
       });
     }
@@ -136,7 +175,7 @@ export function validateBranchBuild(
     if (!majorSlotKeys.has(getSlotKey(node.columnId, node.level))) {
       errors.push({
         code: "majorNode.slotUnknown",
-        message: `Unknown major skill slot for ${node.columnId} level ${node.level}.`,
+        message: `Неизвестный слот навыка для ${columnLabels[node.columnId]} колонки на уровне ${node.level}.`,
         path,
       });
       continue;
@@ -145,7 +184,7 @@ export function validateBranchBuild(
     if (draft.columns[node.columnId] !== node.branchId) {
       errors.push({
         code: "majorNode.branchMismatch",
-        message: `Selected node branch does not match ${node.columnId}.`,
+        message: `Ветка навыка не совпадает с веткой ${columnLabels[node.columnId]} колонки.`,
         path,
       });
     }
@@ -155,7 +194,7 @@ export function validateBranchBuild(
     if (!skill) {
       errors.push({
         code: "majorNode.skillUnknown",
-        message: `Unknown skill selected for ${node.columnId} level ${node.level}.`,
+        message: `Для ${columnLabels[node.columnId]} колонки на уровне ${node.level} выбран неизвестный навык.`,
         path,
       });
       continue;
@@ -164,7 +203,7 @@ export function validateBranchBuild(
     if (skill.branchId !== draft.columns[node.columnId]) {
       errors.push({
         code: "majorNode.skillBranchMismatch",
-        message: `Selected skill does not belong to ${draft.columns[node.columnId]}.`,
+        message: `Выбранный навык не принадлежит ветке ${columnLabels[node.columnId]} колонки.`,
         path,
       });
     }

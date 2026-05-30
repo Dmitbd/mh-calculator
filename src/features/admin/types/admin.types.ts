@@ -184,7 +184,11 @@ export type BranchBuildValidationError = {
     | "majorNode.skillUnknown"
     | "majorNode.skillBranchMismatch"
     | "weaponAwakening.slotRequired"
-    | "weaponAwakening.colorUnknown";
+    | "weaponAwakening.colorUnknown"
+    | "equipment.artifactRequired"
+    | "equipment.artifactUnknown"
+    | "equipment.runeRequired"
+    | "equipment.runeUnknown";
   message: string;
   path?: string;
 };
