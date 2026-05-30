@@ -314,12 +314,12 @@ npm test -- src/features/admin/__tests__/validateBranchBuild.test.ts --runInBand
 
 ### Задача 3: Добавить builder state
 
-- [ ] Создать `src/features/admin/hooks/useDivinityBranchBuilder.ts`.
-- [ ] Хранить введённое имя героя.
-- [ ] Хранить выбранные 3 ветки.
-- [ ] Хранить выбранные major skills по ключу `columnId + level`.
-- [ ] Minor nodes не хранить в state, они приходят из template.
-- [ ] Подготовить функцию сборки export JSON.
+- [x] Создать `src/features/admin/hooks/useDivinityBranchBuilder.ts`.
+- [x] Хранить введённое имя героя.
+- [x] Хранить выбранные 3 ветки.
+- [x] Хранить выбранные major skills по ключу `columnId + level`.
+- [x] Minor nodes не хранить в state, они приходят из template.
+- [x] Подготовить функцию сборки export JSON.
 
 Проверка:
 
@@ -329,15 +329,15 @@ npm test -- src/features/admin/__tests__ --runInBand
 
 ### Задача 4: Собрать UI builder'а
 
-- [ ] Создать экран `DivinityBranchBuilderScreen`.
-- [ ] Добавить поле имени героя.
-- [ ] Создать 3 селектора веток.
-- [ ] Создать grid уровней 1-30.
-- [ ] Отображать minor stat nodes как readonly.
-- [ ] Отображать major skill nodes как editable.
-- [ ] Фильтровать skill picker по ветке колонки.
-- [ ] Показывать иконки веток и нод через `IconPreview`.
-- [ ] Показывать validation errors рядом с кнопкой скачивания.
+- [x] Создать экран `DivinityBranchBuilderScreen`.
+- [x] Добавить поле имени героя.
+- [x] Создать 3 селектора веток.
+- [x] Создать grid уровней 1-30.
+- [x] Отображать minor stat nodes как readonly.
+- [x] Отображать major skill nodes как editable.
+- [x] Фильтровать skill picker по ветке колонки.
+- [x] Показывать иконки веток и нод через `IconPreview`.
+- [x] Показывать validation errors рядом с кнопкой скачивания.
 
 Проверка:
 

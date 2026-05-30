@@ -22,6 +22,8 @@ export type BranchColumn = {
   isMain: boolean;
 };
 
+export type DraftBranchColumns = Record<BranchColumnId, DivinityBranchId | null>;
+
 export type SelectedBranchColumns = Record<BranchColumnId, DivinityBranchId>;
 
 export type DivinityMajorSkill = {
@@ -65,6 +67,12 @@ export type DivinityBranchBuildMajorNode = {
 export type DivinityBranchBuildDraft = {
   heroName: string;
   columns: SelectedBranchColumns;
+  majorNodes: DivinityBranchBuildMajorNode[];
+};
+
+export type DivinityBranchBuildValidationDraft = {
+  heroName: string;
+  columns: DraftBranchColumns;
   majorNodes: DivinityBranchBuildMajorNode[];
 };
 

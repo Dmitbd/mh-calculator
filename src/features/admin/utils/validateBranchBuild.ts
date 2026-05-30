@@ -2,7 +2,7 @@ import type {
   BranchBuildValidationError,
   BranchBuildValidationResult,
   BranchColumnId,
-  DivinityBranchBuildDraft,
+  DivinityBranchBuildValidationDraft,
   TreeTemplateMajorSkillNode,
 } from "../types/admin.types";
 
@@ -20,7 +20,7 @@ type ValidationSources = {
 };
 
 export function validateBranchBuild(
-  draft: DivinityBranchBuildDraft,
+  draft: DivinityBranchBuildValidationDraft,
   sources: ValidationSources,
 ): BranchBuildValidationResult {
   const errors: BranchBuildValidationError[] = [];
