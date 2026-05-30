@@ -1,0 +1,50 @@
+[
+  {
+    "id": "sudarshana-chakra",
+    "name": "Sudarshana Chakra",
+    "icon": "/img/equipment/artifacts/sudarshana-chakra.png",
+    "description": "This chakra will cause the Hero's Ultimate to deal an extra 20/25/30/35/40/45/50% damage."
+  },
+  {
+    "id": "axe-of-pangu",
+    "name": "Axe of Pangu",
+    "icon": "/img/equipment/artifacts/axe-of-pangu.png",
+    "description": "While holding this axe, every auto-attack, there is a 25% chance to deal an extra 60/75/90/105/120/135/150% damage to the target. This damage is treated as Health Removal."
+  },
+  {
+    "id": "staff-of-sharur",
+    "name": "Staff of Sharur",
+    "icon": "/img/equipment/artifacts/staff-of-sharur.png",
+    "description": "While wearing this staff, Hero will deal an extra 28/35/42/49/56/63/63% damage to an enemy with less than 50% Health. Bonus damage to bosses is halved but no health condition applies."
+  },
+  {
+    "id": "yasakani-magatama",
+    "name": "Yasakani Magatama",
+    "icon": "/img/equipment/artifacts/yasakani-magatama.png",
+    "description": "With this magatama equipped, after the Hero uses an active skill, there is a 30/36/42/48/54/60/66% chance to halve the cooldown of the same skill next time."
+  },
+  {
+    "id": "excalibur",
+    "name": "Excalibur",
+    "icon": "/img/equipment/artifacts/excalibur.png",
+    "description": "While the wearer of this sword is alive, increase the Attack and Defense of all ally Heroes by 4/5/6/7/8/9/10% (effect is not stackable)."
+  },
+  {
+    "id": "thors-hammer",
+    "name": "Thor's Hammer",
+    "icon": "/img/equipment/artifacts/thors-hammer.png",
+    "description": "While the hammer holder is being attacked, there is a 15% chance the opponent's hit will reduce their Attack Speed by 30/35/40/45/50/55% for 2s."
+  },
+  {
+    "id": "scarab-badge",
+    "name": "Scarab Badge",
+    "icon": "/img/equipment/artifacts/scarab-badge.png",
+    "description": "The wearer of this badge recovers 20/25/30/35/40/45/50% of max Health after it drops below 30% for the first time. Additionally, damage taken is reduced by 30% for 5s."
+  },
+  {
+    "id": "aegis-shield",
+    "name": "Aegis Shield",
+    "icon": "/img/equipment/artifacts/aegis-shield.png",
+    "description": "This shield blocks damage 13/16/19/22/25/28/31% of the time for the wearer."
+  }
+]

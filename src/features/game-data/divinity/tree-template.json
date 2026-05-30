@@ -1,0 +1,726 @@
+[
+  {
+    "level": 1,
+    "columnId": "center",
+    "nodeType": "majorSkill",
+    "tier": 1
+  },
+  {
+    "level": 2,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-crit-chance-2",
+    "label": "Crit chance",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 3,
+    "columnId": "left",
+    "nodeType": "majorSkill",
+    "tier": 1
+  },
+  {
+    "level": 3,
+    "columnId": "right",
+    "nodeType": "majorSkill",
+    "tier": 1
+  },
+  {
+    "level": 4,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-dodge-4",
+    "label": "Dodge",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 4,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-all-basic-attributes-4",
+    "label": "All basic attributes",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 4,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-accuracy-4",
+    "label": "Accuracy",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 5,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-physical-resistance-5",
+    "label": "Physical resistance",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 5,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-magical-resistance-5",
+    "label": "Magical resistance",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 6,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-attack-speed-6",
+    "label": "Attack speed",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 7,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-all-basic-attributes-7",
+    "label": "All basic attributes",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 7,
+    "columnId": "center",
+    "nodeType": "majorSkill",
+    "tier": 2
+  },
+  {
+    "level": 7,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-all-basic-attributes-7",
+    "label": "All basic attributes",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 8,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-dodge-8",
+    "label": "Dodge",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 8,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-crit-chance-8",
+    "label": "Crit chance",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 8,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-accuracy-8",
+    "label": "Accuracy",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 9,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-enhance-limit-9",
+    "label": "Enhance limit",
+    "value": 5,
+    "unit": "flat",
+    "icon": "/img/stats/enhance-limit.png"
+  },
+  {
+    "level": 10,
+    "columnId": "left",
+    "nodeType": "majorSkill",
+    "tier": 2
+  },
+  {
+    "level": 10,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-attack-speed-10",
+    "label": "Attack speed",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 10,
+    "columnId": "right",
+    "nodeType": "majorSkill",
+    "tier": 2
+  },
+  {
+    "level": 11,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-physical-resistance-11",
+    "label": "Physical resistance",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 11,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-all-basic-attributes-11",
+    "label": "All basic attributes",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 11,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-magical-resistance-11",
+    "label": "Magical resistance",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 12,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-enhance-limit-12",
+    "label": "Enhance limit",
+    "value": 5,
+    "unit": "flat",
+    "icon": "/img/stats/enhance-limit.png"
+  },
+  {
+    "level": 13,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-all-basic-attributes-13",
+    "label": "All basic attributes",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 13,
+    "columnId": "center",
+    "nodeType": "majorSkill",
+    "tier": 3
+  },
+  {
+    "level": 13,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-all-basic-attributes-13",
+    "label": "All basic attributes",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 14,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-crit-chance-14",
+    "label": "Crit chance",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 15,
+    "columnId": "left",
+    "nodeType": "majorSkill",
+    "tier": 3
+  },
+  {
+    "level": 15,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-enhance-limit-15",
+    "label": "Enhance limit",
+    "value": 5,
+    "unit": "flat",
+    "icon": "/img/stats/enhance-limit.png"
+  },
+  {
+    "level": 15,
+    "columnId": "right",
+    "nodeType": "majorSkill",
+    "tier": 3
+  },
+  {
+    "level": 16,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-dodge-16",
+    "label": "Dodge",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 16,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-attack-speed-16",
+    "label": "Attack speed",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 16,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-accuracy-16",
+    "label": "Accuracy",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 17,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-iconic-weapon-attributes-17",
+    "label": "Iconic weapon attributes",
+    "value": 5,
+    "unit": "flat",
+    "icon": ""
+  },
+  {
+    "level": 17,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-all-basic-attributes-17",
+    "label": "All basic attributes",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 17,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-iconic-weapon-attributes-17",
+    "label": "Iconic weapon attributes",
+    "value": 5,
+    "unit": "flat",
+    "icon": ""
+  },
+  {
+    "level": 18,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-physical-resistance-18",
+    "label": "Physical resistance",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 18,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-enhance-limit-18",
+    "label": "Enhance limit",
+    "value": 5,
+    "unit": "flat",
+    "icon": "/img/stats/enhance-limit.png"
+  },
+  {
+    "level": 18,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-magical-resistance-18",
+    "label": "Magical resistance",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 19,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-physical-resistance-19",
+    "label": "Physical resistance",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 19,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-crit-damage-19",
+    "label": "Crit damage",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 19,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-magical-resistance-19",
+    "label": "Magical resistance",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 20,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-divinity-skill-level-20",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "flat",
+    "icon": "/img/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 20,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-divinity-skill-level-20",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "flat",
+    "icon": "/img/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 20,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-divinity-skill-level-20",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "flat",
+    "icon": "/img/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 21,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-breakthrough-21",
+    "label": "Breakthrough",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 21,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-crit-chance-21",
+    "label": "Crit chance",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 21,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-parry-21",
+    "label": "Parry",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 22,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-atk-to-all-heroes-22",
+    "label": "Atk to all heroes",
+    "value": 1,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 22,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-enhance-limit-22",
+    "label": "Enhance limit",
+    "value": 5,
+    "unit": "flat",
+    "icon": "/img/stats/enhance-limit.png"
+  },
+  {
+    "level": 22,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-def-to-all-heroes-22",
+    "label": "Def to all heroes",
+    "value": 1,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 23,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-control-resistance-23",
+    "label": "Control resistance",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 23,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-accuracy-23",
+    "label": "Accuracy",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 23,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-luck-23",
+    "label": "Luck",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 24,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-divinity-skill-level-24",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "flat",
+    "icon": "/img/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 24,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-divinity-skill-level-24",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "flat",
+    "icon": "/img/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 24,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-divinity-skill-level-24",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "flat",
+    "icon": "/img/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 25,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-crit-damage-resistance-25",
+    "label": "Crit damage resistance",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 25,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-dodge-25",
+    "label": "Dodge",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 25,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-crit-chance-resistance-25",
+    "label": "Crit chance resistance",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 26,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-health-to-all-heroes-26",
+    "label": "Health to all heroes",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 26,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-enhance-limit-26",
+    "label": "Enhance limit",
+    "value": 5,
+    "unit": "flat",
+    "icon": "/img/stats/enhance-limit.png"
+  },
+  {
+    "level": 26,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-atk-to-all-heroes-26",
+    "label": "Atk to all heroes",
+    "value": 1,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 27,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-breakthrough-27",
+    "label": "Breakthrough",
+    "value": 5,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 27,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-attack-speed-27",
+    "label": "Attack speed",
+    "value": 5,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 27,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-parry-27",
+    "label": "Parry",
+    "value": 5,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 28,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-divinity-skill-level-28",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "flat",
+    "icon": "/img/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 28,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-divinity-skill-level-28",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "flat",
+    "icon": "/img/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 28,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-divinity-skill-level-28",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "flat",
+    "icon": "/img/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 29,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-luck-29",
+    "label": "Luck",
+    "value": 5,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 29,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-lifesteal-29",
+    "label": "Lifesteal",
+    "value": 5,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 29,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-control-resistance-29",
+    "label": "Control resistance",
+    "value": 5,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 30,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-def-to-all-heroes-30",
+    "label": "Def to all heroes",
+    "value": 3,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 30,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-atk-to-all-heroes-30",
+    "label": "Atk to all heroes",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  },
+  {
+    "level": 30,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-health-to-all-heroes-30",
+    "label": "Health to all heroes",
+    "value": 2,
+    "unit": "%",
+    "icon": ""
+  }
+]

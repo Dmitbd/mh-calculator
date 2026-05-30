@@ -1,0 +1,32 @@
+[
+  {
+    "id": "red",
+    "label": "Красный",
+    "order": 1,
+    "color": "#c94848"
+  },
+  {
+    "id": "yellow",
+    "label": "Жёлтый",
+    "order": 2,
+    "color": "#e0b93d"
+  },
+  {
+    "id": "green",
+    "label": "Зелёный",
+    "order": 3,
+    "color": "#4fa85c"
+  },
+  {
+    "id": "blue",
+    "label": "Синий",
+    "order": 4,
+    "color": "#4a7fd4"
+  },
+  {
+    "id": "purple",
+    "label": "Фиолетовый",
+    "order": 5,
+    "color": "#9b59d6"
+  }
+]
