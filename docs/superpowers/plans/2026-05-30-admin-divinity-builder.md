@@ -294,17 +294,17 @@ npx tsc --noEmit
 
 ### Задача 2: Добавить типы и валидацию
 
-- [ ] Создать `src/features/admin/types/admin.types.ts`.
-- [ ] Описать типы branch, skill, template node, export JSON.
-- [ ] Описать `BranchColumnId` как `left | center | right`.
-- [ ] Описать связь `columnId -> selected DivinityBranchId`.
-- [ ] Создать `src/features/admin/utils/validateBranchBuild.ts`.
-- [ ] Создать `src/features/admin/utils/slugifyFileName.ts`.
-- [ ] Написать тесты на имя файла из имени героя.
-- [ ] Написать тесты на валидную форму.
-- [ ] Написать тесты на пустое имя героя.
-- [ ] Написать тесты на незаполненные major nodes.
-- [ ] Написать тесты на skill из неправильной ветки.
+- [x] Создать `src/features/admin/types/admin.types.ts`.
+- [x] Описать типы branch, skill, template node, export JSON.
+- [x] Описать `BranchColumnId` как `left | center | right`.
+- [x] Описать связь `columnId -> selected DivinityBranchId`.
+- [x] Создать `src/features/admin/utils/validateBranchBuild.ts`.
+- [x] Создать `src/features/admin/utils/slugifyFileName.ts`.
+- [x] Написать тесты на имя файла из имени героя.
+- [x] Написать тесты на валидную форму.
+- [x] Написать тесты на пустое имя героя.
+- [x] Написать тесты на незаполненные major nodes.
+- [x] Написать тесты на skill из неправильной ветки.
 
 Проверка:
 
