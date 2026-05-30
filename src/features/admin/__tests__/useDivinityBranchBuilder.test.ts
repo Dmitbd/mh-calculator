@@ -1,8 +1,11 @@
 import { act, renderHook } from "@testing-library/react-native";
 
 import template from "@/features/game-data/divinity/tree-template.json";
+import weaponAwakeningColors from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
+import weaponAwakeningSlots from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
 
 import { useDivinityBranchBuilder } from "../hooks/useDivinityBranchBuilder";
+import type { WeaponAwakeningColor } from "../types/admin.types";
 import type {
   BranchColumnId,
   DivinityBranchId,
@@ -13,6 +16,16 @@ const selectedBranches: Record<BranchColumnId, DivinityBranchId> = {
   center: "psyche",
   right: "immortality",
 };
+
+const weaponAwakeningCatalog = {
+  colors: weaponAwakeningColors as WeaponAwakeningColor[],
+  slots: weaponAwakeningSlots,
+};
+
+const filledWeaponAwakening = weaponAwakeningSlots.map((slot) => ({
+  slot: slot.slot,
+  colorId: "red" as const,
+}));
 
 const selectedSkills: Record<string, string> = {
   "center:1": "psyche-maestro",
@@ -28,8 +41,9 @@ const selectedSkills: Record<string, string> = {
 
 describe("useDivinityBranchBuilder", () => {
   it("starts with an empty editable draft", () => {
-    const { result } = renderHook(() => useDivinityBranchBuilder());
+    const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
 
+    expect(result.current.gameMode).toBe("pve");
     expect(result.current.heroName).toBe("");
     expect(result.current.selectedBranches).toEqual({
       left: null,
@@ -37,11 +51,12 @@ describe("useDivinityBranchBuilder", () => {
       right: null,
     });
     expect(result.current.selectedMajorSkills).toEqual({});
+    expect(result.current.weaponAwakeningSelections).toEqual({});
     expect(result.current.buildExport("2026-05-30T00:00:00.000Z")).toBeNull();
   });
 
   it("stores user selections and builds the export json payload", () => {
-    const { result } = renderHook(() => useDivinityBranchBuilder());
+    const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
 
     act(() => {
       result.current.setHeroName("Western Queen");
@@ -58,13 +73,19 @@ describe("useDivinityBranchBuilder", () => {
           );
         }
       }
+
+      for (const slot of weaponAwakeningSlots) {
+        result.current.cycleWeaponAwakeningSlot(slot.slot);
+      }
     });
 
     expect(result.current.getMajorSkill("center", 1)).toBe("psyche-maestro");
     expect(result.current.buildExport("2026-05-30T00:00:00.000Z")).toEqual({
       schemaVersion: 1,
+      gameMode: "pve",
       heroName: "Western Queen",
       columns: selectedBranches,
+      weaponAwakening: filledWeaponAwakening,
       majorNodes: [
         {
           level: 1,

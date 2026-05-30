@@ -7,7 +7,11 @@ describe("DivinityBranchBuilderScreen", () => {
     render(<DivinityBranchBuilderScreen />);
 
     expect(screen.getByText("Divinity Branch Builder")).toBeTruthy();
+    expect(screen.getByLabelText("Select PvP mode")).toBeTruthy();
+    expect(screen.getByLabelText("Select PvE mode")).toBeTruthy();
     expect(screen.getByPlaceholderText("Hero name")).toBeTruthy();
+    expect(screen.getByText("Пробуждение оружия")).toBeTruthy();
+    expect(screen.getByLabelText("Weapon awakening slot 1, empty")).toBeTruthy();
     expect(screen.getAllByText("Left branch")).toHaveLength(1);
     expect(screen.getAllByText("Center main branch")).toHaveLength(1);
     expect(screen.getAllByText("Right branch")).toHaveLength(1);
@@ -17,10 +21,13 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.queryByText("Devoid Skills")).toBeNull();
     expect(screen.queryByText("Primeval Skills")).toBeNull();
     expect(screen.getByText("Lv. 1")).toBeTruthy();
-    expect(screen.getAllByText("Hero level limit").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Divinity skill level").length).toBeGreaterThan(0);
 
     fireEvent.press(screen.getByText("Проверить JSON"));
 
+    expect(
+      screen.getByText("Weapon awakening color is required for slot 1."),
+    ).toBeTruthy();
     expect(screen.getByText("Hero name is required.")).toBeTruthy();
     expect(screen.getByText("Branch is required for left.")).toBeTruthy();
     expect(screen.getByText("Major skill is required for center level 1.")).toBeTruthy();

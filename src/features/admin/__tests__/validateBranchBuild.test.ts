@@ -1,6 +1,8 @@
 import branches from "@/features/game-data/divinity/divinity-branches.json";
 import skills from "@/features/game-data/divinity/divinity-skills.json";
 import template from "@/features/game-data/divinity/tree-template.json";
+import weaponAwakeningColors from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
+import weaponAwakeningSlots from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
 
 import { slugifyFileName } from "../utils/slugifyFileName";
 import { validateBranchBuild } from "../utils/validateBranchBuild";
@@ -8,12 +10,15 @@ import type {
   BranchColumnId,
   DivinityBranchBuildDraft,
   DivinityBranchId,
+  DivinityMajorSkill,
 } from "../types/admin.types";
 
-const branchById = new Map(branches.map((branch) => [branch.id, branch]));
-const skillByBranch = new Map<string, (typeof skills)[number]>();
+const catalogSkills = skills as DivinityMajorSkill[];
 
-for (const skill of skills) {
+const branchById = new Map(branches.map((branch) => [branch.id, branch]));
+const skillByBranch = new Map<string, DivinityMajorSkill>();
+
+for (const skill of catalogSkills) {
   if (!skillByBranch.has(skill.branchId)) {
     skillByBranch.set(skill.branchId, skill);
   }
@@ -25,10 +30,17 @@ const columns: Record<BranchColumnId, DivinityBranchId> = {
   right: "immortality",
 };
 
+const filledWeaponAwakening = weaponAwakeningSlots.map((slot) => ({
+  slot: slot.slot,
+  colorId: "red" as const,
+}));
+
 function createValidDraft(): DivinityBranchBuildDraft {
   return {
+    gameMode: "pve",
     heroName: "Western Queen",
     columns,
+    weaponAwakening: filledWeaponAwakening,
     majorNodes: template
       .filter((node) => node.nodeType === "majorSkill")
       .map((node) => {
@@ -61,8 +73,10 @@ describe("validateBranchBuild", () => {
   it("accepts a completed branch build", () => {
     const result = validateBranchBuild(createValidDraft(), {
       branches,
-      skills,
+      skills: catalogSkills,
       template,
+      weaponAwakeningColors,
+      weaponAwakeningSlots,
     });
 
     expect(result.isValid).toBe(true);
@@ -72,7 +86,13 @@ describe("validateBranchBuild", () => {
   it("rejects an empty hero name", () => {
     const result = validateBranchBuild(
       { ...createValidDraft(), heroName: "   " },
-      { branches, skills, template },
+      {
+        branches,
+        skills: catalogSkills,
+        template,
+        weaponAwakeningColors,
+        weaponAwakeningSlots,
+      },
     );
 
     expect(result.isValid).toBe(false);
@@ -88,7 +108,13 @@ describe("validateBranchBuild", () => {
 
     const result = validateBranchBuild(
       { ...draft, majorNodes: remainingNodes },
-      { branches, skills, template },
+      {
+        branches,
+        skills: catalogSkills,
+        template,
+        weaponAwakeningColors,
+        weaponAwakeningSlots,
+      },
     );
 
     expect(result.isValid).toBe(false);
@@ -116,7 +142,13 @@ describe("validateBranchBuild", () => {
             : node,
         ),
       },
-      { branches, skills, template },
+      {
+        branches,
+        skills: catalogSkills,
+        template,
+        weaponAwakeningColors,
+        weaponAwakeningSlots,
+      },
     );
 
     expect(result.isValid).toBe(false);
@@ -127,13 +159,41 @@ describe("validateBranchBuild", () => {
     });
   });
 
+  it("rejects missing weapon awakening slots", () => {
+    const draft = createValidDraft();
+
+    const result = validateBranchBuild(
+      { ...draft, weaponAwakening: [{ slot: 1, colorId: "red" }] },
+      {
+        branches,
+        skills: catalogSkills,
+        template,
+        weaponAwakeningColors,
+        weaponAwakeningSlots,
+      },
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "weaponAwakening.slotRequired",
+      message: "Weapon awakening color is required for slot 2.",
+      path: "weaponAwakening.2",
+    });
+  });
+
   it("rejects unknown branch ids", () => {
     const result = validateBranchBuild(
       {
         ...createValidDraft(),
         columns: { ...columns, left: "unknown" as DivinityBranchId },
       },
-      { branches, skills, template },
+      {
+        branches,
+        skills: catalogSkills,
+        template,
+        weaponAwakeningColors,
+        weaponAwakeningSlots,
+      },
     );
 
     expect(branchById.has("unknown")).toBe(false);

@@ -3,9 +3,9 @@ import type {
   BranchBuildValidationResult,
   BranchColumnId,
   DivinityBranchBuildValidationDraft,
+  DivinityGameMode,
   TreeTemplateMajorSkillNode,
 } from "../types/admin.types";
-
 const columnIds: BranchColumnId[] = ["left", "center", "right"];
 
 type ValidationSources = {
@@ -17,6 +17,8 @@ type ValidationSources = {
     nodeType: string;
     tier?: number;
   }[];
+  weaponAwakeningColors: readonly { id: string }[];
+  weaponAwakeningSlots: readonly { slot: number }[];
 };
 
 export function validateBranchBuild(
@@ -35,6 +37,23 @@ export function validateBranchBuild(
   const selectedMajorNodes = new Map(
     draft.majorNodes.map((node) => [getSlotKey(node.columnId, node.level), node]),
   );
+  const weaponColorIds = new Set(
+    sources.weaponAwakeningColors.map((color) => color.id),
+  );
+  const weaponSlotNumbers = new Set(
+    sources.weaponAwakeningSlots.map((slot) => slot.slot),
+  );
+  const selectedWeaponSlots = new Map(
+    draft.weaponAwakening.map((entry) => [entry.slot, entry]),
+  );
+
+  if (!isDivinityGameMode(draft.gameMode)) {
+    errors.push({
+      code: "gameMode.invalid",
+      message: "Game mode must be PvP or PvE.",
+      path: "gameMode",
+    });
+  }
 
   if (!draft.heroName.trim()) {
     errors.push({
@@ -74,6 +93,39 @@ export function validateBranchBuild(
         code: "majorNode.required",
         message: `Major skill is required for ${slot.columnId} level ${slot.level}.`,
         path: getMajorNodePath(slot.columnId, slot.level),
+      });
+    }
+  }
+
+  for (const slot of sources.weaponAwakeningSlots) {
+    const selected = selectedWeaponSlots.get(slot.slot);
+
+    if (!selected) {
+      errors.push({
+        code: "weaponAwakening.slotRequired",
+        message: `Weapon awakening color is required for slot ${slot.slot}.`,
+        path: `weaponAwakening.${slot.slot}`,
+      });
+    }
+  }
+
+  for (const entry of draft.weaponAwakening) {
+    const path = `weaponAwakening.${entry.slot}`;
+
+    if (!weaponSlotNumbers.has(entry.slot)) {
+      errors.push({
+        code: "weaponAwakening.slotRequired",
+        message: `Unknown weapon awakening slot ${entry.slot}.`,
+        path,
+      });
+      continue;
+    }
+
+    if (!weaponColorIds.has(entry.colorId)) {
+      errors.push({
+        code: "weaponAwakening.colorUnknown",
+        message: `Unknown weapon awakening color for slot ${entry.slot}.`,
+        path,
       });
     }
   }
@@ -153,4 +205,8 @@ function isBranchColumnId(columnId: string): columnId is BranchColumnId {
 
 function isDivinitySkillTier(tier: number | undefined): tier is 1 | 2 | 3 {
   return tier === 1 || tier === 2 || tier === 3;
+}
+
+function isDivinityGameMode(mode: string): mode is DivinityGameMode {
+  return mode === "pvp" || mode === "pve";
 }

@@ -29,6 +29,9 @@ type BranchBuilderGridProps = {
   columns: readonly BranchColumn[];
   selectedBranches: DraftBranchColumns;
   selectedMajorSkills: Partial<Record<string, string>>;
+  /** Полный справочник скиллов — для отображения уже выбранных */
+  skillCatalog: readonly DivinityMajorSkill[];
+  /** Скиллы, доступные в текущем режиме — для пикера */
   skills: readonly DivinityMajorSkill[];
   template: readonly TreeTemplateNode[];
   activeMajorSlot: ActiveMajorSlot;
@@ -51,6 +54,7 @@ export function BranchBuilderGrid({
   columns,
   selectedBranches,
   selectedMajorSkills,
+  skillCatalog,
   skills,
   template,
   activeMajorSlot,
@@ -276,7 +280,7 @@ export function BranchBuilderGrid({
             const selectedSkillId =
               selectedMajorSkills[getMajorSkillKey(column.id, level)] ?? null;
             const selectedSkill =
-              skills.find((skill) => skill.id === selectedSkillId) ?? null;
+              skillCatalog.find((skill) => skill.id === selectedSkillId) ?? null;
             const branchId = selectedBranches[column.id];
             const availableSkills = branchId
               ? skills.filter((skill) => skill.branchId === branchId)

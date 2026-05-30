@@ -4,10 +4,14 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import branchesData from "@/features/game-data/divinity/divinity-branches.json";
 import skillsData from "@/features/game-data/divinity/divinity-skills.json";
 import templateData from "@/features/game-data/divinity/tree-template.json";
+import weaponAwakeningColorsData from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
+import weaponAwakeningSlotsData from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
 
 import { BranchBuilderGrid } from "../components/BranchBuilderGrid";
 import { DownloadJsonButton } from "../components/DownloadJsonButton";
+import { GameModeRadio } from "../components/GameModeRadio";
 import { HeroNameInput } from "../components/HeroNameInput";
+import { WeaponAwakeningPicker } from "../components/WeaponAwakeningPicker";
 import { useDivinityBranchBuilder } from "../hooks/useDivinityBranchBuilder";
 import type {
   BranchBuildValidationError,
@@ -16,6 +20,8 @@ import type {
   DivinityBranch,
   DivinityMajorSkill,
   TreeTemplateNode,
+  WeaponAwakeningColor,
+  WeaponAwakeningSlot,
 } from "../types/admin.types";
 import { validateBranchBuild } from "../utils/validateBranchBuild";
 
@@ -30,9 +36,16 @@ const branches = [...(branchesData as DivinityBranch[])].sort(
 );
 const skills = skillsData as DivinityMajorSkill[];
 const template = templateData as TreeTemplateNode[];
+const weaponAwakeningColors = weaponAwakeningColorsData as WeaponAwakeningColor[];
+const weaponAwakeningSlots = weaponAwakeningSlotsData as WeaponAwakeningSlot[];
+
+const weaponAwakeningCatalog = {
+  colors: weaponAwakeningColors,
+  slots: weaponAwakeningSlots,
+};
 
 export function DivinityBranchBuilderScreen() {
-  const builder = useDivinityBranchBuilder();
+  const builder = useDivinityBranchBuilder(weaponAwakeningCatalog);
   const [activeMajorSlot, setActiveMajorSlot] = useState<{
     columnId: BranchColumnId;
     level: number;
@@ -53,7 +66,23 @@ export function DivinityBranchBuilderScreen() {
       </View>
 
       <View style={styles.section}>
+        <GameModeRadio
+          value={builder.gameMode}
+          onChange={builder.setGameMode}
+        />
+      </View>
+
+      <View style={styles.section}>
         <HeroNameInput value={builder.heroName} onChange={builder.setHeroName} />
+      </View>
+
+      <View style={styles.section}>
+        <WeaponAwakeningPicker
+          colors={weaponAwakeningColors}
+          onCycleSlot={builder.cycleWeaponAwakeningSlot}
+          selections={builder.weaponAwakeningSelections}
+          slots={weaponAwakeningSlots}
+        />
       </View>
 
       <View style={styles.section}>
@@ -79,6 +108,7 @@ export function DivinityBranchBuilderScreen() {
           progressLevels={builder.progressLevels}
           selectedBranches={builder.selectedBranches}
           selectedMajorSkills={selectedMajorSkills}
+          skillCatalog={skills}
           skills={skills}
           template={template}
         />
@@ -92,6 +122,8 @@ export function DivinityBranchBuilderScreen() {
               branches,
               skills,
               template,
+              weaponAwakeningColors,
+              weaponAwakeningSlots,
             });
 
             setValidationErrors(result.errors);

@@ -10,10 +10,19 @@ import type {
   DivinityBranchBuildMajorNode,
   DivinityBranchBuildValidationDraft,
   DivinityBranchId,
+  DivinityGameMode,
   DraftBranchColumns,
+  WeaponAwakeningColor,
+  WeaponAwakeningColorId,
+  WeaponAwakeningSlot,
 } from "../types/admin.types";
+import {
+  buildWeaponAwakeningSlots,
+  getNextWeaponAwakeningColor,
+} from "../utils/weaponAwakening";
 
 type MajorSkillSelections = Partial<Record<string, string>>;
+type WeaponAwakeningSelections = Partial<Record<number, WeaponAwakeningColorId>>;
 
 const emptySelectedBranches: DraftBranchColumns = {
   left: null,
@@ -46,12 +55,20 @@ function getPreviousNodeLevel(
   return below.length ? below[below.length - 1] : null;
 }
 
-export function useDivinityBranchBuilder() {
+export function useDivinityBranchBuilder(
+  weaponAwakeningCatalog: {
+    colors: readonly WeaponAwakeningColor[];
+    slots: readonly WeaponAwakeningSlot[];
+  },
+) {
+  const [gameMode, setGameMode] = useState<DivinityGameMode>("pve");
   const [heroName, setHeroName] = useState("");
   const [selectedBranches, setSelectedBranches] =
     useState<DraftBranchColumns>(emptySelectedBranches);
   const [selectedMajorSkills, setSelectedMajorSkills] =
     useState<MajorSkillSelections>({});
+  const [weaponAwakeningSelections, setWeaponAwakeningSelections] =
+    useState<WeaponAwakeningSelections>({});
   const [progressLevels, setProgressLevels] = useState<BranchProgressLevels>({});
 
   const setColumnBranch = useCallback(
@@ -87,6 +104,28 @@ export function useDivinityBranchBuilder() {
     (columnId: BranchColumnId, level: number) =>
       selectedMajorSkills[getMajorSkillKey(columnId, level)] ?? null,
     [selectedMajorSkills],
+  );
+
+  const cycleWeaponAwakeningSlot = useCallback(
+    (slot: number) => {
+      setWeaponAwakeningSelections((current) => ({
+        ...current,
+        [slot]: getNextWeaponAwakeningColor(
+          current[slot] ?? null,
+          weaponAwakeningCatalog.colors,
+        ),
+      }));
+    },
+    [weaponAwakeningCatalog.colors],
+  );
+
+  const buildWeaponAwakening = useCallback(
+    () =>
+      buildWeaponAwakeningSlots(
+        weaponAwakeningCatalog.slots,
+        weaponAwakeningSelections,
+      ),
+    [weaponAwakeningCatalog.slots, weaponAwakeningSelections],
   );
 
   // Установить прогресс столбца точно до уровня (null — снять)
@@ -142,11 +181,13 @@ export function useDivinityBranchBuilder() {
   const buildValidationDraft =
     useCallback((): DivinityBranchBuildValidationDraft => {
       return {
+        gameMode,
         heroName,
         columns: selectedBranches,
         majorNodes: buildMajorNodes(selectedBranches, selectedMajorSkills),
+        weaponAwakening: buildWeaponAwakening(),
       };
-    }, [heroName, selectedBranches, selectedMajorSkills]);
+    }, [buildWeaponAwakening, gameMode, heroName, selectedBranches, selectedMajorSkills]);
 
   const buildExport = useCallback(
     (createdAt = new Date().toISOString()): DivinityBranchBuildExport | null => {
@@ -155,16 +196,23 @@ export function useDivinityBranchBuilder() {
       }
 
       const majorNodes = buildMajorNodes(selectedBranches, selectedMajorSkills);
+      const weaponAwakening = buildWeaponAwakening();
 
       if (majorNodes.length !== getMajorSlotCount()) {
         return null;
       }
 
+      if (weaponAwakening.length !== weaponAwakeningCatalog.slots.length) {
+        return null;
+      }
+
       return {
         schemaVersion: 1,
+        gameMode,
         heroName,
         columns: selectedBranches,
         majorNodes,
+        weaponAwakening,
         progress: progressLevels,
         activeNodes: buildActiveNodes(progressLevels),
         metadata: {
@@ -173,16 +221,28 @@ export function useDivinityBranchBuilder() {
         },
       };
     },
-    [heroName, selectedBranches, selectedMajorSkills, progressLevels],
-  );
-
-  return useMemo(
-    () => ({
+    [
+      buildWeaponAwakening,
+      gameMode,
       heroName,
       selectedBranches,
       selectedMajorSkills,
       progressLevels,
+      weaponAwakeningCatalog.slots.length,
+    ],
+  );
+
+  return useMemo(
+    () => ({
+      gameMode,
+      heroName,
+      selectedBranches,
+      selectedMajorSkills,
+      weaponAwakeningSelections,
+      progressLevels,
+      setGameMode,
       setHeroName,
+      cycleWeaponAwakeningSlot,
       setColumnBranch,
       setMajorSkill,
       getMajorSkill,
@@ -195,14 +255,18 @@ export function useDivinityBranchBuilder() {
     [
       buildValidationDraft,
       buildExport,
+      cycleWeaponAwakeningSlot,
+      gameMode,
       getMajorSkill,
       heroName,
       progressLevels,
       rollbackColumnProgress,
       selectedBranches,
       selectedMajorSkills,
+      weaponAwakeningSelections,
       setColumnBranch,
       setColumnProgress,
+      setGameMode,
       setMajorSkill,
       toggleColumnProgress,
     ],

@@ -5,6 +5,9 @@ export type DivinityBranchId =
   | "devoid"
   | "primeval";
 
+/** Режим игры для сборки ветки */
+export type DivinityGameMode = "pvp" | "pve";
+
 export type BranchColumnId = "left" | "center" | "right";
 
 export type DivinitySkillTier = 1 | 2 | 3;
@@ -64,6 +67,34 @@ export type DivinityBranchBuildMajorNode = {
   skillId: string;
 };
 
+/** Id цвета пробуждения оружия */
+export type WeaponAwakeningColorId = "red" | "yellow" | "green" | "blue" | "purple";
+
+/** Цвет из справочника weapon-awakening-colors.json */
+export type WeaponAwakeningColor = {
+  id: WeaponAwakeningColorId;
+  /** Подпись для UI */
+  label: string;
+  /** Порядок переключения по клику */
+  order: number;
+  /** HEX для отрисовки кружка */
+  color: string;
+};
+
+/** Слот кружка из weapon-awakening-slots.json */
+export type WeaponAwakeningSlot = {
+  /** Позиция кружка (1–8) */
+  slot: number;
+};
+
+/** Выбранный цвет в слоте — для export */
+export type WeaponAwakeningSlotSelection = {
+  /** Позиция кружка (1–8) */
+  slot: number;
+  /** Id цвета из справочника */
+  colorId: WeaponAwakeningColorId;
+};
+
 /** Уровень прогресса (активности) по каждому столбцу: до какой ноды включительно открыто */
 export type BranchProgressLevels = Partial<Record<BranchColumnId, number>>;
 
@@ -76,15 +107,19 @@ export type ActiveBranchNode = {
 };
 
 export type DivinityBranchBuildDraft = {
+  gameMode: DivinityGameMode;
   heroName: string;
   columns: SelectedBranchColumns;
   majorNodes: DivinityBranchBuildMajorNode[];
+  weaponAwakening: WeaponAwakeningSlotSelection[];
 };
 
 export type DivinityBranchBuildValidationDraft = {
+  gameMode: DivinityGameMode;
   heroName: string;
   columns: DraftBranchColumns;
   majorNodes: DivinityBranchBuildMajorNode[];
+  weaponAwakening: WeaponAwakeningSlotSelection[];
 };
 
 export type DivinityBranchBuildExport = DivinityBranchBuildDraft & {
@@ -101,6 +136,7 @@ export type DivinityBranchBuildExport = DivinityBranchBuildDraft & {
 
 export type BranchBuildValidationError = {
   code:
+    | "gameMode.invalid"
     | "heroName.required"
     | "column.branchRequired"
     | "column.branchUnknown"
@@ -108,7 +144,9 @@ export type BranchBuildValidationError = {
     | "majorNode.slotUnknown"
     | "majorNode.branchMismatch"
     | "majorNode.skillUnknown"
-    | "majorNode.skillBranchMismatch";
+    | "majorNode.skillBranchMismatch"
+    | "weaponAwakening.slotRequired"
+    | "weaponAwakening.colorUnknown";
   message: string;
   path?: string;
 };
