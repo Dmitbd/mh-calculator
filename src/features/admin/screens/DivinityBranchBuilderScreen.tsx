@@ -64,6 +64,10 @@ export function DivinityBranchBuilderScreen() {
           onOpenMajorSlot={(columnId, level) =>
             setActiveMajorSlot({ columnId, level })
           }
+          onClearMajorSkill={(columnId, level) => {
+            builder.setMajorSkill(columnId, level, null);
+            setActiveMajorSlot(null);
+          }}
           onSelectBranch={builder.setColumnBranch}
           onSelectMajorSkill={(columnId, level, skillId) => {
             builder.setMajorSkill(columnId, level, skillId);

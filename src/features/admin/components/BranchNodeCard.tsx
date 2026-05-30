@@ -24,6 +24,7 @@ type BranchNodeCardProps =
       pickerOpen: boolean;
       onOpenPicker: () => void;
       onSelectSkill: (skillId: string) => void;
+      onClearSkill: () => void;
     };
 
 export function BranchNodeCard(props: BranchNodeCardProps) {
@@ -36,8 +37,8 @@ export function BranchNodeCard(props: BranchNodeCardProps) {
         <View style={styles.textBlock}>
           <Text style={styles.nodeTitle}>{node.label}</Text>
           <Text style={styles.nodeMeta}>
-            {node.value}
-            {node.unit === "%" ? "%" : ` ${node.unit}`}
+            +{node.value}
+            {node.unit === "%" ? "%" : ""}
           </Text>
         </View>
       </View>
@@ -53,7 +54,7 @@ export function BranchNodeCard(props: BranchNodeCardProps) {
         style={styles.majorButton}
       >
         <IconPreview
-          label={props.selectedSkill?.name ?? `Tier ${node.tier}`}
+          label={props.selectedSkill?.name ?? "Major skill"}
           source={props.selectedSkill?.icon ?? null}
           size={30}
         />
@@ -61,9 +62,19 @@ export function BranchNodeCard(props: BranchNodeCardProps) {
           <Text style={styles.nodeTitle}>
             {props.selectedSkill?.name ?? "Select skill"}
           </Text>
-          <Text style={styles.nodeMeta}>Tier {node.tier}</Text>
+          <Text style={styles.nodeMeta}>Major skill</Text>
         </View>
       </Pressable>
+      {props.selectedSkill ? (
+        <Pressable
+          accessibilityLabel={`Clear skill for ${node.columnId} level ${node.level}`}
+          accessibilityRole="button"
+          onPress={props.onClearSkill}
+          style={styles.clearButton}
+        >
+          <Text style={styles.clearButtonText}>×</Text>
+        </Pressable>
+      ) : null}
       {props.pickerOpen ? (
         <MajorSkillPicker
           node={node}
@@ -95,6 +106,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    paddingRight: 24,
+  },
+  clearButton: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    width: 22,
+    height: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 11,
+    backgroundColor: "#3a241a",
+  },
+  clearButtonText: {
+    color: "#f3d9b3",
+    fontSize: 15,
+    fontWeight: "900",
+    lineHeight: 17,
   },
   textBlock: {
     flex: 1,

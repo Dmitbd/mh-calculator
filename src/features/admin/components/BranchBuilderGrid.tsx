@@ -33,6 +33,7 @@ type BranchBuilderGridProps = {
     level: number,
     skillId: string,
   ) => void;
+  onClearMajorSkill: (columnId: BranchColumnId, level: number) => void;
 };
 
 export function BranchBuilderGrid({
@@ -46,6 +47,7 @@ export function BranchBuilderGrid({
   onSelectBranch,
   onOpenMajorSlot,
   onSelectMajorSkill,
+  onClearMajorSkill,
 }: BranchBuilderGridProps) {
   const levels = Array.from({ length: 30 }, (_, index) => index + 1);
   const [activeBranchColumn, setActiveBranchColumn] =
@@ -172,6 +174,7 @@ export function BranchBuilderGrid({
                 <BranchNodeCard
                   availableSkills={availableSkills}
                   node={node}
+                  onClearSkill={() => onClearMajorSkill(column.id, level)}
                   onOpenPicker={() => onOpenMajorSlot(column.id, level)}
                   onSelectSkill={(skillId) =>
                     onSelectMajorSkill(column.id, level, skillId)
