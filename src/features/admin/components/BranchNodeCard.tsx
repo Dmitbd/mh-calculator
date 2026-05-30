@@ -33,6 +33,9 @@ export function BranchNodeCard(props: BranchNodeCardProps) {
   if (node.nodeType === "minorStat") {
     return (
       <View style={[styles.card, styles.readonlyCard]}>
+        {node.icon ? (
+          <IconPreview label={node.label} source={node.icon} size={24} />
+        ) : null}
         <View style={styles.readonlyTextBlock}>
           <Text style={[styles.nodeTitle, styles.readonlyText]}>
             {node.label}
@@ -59,12 +62,9 @@ export function BranchNodeCard(props: BranchNodeCardProps) {
           source={props.selectedSkill?.icon ?? null}
           size={30}
         />
-        <View style={styles.textBlock}>
-          <Text style={styles.nodeTitle}>
-            {props.selectedSkill?.name ?? "Select skill"}
-          </Text>
-          <Text style={styles.nodeMeta}>Major skill</Text>
-        </View>
+        <Text style={[styles.nodeTitle, styles.majorTitle]}>
+          {props.selectedSkill?.name ?? "Select skill"}
+        </Text>
       </Pressable>
       {props.selectedSkill ? (
         <Pressable
@@ -100,10 +100,10 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: "78%",
     minHeight: 56,
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: 4,
     padding: 8,
     backgroundColor: "#1d130f",
   },
@@ -117,10 +117,10 @@ const styles = StyleSheet.create({
   },
   majorButton: {
     minHeight: 48,
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
-    gap: 8,
-    paddingRight: 24,
+    justifyContent: "center",
+    gap: 4,
   },
   clearButton: {
     position: "absolute",
@@ -139,9 +139,8 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     lineHeight: 17,
   },
-  textBlock: {
-    flex: 1,
-    gap: 3,
+  majorTitle: {
+    textAlign: "center",
   },
   nodeTitle: {
     color: "#fff4d7",

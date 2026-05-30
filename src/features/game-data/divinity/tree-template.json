@@ -151,7 +151,7 @@
     "label": "Enhance limit",
     "value": 5,
     "unit": "flat",
-    "icon": ""
+    "icon": "/img/stats/enhance-limit.png"
   },
   {
     "level": 10,
@@ -213,7 +213,7 @@
     "label": "Enhance limit",
     "value": 5,
     "unit": "flat",
-    "icon": ""
+    "icon": "/img/stats/enhance-limit.png"
   },
   {
     "level": 13,
@@ -265,7 +265,7 @@
     "label": "Enhance limit",
     "value": 5,
     "unit": "flat",
-    "icon": ""
+    "icon": "/img/stats/enhance-limit.png"
   },
   {
     "level": 15,
@@ -351,7 +351,7 @@
     "label": "Enhance limit",
     "value": 5,
     "unit": "flat",
-    "icon": ""
+    "icon": "/img/stats/enhance-limit.png"
   },
   {
     "level": 18,
@@ -401,7 +401,7 @@
     "label": "Divinity skill level",
     "value": 1,
     "unit": "flat",
-    "icon": ""
+    "icon": "/img/stats/divinity-skill-level.png"
   },
   {
     "level": 20,
@@ -411,7 +411,7 @@
     "label": "Divinity skill level",
     "value": 1,
     "unit": "flat",
-    "icon": ""
+    "icon": "/img/stats/divinity-skill-level.png"
   },
   {
     "level": 20,
@@ -421,7 +421,7 @@
     "label": "Divinity skill level",
     "value": 1,
     "unit": "flat",
-    "icon": ""
+    "icon": "/img/stats/divinity-skill-level.png"
   },
   {
     "level": 21,
@@ -471,7 +471,7 @@
     "label": "Enhance limit",
     "value": 5,
     "unit": "flat",
-    "icon": ""
+    "icon": "/img/stats/enhance-limit.png"
   },
   {
     "level": 22,
@@ -521,7 +521,7 @@
     "label": "Divinity skill level",
     "value": 1,
     "unit": "flat",
-    "icon": ""
+    "icon": "/img/stats/divinity-skill-level.png"
   },
   {
     "level": 24,
@@ -531,7 +531,7 @@
     "label": "Divinity skill level",
     "value": 1,
     "unit": "flat",
-    "icon": ""
+    "icon": "/img/stats/divinity-skill-level.png"
   },
   {
     "level": 24,
@@ -541,7 +541,7 @@
     "label": "Divinity skill level",
     "value": 1,
     "unit": "flat",
-    "icon": ""
+    "icon": "/img/stats/divinity-skill-level.png"
   },
   {
     "level": 25,
@@ -591,7 +591,7 @@
     "label": "Enhance limit",
     "value": 5,
     "unit": "flat",
-    "icon": ""
+    "icon": "/img/stats/enhance-limit.png"
   },
   {
     "level": 26,
@@ -641,7 +641,7 @@
     "label": "Divinity skill level",
     "value": 1,
     "unit": "flat",
-    "icon": ""
+    "icon": "/img/stats/divinity-skill-level.png"
   },
   {
     "level": 28,
@@ -651,7 +651,7 @@
     "label": "Divinity skill level",
     "value": 1,
     "unit": "flat",
-    "icon": ""
+    "icon": "/img/stats/divinity-skill-level.png"
   },
   {
     "level": 28,
@@ -661,7 +661,7 @@
     "label": "Divinity skill level",
     "value": 1,
     "unit": "flat",
-    "icon": ""
+    "icon": "/img/stats/divinity-skill-level.png"
   },
   {
     "level": 29,
