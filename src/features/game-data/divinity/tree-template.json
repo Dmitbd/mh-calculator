@@ -1,0 +1,456 @@
+[
+  {
+    "level": 1,
+    "columnId": "center",
+    "nodeType": "majorSkill",
+    "tier": 1
+  },
+  {
+    "level": 2,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-hero-level-limit-5",
+    "label": "Hero level limit",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/hero-level-limit.png"
+  },
+  {
+    "level": 3,
+    "columnId": "left",
+    "nodeType": "majorSkill",
+    "tier": 1
+  },
+  {
+    "level": 3,
+    "columnId": "right",
+    "nodeType": "majorSkill",
+    "tier": 1
+  },
+  {
+    "level": 4,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-hero-level-limit-5",
+    "label": "Hero level limit",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/hero-level-limit.png"
+  },
+  {
+    "level": 4,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-hero-level-limit-5",
+    "label": "Hero level limit",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/hero-level-limit.png"
+  },
+  {
+    "level": 5,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-hero-level-limit-5-second",
+    "label": "Hero level limit",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/hero-level-limit.png"
+  },
+  {
+    "level": 6,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-iconic-weapon-attributes-5",
+    "label": "Iconic weapon attributes",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/iconic-weapon-attributes.png"
+  },
+  {
+    "level": 6,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-iconic-weapon-attributes-5",
+    "label": "Iconic weapon attributes",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/iconic-weapon-attributes.png"
+  },
+  {
+    "level": 7,
+    "columnId": "center",
+    "nodeType": "majorSkill",
+    "tier": 2
+  },
+  {
+    "level": 8,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-hero-level-limit-5-third",
+    "label": "Hero level limit",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/hero-level-limit.png"
+  },
+  {
+    "level": 9,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-hero-level-limit-5-second",
+    "label": "Hero level limit",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/hero-level-limit.png"
+  },
+  {
+    "level": 9,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-hero-level-limit-5-second",
+    "label": "Hero level limit",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/hero-level-limit.png"
+  },
+  {
+    "level": 10,
+    "columnId": "left",
+    "nodeType": "majorSkill",
+    "tier": 2
+  },
+  {
+    "level": 10,
+    "columnId": "right",
+    "nodeType": "majorSkill",
+    "tier": 2
+  },
+  {
+    "level": 11,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-iconic-weapon-attributes-5",
+    "label": "Iconic weapon attributes",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/iconic-weapon-attributes.png"
+  },
+  {
+    "level": 12,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-hero-level-limit-5-third",
+    "label": "Hero level limit",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/hero-level-limit.png"
+  },
+  {
+    "level": 12,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-hero-level-limit-5-third",
+    "label": "Hero level limit",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/hero-level-limit.png"
+  },
+  {
+    "level": 13,
+    "columnId": "center",
+    "nodeType": "majorSkill",
+    "tier": 3
+  },
+  {
+    "level": 14,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-hero-level-limit-5-fourth",
+    "label": "Hero level limit",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/hero-level-limit.png"
+  },
+  {
+    "level": 15,
+    "columnId": "left",
+    "nodeType": "majorSkill",
+    "tier": 3
+  },
+  {
+    "level": 15,
+    "columnId": "right",
+    "nodeType": "majorSkill",
+    "tier": 3
+  },
+  {
+    "level": 16,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-hero-level-limit-5-fourth",
+    "label": "Hero level limit",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/hero-level-limit.png"
+  },
+  {
+    "level": 16,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-hero-level-limit-5-fourth",
+    "label": "Hero level limit",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/hero-level-limit.png"
+  },
+  {
+    "level": 17,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-iconic-weapon-attributes-5-second",
+    "label": "Iconic weapon attributes",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/iconic-weapon-attributes.png"
+  },
+  {
+    "level": 18,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-iconic-weapon-attributes-5-second",
+    "label": "Iconic weapon attributes",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/iconic-weapon-attributes.png"
+  },
+  {
+    "level": 18,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-iconic-weapon-attributes-5-second",
+    "label": "Iconic weapon attributes",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/iconic-weapon-attributes.png"
+  },
+  {
+    "level": 19,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-hero-level-limit-5-fifth",
+    "label": "Hero level limit",
+    "value": 5,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/hero-level-limit.png"
+  },
+  {
+    "level": 20,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-divinity-skill-level-1",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 20,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-divinity-skill-level-1",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 20,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-divinity-skill-level-1",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 21,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-all-heroes-attack-1",
+    "label": "All heroes attack",
+    "value": 1,
+    "unit": "%",
+    "icon": "/assets/divinity/stats/all-heroes-attack.png"
+  },
+  {
+    "level": 21,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-all-heroes-attack-1",
+    "label": "All heroes attack",
+    "value": 1,
+    "unit": "%",
+    "icon": "/assets/divinity/stats/all-heroes-attack.png"
+  },
+  {
+    "level": 22,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-all-heroes-attack-1",
+    "label": "All heroes attack",
+    "value": 1,
+    "unit": "%",
+    "icon": "/assets/divinity/stats/all-heroes-attack.png"
+  },
+  {
+    "level": 23,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-all-heroes-attack-1-second",
+    "label": "All heroes attack",
+    "value": 1,
+    "unit": "%",
+    "icon": "/assets/divinity/stats/all-heroes-attack.png"
+  },
+  {
+    "level": 23,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-all-heroes-attack-1-second",
+    "label": "All heroes attack",
+    "value": 1,
+    "unit": "%",
+    "icon": "/assets/divinity/stats/all-heroes-attack.png"
+  },
+  {
+    "level": 24,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-divinity-skill-level-1-second",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 24,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-divinity-skill-level-1-second",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 24,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-divinity-skill-level-1-second",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 25,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-all-heroes-attack-1-second",
+    "label": "All heroes attack",
+    "value": 1,
+    "unit": "%",
+    "icon": "/assets/divinity/stats/all-heroes-attack.png"
+  },
+  {
+    "level": 26,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-all-heroes-attack-1-third",
+    "label": "All heroes attack",
+    "value": 1,
+    "unit": "%",
+    "icon": "/assets/divinity/stats/all-heroes-attack.png"
+  },
+  {
+    "level": 26,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-all-heroes-attack-1-third",
+    "label": "All heroes attack",
+    "value": 1,
+    "unit": "%",
+    "icon": "/assets/divinity/stats/all-heroes-attack.png"
+  },
+  {
+    "level": 27,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-all-heroes-attack-1-third",
+    "label": "All heroes attack",
+    "value": 1,
+    "unit": "%",
+    "icon": "/assets/divinity/stats/all-heroes-attack.png"
+  },
+  {
+    "level": 28,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-divinity-skill-level-1-third",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 28,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-divinity-skill-level-1-third",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 28,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-divinity-skill-level-1-third",
+    "label": "Divinity skill level",
+    "value": 1,
+    "unit": "level",
+    "icon": "/assets/divinity/stats/divinity-skill-level.png"
+  },
+  {
+    "level": 29,
+    "columnId": "left",
+    "nodeType": "minorStat",
+    "statId": "left-all-heroes-attack-1-fourth",
+    "label": "All heroes attack",
+    "value": 1,
+    "unit": "%",
+    "icon": "/assets/divinity/stats/all-heroes-attack.png"
+  },
+  {
+    "level": 29,
+    "columnId": "right",
+    "nodeType": "minorStat",
+    "statId": "right-all-heroes-attack-1-fourth",
+    "label": "All heroes attack",
+    "value": 1,
+    "unit": "%",
+    "icon": "/assets/divinity/stats/all-heroes-attack.png"
+  },
+  {
+    "level": 30,
+    "columnId": "center",
+    "nodeType": "minorStat",
+    "statId": "center-all-heroes-attack-1-fourth",
+    "label": "All heroes attack",
+    "value": 1,
+    "unit": "%",
+    "icon": "/assets/divinity/stats/all-heroes-attack.png"
+  }
+]

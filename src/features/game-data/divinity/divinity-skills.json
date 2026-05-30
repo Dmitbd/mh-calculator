@@ -1,0 +1,317 @@
+[
+  {
+    "id": "asterial-gemini",
+    "branchId": "asterial",
+    "name": "Gemini",
+    "icon": "/assets/divinity/skills/asterial/gemini.png",
+    "description": "After receiving a healing skill, an additional recovery of 6% of Health is also generated. This effect can only be triggered once every 5s."
+  },
+  {
+    "id": "asterial-annihilation",
+    "branchId": "asterial",
+    "name": "Annihilation",
+    "icon": "/assets/divinity/skills/asterial/annihilation.png",
+    "description": "Deals an additional 150% damage to enemy summons/minions."
+  },
+  {
+    "id": "asterial-supernova",
+    "branchId": "asterial",
+    "name": "Supernova",
+    "icon": "/assets/divinity/skills/asterial/supernova.png",
+    "description": "After releasing Ultimate for the first time, increase damage dealt by 30% for 8s."
+  },
+  {
+    "id": "asterial-meteor-shower",
+    "branchId": "asterial",
+    "name": "Meteor Shower",
+    "icon": "/assets/divinity/skills/asterial/meteor-shower.png",
+    "description": "After releasing an Ultimate, deal extra damage to 1 random enemy, equal to 1x 15% of target's current Health."
+  },
+  {
+    "id": "asterial-spotlight",
+    "branchId": "asterial",
+    "name": "Spotlight",
+    "icon": "/assets/divinity/skills/asterial/spotlight.png",
+    "description": "Hero's Attacks cannot be dodged. Additionally, every 1% of Hero Accuracy is converted into 2% of Crit Damage for the battle."
+  },
+  {
+    "id": "asterial-full-moon",
+    "branchId": "asterial",
+    "name": "Full Moon",
+    "icon": "/assets/divinity/skills/asterial/full-moon.png",
+    "description": "Whenever this Hero dodges an Attack, increase Attack Speed by 20% for 3s."
+  },
+  {
+    "id": "asterial-new-moon",
+    "branchId": "asterial",
+    "name": "New Moon",
+    "icon": "/assets/divinity/skills/asterial/new-moon.png",
+    "description": "After using an active skill, increase Dodge by 50% for 2s."
+  },
+  {
+    "id": "asterial-aurora",
+    "branchId": "asterial",
+    "name": "Aurora",
+    "icon": "/assets/divinity/skills/asterial/aurora.png",
+    "description": "At the beginning of the battle, the enemy Hero in the same formation position across from this Hero will have 50% less Accuracy for 5s."
+  },
+  {
+    "id": "asterial-black-hole",
+    "branchId": "asterial",
+    "name": "Black Hole",
+    "icon": "/assets/divinity/skills/asterial/black-hole.png",
+    "description": "After surpassing 300 Energy for the first time, remove all the Energy from this Hero and the Enemy with the highest Energy."
+  },
+  {
+    "id": "psyche-maestro",
+    "branchId": "psyche",
+    "name": "Maestro",
+    "icon": "/assets/divinity/skills/psyche/maestro.png",
+    "description": "After applying a control skill, increase Attack by 10% for 5s."
+  },
+  {
+    "id": "psyche-deftness",
+    "branchId": "psyche",
+    "name": "Deftness",
+    "icon": "/assets/divinity/skills/psyche/deftness.png",
+    "description": "Every 2 auto-attack hits, deal an extra 80% damage to the target. This damage is treated as True Damage."
+  },
+  {
+    "id": "psyche-torment",
+    "branchId": "psyche",
+    "name": "Torment",
+    "icon": "/assets/divinity/skills/psyche/torment.png",
+    "description": "Increases damage dealt to enemies with a debuff on them by 12%."
+  },
+  {
+    "id": "psyche-sprout",
+    "branchId": "psyche",
+    "name": "Sprout",
+    "icon": "/assets/divinity/skills/psyche/sprout.png",
+    "description": "10s after the battle begins, remove all debuffs and recover 10% Health."
+  },
+  {
+    "id": "psyche-prevail",
+    "branchId": "psyche",
+    "name": "Prevail",
+    "icon": "/assets/divinity/skills/psyche/prevail.png",
+    "description": "If enemy's Health is more than the Hero's, reduce enemy's damage dealt by 18%. If enemy's Health is less, increase the Hero's damage dealt by 18%."
+  },
+  {
+    "id": "psyche-panacea",
+    "branchId": "psyche",
+    "name": "Panacea",
+    "icon": "/assets/divinity/skills/psyche/panacea.png",
+    "description": "Increase maximum Health by 30% during battle."
+  },
+  {
+    "id": "psyche-collective-fervor",
+    "branchId": "psyche",
+    "name": "Collective Fervor",
+    "icon": "/assets/divinity/skills/psyche/collective-fervor.png",
+    "description": "Whenever an ally Hero releases an Ultimate, restore 30 Energy to them and this Hero."
+  },
+  {
+    "id": "psyche-divine-fire",
+    "branchId": "psyche",
+    "name": "Divine-Fire",
+    "icon": "/assets/divinity/skills/psyche/divine-fire.png",
+    "description": "Increases Energy by 2 every second. This Energy does not decrease except when triggering Ultimate."
+  },
+  {
+    "id": "psyche-self-hypnosis",
+    "branchId": "psyche",
+    "name": "Self-Hypnosis",
+    "icon": "/assets/divinity/skills/psyche/self-hypnosis.png",
+    "description": "When healing an ally Hero, recover 20% of the overall Health recovered to the healer themselves."
+  },
+  {
+    "id": "immortality-symbiosis",
+    "branchId": "immortality",
+    "name": "Symbiosis",
+    "icon": "/assets/divinity/skills/immortality/symbiosis.png",
+    "description": "At the beginning of battle, gain a shield equal to 15% of this Hero's max Health for 8s."
+  },
+  {
+    "id": "immortality-resonance",
+    "branchId": "immortality",
+    "name": "Resonance",
+    "icon": "/assets/divinity/skills/immortality/resonance.png",
+    "description": "When this Hero is killed, stun nearby enemies for 3s."
+  },
+  {
+    "id": "immortality-recovery",
+    "branchId": "immortality",
+    "name": "Recovery",
+    "icon": "/assets/divinity/skills/immortality/recovery.png",
+    "description": "During the first 15s of battle, recover 4% of max Health every second."
+  },
+  {
+    "id": "immortality-transcend",
+    "branchId": "immortality",
+    "name": "Transcend",
+    "icon": "/assets/divinity/skills/immortality/transcend.png",
+    "description": "Dodge the first enemy damage dealt."
+  },
+  {
+    "id": "immortality-sunder",
+    "branchId": "immortality",
+    "name": "Sunder",
+    "icon": "/assets/divinity/skills/immortality/sunder.png",
+    "description": "Increases damage dealt to shields by 100%."
+  },
+  {
+    "id": "immortality-savvy",
+    "branchId": "immortality",
+    "name": "Savvy",
+    "icon": "/assets/divinity/skills/immortality/savvy.png",
+    "description": "Increases damage dealt from active skills by 25%."
+  },
+  {
+    "id": "immortality-tenacious",
+    "branchId": "immortality",
+    "name": "Tenacious",
+    "icon": "/assets/divinity/skills/immortality/tenacious.png",
+    "description": "Increases all shields' strength by 20%."
+  },
+  {
+    "id": "immortality-waterdrop",
+    "branchId": "immortality",
+    "name": "Waterdrop",
+    "icon": "/assets/divinity/skills/immortality/waterdrop.png",
+    "description": "Reduces Crit damage taken by 35%."
+  },
+  {
+    "id": "immortality-wrath",
+    "branchId": "immortality",
+    "name": "Wrath",
+    "icon": "/assets/divinity/skills/immortality/wrath.png",
+    "description": "For every 6% of Health lost, increase Attack by 1%, to a maximum of 30 stacks."
+  },
+  {
+    "id": "devoid-phantom",
+    "branchId": "devoid",
+    "name": "Phantom",
+    "icon": "/assets/divinity/skills/devoid/phantom.png",
+    "description": "Healing received cannot be reduced."
+  },
+  {
+    "id": "devoid-broken-mirror",
+    "branchId": "devoid",
+    "name": "Broken Mirror",
+    "icon": "/assets/divinity/skills/devoid/broken-mirror.png",
+    "description": "Reduces Hit Energy Restoration by 35% for nearby enemies."
+  },
+  {
+    "id": "devoid-energy-field",
+    "branchId": "devoid",
+    "name": "Energy Field",
+    "icon": "/assets/divinity/skills/devoid/energy-field.png",
+    "description": "Ally Hero with the highest Combat Power is immune to first lethal damage, then gains a shield with 30% of this Hero's current Health for 8s. This effect can trigger once per battle."
+  },
+  {
+    "id": "devoid-animus",
+    "branchId": "devoid",
+    "name": "Animus",
+    "icon": "/assets/divinity/skills/devoid/animus.png",
+    "description": "Auto-Attacks have a 20% chance of generating a shield equal to their damage dealt."
+  },
+  {
+    "id": "devoid-time-lapse",
+    "branchId": "devoid",
+    "name": "Time-lapse",
+    "icon": "/assets/divinity/skills/devoid/time-lapse.png",
+    "description": "Hero's auto-attacks have a 20% chance to stun the target for 1.5s."
+  },
+  {
+    "id": "devoid-excitement",
+    "branchId": "devoid",
+    "name": "Excitement",
+    "icon": "/assets/divinity/skills/devoid/excitement.png",
+    "description": "Restore 150 Energy within the first 5s of battle."
+  },
+  {
+    "id": "devoid-vexation",
+    "branchId": "devoid",
+    "name": "Vexation",
+    "icon": "/assets/divinity/skills/devoid/vexation.png",
+    "description": "When hitting enemy with auto-attacks, reduce their Hit Energy Restoration by 50%."
+  },
+  {
+    "id": "devoid-engulf",
+    "branchId": "devoid",
+    "name": "Engulf",
+    "icon": "/assets/divinity/skills/devoid/engulf.png",
+    "description": "After each of the first 2 Ultimates, Hero gains a buff which increases Lifesteal by 12%."
+  },
+  {
+    "id": "devoid-spirit-flash",
+    "branchId": "devoid",
+    "name": "Spirit Flash",
+    "icon": "/assets/divinity/skills/devoid/spirit-flash.png",
+    "description": "After the first time any enemy releases their Ultimate, generate a shield equal to 50% of max Health for 10s to protect this Hero."
+  },
+  {
+    "id": "primeval-culmination",
+    "branchId": "primeval",
+    "name": "Culmination",
+    "icon": "/assets/divinity/skills/primeval/culmination.png",
+    "description": "Increase Attack by 1% every 4s during battle."
+  },
+  {
+    "id": "primeval-primal-totem",
+    "branchId": "primeval",
+    "name": "Primal Totem",
+    "icon": "/assets/divinity/skills/primeval/primal-totem.png",
+    "description": "After releasing an Ultimate, gain immunity from control skills for 5s."
+  },
+  {
+    "id": "primeval-death-waiver",
+    "branchId": "primeval",
+    "name": "Death Waiver",
+    "icon": "/assets/divinity/skills/primeval/death-waiver.png",
+    "description": "The first time this Hero takes lethal damage, gain full immunity for 2s instead."
+  },
+  {
+    "id": "primeval-inspiration",
+    "branchId": "primeval",
+    "name": "Inspiration",
+    "icon": "/assets/divinity/skills/primeval/inspiration.png",
+    "description": "Whenever a skill targets an ally, increase their Attack and Defense by 10% for 5s."
+  },
+  {
+    "id": "primeval-purify",
+    "branchId": "primeval",
+    "name": "Purify",
+    "icon": "/assets/divinity/skills/primeval/purify.png",
+    "description": "When healing an ally, there is a 20% chance to remove all debuffs inflicted upon them."
+  },
+  {
+    "id": "primeval-pristine",
+    "branchId": "primeval",
+    "name": "Pristine",
+    "icon": "/assets/divinity/skills/primeval/pristine.png",
+    "description": "When Health is above 75%, increase Defense by 50%."
+  },
+  {
+    "id": "primeval-embroilment",
+    "branchId": "primeval",
+    "name": "Embroilment",
+    "icon": "/assets/divinity/skills/primeval/embroilment.png",
+    "description": "When Health is above 50%, increase damage dealt by 10%. When Health is below 50%, reduce damage taken by 10%."
+  },
+  {
+    "id": "primeval-corrosion",
+    "branchId": "primeval",
+    "name": "Corrosion",
+    "icon": "/assets/divinity/skills/primeval/corrosion.png",
+    "description": "When an auto-attack hits, reduce target's Defense by 30% for 5s."
+  },
+  {
+    "id": "primeval-colossus",
+    "branchId": "primeval",
+    "name": "Colossus",
+    "icon": "/assets/divinity/skills/primeval/colossus.png",
+    "description": "Increases Attack by amount equal to 50% of Hero's Defense during battle."
+  }
+]
