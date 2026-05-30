@@ -33,10 +33,11 @@ export function BranchNodeCard(props: BranchNodeCardProps) {
   if (node.nodeType === "minorStat") {
     return (
       <View style={[styles.card, styles.readonlyCard]}>
-        <IconPreview label={node.label} source={node.icon} size={28} />
-        <View style={styles.textBlock}>
-          <Text style={styles.nodeTitle}>{node.label}</Text>
-          <Text style={styles.nodeMeta}>
+        <View style={styles.readonlyTextBlock}>
+          <Text style={[styles.nodeTitle, styles.readonlyText]}>
+            {node.label}
+          </Text>
+          <Text style={[styles.nodeMeta, styles.readonlyText]}>
             +{node.value}
             {node.unit === "%" ? "%" : ""}
           </Text>
@@ -96,10 +97,23 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   readonlyCard: {
+    alignSelf: "center",
+    width: "78%",
+    minHeight: 56,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    justifyContent: "center",
+    gap: 6,
+    padding: 8,
     backgroundColor: "#1d130f",
+  },
+  readonlyTextBlock: {
+    flexShrink: 1,
+    alignItems: "center",
+    gap: 2,
+  },
+  readonlyText: {
+    textAlign: "center",
   },
   majorButton: {
     minHeight: 48,

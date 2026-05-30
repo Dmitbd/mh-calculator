@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import type {
@@ -12,6 +12,12 @@ import type {
 } from "../types/admin.types";
 import { BranchNodeCard } from "./BranchNodeCard";
 import { IconPreview } from "./IconPreview";
+
+// Отступы сетки: по X (между колонками) и по Y (между уровнями)
+const COLUMN_GAP = 16;
+const ROW_GAP = 24;
+// Цвет вертикальной линии-«ветки», соединяющей ноды в столбце
+const BRANCH_LINE_COLOR = "#4d3524";
 
 type ActiveMajorSlot = {
   columnId: BranchColumnId;
@@ -52,6 +58,97 @@ export function BranchBuilderGrid({
   const levels = Array.from({ length: 30 }, (_, index) => index + 1);
   const [activeBranchColumn, setActiveBranchColumn] =
     useState<BranchColumnId | null>(null);
+
+  // Диапазон уровней с нодами в каждом столбце — линия идёт только от первой до последней ноды
+  const columnNodeRanges = useMemo(() => {
+    const ranges = {} as Record<
+      BranchColumnId,
+      { first: number; last: number } | null
+    >;
+
+    columns.forEach((column) => {
+      const nodeLevels = template
+        .filter((node) => node.columnId === column.id)
+        .map((node) => node.level);
+
+      ranges[column.id] = nodeLevels.length
+        ? { first: Math.min(...nodeLevels), last: Math.max(...nodeLevels) }
+        : null;
+    });
+
+    return ranges;
+  }, [columns, template]);
+
+  // Линия-«ветка» для ячейки: null до первой и после последней ноды,
+  // обрезается у первой (идёт вниз) и последней (идёт вверх) ноды столбца
+  const renderBranchLine = (columnId: BranchColumnId, level: number) => {
+    const range = columnNodeRanges[columnId];
+
+    if (!range || level < range.first || level > range.last) {
+      return null;
+    }
+
+    return (
+      <View
+        style={[
+          styles.branchLine,
+          level === range.first && styles.branchLineStart,
+          level === range.last && styles.branchLineEnd,
+        ]}
+      />
+    );
+  };
+
+  // Ключи всех нод вида "уровень:колонка" — для быстрой проверки соседей
+  const nodeKeys = useMemo(() => {
+    const keys = new Set<string>();
+    template.forEach((node) => keys.add(`${node.level}:${node.columnId}`));
+    return keys;
+  }, [template]);
+
+  // Уровни, где у основной (центральной) колонки стоит мажорная нода —
+  // только на них ствол ветвится горизонтально в боковые колонки
+  const trunkMajorLevels = useMemo(() => {
+    const mainColumnId = columns.find((column) => column.isMain)?.id;
+    const levelsWithTrunkMajor = new Set<number>();
+
+    if (mainColumnId) {
+      template.forEach((node) => {
+        if (node.columnId === mainColumnId && node.nodeType === "majorSkill") {
+          levelsWithTrunkMajor.add(node.level);
+        }
+      });
+    }
+
+    return levelsWithTrunkMajor;
+  }, [columns, template]);
+
+  // Горизонтальные соединители: только на уровнях ветвления ствола и к соседям с нодой
+  const renderHorizontalConnectors = (columnIndex: number, level: number) => {
+    if (!trunkMajorLevels.has(level)) {
+      return null;
+    }
+
+    const leftId = columns[columnIndex - 1]?.id;
+    const rightId = columns[columnIndex + 1]?.id;
+    const hasLeft = leftId ? nodeKeys.has(`${level}:${leftId}`) : false;
+    const hasRight = rightId ? nodeKeys.has(`${level}:${rightId}`) : false;
+
+    if (!hasLeft && !hasRight) {
+      return null;
+    }
+
+    return (
+      <>
+        {hasLeft ? (
+          <View style={[styles.branchLineH, styles.branchLineHLeft]} />
+        ) : null}
+        {hasRight ? (
+          <View style={[styles.branchLineH, styles.branchLineHRight]} />
+        ) : null}
+      </>
+    );
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -130,14 +227,18 @@ export function BranchBuilderGrid({
       {levels.map((level) => (
         <View key={level} style={styles.row}>
           <Text style={styles.levelCell}>Lv. {level}</Text>
-          {columns.map((column) => {
+          {columns.map((column, columnIndex) => {
             const node =
               template.find(
                 (item) => item.level === level && item.columnId === column.id,
               ) ?? null;
 
             if (!node) {
-              return <View key={column.id} style={styles.emptyCell} />;
+              return (
+                <View key={column.id} style={styles.emptyCell}>
+                  {renderBranchLine(column.id, level)}
+                </View>
+              );
             }
 
             const selectedSkillId =
@@ -155,33 +256,41 @@ export function BranchBuilderGrid({
             if (node.nodeType === "minorStat") {
               return (
                 <View key={column.id} style={styles.nodeCell}>
-                  <BranchNodeCard
-                    availableSkills={[]}
-                    node={node}
-                    onOpenPicker={() => onOpenMajorSlot(column.id, level)}
-                    onSelectSkill={(skillId) =>
-                      onSelectMajorSkill(column.id, level, skillId)
-                    }
-                    pickerOpen={false}
-                    selectedSkill={null}
-                  />
+                  {renderBranchLine(column.id, level)}
+                  {renderHorizontalConnectors(columnIndex, level)}
+                  <View style={styles.nodeCellContent}>
+                    <BranchNodeCard
+                      availableSkills={[]}
+                      node={node}
+                      onOpenPicker={() => onOpenMajorSlot(column.id, level)}
+                      onSelectSkill={(skillId) =>
+                        onSelectMajorSkill(column.id, level, skillId)
+                      }
+                      pickerOpen={false}
+                      selectedSkill={null}
+                    />
+                  </View>
                 </View>
               );
             }
 
             return (
               <View key={column.id} style={styles.nodeCell}>
-                <BranchNodeCard
-                  availableSkills={availableSkills}
-                  node={node}
-                  onClearSkill={() => onClearMajorSkill(column.id, level)}
-                  onOpenPicker={() => onOpenMajorSlot(column.id, level)}
-                  onSelectSkill={(skillId) =>
-                    onSelectMajorSkill(column.id, level, skillId)
-                  }
-                  pickerOpen={pickerOpen}
-                  selectedSkill={selectedSkill}
-                />
+                {renderBranchLine(column.id, level)}
+                {renderHorizontalConnectors(columnIndex, level)}
+                <View style={styles.nodeCellContent}>
+                  <BranchNodeCard
+                    availableSkills={availableSkills}
+                    node={node}
+                    onClearSkill={() => onClearMajorSkill(column.id, level)}
+                    onOpenPicker={() => onOpenMajorSlot(column.id, level)}
+                    onSelectSkill={(skillId) =>
+                      onSelectMajorSkill(column.id, level, skillId)
+                    }
+                    pickerOpen={pickerOpen}
+                    selectedSkill={selectedSkill}
+                  />
+                </View>
               </View>
             );
           })}
@@ -399,11 +508,11 @@ const webStyles = {
 
 const styles = StyleSheet.create({
   wrapper: {
-    gap: 8,
+    gap: ROW_GAP,
   },
   headerRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: COLUMN_GAP,
     alignItems: "flex-start",
     zIndex: 100,
   },
@@ -474,7 +583,7 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    gap: 8,
+    gap: COLUMN_GAP,
     alignItems: "stretch",
     zIndex: 1,
   },
@@ -491,13 +600,55 @@ const styles = StyleSheet.create({
   },
   nodeCell: {
     flex: 1,
+    justifyContent: "center",
+  },
+  nodeCellContent: {
+    position: "relative",
+    zIndex: 1,
   },
   emptyCell: {
     flex: 1,
     minHeight: 70,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#2b1c15",
-    backgroundColor: "#17100d",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  // Вертикальная линия-«ветка»: за карточкой, выходит в отступы сверху и снизу,
+  // поэтому соседние ячейки столбца визуально соединяются в непрерывную линию
+  branchLine: {
+    position: "absolute",
+    top: -ROW_GAP,
+    bottom: -ROW_GAP,
+    left: "50%",
+    width: 2,
+    marginLeft: -1,
+    backgroundColor: BRANCH_LINE_COLOR,
+    zIndex: 0,
+    pointerEvents: "none",
+  },
+  // Первая нода столбца — линия начинается от её центра и идёт вниз
+  branchLineStart: {
+    top: "50%",
+  },
+  // Последняя нода столбца — линия заканчивается у её центра
+  branchLineEnd: {
+    bottom: "50%",
+  },
+  // Горизонтальный соединитель: идёт из центра ноды (за карточкой) к соседней колонке
+  branchLineH: {
+    position: "absolute",
+    top: "50%",
+    marginTop: -1,
+    height: 2,
+    backgroundColor: BRANCH_LINE_COLOR,
+    zIndex: 0,
+    pointerEvents: "none",
+  },
+  branchLineHLeft: {
+    left: -COLUMN_GAP,
+    right: "50%",
+  },
+  branchLineHRight: {
+    left: "50%",
+    right: -COLUMN_GAP,
   },
 });
