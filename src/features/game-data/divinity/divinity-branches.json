@@ -2,31 +2,31 @@
   {
     "id": "asterial",
     "title": "Asterial Skills",
-    "icon": "/assets/divinity/branches/asterial.png",
+    "icon": "/img/branches/asterial.png",
     "order": 1
   },
   {
     "id": "psyche",
     "title": "Psyche Skills",
-    "icon": "/assets/divinity/branches/psyche.png",
+    "icon": "/img/branches/psyche.png",
     "order": 2
   },
   {
     "id": "immortality",
     "title": "Immortality Skills",
-    "icon": "/assets/divinity/branches/immortality.png",
+    "icon": "/img/branches/immortality.png",
     "order": 3
   },
   {
     "id": "devoid",
     "title": "Devoid Skills",
-    "icon": "/assets/divinity/branches/devoid.png",
+    "icon": "/img/branches/devoid.png",
     "order": 4
   },
   {
     "id": "primeval",
     "title": "Primeval Skills",
-    "icon": "/assets/divinity/branches/primeval.png",
+    "icon": "/img/branches/primeval.png",
     "order": 5
   }
 ]

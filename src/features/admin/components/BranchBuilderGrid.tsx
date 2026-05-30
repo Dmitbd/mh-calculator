@@ -201,33 +201,66 @@ function WebBranchHeaderPicker({
   selectedBranch,
   onSelectBranch,
 }: WebBranchHeaderPickerProps) {
+  // Открыто ли меню — для подсветки рамки и поворота шеврона
+  const [open, setOpen] = useState(false);
+
+  const summaryStyle = {
+    ...webStyles.summary,
+    ...(selectedBranch ? null : webStyles.summaryEmpty),
+    ...(open ? webStyles.summaryOpen : null),
+  };
+
   return React.createElement(
     "details",
-    { key: column.id, style: webStyles.details },
+    {
+      key: column.id,
+      style: webStyles.details,
+      onToggle: (event: React.SyntheticEvent<HTMLDetailsElement>) =>
+        setOpen(event.currentTarget.open),
+    },
     React.createElement(
       "summary",
       {
         "aria-label": `Choose branch for ${column.label}`,
         role: "button",
-        style: webStyles.summary,
+        style: summaryStyle,
       },
-      selectedBranch
-        ? React.createElement(
-            React.Fragment,
-            null,
-            React.createElement("img", {
-              "aria-label": `${selectedBranch.title} icon`,
-              alt: "",
-              src: selectedBranch.icon,
-              style: webStyles.icon,
-            }),
-            React.createElement(
+      React.createElement(
+        "span",
+        { style: webStyles.summaryContent },
+        selectedBranch
+          ? React.createElement(
+              React.Fragment,
+              null,
+              React.createElement("img", {
+                "aria-label": `${selectedBranch.title} icon`,
+                alt: "",
+                src: selectedBranch.icon,
+                style: webStyles.icon,
+              }),
+              React.createElement(
+                "span",
+                { style: webStyles.summaryText },
+                selectedBranch.title,
+              ),
+            )
+          : React.createElement(
               "span",
-              { style: webStyles.summaryText },
-              selectedBranch.title,
+              { style: webStyles.placeholderText },
+              column.label,
             ),
-          )
-        : React.createElement("span", { style: webStyles.summaryText }, column.label),
+      ),
+      React.createElement(
+        "span",
+        {
+          "aria-hidden": true,
+          style: {
+            ...webStyles.chevron,
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+          },
+        },
+        "▾",
+      ),
     ),
     React.createElement(
       "div",
@@ -270,7 +303,9 @@ const webStyles = {
   },
   summary: {
     alignItems: "center",
-    border: "1px solid transparent",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "transparent",
     borderRadius: 8,
     boxSizing: "border-box",
     color: "#f7dfac",
@@ -279,14 +314,43 @@ const webStyles = {
     fontSize: 13,
     fontWeight: 900,
     gap: 8,
-    justifyContent: "center",
+    justifyContent: "space-between",
     listStyle: "none",
     minHeight: 44,
     padding: "8px",
     textAlign: "center",
   },
+  // Пустое состояние: пунктир + приглушённый текст подсказывают «нажми и выбери»
+  summaryEmpty: {
+    borderStyle: "dashed",
+    borderColor: "#6b4d34",
+  },
+  // Открытое меню — подсветка рамки и фона
+  summaryOpen: {
+    borderColor: "#f0c36a",
+    backgroundColor: "#241610",
+  },
+  summaryContent: {
+    alignItems: "center",
+    display: "flex",
+    gap: 8,
+    minWidth: 0,
+    overflow: "hidden",
+  },
   summaryText: {
     minWidth: 0,
+  },
+  placeholderText: {
+    color: "#caa877",
+    minWidth: 0,
+  },
+  // Шеврон-индикатор выпадающего списка, вращается при открытии
+  chevron: {
+    color: "#caa877",
+    flexShrink: 0,
+    fontSize: 12,
+    lineHeight: 1,
+    transition: "transform 150ms ease",
   },
   menu: {
     backgroundColor: "#241610",
