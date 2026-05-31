@@ -40,19 +40,21 @@ type BranchBuilderGridProps = {
   /** Скиллы, доступные в текущем режиме — для пикера */
   skills: readonly DivinityMajorSkill[];
   template: readonly TreeTemplateNode[];
-  activeMajorSlot: ActiveMajorSlot;
-  onSelectBranch: (columnId: BranchColumnId, branchId: DivinityBranchId) => void;
-  onOpenMajorSlot: (columnId: BranchColumnId, level: number) => void;
-  onSelectMajorSkill: (
+  activeMajorSlot?: ActiveMajorSlot;
+  onSelectBranch?: (columnId: BranchColumnId, branchId: DivinityBranchId) => void;
+  onOpenMajorSlot?: (columnId: BranchColumnId, level: number) => void;
+  onSelectMajorSkill?: (
     columnId: BranchColumnId,
     level: number,
     skillId: string,
   ) => void;
-  onClearMajorSkill: (columnId: BranchColumnId, level: number) => void;
+  onClearMajorSkill?: (columnId: BranchColumnId, level: number) => void;
   /** Уровень прогресса по столбцам — до какой ноды включительно подсвечивать активным */
   progressLevels: Partial<Record<BranchColumnId, number>>;
   /** Клик по ноде: установить/откатить прогресс столбца */
-  onToggleProgress: (columnId: BranchColumnId, level: number) => void;
+  onToggleProgress?: (columnId: BranchColumnId, level: number) => void;
+  /** Режим только для чтения — без пикеров, выбора веток и переключения прогресса */
+  readOnly?: boolean;
 };
 
 export function BranchBuilderGrid({
@@ -70,6 +72,7 @@ export function BranchBuilderGrid({
   onClearMajorSkill,
   progressLevels,
   onToggleProgress,
+  readOnly = false,
 }: BranchBuilderGridProps) {
   const levels = Array.from({ length: 30 }, (_, index) => index + 1);
   const [activeBranchColumn, setActiveBranchColumn] =
@@ -201,9 +204,35 @@ export function BranchBuilderGrid({
             branches.find((branch) => branch.id === selectedBranches[column.id]) ??
             null;
           const selectBranch = (branchId: DivinityBranchId) => {
-            onSelectBranch(column.id, branchId);
+            onSelectBranch?.(column.id, branchId);
             setActiveBranchColumn(null);
           };
+
+          if (readOnly) {
+            return (
+              <View key={column.id} style={styles.headerBranchCell}>
+                <View
+                  style={[
+                    styles.headerButton,
+                    !selectedBranch && styles.headerButtonEmpty,
+                  ]}
+                >
+                  {selectedBranch ? (
+                    <>
+                      <IconPreview
+                        label={selectedBranch.title}
+                        source={selectedBranch.icon}
+                        size={24}
+                      />
+                      <Text style={styles.headerButtonText}>
+                        {selectedBranch.title}
+                      </Text>
+                    </>
+                  ) : null}
+                </View>
+              </View>
+            );
+          }
 
           if (Platform.OS === "web") {
             return (
@@ -306,7 +335,8 @@ export function BranchBuilderGrid({
                     <MinorStatCard
                       active={isNodeActive(column.id, level)}
                       node={node}
-                      onPress={() => onToggleProgress(column.id, level)}
+                      onPress={() => onToggleProgress?.(column.id, level)}
+                      readOnly={readOnly}
                     />
                   </View>
                 </View>
@@ -322,12 +352,13 @@ export function BranchBuilderGrid({
                     active={isNodeActive(column.id, level)}
                     availableSkills={availableSkills}
                     node={node}
-                    onClearSkill={() => onClearMajorSkill(column.id, level)}
-                    onOpenPicker={() => onOpenMajorSlot(column.id, level)}
+                    onClearSkill={() => onClearMajorSkill?.(column.id, level)}
+                    onOpenPicker={() => onOpenMajorSlot?.(column.id, level)}
                     onSelectSkill={(skillId) =>
-                      onSelectMajorSkill(column.id, level, skillId)
+                      onSelectMajorSkill?.(column.id, level, skillId)
                     }
                     pickerOpen={pickerOpen}
+                    readOnly={readOnly}
                     selectedSkill={selectedSkill}
                   />
                 </View>

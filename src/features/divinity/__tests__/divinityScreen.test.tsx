@@ -172,7 +172,7 @@ test("adds bottom safe area space below the reset button", async () => {
 
   await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
 
-  const scrollView = screen.UNSAFE_getByType("RCTScrollView");
+  const scrollView = screen.UNSAFE_getByType("RCTScrollView" as never);
   expect(scrollView.props.stickyHeaderIndices).toBeUndefined();
   expect(scrollView.props.contentContainerStyle).toEqual(
     expect.arrayContaining([

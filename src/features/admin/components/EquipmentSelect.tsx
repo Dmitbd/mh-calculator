@@ -27,9 +27,11 @@ type EquipmentSelectProps = {
   /** Id выбранного элемента или null */
   selectedId: string | null;
   /** Выбрать элемент */
-  onSelect: (id: string) => void;
+  onSelect?: (id: string) => void;
   /** Сбросить выбор */
-  onClear: () => void;
+  onClear?: () => void;
+  /** Режим только для чтения — без выпадающего списка и сброса */
+  readOnly?: boolean;
 };
 
 /**
@@ -43,6 +45,7 @@ export function EquipmentSelect({
   selectedId,
   onSelect,
   onClear,
+  readOnly = false,
 }: EquipmentSelectProps) {
   const [open, setOpen] = useState(false);
 
@@ -55,16 +58,24 @@ export function EquipmentSelect({
 
   const handleSelect = useCallback(
     (id: string) => {
-      onSelect(id);
+      onSelect?.(id);
       setOpen(false);
     },
     [onSelect],
   );
 
   const handleClear = useCallback(() => {
-    onClear();
+    onClear?.();
     setOpen(false);
   }, [onClear]);
+
+  const selectField = (
+    <IconPreview
+      label={selected?.name ?? label}
+      size={30}
+      source={selected?.icon ?? null}
+    />
+  );
 
   return (
     <View style={styles.wrapper}>
@@ -72,24 +83,29 @@ export function EquipmentSelect({
       <View style={styles.row}>
         <View style={styles.pickerCell}>
           <View style={styles.selectField}>
-            <Pressable
-              accessibilityLabel={`Choose ${label}`}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: open }}
-              onPress={toggleOpen}
-              style={styles.selectButton}
-            >
-              <IconPreview
-                label={selected?.name ?? label}
-                size={30}
-                source={selected?.icon ?? null}
-              />
-              <Text numberOfLines={1} style={styles.selectText}>
-                {selected?.name ?? placeholder}
-              </Text>
-            </Pressable>
+            {readOnly ? (
+              <View style={styles.selectButton}>
+                {selectField}
+                <Text numberOfLines={1} style={styles.selectText}>
+                  {selected?.name ?? placeholder}
+                </Text>
+              </View>
+            ) : (
+              <Pressable
+                accessibilityLabel={`Choose ${label}`}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: open }}
+                onPress={toggleOpen}
+                style={styles.selectButton}
+              >
+                {selectField}
+                <Text numberOfLines={1} style={styles.selectText}>
+                  {selected?.name ?? placeholder}
+                </Text>
+              </Pressable>
+            )}
 
-            {selected ? (
+            {!readOnly && selected ? (
               <Pressable
                 accessibilityLabel={`Clear ${label}`}
                 accessibilityRole="button"
@@ -101,7 +117,7 @@ export function EquipmentSelect({
             ) : null}
           </View>
 
-          {open ? (
+          {!readOnly && open ? (
             <View style={styles.dropdown}>
               {options.map((option) => (
                 <Pressable

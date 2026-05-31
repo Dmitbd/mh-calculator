@@ -6,7 +6,10 @@ import {
   getNextWeaponAwakeningColor,
   hasFilledAllWeaponAwakeningSlots,
 } from "../utils/weaponAwakening";
-import type { WeaponAwakeningColor } from "../types/admin.types";
+import type {
+  WeaponAwakeningColor,
+  WeaponAwakeningColorId,
+} from "../types/admin.types";
 
 const catalogColors = colors as WeaponAwakeningColor[];
 
@@ -32,7 +35,9 @@ describe("weaponAwakening utils", () => {
   });
 
   it("checks that all slots are filled", () => {
-    const filled = Object.fromEntries(slots.map((slot) => [slot.slot, "red"]));
+    const filled = Object.fromEntries(
+      slots.map((slot) => [slot.slot, "red"]),
+    ) as Partial<Record<number, WeaponAwakeningColorId>>;
 
     expect(hasFilledAllWeaponAwakeningSlots(slots, filled)).toBe(true);
     expect(hasFilledAllWeaponAwakeningSlots(slots, { 1: "red" })).toBe(false);

@@ -10,7 +10,9 @@ type WeaponAwakeningPickerProps = {
   colors: readonly WeaponAwakeningColor[];
   slots: readonly WeaponAwakeningSlot[];
   selections: Partial<Record<number, WeaponAwakeningColorId>>;
-  onCycleSlot: (slot: number) => void;
+  onCycleSlot?: (slot: number) => void;
+  /** Режим только для чтения — кружки без переключения цвета */
+  readOnly?: boolean;
 };
 
 /** Пробуждение оружия: 8 кружков с выбором цвета по клику */
@@ -19,6 +21,7 @@ export function WeaponAwakeningPicker({
   slots,
   selections,
   onCycleSlot,
+  readOnly = false,
 }: WeaponAwakeningPickerProps) {
   const colorsById = new Map(colors.map((color) => [color.id, color]));
 
@@ -29,21 +32,33 @@ export function WeaponAwakeningPicker({
         {slots.map((slot) => {
           const colorId = selections[slot.slot] ?? null;
           const color = colorId ? colorsById.get(colorId) : null;
+          const circleStyle = [
+            styles.circle,
+            color
+              ? [styles.circleFilled, { backgroundColor: color.color }]
+              : styles.circleEmpty,
+          ];
+          const accessibilityLabel = `Weapon awakening slot ${slot.slot}${
+            color ? `, ${color.label}` : ", empty"
+          }`;
+
+          if (readOnly) {
+            return (
+              <View
+                accessibilityLabel={accessibilityLabel}
+                key={slot.slot}
+                style={circleStyle}
+              />
+            );
+          }
 
           return (
             <Pressable
-              accessibilityLabel={`Weapon awakening slot ${slot.slot}${
-                color ? `, ${color.label}` : ", empty"
-              }`}
+              accessibilityLabel={accessibilityLabel}
               accessibilityRole="button"
               key={slot.slot}
-              onPress={() => onCycleSlot(slot.slot)}
-              style={[
-                styles.circle,
-                color
-                  ? [styles.circleFilled, { backgroundColor: color.color }]
-                  : styles.circleEmpty,
-              ]}
+              onPress={() => onCycleSlot?.(slot.slot)}
+              style={circleStyle}
             />
           );
         })}

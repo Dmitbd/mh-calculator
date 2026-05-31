@@ -14,18 +14,21 @@ type MinorStatCardProps = {
   /** Активна ли нода (входит в открытый прогресс столбца) */
   active: boolean;
   /** Клик по ноде — переключить прогресс столбца */
-  onPress: () => void;
+  onPress?: () => void;
+  /** Режим только для чтения — без переключения прогресса */
+  readOnly?: boolean;
 };
 
 /** Карточка минорного стата: клик отмечает прогресс, при active — подсветка */
-export function MinorStatCard({ node, active, onPress }: MinorStatCardProps) {
-  return (
-    <Pressable
-      accessibilityLabel={`Toggle progress for ${node.columnId} level ${node.level}`}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={[styles.card, styles.readonlyCard, active && styles.activeCard]}
-    >
+export function MinorStatCard({
+  node,
+  active,
+  onPress,
+  readOnly = false,
+}: MinorStatCardProps) {
+  const cardStyle = [styles.card, styles.readonlyCard, active && styles.activeCard];
+  const content = (
+    <>
       {node.icon ? (
         <IconPreview label={node.label} source={node.icon} size={24} />
       ) : null}
@@ -36,6 +39,21 @@ export function MinorStatCard({ node, active, onPress }: MinorStatCardProps) {
           {node.unit === "%" ? "%" : ""}
         </Text>
       </View>
+    </>
+  );
+
+  if (readOnly) {
+    return <View style={cardStyle}>{content}</View>;
+  }
+
+  return (
+    <Pressable
+      accessibilityLabel={`Toggle progress for ${node.columnId} level ${node.level}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={cardStyle}
+    >
+      {content}
     </Pressable>
   );
 }
@@ -52,11 +70,13 @@ type MajorNodeCardProps = {
   /** Открыт ли список выбора скилла */
   pickerOpen: boolean;
   /** Открыть список выбора скилла */
-  onOpenPicker: () => void;
+  onOpenPicker?: () => void;
   /** Выбрать скилл */
-  onSelectSkill: (skillId: string) => void;
+  onSelectSkill?: (skillId: string) => void;
   /** Сбросить выбранный скилл */
-  onClearSkill: () => void;
+  onClearSkill?: () => void;
+  /** Режим только для чтения — без пикера и кнопки сброса */
+  readOnly?: boolean;
 };
 
 /** Карточка мажорной ноды: иконка сверху, имя ниже, выбор скилла и сброс */
@@ -69,25 +89,36 @@ export function MajorNodeCard({
   onOpenPicker,
   onSelectSkill,
   onClearSkill,
+  readOnly = false,
 }: MajorNodeCardProps) {
+  const skillContent = (
+    <>
+      <IconPreview
+        label={selectedSkill?.name ?? "Major skill"}
+        source={selectedSkill?.icon ?? null}
+        size={30}
+      />
+      <Text style={[styles.nodeTitle, styles.majorTitle]}>
+        {selectedSkill?.name ?? (readOnly ? "—" : "Select skill")}
+      </Text>
+    </>
+  );
+
   return (
     <View style={[styles.card, active && styles.activeCard]}>
-      <Pressable
-        accessibilityLabel={`Choose skill for ${node.columnId} level ${node.level}`}
-        accessibilityRole="button"
-        onPress={onOpenPicker}
-        style={styles.majorButton}
-      >
-        <IconPreview
-          label={selectedSkill?.name ?? "Major skill"}
-          source={selectedSkill?.icon ?? null}
-          size={30}
-        />
-        <Text style={[styles.nodeTitle, styles.majorTitle]}>
-          {selectedSkill?.name ?? "Select skill"}
-        </Text>
-      </Pressable>
-      {selectedSkill ? (
+      {readOnly ? (
+        <View style={styles.majorButton}>{skillContent}</View>
+      ) : (
+        <Pressable
+          accessibilityLabel={`Choose skill for ${node.columnId} level ${node.level}`}
+          accessibilityRole="button"
+          onPress={onOpenPicker}
+          style={styles.majorButton}
+        >
+          {skillContent}
+        </Pressable>
+      )}
+      {!readOnly && selectedSkill ? (
         <Pressable
           accessibilityLabel={`Clear skill for ${node.columnId} level ${node.level}`}
           accessibilityRole="button"
@@ -97,10 +128,10 @@ export function MajorNodeCard({
           <Text style={styles.clearButtonText}>×</Text>
         </Pressable>
       ) : null}
-      {pickerOpen ? (
+      {!readOnly && pickerOpen ? (
         <MajorSkillPicker
           node={node}
-          onSelect={onSelectSkill}
+          onSelect={(skillId) => onSelectSkill?.(skillId)}
           skills={availableSkills}
         />
       ) : null}

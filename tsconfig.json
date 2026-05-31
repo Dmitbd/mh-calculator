@@ -3,6 +3,7 @@
   "compilerOptions": {
     "strict": true,
     "resolveJsonModule": true,
+    "ignoreDeprecations": "6.0",
     "lib": ["DOM", "ESNext"],
     "types": ["jest", "react", "react-native"],
     "baseUrl": ".",

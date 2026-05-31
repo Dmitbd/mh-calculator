@@ -8,6 +8,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
+
 import artifactsData from "@/features/game-data/equipment/artifacts.json";
 import runesData from "@/features/game-data/equipment/runes.json";
 import branchesData from "@/features/game-data/divinity/divinity-branches.json";
@@ -63,7 +65,7 @@ const weaponAwakeningCatalog = {
 const SCREEN_PADDING = 20;
 
 export function DivinityBranchBuilderScreen() {
-  const { bottom } = useSafeAreaInsets();
+  const { top, bottom } = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const downloadSectionY = useRef(0);
   const errorsBlockY = useRef(0);
@@ -107,17 +109,18 @@ export function DivinityBranchBuilderScreen() {
   };
 
   return (
-    <ScrollView
-      ref={scrollRef}
-      contentContainerStyle={[
-        styles.container,
-        { paddingBottom: SCREEN_PADDING + bottom },
-      ]}
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>Divinity Branch Builder</Text>
-      </View>
-
+    <View style={styles.screen}>
+      <ScreenHeader title="Builder" fallbackHref="/" />
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={[
+          styles.container,
+          {
+            paddingTop: SCREEN_HEADER_HEIGHT + top + 10,
+            paddingBottom: SCREEN_PADDING + bottom,
+          },
+        ]}
+      >
       <View style={styles.section}>
         <GameModeRadio
           value={builder.gameMode}
@@ -229,25 +232,21 @@ export function DivinityBranchBuilderScreen() {
           }}
         />
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#140d0b",
+  },
   container: {
     flexGrow: 1,
     gap: 32,
     backgroundColor: "#140d0b",
     paddingHorizontal: SCREEN_PADDING,
-    paddingTop: SCREEN_PADDING,
-  },
-  header: {
-    paddingTop: 10,
-  },
-  title: {
-    color: "#f3d38a",
-    fontSize: 28,
-    fontWeight: "900",
   },
   section: {
     width: "100%",

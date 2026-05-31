@@ -1,20 +1,39 @@
 import { Link } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Высота кнопки (паддинги + текст)
 const BUTTON_HEIGHT = 54;
 
-// Главный экран с выбором калькулятора
+// Главный экран: секции "Калькуляторы" и "Билды"
 export default function HomeScreen() {
+  const { bottom } = useSafeAreaInsets();
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>MH Calculator</Text>
-      <Text style={styles.subtitle}>Выбери калькулятор для запуска.</Text>
-      <Link href="/divinity" asChild>
-        <Pressable style={styles.button}>
-          <Text style={styles.buttonText}>Божественность</Text>
-        </Pressable>
-      </Link>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[
+        styles.container,
+        { paddingTop: 24, paddingBottom: 24 + bottom },
+      ]}
+    >
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Калькуляторы</Text>
+        <Link href="/divinity" asChild>
+          <Pressable style={styles.button}>
+            <Text style={styles.buttonText}>Божественность</Text>
+          </Pressable>
+        </Link>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Билды</Text>
+        <Link href="/heroes" asChild>
+          <Pressable style={styles.button}>
+            <Text style={styles.buttonText}>Билды героев</Text>
+          </Pressable>
+        </Link>
+      </View>
 
       <View style={styles.divider} />
 
@@ -25,27 +44,30 @@ export default function HomeScreen() {
           </Text>
         </Pressable>
       </Link>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
     backgroundColor: "#f4efe6",
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#17212b",
+  container: {
+    flexGrow: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    backgroundColor: "#f4efe6",
   },
-  subtitle: {
-    marginTop: 12,
-    marginBottom: 24,
-    fontSize: 16,
+  section: {
+    alignItems: "center",
+    marginBottom: 28,
+  },
+  sectionTitle: {
+    marginBottom: 12,
+    fontSize: 18,
+    fontWeight: "700",
     color: "#4f5b66",
   },
   divider: {

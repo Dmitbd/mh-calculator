@@ -20,7 +20,7 @@ describe("DivinityBranchBuilderScreen", () => {
   it("renders builder controls and validates an incomplete form", () => {
     render(<DivinityBranchBuilderScreen />);
 
-    expect(screen.getByText("Divinity Branch Builder")).toBeTruthy();
+    expect(screen.getByText("Builder")).toBeTruthy();
     expect(screen.getByLabelText("Select PvP mode")).toBeTruthy();
     expect(screen.getByLabelText("Select PvE mode")).toBeTruthy();
     expect(screen.getByPlaceholderText("Имя героя")).toBeTruthy();
