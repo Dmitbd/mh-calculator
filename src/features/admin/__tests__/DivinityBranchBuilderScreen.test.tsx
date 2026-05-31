@@ -3,6 +3,11 @@ import { Platform } from "react-native";
 
 import { DivinityBranchBuilderScreen } from "../screens/DivinityBranchBuilderScreen";
 
+jest.mock("react-native-safe-area-context", () => ({
+  __esModule: true,
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
 describe("DivinityBranchBuilderScreen", () => {
   const originalPlatform = Platform.OS;
   const originalNodeEnv = process.env.NODE_ENV;
@@ -18,18 +23,21 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByText("Divinity Branch Builder")).toBeTruthy();
     expect(screen.getByLabelText("Select PvP mode")).toBeTruthy();
     expect(screen.getByLabelText("Select PvE mode")).toBeTruthy();
-    expect(screen.getByPlaceholderText("Hero name")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Имя героя")).toBeTruthy();
     expect(screen.getByText("Пробуждение оружия")).toBeTruthy();
     expect(screen.getByLabelText("Weapon awakening slot 1, empty")).toBeTruthy();
-    expect(screen.getAllByText("Left branch")).toHaveLength(1);
-    expect(screen.getAllByText("Center main branch")).toHaveLength(1);
-    expect(screen.getAllByText("Right branch")).toHaveLength(1);
+    expect(screen.getAllByLabelText("Choose branch for левая")).toHaveLength(1);
+    expect(screen.getAllByLabelText("Choose branch for центр")).toHaveLength(1);
+    expect(screen.getAllByLabelText("Choose branch for правая")).toHaveLength(1);
+    expect(screen.queryByText("левая")).toBeNull();
+    expect(screen.queryByText("центр")).toBeNull();
+    expect(screen.queryByText("правая")).toBeNull();
     expect(screen.queryByText("Asterial Skills")).toBeNull();
     expect(screen.queryByText("Psyche Skills")).toBeNull();
     expect(screen.queryByText("Immortality Skills")).toBeNull();
     expect(screen.queryByText("Devoid Skills")).toBeNull();
     expect(screen.queryByText("Primeval Skills")).toBeNull();
-    expect(screen.getByText("Lv. 1")).toBeTruthy();
+    expect(screen.getByText("1")).toBeTruthy();
     expect(screen.getAllByText("Divinity skill level").length).toBeGreaterThan(0);
 
     fireEvent.press(screen.getByText("Скачать JSON"));
@@ -49,11 +57,11 @@ describe("DivinityBranchBuilderScreen", () => {
   it("selects branch types from the grid column headers", () => {
     render(<DivinityBranchBuilderScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText("Hero name"), "Western Queen");
+    fireEvent.changeText(screen.getByPlaceholderText("Имя героя"), "Western Queen");
 
-    fireEvent.press(screen.getByLabelText("Choose branch for Center main branch"));
+    fireEvent.press(screen.getByLabelText("Choose branch for центр"));
     expect(screen.getByText("Psyche Skills")).toBeTruthy();
-    fireEvent.press(screen.getByLabelText("Select Psyche Skills for Center main branch"));
+    fireEvent.press(screen.getByLabelText("Select Psyche Skills for центр"));
 
     expect(screen.getByText("Psyche Skills")).toBeTruthy();
     expect(screen.getByLabelText("Psyche Skills icon")).toBeTruthy();

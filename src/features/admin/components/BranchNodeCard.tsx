@@ -115,7 +115,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#533b29",
     backgroundColor: "#241610",
-    padding: 10,
+    paddingHorizontal: 4,
+    paddingVertical: 8,
   },
   readonlyCard: {
     alignSelf: "center",

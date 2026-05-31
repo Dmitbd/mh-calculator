@@ -18,6 +18,10 @@ import { IconPreview } from "./IconPreview";
 // Отступы сетки: по X (между колонками) и по Y (между уровнями)
 const COLUMN_GAP = 16;
 const ROW_GAP = 24;
+// Фиксированная высота ячеек заголовка — иконка + 2 строки текста без сдвига сетки
+const BRANCH_HEADER_HEIGHT = 72;
+// Минимальная ширина колонки уровней — 1–2 цифры и «lv.»
+const LEVEL_COLUMN_WIDTH = 34;
 // Цвет вертикальной линии-«ветки», соединяющей ноды в столбце
 const BRANCH_LINE_COLOR = "#4d3524";
 
@@ -191,7 +195,7 @@ export function BranchBuilderGrid({
   return (
     <View style={styles.wrapper}>
       <View style={styles.headerRow}>
-        <Text style={[styles.headerCell, styles.levelHeader]}>Level</Text>
+        <Text style={[styles.headerCell, styles.levelHeader]}>lv.</Text>
         {columns.map((column) => {
           const selectedBranch =
             branches.find((branch) => branch.id === selectedBranches[column.id]) ??
@@ -225,7 +229,11 @@ export function BranchBuilderGrid({
                     current === column.id ? null : column.id,
                   )
                 }
-                style={[styles.headerButton, menuOpen && styles.headerButtonOpen]}
+                style={[
+                  styles.headerButton,
+                  !selectedBranch && styles.headerButtonEmpty,
+                  menuOpen && styles.headerButtonOpen,
+                ]}
               >
                 {selectedBranch ? (
                   <>
@@ -238,9 +246,7 @@ export function BranchBuilderGrid({
                       {selectedBranch.title}
                     </Text>
                   </>
-                ) : (
-                  <Text style={styles.headerButtonText}>{column.label}</Text>
-                )}
+                ) : null}
               </Pressable>
               {menuOpen ? (
                 <View style={styles.branchMenu}>
@@ -264,7 +270,7 @@ export function BranchBuilderGrid({
       </View>
       {levels.map((level) => (
         <View key={level} style={styles.row}>
-          <Text style={styles.levelCell}>Lv. {level}</Text>
+          <Text style={styles.levelCell}>{level}</Text>
           {columns.map((column, columnIndex) => {
             const node =
               template.find(
@@ -390,23 +396,21 @@ function WebBranchHeaderPicker({
                 selectedBranch.title,
               ),
             )
-          : React.createElement(
-              "span",
-              { style: webStyles.placeholderText },
-              column.label,
-            ),
+          : null,
       ),
-      React.createElement(
-        "span",
-        {
-          "aria-hidden": true,
-          style: {
-            ...webStyles.chevron,
-            transform: open ? "rotate(180deg)" : "rotate(0deg)",
-          },
-        },
-        "▾",
-      ),
+      selectedBranch
+        ? React.createElement(
+            "span",
+            {
+              "aria-hidden": true,
+              style: {
+                ...webStyles.chevron,
+                transform: open ? "rotate(180deg)" : "rotate(0deg)",
+              },
+            },
+            "▾",
+          )
+        : null,
     ),
     React.createElement(
       "div",
@@ -443,7 +447,7 @@ function getMajorSkillKey(columnId: BranchColumnId, level: number): string {
 const webStyles = {
   details: {
     flex: 1,
-    minHeight: 44,
+    height: BRANCH_HEADER_HEIGHT,
     position: "relative",
     zIndex: 100,
   },
@@ -460,9 +464,9 @@ const webStyles = {
     fontSize: 13,
     fontWeight: 900,
     gap: 8,
+    height: "100%",
     justifyContent: "space-between",
     listStyle: "none",
-    minHeight: 44,
     padding: "8px",
     textAlign: "center",
   },
@@ -479,16 +483,21 @@ const webStyles = {
   summaryContent: {
     alignItems: "center",
     display: "flex",
-    gap: 8,
+    flex: 1,
+    flexDirection: "column",
+    gap: 4,
+    justifyContent: "center",
     minWidth: 0,
     overflow: "hidden",
   },
   summaryText: {
+    display: "-webkit-box",
     minWidth: 0,
-  },
-  placeholderText: {
-    color: "#caa877",
-    minWidth: 0,
+    overflow: "hidden",
+    textAlign: "center",
+    WebkitBoxOrient: "vertical",
+    WebkitLineClamp: 2,
+    width: "100%",
   },
   // Шеврон-индикатор выпадающего списка, вращается при открытии
   chevron: {
@@ -510,7 +519,7 @@ const webStyles = {
     padding: 8,
     position: "absolute",
     right: 0,
-    top: 52,
+    top: BRANCH_HEADER_HEIGHT + 8,
     zIndex: 100,
   },
   option: {
@@ -521,15 +530,22 @@ const webStyles = {
     color: "#f3dfbc",
     cursor: "pointer",
     display: "flex",
+    flexDirection: "column",
     fontSize: 12,
     fontWeight: 800,
-    gap: 8,
+    gap: 4,
+    justifyContent: "center",
     minHeight: 38,
     padding: "7px 8px",
-    textAlign: "left",
+    textAlign: "center",
   },
   optionText: {
-    flex: 1,
+    display: "-webkit-box",
+    overflow: "hidden",
+    textAlign: "center",
+    WebkitBoxOrient: "vertical",
+    WebkitLineClamp: 2,
+    width: "100%",
   },
   icon: {
     backgroundColor: "#271610",
@@ -547,7 +563,7 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     gap: COLUMN_GAP,
-    alignItems: "flex-start",
+    alignItems: "stretch",
     zIndex: 100,
   },
   headerCell: {
@@ -558,20 +574,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   levelHeader: {
-    flex: 0.45,
-    minHeight: 44,
-    paddingTop: 12,
+    flex: 0,
+    width: LEVEL_COLUMN_WIDTH,
+    height: BRANCH_HEADER_HEIGHT,
+    lineHeight: BRANCH_HEADER_HEIGHT,
+    textAlignVertical: "center",
   },
   headerBranchCell: {
     flex: 1,
     gap: 8,
+    height: BRANCH_HEADER_HEIGHT,
   },
   headerButton: {
-    minHeight: 44,
-    flexDirection: "row",
+    height: BRANCH_HEADER_HEIGHT,
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 4,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "transparent",
@@ -582,12 +601,16 @@ const styles = StyleSheet.create({
     borderColor: "#f0c36a",
     backgroundColor: "#241610",
   },
+  headerButtonEmpty: {
+    borderStyle: "dashed",
+    borderColor: "#6b4d34",
+  },
   headerButtonText: {
-    flexShrink: 1,
     color: "#f7dfac",
     fontSize: 13,
     fontWeight: "900",
     textAlign: "center",
+    width: "100%",
   },
   branchMenu: {
     gap: 6,
@@ -599,9 +622,10 @@ const styles = StyleSheet.create({
   },
   branchOption: {
     minHeight: 38,
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
-    gap: 8,
+    justifyContent: "center",
+    gap: 4,
     borderRadius: 7,
     borderWidth: 1,
     borderColor: "#4d3524",
@@ -610,10 +634,11 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   branchOptionText: {
-    flex: 1,
     color: "#f3dfbc",
     fontSize: 12,
     fontWeight: "800",
+    textAlign: "center",
+    width: "100%",
   },
   row: {
     flexDirection: "row",
@@ -622,14 +647,15 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   levelCell: {
-    flex: 0.45,
+    flex: 0,
+    width: LEVEL_COLUMN_WIDTH,
     minHeight: 70,
     borderRadius: 8,
     backgroundColor: "#1b110d",
     color: "#d8c2a1",
     fontSize: 12,
     fontWeight: "900",
-    paddingTop: 12,
+    lineHeight: 70,
     textAlign: "center",
   },
   nodeCell: {

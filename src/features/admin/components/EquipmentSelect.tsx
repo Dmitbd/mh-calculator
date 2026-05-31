@@ -71,33 +71,35 @@ export function EquipmentSelect({
       <Text style={styles.label}>{label}</Text>
       <View style={styles.row}>
         <View style={styles.pickerCell}>
-          <Pressable
-            accessibilityLabel={`Choose ${label}`}
-            accessibilityRole="button"
-            accessibilityState={{ expanded: open }}
-            onPress={toggleOpen}
-            style={styles.selectButton}
-          >
-            <IconPreview
-              label={selected?.name ?? label}
-              size={30}
-              source={selected?.icon ?? null}
-            />
-            <Text numberOfLines={1} style={styles.selectText}>
-              {selected?.name ?? placeholder}
-            </Text>
-          </Pressable>
-
-          {selected ? (
+          <View style={styles.selectField}>
             <Pressable
-              accessibilityLabel={`Clear ${label}`}
+              accessibilityLabel={`Choose ${label}`}
               accessibilityRole="button"
-              onPress={handleClear}
-              style={styles.clearButton}
+              accessibilityState={{ expanded: open }}
+              onPress={toggleOpen}
+              style={styles.selectButton}
             >
-              <Text style={styles.clearButtonText}>×</Text>
+              <IconPreview
+                label={selected?.name ?? label}
+                size={30}
+                source={selected?.icon ?? null}
+              />
+              <Text numberOfLines={1} style={styles.selectText}>
+                {selected?.name ?? placeholder}
+              </Text>
             </Pressable>
-          ) : null}
+
+            {selected ? (
+              <Pressable
+                accessibilityLabel={`Clear ${label}`}
+                accessibilityRole="button"
+                onPress={handleClear}
+                style={styles.clearButton}
+              >
+                <Text style={styles.clearButtonText}>×</Text>
+              </Pressable>
+            ) : null}
+          </View>
 
           {open ? (
             <View style={styles.dropdown}>
@@ -156,6 +158,9 @@ const styles = StyleSheet.create({
   pickerCell: {
     width: "100%",
   },
+  selectField: {
+    position: "relative",
+  },
   selectButton: {
     minHeight: 48,
     flexDirection: "row",
@@ -175,10 +180,11 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     position: "absolute",
-    top: 4,
-    right: 4,
+    top: "50%",
+    right: 8,
     width: 22,
     height: 22,
+    marginTop: -11,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 11,

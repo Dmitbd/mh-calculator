@@ -8,11 +8,11 @@ type HeroNameInputProps = {
 export function HeroNameInput({ value, onChange }: HeroNameInputProps) {
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>Hero</Text>
+      <Text style={styles.label}>Герой</Text>
       <TextInput
-        accessibilityLabel="Hero name"
+        accessibilityLabel="Имя героя"
         onChangeText={onChange}
-        placeholder="Hero name"
+        placeholder="Имя героя"
         placeholderTextColor="#917968"
         style={styles.input}
         value={value}

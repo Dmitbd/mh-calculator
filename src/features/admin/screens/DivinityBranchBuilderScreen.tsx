@@ -1,5 +1,12 @@
-import { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useMemo, useRef, useState } from "react";
+import {
+  type LayoutChangeEvent,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import artifactsData from "@/features/game-data/equipment/artifacts.json";
 import runesData from "@/features/game-data/equipment/runes.json";
@@ -33,9 +40,9 @@ import { slugifyFileName } from "../utils/slugifyFileName";
 import { validateBranchBuild } from "../utils/validateBranchBuild";
 
 const columns: BranchColumn[] = [
-  { id: "left", label: "Left branch", isMain: false },
-  { id: "center", label: "Center main branch", isMain: true },
-  { id: "right", label: "Right branch", isMain: false },
+  { id: "left", label: "левая", isMain: false },
+  { id: "center", label: "центр", isMain: true },
+  { id: "right", label: "правая", isMain: false },
 ];
 
 const branches = [...(branchesData as DivinityBranch[])].sort(
@@ -53,7 +60,14 @@ const weaponAwakeningCatalog = {
   slots: weaponAwakeningSlots,
 };
 
+const SCREEN_PADDING = 20;
+
 export function DivinityBranchBuilderScreen() {
+  const { bottom } = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
+  const downloadSectionY = useRef(0);
+  const errorsBlockY = useRef(0);
+  const pendingScrollToErrors = useRef(false);
   const builder = useDivinityBranchBuilder(weaponAwakeningCatalog);
   const [activeMajorSlot, setActiveMajorSlot] = useState<{
     columnId: BranchColumnId;
@@ -68,8 +82,38 @@ export function DivinityBranchBuilderScreen() {
     [builder.selectedMajorSkills],
   );
 
+  const scrollToErrors = () => {
+    if (!pendingScrollToErrors.current) {
+      return;
+    }
+
+    pendingScrollToErrors.current = false;
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({
+        animated: true,
+        y: Math.max(0, downloadSectionY.current + errorsBlockY.current - 12),
+      });
+    });
+  };
+
+  const handleDownloadSectionLayout = (event: LayoutChangeEvent) => {
+    downloadSectionY.current = event.nativeEvent.layout.y;
+    scrollToErrors();
+  };
+
+  const handleErrorsLayout = (event: LayoutChangeEvent) => {
+    errorsBlockY.current = event.nativeEvent.layout.y;
+    scrollToErrors();
+  };
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      ref={scrollRef}
+      contentContainerStyle={[
+        styles.container,
+        { paddingBottom: SCREEN_PADDING + bottom },
+      ]}
+    >
       <View style={styles.header}>
         <Text style={styles.title}>Divinity Branch Builder</Text>
       </View>
@@ -98,7 +142,7 @@ export function DivinityBranchBuilderScreen() {
 
       <View style={styles.section}>
         <EquipmentSelect
-          label="Руна"
+          label="руны"
           onClear={() => builder.setRune(null)}
           onSelect={builder.setRune}
           options={runes}
@@ -117,37 +161,41 @@ export function DivinityBranchBuilderScreen() {
       </View>
 
       <View style={styles.section}>
-        <BranchBuilderGrid
-          activeMajorSlot={activeMajorSlot}
-          branches={branches}
-          columns={columns}
-          onOpenMajorSlot={(columnId, level) =>
-            setActiveMajorSlot({ columnId, level })
-          }
-          onClearMajorSkill={(columnId, level) => {
-            builder.setMajorSkill(columnId, level, null);
-            builder.rollbackColumnProgress(columnId, level);
-            setActiveMajorSlot(null);
-          }}
-          onSelectBranch={builder.setColumnBranch}
-          onSelectMajorSkill={(columnId, level, skillId) => {
-            builder.setMajorSkill(columnId, level, skillId);
-            builder.setColumnProgress(columnId, level);
-            setActiveMajorSlot(null);
-          }}
-          onToggleProgress={builder.toggleColumnProgress}
-          progressLevels={builder.progressLevels}
-          selectedBranches={builder.selectedBranches}
-          selectedMajorSkills={selectedMajorSkills}
-          skillCatalog={skills}
-          skills={skills}
-          template={template}
-        />
+        <View style={styles.branchSection}>
+          <Text style={styles.sectionLabel}>Ветка</Text>
+          <BranchBuilderGrid
+            activeMajorSlot={activeMajorSlot}
+            branches={branches}
+            columns={columns}
+            onOpenMajorSlot={(columnId, level) =>
+              setActiveMajorSlot({ columnId, level })
+            }
+            onClearMajorSkill={(columnId, level) => {
+              builder.setMajorSkill(columnId, level, null);
+              builder.rollbackColumnProgress(columnId, level);
+              setActiveMajorSlot(null);
+            }}
+            onSelectBranch={builder.setColumnBranch}
+            onSelectMajorSkill={(columnId, level, skillId) => {
+              builder.setMajorSkill(columnId, level, skillId);
+              builder.setColumnProgress(columnId, level);
+              setActiveMajorSlot(null);
+            }}
+            onToggleProgress={builder.toggleColumnProgress}
+            progressLevels={builder.progressLevels}
+            selectedBranches={builder.selectedBranches}
+            selectedMajorSkills={selectedMajorSkills}
+            skillCatalog={skills}
+            skills={skills}
+            template={template}
+          />
+        </View>
       </View>
 
-      <View style={styles.section}>
+      <View onLayout={handleDownloadSectionLayout} style={styles.section}>
         <DownloadJsonButton
           errors={validationErrors}
+          onErrorsLayout={handleErrorsLayout}
           onPress={() => {
             const result = validateBranchBuild(builder.buildValidationDraft(), {
               branches,
@@ -160,6 +208,16 @@ export function DivinityBranchBuilderScreen() {
             });
 
             setValidationErrors(result.errors);
+
+            if (result.errors.length > 0) {
+              pendingScrollToErrors.current = true;
+
+              if (validationErrors.length > 0) {
+                requestAnimationFrame(() => {
+                  scrollToErrors();
+                });
+              }
+            }
 
             if (result.isValid) {
               const build = builder.buildExport();
@@ -178,9 +236,10 @@ export function DivinityBranchBuilderScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    gap: 18,
+    gap: 32,
     backgroundColor: "#140d0b",
-    padding: 20,
+    paddingHorizontal: SCREEN_PADDING,
+    paddingTop: SCREEN_PADDING,
   },
   header: {
     paddingTop: 10,
@@ -192,5 +251,14 @@ const styles = StyleSheet.create({
   },
   section: {
     width: "100%",
+  },
+  branchSection: {
+    gap: 8,
+  },
+  sectionLabel: {
+    color: "#d6c2a4",
+    fontSize: 13,
+    fontWeight: "800",
+    textTransform: "uppercase",
   },
 });

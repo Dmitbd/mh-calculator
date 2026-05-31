@@ -1,13 +1,24 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  type LayoutChangeEvent,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import type { BranchBuildValidationError } from "../types/admin.types";
 
 type DownloadJsonButtonProps = {
   errors: readonly BranchBuildValidationError[];
+  onErrorsLayout?: (event: LayoutChangeEvent) => void;
   onPress: () => void;
 };
 
-export function DownloadJsonButton({ errors, onPress }: DownloadJsonButtonProps) {
+export function DownloadJsonButton({
+  errors,
+  onErrorsLayout,
+  onPress,
+}: DownloadJsonButtonProps) {
   return (
     <View style={styles.wrapper}>
       <Pressable
@@ -18,7 +29,7 @@ export function DownloadJsonButton({ errors, onPress }: DownloadJsonButtonProps)
         <Text style={styles.buttonText}>Скачать JSON</Text>
       </Pressable>
       {errors.length > 0 ? (
-        <View style={styles.errors}>
+        <View onLayout={onErrorsLayout} style={styles.errors}>
           {errors.map((error) => (
             <Text key={`${error.code}:${error.path ?? error.message}`} style={styles.errorText}>
               {error.message}
