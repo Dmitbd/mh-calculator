@@ -33,8 +33,8 @@ type EquipmentSelectProps = {
 };
 
 /**
- * Строка выбора экипировки: слева — ячейка с выпадающим списком (иконка + имя),
- * справа — описание выбранного элемента (и резонанс для рун).
+ * Блок выбора экипировки (мобильная раскладка): сверху — ячейка с выпадающим
+ * списком (иконка + имя), ниже — описание выбранного элемента (и резонанс для рун).
  */
 export function EquipmentSelect({
   label,
@@ -149,12 +149,12 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   row: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+    flexDirection: "column",
+    alignItems: "stretch",
     gap: 12,
   },
   pickerCell: {
-    width: 240,
+    width: "100%",
   },
   selectButton: {
     minHeight: 48,
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   descriptionCell: {
-    flex: 1,
+    width: "100%",
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: 1,
