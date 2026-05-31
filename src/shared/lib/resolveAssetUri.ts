@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 
-import appConfig from "../../../app.json";
+import appConfig from "@app-config";
 
 const NATIVE_ASSET_ORIGIN =
   process.env.EXPO_PUBLIC_ASSET_ORIGIN ?? appConfig.expo.extra.assetOrigin;
@@ -17,7 +17,7 @@ export function resolveAssetUri(path: string): string {
     return path;
   }
 
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const normalizedPath = /^\//.test(path) ? path : `/${path}`;
 
   if (Platform.OS === "web") {
     if (process.env.NODE_ENV !== "production") {
