@@ -1,8 +1,17 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import { Platform } from "react-native";
 
 import { DivinityBranchBuilderScreen } from "../screens/DivinityBranchBuilderScreen";
 
 describe("DivinityBranchBuilderScreen", () => {
+  const originalPlatform = Platform.OS;
+  const originalNodeEnv = process.env.NODE_ENV;
+
+  afterEach(() => {
+    Object.defineProperty(Platform, "OS", { value: originalPlatform });
+    process.env.NODE_ENV = originalNodeEnv;
+  });
+
   it("renders builder controls and validates an incomplete form", () => {
     render(<DivinityBranchBuilderScreen />);
 
@@ -53,5 +62,16 @@ describe("DivinityBranchBuilderScreen", () => {
 
     expect(screen.getByText("Maestro")).toBeTruthy();
     expect(screen.queryByText("Gemini")).toBeNull();
+  });
+
+  it("prefixes web branch header image paths with the configured base URL", () => {
+    Object.defineProperty(Platform, "OS", { value: "web" });
+    process.env.NODE_ENV = "production";
+
+    const view = render(<DivinityBranchBuilderScreen />);
+
+    const images = view.UNSAFE_getAllByType("img" as never);
+
+    expect(images[0].props.src).toBe("/mh-calculator/img/branches/asterial.png");
   });
 });

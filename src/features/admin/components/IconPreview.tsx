@@ -1,5 +1,7 @@
 import { Image, StyleSheet, View } from "react-native";
 
+import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
+
 type IconPreviewProps = {
   source: string | null;
   label: string;
@@ -23,7 +25,7 @@ export function IconPreview({ source, label, size = 34 }: IconPreviewProps) {
   return (
     <Image
       accessibilityLabel={`${label} icon`}
-      source={{ uri: source }}
+      source={{ uri: resolveAssetUri(source) }}
       style={[styles.image, { width: size, height: size }]}
     />
   );

@@ -26,16 +26,16 @@
 ## Source Files
 
 Текущая логика распределена так:
-- [app/divinity.tsx](/Users/mymaughem/Desktop/work/mh-calculator/app/divinity.tsx)
-- [src/features/divinity/data/divinity-levels.json](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/data/divinity-levels.json)
-- [src/features/divinity/hooks/useDivinityProgress.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/hooks/useDivinityProgress.ts)
-- [src/features/divinity/model/calculateDivinityTotals.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/model/calculateDivinityTotals.ts)
-- [src/features/divinity/model/getCurrentDivinityStep.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/model/getCurrentDivinityStep.ts)
-- [src/features/divinity/storage/divinityProgressStorage.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/storage/divinityProgressStorage.ts)
-- [src/features/divinity/ui/DivinityRangeSelector.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/ui/DivinityRangeSelector.tsx)
-- [src/features/divinity/ui/DivinityRing.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/ui/DivinityRing.tsx)
-- [src/features/divinity/ui/DivinitySummary.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/ui/DivinitySummary.tsx)
-- [src/features/divinity/ui/GemIcon.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/ui/GemIcon.tsx)
+- [app/divinity.tsx](../app/divinity.tsx)
+- [src/features/divinity/data/divinity-levels.json](../src/features/divinity/data/divinity-levels.json)
+- [src/features/divinity/hooks/useDivinityProgress.ts](../src/features/divinity/hooks/useDivinityProgress.ts)
+- [src/features/divinity/model/calculateDivinityTotals.ts](../src/features/divinity/model/calculateDivinityTotals.ts)
+- [src/features/divinity/model/getCurrentDivinityStep.ts](../src/features/divinity/model/getCurrentDivinityStep.ts)
+- [src/features/divinity/storage/divinityProgressStorage.ts](../src/features/divinity/storage/divinityProgressStorage.ts)
+- [src/features/divinity/ui/DivinityRangeSelector.tsx](../src/features/divinity/ui/DivinityRangeSelector.tsx)
+- [src/features/divinity/ui/DivinityRing.tsx](../src/features/divinity/ui/DivinityRing.tsx)
+- [src/features/divinity/ui/DivinitySummary.tsx](../src/features/divinity/ui/DivinitySummary.tsx)
+- [src/features/divinity/ui/GemIcon.tsx](../src/features/divinity/ui/GemIcon.tsx)
 
 ## Data Model
 
@@ -197,7 +197,7 @@ type DivinityProgress = {
 - после достижения `5` круг должен стать неактивным;
 - пользователь явно просит расчет только до `5`, и это поведение нельзя менять.
 
-Это правило зафиксировано в [getCurrentDivinityStep.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/model/getCurrentDivinityStep.ts).
+Это правило зафиксировано в [getCurrentDivinityStep.ts](../src/features/divinity/model/getCurrentDivinityStep.ts).
 
 ### Maximum Level Rule
 
@@ -303,9 +303,9 @@ type DivinityProgress = {
 ## Verification
 
 Текущее поведение покрыто тестами:
-- [calculateDivinityTotals.test.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/__tests__/calculateDivinityTotals.test.ts)
-- [divinityProgressStorage.test.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/__tests__/divinityProgressStorage.test.ts)
-- [divinityScreen.test.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/divinity/__tests__/divinityScreen.test.tsx)
+- [calculateDivinityTotals.test.ts](../src/features/divinity/__tests__/calculateDivinityTotals.test.ts)
+- [divinityProgressStorage.test.ts](../src/features/divinity/__tests__/divinityProgressStorage.test.ts)
+- [divinityScreen.test.tsx](../src/features/divinity/__tests__/divinityScreen.test.tsx)
 
 Тесты отдельно подтверждают:
 - новый максимум `30`;

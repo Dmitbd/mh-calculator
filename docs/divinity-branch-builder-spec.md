@@ -26,26 +26,26 @@
 - серверную синхронизацию или несколько профилей.
 
 Экран `Divinity Branch Builder` дополнительно содержит соседние секции, которые НЕ входят в этот документ:
-- режим игры PvP/PvE ([GameModeRadio](/Users/mymaughem/Desktop/work/mh-calculator/src/features/admin/components/GameModeRadio.tsx));
-- пробуждение оружия ([WeaponAwakeningPicker](/Users/mymaughem/Desktop/work/mh-calculator/src/features/admin/components/WeaponAwakeningPicker.tsx)).
+- режим игры PvP/PvE ([GameModeRadio](../src/features/admin/components/GameModeRadio.tsx));
+- пробуждение оружия ([WeaponAwakeningPicker](../src/features/admin/components/WeaponAwakeningPicker.tsx)).
 
 Эти секции живут в том же экране и в той же JSON-выгрузке, но описываются отдельно.
 
 ## Source Files
 
 Логика билдера дерева распределена так:
-- [app/admin/branch-builder.tsx](/Users/mymaughem/Desktop/work/mh-calculator/app/admin/branch-builder.tsx) — маршрут
-- [src/features/admin/screens/DivinityBranchBuilderScreen.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/admin/screens/DivinityBranchBuilderScreen.tsx) — экран, сборка секций
-- [src/features/admin/components/BranchBuilderGrid.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/admin/components/BranchBuilderGrid.tsx) — сетка, заголовки-селекторы веток, линии дерева
-- [src/features/admin/components/BranchNodeCard.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/admin/components/BranchNodeCard.tsx) — `MinorStatCard` и `MajorNodeCard`
-- [src/features/admin/components/MajorSkillPicker.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/admin/components/MajorSkillPicker.tsx) — список выбора скилла
-- [src/features/admin/components/IconPreview.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/admin/components/IconPreview.tsx) — иконка или пунктирный плейсхолдер
-- [src/features/admin/hooks/useDivinityBranchBuilder.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/admin/hooks/useDivinityBranchBuilder.ts) — состояние и экспорт
-- [src/features/admin/utils/validateBranchBuild.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/admin/utils/validateBranchBuild.ts) — валидация
-- [src/features/admin/types/admin.types.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/admin/types/admin.types.ts) — типы
-- [src/features/game-data/divinity/tree-template.json](/Users/mymaughem/Desktop/work/mh-calculator/src/features/game-data/divinity/tree-template.json) — структура дерева
-- [src/features/game-data/divinity/divinity-branches.json](/Users/mymaughem/Desktop/work/mh-calculator/src/features/game-data/divinity/divinity-branches.json) — ветки
-- [src/features/game-data/divinity/divinity-skills.json](/Users/mymaughem/Desktop/work/mh-calculator/src/features/game-data/divinity/divinity-skills.json) — мажорные скиллы
+- [app/admin/branch-builder.tsx](../app/admin/branch-builder.tsx) — маршрут
+- [src/features/admin/screens/DivinityBranchBuilderScreen.tsx](../src/features/admin/screens/DivinityBranchBuilderScreen.tsx) — экран, сборка секций
+- [src/features/admin/components/BranchBuilderGrid.tsx](../src/features/admin/components/BranchBuilderGrid.tsx) — сетка, заголовки-селекторы веток, линии дерева
+- [src/features/admin/components/BranchNodeCard.tsx](../src/features/admin/components/BranchNodeCard.tsx) — `MinorStatCard` и `MajorNodeCard`
+- [src/features/admin/components/MajorSkillPicker.tsx](../src/features/admin/components/MajorSkillPicker.tsx) — список выбора скилла
+- [src/features/admin/components/IconPreview.tsx](../src/features/admin/components/IconPreview.tsx) — иконка или пунктирный плейсхолдер
+- [src/features/admin/hooks/useDivinityBranchBuilder.ts](../src/features/admin/hooks/useDivinityBranchBuilder.ts) — состояние и экспорт
+- [src/features/admin/utils/validateBranchBuild.ts](../src/features/admin/utils/validateBranchBuild.ts) — валидация
+- [src/features/admin/types/admin.types.ts](../src/features/admin/types/admin.types.ts) — типы
+- [src/features/game-data/divinity/tree-template.json](../src/features/game-data/divinity/tree-template.json) — структура дерева
+- [src/features/game-data/divinity/divinity-branches.json](../src/features/game-data/divinity/divinity-branches.json) — ветки
+- [src/features/game-data/divinity/divinity-skills.json](../src/features/game-data/divinity/divinity-skills.json) — мажорные скиллы
 
 `BranchSelector.tsx` существует в коде как legacy-компонент и сейчас НЕ подключён: заголовки-селекторы веток реализованы прямо в `BranchBuilderGrid`.
 
@@ -278,7 +278,7 @@ type DivinityBranchBuildExport = {
 
 Прочие коды (`gameMode.invalid`, `heroName.required`, `weaponAwakening.*`) относятся к соседним секциям/общим полям.
 
-Кнопка `Проверить JSON` ([DownloadJsonButton](/Users/mymaughem/Desktop/work/mh-calculator/src/features/admin/components/DownloadJsonButton.tsx)) запускает валидацию и показывает список ошибок.
+Кнопка `Проверить JSON` ([DownloadJsonButton](../src/features/admin/components/DownloadJsonButton.tsx)) запускает валидацию и показывает список ошибок.
 
 ## UI Contract
 
@@ -324,8 +324,8 @@ type DivinityBranchBuildExport = {
 ## Verification
 
 Поведение хука и валидации частично покрыто тестами:
-- [useDivinityBranchBuilder.test.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/admin/__tests__/useDivinityBranchBuilder.test.ts) — пустой драфт и сборка JSON (включая `progress` и `activeNodes`);
-- [validateBranchBuild.test.ts](/Users/mymaughem/Desktop/work/mh-calculator/src/features/admin/__tests__/validateBranchBuild.test.ts) — валидация и `slugifyFileName`;
-- [DivinityBranchBuilderScreen.test.tsx](/Users/mymaughem/Desktop/work/mh-calculator/src/features/admin/__tests__/DivinityBranchBuilderScreen.test.tsx) — поведение экрана.
+- [useDivinityBranchBuilder.test.ts](../src/features/admin/__tests__/useDivinityBranchBuilder.test.ts) — пустой драфт и сборка JSON (включая `progress` и `activeNodes`);
+- [validateBranchBuild.test.ts](../src/features/admin/__tests__/validateBranchBuild.test.ts) — валидация и `slugifyFileName`;
+- [DivinityBranchBuilderScreen.test.tsx](../src/features/admin/__tests__/DivinityBranchBuilderScreen.test.tsx) — поведение экрана.
 
 Любая правка билдера дерева должна сохранять эти инварианты или осознанно обновлять одновременно код, этот документ и тесты.

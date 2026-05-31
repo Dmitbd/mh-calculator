@@ -8,7 +8,11 @@
       "output": "static"
     },
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "baseUrl": "/mh-calculator"
+    },
+    "extra": {
+      "assetOrigin": "https://dmitbd.github.io/mh-calculator"
     }
   }
 }

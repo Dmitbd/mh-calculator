@@ -30,7 +30,7 @@ This project is configured for free static hosting on GitHub Pages.
 
 - Web output uses Expo static export.
 - The current Pages base path is `/mh-calculator`.
-- If the GitHub repository name changes, update `expo.experiments.baseUrl` in [app.json](/Users/mymaughem/Desktop/work/mh-calculator/app.json).
+- If the GitHub repository name changes, update `expo.experiments.baseUrl` and `expo.extra.assetOrigin` in [app.json](app.json).
 
 ### Deployment
 

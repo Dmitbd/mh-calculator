@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
+
 import type {
   BranchColumn,
   BranchColumnId,
@@ -379,7 +381,7 @@ function WebBranchHeaderPicker({
               React.createElement("img", {
                 "aria-label": `${selectedBranch.title} icon`,
                 alt: "",
-                src: selectedBranch.icon,
+                src: resolveAssetUri(selectedBranch.icon),
                 style: webStyles.icon,
               }),
               React.createElement(
@@ -424,7 +426,7 @@ function WebBranchHeaderPicker({
           },
           React.createElement("img", {
             alt: "",
-            src: branch.icon,
+            src: resolveAssetUri(branch.icon),
             style: webStyles.icon,
           }),
           React.createElement("span", { style: webStyles.optionText }, branch.title),
