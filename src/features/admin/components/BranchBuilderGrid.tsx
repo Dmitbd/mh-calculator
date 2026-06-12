@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { filterSkillsForSlot } from "@/features/game-data/divinity/filterSkillsForSlot";
 import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
 
 import type {
@@ -319,9 +320,10 @@ export function BranchBuilderGrid({
             const selectedSkill =
               skillCatalog.find((skill) => skill.id === selectedSkillId) ?? null;
             const branchId = selectedBranches[column.id];
-            const availableSkills = branchId
-              ? skills.filter((skill) => skill.branchId === branchId)
-              : [];
+            const availableSkills =
+              branchId && node.nodeType === "majorSkill"
+                ? filterSkillsForSlot(skills, branchId, node.tier)
+                : [];
             const pickerOpen =
               activeMajorSlot?.columnId === column.id &&
               activeMajorSlot.level === level;

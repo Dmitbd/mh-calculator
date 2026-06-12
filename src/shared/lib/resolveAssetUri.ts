@@ -1,11 +1,30 @@
+import Constants from "expo-constants";
 import { Platform } from "react-native";
 
 import appConfig from "@app-config";
 
-const NATIVE_ASSET_ORIGIN =
-  process.env.EXPO_PUBLIC_ASSET_ORIGIN ?? appConfig.expo.extra.assetOrigin;
-
+const PRODUCTION_ASSET_ORIGIN = appConfig.expo.extra.assetOrigin;
 const WEB_BASE_URL = appConfig.expo.experiments.baseUrl ?? "";
+
+/**
+ * Origin Metro dev-сервера для загрузки public-ассетов на нативе в разработке.
+ * В production нативные клиенты используют assetOrigin из app.json.
+ */
+function getNativeAssetOrigin(): string {
+  if (process.env.EXPO_PUBLIC_ASSET_ORIGIN) {
+    return process.env.EXPO_PUBLIC_ASSET_ORIGIN;
+  }
+
+  if (__DEV__) {
+    const hostUri = Constants.expoConfig?.hostUri;
+
+    if (hostUri) {
+      return `http://${hostUri}`;
+    }
+  }
+
+  return PRODUCTION_ASSET_ORIGIN;
+}
 
 /**
  * Приводит абсолютный путь ассета из public/ (например "/img/..") к рабочему URL
@@ -28,5 +47,5 @@ export function resolveAssetUri(path: string): string {
     return `${base}${normalizedPath}`;
   }
 
-  return `${NATIVE_ASSET_ORIGIN.replace(/\/$/, "")}${normalizedPath}`;
+  return `${getNativeAssetOrigin().replace(/\/$/, "")}${normalizedPath}`;
 }

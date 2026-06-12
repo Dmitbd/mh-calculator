@@ -68,7 +68,8 @@ describe("DivinityBranchBuilderScreen", () => {
 
     fireEvent.press(screen.getByLabelText("Choose skill for center level 1"));
 
-    expect(screen.getByText("Maestro")).toBeTruthy();
+    expect(screen.getByText("Energy Bubble")).toBeTruthy();
+    expect(screen.queryByText("Maestro")).toBeNull();
     expect(screen.queryByText("Gemini")).toBeNull();
   });
 

@@ -1,9 +1,45 @@
 import type { DivinityBranchBuildExport } from "@/features/admin/types/admin.types";
-import westernQueenBuild from "@/features/game-data/heroes/builds/western-queen.json";
 
 import { mapBuildToView } from "../utils/mapBuildToView";
 
-const pve = westernQueenBuild.pve as DivinityBranchBuildExport;
+const pve: DivinityBranchBuildExport = {
+  schemaVersion: 1,
+  gameMode: "pve",
+  heroName: "Western Queen",
+  columns: {
+    left: "asterial",
+    center: "psyche",
+    right: "immortality",
+  },
+  majorNodes: [
+    { level: 1, columnId: "center", branchId: "psyche", skillId: "psyche-energy-bubble" },
+    { level: 3, columnId: "left", branchId: "asterial", skillId: "asterial-gemini" },
+    { level: 3, columnId: "right", branchId: "immortality", skillId: "immortality-transcend" },
+    { level: 7, columnId: "center", branchId: "psyche", skillId: "psyche-maestro" },
+    { level: 10, columnId: "left", branchId: "asterial", skillId: "asterial-annihilation" },
+    { level: 10, columnId: "right", branchId: "immortality", skillId: "immortality-waterdrop" },
+    { level: 13, columnId: "center", branchId: "psyche", skillId: "psyche-torment" },
+    { level: 15, columnId: "left", branchId: "asterial", skillId: "asterial-supernova" },
+    { level: 15, columnId: "right", branchId: "immortality", skillId: "immortality-resonance" },
+  ],
+  weaponAwakening: [
+    { slot: 1, colorId: "red" },
+    { slot: 2, colorId: "red" },
+    { slot: 3, colorId: "red" },
+    { slot: 4, colorId: "red" },
+    { slot: 5, colorId: "yellow" },
+    { slot: 6, colorId: "yellow" },
+    { slot: 7, colorId: "yellow" },
+    { slot: 8, colorId: "yellow" },
+  ],
+  equipment: { artifactId: "excalibur", runeId: "fire" },
+  progress: { left: 10, center: 13, right: 10 },
+  activeNodes: [],
+  metadata: {
+    createdAt: "2026-05-30T00:00:00.000Z",
+    source: "manual-branch-builder",
+  },
+};
 
 describe("mapBuildToView", () => {
   it("восстанавливает выбранные ветки из columns", () => {
@@ -19,9 +55,9 @@ describe("mapBuildToView", () => {
   it("строит карту мажорных скиллов по ключу columnId:level", () => {
     const view = mapBuildToView(pve);
 
-    expect(view.selectedMajorSkills["center:1"]).toBe("psyche-maestro");
+    expect(view.selectedMajorSkills["center:1"]).toBe("psyche-energy-bubble");
     expect(view.selectedMajorSkills["left:15"]).toBe("asterial-supernova");
-    expect(view.selectedMajorSkills["right:3"]).toBe("immortality-savvy");
+    expect(view.selectedMajorSkills["right:3"]).toBe("immortality-transcend");
     expect(Object.keys(view.selectedMajorSkills)).toHaveLength(9);
   });
 

@@ -1,16 +1,13 @@
-export type DivinityBranchId =
-  | "asterial"
-  | "psyche"
-  | "immortality"
-  | "devoid"
-  | "primeval";
+export type {
+  DivinityBranchId,
+  DivinityMajorSkill,
+  DivinitySkillTier,
+} from "@/features/game-data/divinity/types";
 
 /** Режим игры для сборки ветки */
 export type DivinityGameMode = "pvp" | "pve";
 
 export type BranchColumnId = "left" | "center" | "right";
-
-export type DivinitySkillTier = 1 | 2 | 3;
 
 export type DivinityBranch = {
   id: DivinityBranchId;
@@ -28,15 +25,6 @@ export type BranchColumn = {
 export type DraftBranchColumns = Record<BranchColumnId, DivinityBranchId | null>;
 
 export type SelectedBranchColumns = Record<BranchColumnId, DivinityBranchId>;
-
-export type DivinityMajorSkill = {
-  id: string;
-  branchId: DivinityBranchId;
-  tier?: DivinitySkillTier;
-  name: string;
-  icon: string;
-  description?: string;
-};
 
 export type TreeTemplateMajorSkillNode = {
   level: number;
@@ -183,6 +171,7 @@ export type BranchBuildValidationError = {
     | "majorNode.branchMismatch"
     | "majorNode.skillUnknown"
     | "majorNode.skillBranchMismatch"
+    | "majorNode.skillTierMismatch"
     | "weaponAwakening.slotRequired"
     | "weaponAwakening.colorUnknown"
     | "equipment.artifactRequired"

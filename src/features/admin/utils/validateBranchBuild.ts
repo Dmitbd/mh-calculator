@@ -17,7 +17,7 @@ const columnLabels: Record<BranchColumnId, string> = {
 
 type ValidationSources = {
   branches: readonly { id: string }[];
-  skills: readonly { id: string; branchId: string }[];
+  skills: readonly { id: string; branchId: string; tier: number }[];
   template: readonly {
     level: number;
     columnId: string;
@@ -42,6 +42,9 @@ export function validateBranchBuild(
     .filter(isMajorSkillSlot);
   const majorSlotKeys = new Set(
     majorSlots.map((node) => getSlotKey(node.columnId, node.level)),
+  );
+  const majorSlotByKey = new Map(
+    majorSlots.map((node) => [getSlotKey(node.columnId, node.level), node]),
   );
   const selectedMajorNodes = new Map(
     draft.majorNodes.map((node) => [getSlotKey(node.columnId, node.level), node]),
@@ -204,6 +207,17 @@ export function validateBranchBuild(
       errors.push({
         code: "majorNode.skillBranchMismatch",
         message: `Выбранный навык не принадлежит ветке ${columnLabels[node.columnId]} колонки.`,
+        path,
+      });
+      continue;
+    }
+
+    const slot = majorSlotByKey.get(getSlotKey(node.columnId, node.level));
+
+    if (slot && skill.tier !== slot.tier) {
+      errors.push({
+        code: "majorNode.skillTierMismatch",
+        message: `Выбранный навык не подходит для слота tier ${slot.tier} на уровне ${node.level}.`,
         path,
       });
     }

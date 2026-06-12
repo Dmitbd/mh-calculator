@@ -18,12 +18,10 @@ import type {
 const catalogSkills = skills as DivinityMajorSkill[];
 
 const branchById = new Map(branches.map((branch) => [branch.id, branch]));
-const skillByBranch = new Map<string, DivinityMajorSkill>();
+const skillByBranchAndTier = new Map<string, DivinityMajorSkill>();
 
 for (const skill of catalogSkills) {
-  if (!skillByBranch.has(skill.branchId)) {
-    skillByBranch.set(skill.branchId, skill);
-  }
+  skillByBranchAndTier.set(`${skill.branchId}:${skill.tier}`, skill);
 }
 
 const columns: Record<BranchColumnId, DivinityBranchId> = {
@@ -58,10 +56,10 @@ function createValidDraft(): DivinityBranchBuildDraft {
       .filter((node) => node.nodeType === "majorSkill")
       .map((node) => {
         const branchId = columns[node.columnId as BranchColumnId];
-        const skill = skillByBranch.get(branchId);
+        const skill = skillByBranchAndTier.get(`${branchId}:${node.tier}`);
 
         if (!skill) {
-          throw new Error(`Missing test skill for ${branchId}`);
+          throw new Error(`Missing test skill for ${branchId} tier ${node.tier}`);
         }
 
         return {
@@ -150,7 +148,7 @@ describe("validateBranchBuild", () => {
 
   it("rejects a skill selected from another branch", () => {
     const draft = createValidDraft();
-    const psycheSkill = skillByBranch.get("psyche");
+    const psycheSkill = skillByBranchAndTier.get("psyche:1");
 
     if (!psycheSkill) {
       throw new Error("Missing psyche test skill");
@@ -189,6 +187,34 @@ describe("validateBranchBuild", () => {
       code: "weaponAwakening.slotRequired",
       message: "Выберите цвет пробуждения оружия для слота 2.",
       path: "weaponAwakening.2",
+    });
+  });
+
+  it("rejects a skill with mismatched tier", () => {
+    const draft = createValidDraft();
+    const tier2Skill = skillByBranchAndTier.get("asterial:2");
+
+    if (!tier2Skill) {
+      throw new Error("Missing asterial tier 2 test skill");
+    }
+
+    const result = validateBranchBuild(
+      {
+        ...draft,
+        majorNodes: draft.majorNodes.map((node) =>
+          node.columnId === "left" && node.level === 3
+            ? { ...node, skillId: tier2Skill.id }
+            : node,
+        ),
+      },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "majorNode.skillTierMismatch",
+      message: "Выбранный навык не подходит для слота tier 1 на уровне 3.",
+      path: "majorNodes.left.3",
     });
   });
 

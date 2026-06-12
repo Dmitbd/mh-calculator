@@ -1,317 +1,1802 @@
 [
   {
+    "id": "asterial-aurora",
+    "branchId": "asterial",
+    "tier": 1,
+    "name": "Aurora",
+    "icon": "/img/skills/asterial/aurora.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "Deal 150% additional damage to enemy summons and minions."
+      },
+      {
+        "level": 2,
+        "description": "Deal 200% additional damage to enemy summons and minions."
+      },
+      {
+        "level": 3,
+        "description": "When damaging non-Hero units, increase damage by 200%. If the unit is a summon, deal True Damage equal to 20% of the summoner's Health to the summoner."
+      },
+      {
+        "level": 4,
+        "description": "When damaging non-Hero units, increase damage by 200%. If the unit is a summon, deal True Damage equal to 50% of the summoner's Health to the summoner."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Asterial",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "asterial-brighten",
+    "branchId": "asterial",
+    "tier": 1,
+    "name": "Brighten",
+    "icon": "/img/skills/asterial/brighten.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "When an enemy dodges this Hero's attack, increase this Hero's Attack by 2% for the whole battle, stacking up to 10 times."
+      },
+      {
+        "level": 2,
+        "description": "When an enemy dodges this Hero's attack, increase this Hero's Attack by 2% for the whole battle, stacking up to 12 times."
+      },
+      {
+        "level": 3,
+        "description": "When an enemy dodges this Hero's attack, gain 2% Attack for the battle, up to 12 stacks. Also gain 1 Lucid stack; at 6 stacks, remove them to deal True Damage equal to 10% of this Hero's current Health to the target."
+      },
+      {
+        "level": 4,
+        "description": "When an enemy dodges this Hero's attack, gain 2% Attack for the battle, up to 12 stacks. Also gain 1 Lucid stack; at 4 stacks, remove them to deal True Damage equal to 20% of this Hero's current Health to the target."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Asterial",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
     "id": "asterial-gemini",
     "branchId": "asterial",
+    "tier": 1,
     "name": "Gemini",
     "icon": "/img/skills/asterial/gemini.png",
-    "description": "After receiving a healing skill, an additional recovery of 6% of Health is also generated. This effect can only be triggered once every 5s."
-  },
-  {
-    "id": "asterial-annihilation",
-    "branchId": "asterial",
-    "name": "Annihilation",
-    "icon": "/img/skills/asterial/annihilation.png",
-    "description": "Deals an additional 150% damage to enemy summons/minions."
-  },
-  {
-    "id": "asterial-supernova",
-    "branchId": "asterial",
-    "name": "Supernova",
-    "icon": "/img/skills/asterial/supernova.png",
-    "description": "After releasing Ultimate for the first time, increase damage dealt by 30% for 8s."
+    "levels": [
+      {
+        "level": 1,
+        "description": "After receiving a healing skill, additionally recover 6% Health. Can trigger once every 5s."
+      },
+      {
+        "level": 2,
+        "description": "After receiving a healing skill, additionally recover 10% Health. Can trigger once every 5s."
+      },
+      {
+        "level": 3,
+        "description": "After receiving a healing skill, additionally recover 10% Max Health, then deal damage equal to 100% of excess healing to nearby enemies. Can trigger once every 5s."
+      },
+      {
+        "level": 4,
+        "description": "After receiving a healing skill, additionally recover 12% Max Health, then deal damage equal to 150% of excess healing to nearby enemies. Can trigger once every 5s."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Asterial",
+      "status": "needs-in-game-check"
+    }
   },
   {
     "id": "asterial-meteor-shower",
     "branchId": "asterial",
+    "tier": 1,
     "name": "Meteor Shower",
     "icon": "/img/skills/asterial/meteor-shower.png",
-    "description": "After releasing an Ultimate, deal extra damage to 1 random enemy, equal to 1x 15% of target's current Health."
+    "levels": [
+      {
+        "level": 1,
+        "description": "After releasing an Ultimate, deal extra damage to 1 random enemy equal to 15% of the target's current Health."
+      },
+      {
+        "level": 2,
+        "description": "After releasing an Ultimate, deal extra damage to 1 random enemy equal to 18% of the target's current Health."
+      },
+      {
+        "level": 3,
+        "description": "After releasing an Ultimate, deal extra damage to 2 random enemies, each equal to 18% of the target's current Health."
+      },
+      {
+        "level": 4,
+        "description": "After releasing an Ultimate, deal extra damage to 2 random enemies, each equal to 18% of the target's current Health, and increase damage dealt by 30% for 4s."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Asterial",
+      "status": "needs-in-game-check"
+    }
   },
   {
-    "id": "asterial-spotlight",
+    "id": "asterial-annihilation",
     "branchId": "asterial",
-    "name": "Spotlight",
-    "icon": "/img/skills/asterial/spotlight.png",
-    "description": "Hero's Attacks cannot be dodged. Additionally, every 1% of Hero Accuracy is converted into 2% of Crit Damage for the battle."
-  },
-  {
-    "id": "asterial-full-moon",
-    "branchId": "asterial",
-    "name": "Full Moon",
-    "icon": "/img/skills/asterial/full-moon.png",
-    "description": "Whenever this Hero dodges an Attack, increase Attack Speed by 20% for 3s."
-  },
-  {
-    "id": "asterial-new-moon",
-    "branchId": "asterial",
-    "name": "New Moon",
-    "icon": "/img/skills/asterial/new-moon.png",
-    "description": "After using an active skill, increase Dodge by 50% for 2s."
-  },
-  {
-    "id": "asterial-aurora",
-    "branchId": "asterial",
-    "name": "Aurora",
-    "icon": "/img/skills/asterial/aurora.png",
-    "description": "At the beginning of the battle, the enemy Hero in the same formation position across from this Hero will have 50% less Accuracy for 5s."
+    "tier": 2,
+    "name": "Annihilation",
+    "icon": "/img/skills/asterial/annihilation.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "Deal 150% additional damage to enemy summons and minions."
+      },
+      {
+        "level": 2,
+        "description": "Deal 200% additional damage to enemy summons and minions."
+      },
+      {
+        "level": 3,
+        "description": "When damaging non-Hero units, increase damage by 200%. If the unit is a summon, deal True Damage equal to 20% of the summoner's Health to the summoner."
+      },
+      {
+        "level": 4,
+        "description": "When damaging non-Hero units, increase damage by 200%. If the unit is a summon, deal True Damage equal to 50% of the summoner's Health to the summoner."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Asterial",
+      "status": "needs-in-game-check"
+    }
   },
   {
     "id": "asterial-black-hole",
     "branchId": "asterial",
+    "tier": 2,
     "name": "Black Hole",
     "icon": "/img/skills/asterial/black-hole.png",
-    "description": "After surpassing 300 Energy for the first time, remove all the Energy from this Hero and the Enemy with the highest Energy."
+    "levels": [
+      {
+        "level": 1,
+        "description": "The first time this Hero exceeds 300 Energy, remove all Energy from this Hero and the enemy with the highest Energy."
+      },
+      {
+        "level": 2,
+        "description": "The first time Energy exceeds 300, reduce this Hero's current Energy by 75% and remove all Energy from the enemy Hero with the highest Energy."
+      },
+      {
+        "level": 3,
+        "description": "The first time Energy exceeds 300, reduce this Hero's current Energy by 75% and remove all Energy from up to 2 enemy Heroes with the highest Energy."
+      },
+      {
+        "level": 4,
+        "description": "The first time Energy exceeds 300, reduce this Hero's current Energy by 50% and remove all Energy from up to 2 enemy Heroes with the highest Energy."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Asterial",
+      "status": "needs-in-game-check"
+    }
   },
   {
-    "id": "psyche-maestro",
-    "branchId": "psyche",
-    "name": "Maestro",
-    "icon": "/img/skills/psyche/maestro.png",
-    "description": "After applying a control skill, increase Attack by 10% for 5s."
+    "id": "asterial-full-moon",
+    "branchId": "asterial",
+    "tier": 2,
+    "name": "Full Moon",
+    "icon": "/img/skills/asterial/full-moon.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "When this Hero dodges an attack, increase Attack Speed by 20% for 3s."
+      },
+      {
+        "level": 2,
+        "description": "When this Hero dodges an attack, increase Attack Speed by 20% for 4s."
+      },
+      {
+        "level": 3,
+        "description": "When this Hero dodges an attack, increase Attack Speed by 20% for 4s. Stacks up to 2 times."
+      },
+      {
+        "level": 4,
+        "description": "When this Hero dodges an attack, increase Attack Speed by 20% for 4s. Stacks up to 3 times."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Asterial",
+      "status": "needs-in-game-check"
+    }
   },
   {
-    "id": "psyche-deftness",
-    "branchId": "psyche",
-    "name": "Deftness",
-    "icon": "/img/skills/psyche/deftness.png",
-    "description": "Every 2 auto-attack hits, deal an extra 80% damage to the target. This damage is treated as True Damage."
+    "id": "asterial-gravitational-field",
+    "branchId": "asterial",
+    "tier": 2,
+    "name": "Gravitational Field",
+    "icon": "/img/skills/asterial/gravitational-field.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "For the first 10s of battle, reduce damage dealt to backline allies by 20%."
+      },
+      {
+        "level": 2,
+        "description": "For the first 10s of battle, reduce damage dealt to backline allies by 25%."
+      },
+      {
+        "level": 3,
+        "description": "For the first 10s of battle, reduce damage dealt to backline allies by 25%. If this Hero is frontline, reduce damage dealt to backline allies by an additional 10%."
+      },
+      {
+        "level": 4,
+        "description": "For the first 10s of battle, reduce damage dealt to backline allies by 25%. If this Hero is frontline, reduce damage dealt to backline allies by an additional 20%."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Asterial",
+      "status": "needs-in-game-check"
+    }
   },
   {
-    "id": "psyche-torment",
-    "branchId": "psyche",
-    "name": "Torment",
-    "icon": "/img/skills/psyche/torment.png",
-    "description": "Increases damage dealt to enemies with a debuff on them by 12%."
+    "id": "asterial-new-moon",
+    "branchId": "asterial",
+    "tier": 3,
+    "name": "New Moon",
+    "icon": "/img/skills/asterial/new-moon.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "After using an active skill, increase Dodge by 50% for 2s."
+      },
+      {
+        "level": 2,
+        "description": "After using an active skill, increase Dodge by 75% for 2s."
+      },
+      {
+        "level": 3,
+        "description": "After using an active skill, dodge all damage for 1s."
+      },
+      {
+        "level": 4,
+        "description": "After using an active skill, dodge all damage for 1.5s."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Asterial",
+      "status": "needs-in-game-check"
+    }
   },
   {
-    "id": "psyche-sprout",
-    "branchId": "psyche",
-    "name": "Sprout",
-    "icon": "/img/skills/psyche/sprout.png",
-    "description": "10s after the battle begins, remove all debuffs and recover 10% Health."
+    "id": "asterial-night",
+    "branchId": "asterial",
+    "tier": 3,
+    "name": "Night",
+    "icon": "/img/skills/asterial/night.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "Increase damage dealt by this Hero's summons by 40%."
+      },
+      {
+        "level": 2,
+        "description": "Increase damage dealt by this Hero's summons by 50%."
+      },
+      {
+        "level": 3,
+        "description": "Increase summon damage by 50%, and restore 60 Energy to this Hero after summons die."
+      },
+      {
+        "level": 4,
+        "description": "Increase summon damage by 50%, and restore 60 Energy to this Hero when a new minion is summoned or after summons die."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Asterial",
+      "status": "needs-in-game-check"
+    }
   },
   {
-    "id": "psyche-prevail",
-    "branchId": "psyche",
-    "name": "Prevail",
-    "icon": "/img/skills/psyche/prevail.png",
-    "description": "If enemy's Health is more than the Hero's, reduce enemy's damage dealt by 18%. If enemy's Health is less, increase the Hero's damage dealt by 18%."
+    "id": "asterial-spotlight",
+    "branchId": "asterial",
+    "tier": 3,
+    "name": "Spotlight",
+    "icon": "/img/skills/asterial/spotlight.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "This Hero's attacks cannot be dodged. Each 1% Accuracy is converted into 2% Crit Damage for the battle."
+      },
+      {
+        "level": 2,
+        "description": "This Hero's attacks cannot be dodged. Each 1% Accuracy is converted into 3% Crit Damage for the battle."
+      },
+      {
+        "level": 3,
+        "description": "This Hero's attacks cannot be dodged. Each 1% Accuracy is converted into 1% Crit Chance and 3% Crit Damage."
+      },
+      {
+        "level": 4,
+        "description": "This Hero's attacks cannot be dodged. Each 1% Accuracy is converted into 1% Crit Chance and 3% Crit Damage. When dealing Crit Damage, increase this Hero's Attack by 20% for 3s."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Asterial",
+      "status": "needs-in-game-check"
+    }
   },
   {
-    "id": "psyche-panacea",
-    "branchId": "psyche",
-    "name": "Panacea",
-    "icon": "/img/skills/psyche/panacea.png",
-    "description": "Increase maximum Health by 30% during battle."
+    "id": "asterial-supernova",
+    "branchId": "asterial",
+    "tier": 3,
+    "name": "Supernova",
+    "icon": "/img/skills/asterial/supernova.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "After releasing the first Ultimate, increase damage dealt by 30% for 8s."
+      },
+      {
+        "level": 2,
+        "description": "After releasing the first Ultimate, increase damage dealt by 40% for 8s."
+      },
+      {
+        "level": 3,
+        "description": "After releasing an Ultimate, increase damage dealt by 40% for 8s."
+      },
+      {
+        "level": 4,
+        "description": "After releasing an Ultimate, increase damage dealt by 40% and reduce damage received by 20% for 8s."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Asterial",
+      "status": "needs-in-game-check"
+    }
   },
   {
-    "id": "psyche-collective-fervor",
+    "id": "psyche-energy-bubble",
     "branchId": "psyche",
-    "name": "Collective Fervor",
-    "icon": "/img/skills/psyche/collective-fervor.png",
-    "description": "Whenever an ally Hero releases an Ultimate, restore 30 Energy to them and this Hero."
-  },
-  {
-    "id": "psyche-divine-fire",
-    "branchId": "psyche",
-    "name": "Divine-Fire",
-    "icon": "/img/skills/psyche/divine-fire.png",
-    "description": "Increases Energy by 2 every second. This Energy does not decrease except when triggering Ultimate."
+    "tier": 1,
+    "name": "Energy Bubble",
+    "icon": "/img/skills/psyche/energy-bubble.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "10s after battle starts, all enemy units lose 30 Energy."
+      },
+      {
+        "level": 2,
+        "description": "10s after battle starts, all enemy units lose 40 Energy."
+      },
+      {
+        "level": 3,
+        "description": "10s after battle starts, all enemy units lose 40 Energy, and all allied Heroes gain 20 Energy."
+      },
+      {
+        "level": 4,
+        "description": "10s after battle starts, all enemy units lose 40 Energy, and all allied Heroes gain 40 Energy."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Psyche",
+      "status": "needs-in-game-check"
+    }
   },
   {
     "id": "psyche-self-hypnosis",
     "branchId": "psyche",
+    "tier": 1,
     "name": "Self-Hypnosis",
     "icon": "/img/skills/psyche/self-hypnosis.png",
-    "description": "When healing an ally Hero, recover 20% of the overall Health recovered to the healer themselves."
+    "levels": [
+      {
+        "level": 1,
+        "description": "When healing an allied Hero, the healer recovers 20% of the total Health restored."
+      },
+      {
+        "level": 2,
+        "description": "When healing an allied Hero, the healer recovers 25% of the total Health restored."
+      },
+      {
+        "level": 3,
+        "description": "When healing an allied Hero, the healer recovers 30% of the total Health restored."
+      },
+      {
+        "level": 4,
+        "description": "When healing an allied Hero, the healer recovers 30% of the total Health restored and increases healing received by 25% for 4s."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Psyche",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "psyche-sprout",
+    "branchId": "psyche",
+    "tier": 1,
+    "name": "Sprout",
+    "icon": "/img/skills/psyche/sprout.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "10s after battle starts, remove all debuffs and recover 10% Health."
+      },
+      {
+        "level": 2,
+        "description": "10s after battle starts, remove all debuffs and recover 15% Health."
+      },
+      {
+        "level": 3,
+        "description": "At 10s and 20s after battle starts, remove all debuffs and recover 15% Max Health."
+      },
+      {
+        "level": 4,
+        "description": "At 10s and 20s after battle starts, remove all debuffs, recover 15% Max Health, and regain 10% of lost Energy."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Psyche",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "psyche-torment",
+    "branchId": "psyche",
+    "tier": 1,
+    "name": "Torment",
+    "icon": "/img/skills/psyche/torment.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "Increase damage dealt to enemies with a debuff by 12%."
+      },
+      {
+        "level": 2,
+        "description": "Increase damage dealt to enemies with a debuff by 16%."
+      },
+      {
+        "level": 3,
+        "description": "Increase damage dealt to enemies with a debuff by 20%."
+      },
+      {
+        "level": 4,
+        "description": "Increase damage dealt to enemies with a debuff by 20%. If the target has more than 2 debuffs, further increase damage by 20%."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Psyche",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "psyche-divine-fire",
+    "branchId": "psyche",
+    "tier": 2,
+    "name": "Divine-Fire",
+    "icon": "/img/skills/psyche/divine-fire.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "Gain 2 Energy every second. This Energy is not lost except when casting an Ultimate."
+      },
+      {
+        "level": 2,
+        "description": "Gain 4 Energy every second. This Energy is not lost except when casting an Ultimate."
+      },
+      {
+        "level": 3,
+        "description": "Gain 6 Energy every second. This Energy is not lost except when casting an Ultimate."
+      },
+      {
+        "level": 4,
+        "description": "Gain 8 Energy every second. This Energy is not lost except when casting an Ultimate; after casting an Ultimate, restore 150 Energy."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Psyche",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "psyche-formational-trance",
+    "branchId": "psyche",
+    "tier": 2,
+    "name": "Formational Trance",
+    "icon": "/img/skills/psyche/formational-trance.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "If this Hero is frontline, increase Dodge by 20%; if backline, increase Accuracy by 20%."
+      },
+      {
+        "level": 2,
+        "description": "If this Hero is frontline, increase Dodge by 25%; if backline, increase Accuracy by 25%."
+      },
+      {
+        "level": 3,
+        "description": "If frontline, increase Dodge by 25% and recover 1% Max Health whenever this Hero dodges, once every 0.5s. If backline, increase Accuracy by 25% and increase Attack Speed by 15% for 1s whenever this Hero lands a hit."
+      },
+      {
+        "level": 4,
+        "description": "If frontline, increase Dodge by 25% and recover 1.5% Max Health whenever this Hero dodges, once every 0.5s. If backline, increase Accuracy by 25% and increase Attack Speed by 20% for 1s whenever this Hero lands a hit."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Psyche",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "psyche-maestro",
+    "branchId": "psyche",
+    "tier": 2,
+    "name": "Maestro",
+    "icon": "/img/skills/psyche/maestro.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "After applying control, increase Attack by 10% for 5s."
+      },
+      {
+        "level": 2,
+        "description": "After applying control, increase Attack by 15% for 5s."
+      },
+      {
+        "level": 3,
+        "description": "After applying control, increase Attack by 20% for 5s."
+      },
+      {
+        "level": 4,
+        "description": "After applying control, increase Attack by 25% for 5s and reduce the target's Tenacity by 20%."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Psyche",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "psyche-prevail",
+    "branchId": "psyche",
+    "tier": 2,
+    "name": "Prevail",
+    "icon": "/img/skills/psyche/prevail.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "If the enemy has more Health than this Hero, reduce enemy damage by 18%; otherwise increase this Hero's damage by 18%."
+      },
+      {
+        "level": 2,
+        "description": "If the enemy has more Health than this Hero, reduce enemy damage by 20%; otherwise increase this Hero's damage by 20%."
+      },
+      {
+        "level": 3,
+        "description": "If the enemy has more Health than this Hero, reduce enemy damage by 24%; otherwise increase this Hero's damage by 24%."
+      },
+      {
+        "level": 4,
+        "description": "If the enemy has more Health than this Hero, reduce enemy damage by 30%; otherwise increase this Hero's damage by 30%."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Psyche",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "psyche-collective-fervor",
+    "branchId": "psyche",
+    "tier": 3,
+    "name": "Collective Fervor",
+    "icon": "/img/skills/psyche/collective-fervor.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "Whenever an allied Hero releases an Ultimate, restore 50 Energy to that ally and this Hero."
+      },
+      {
+        "level": 2,
+        "description": "Whenever an allied Hero releases an Ultimate, restore 55 Energy to that ally and this Hero."
+      },
+      {
+        "level": 3,
+        "description": "Whenever an allied Hero releases an Ultimate, restore 60 Energy to that ally and this Hero."
+      },
+      {
+        "level": 4,
+        "description": "Whenever an allied Hero releases an Ultimate, restore 60 Energy to that ally and this Hero, with a 5% chance for this Hero to gain an additional 500 Energy."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Psyche",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "psyche-deftness",
+    "branchId": "psyche",
+    "tier": 3,
+    "name": "Deftness",
+    "icon": "/img/skills/psyche/deftness.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "Every 2 auto-attack hits, deal 80% extra damage to the target as True Damage."
+      },
+      {
+        "level": 2,
+        "description": "Every 2 auto-attack hits, deal 100% extra damage to the target as True Damage."
+      },
+      {
+        "level": 3,
+        "description": "Every 2 auto-attack hits, deal 100% Attack as extra True Damage to the target 1–2 times."
+      },
+      {
+        "level": 4,
+        "description": "Every 2 auto-attack hits, deal 120% Attack as extra True Damage to the target 1–3 times."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Psyche",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "psyche-panacea",
+    "branchId": "psyche",
+    "tier": 3,
+    "name": "Panacea",
+    "icon": "/img/skills/psyche/panacea.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "Increase Max Health by 30% at the beginning of battle."
+      },
+      {
+        "level": 2,
+        "description": "Increase Max Health by 40% at the beginning of battle."
+      },
+      {
+        "level": 3,
+        "description": "Increase Max Health by 40% at the beginning of battle. When taking damage, additionally increase Max Health by 1%, stacking up to 15 times for the battle."
+      },
+      {
+        "level": 4,
+        "description": "Increase Max Health by 40% at the beginning of battle. When taking damage, additionally increase Max Health by 1%, stacking up to 30 times for the battle."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Psyche",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "psyche-phantasmal",
+    "branchId": "psyche",
+    "tier": 3,
+    "name": "Phantasmal",
+    "icon": "/img/skills/psyche/phantasmal.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "When this Hero is hit by a control skill, there is a 50% chance to nullify it immediately."
+      },
+      {
+        "level": 2,
+        "description": "When this Hero is hit by a control skill, there is a 60% chance to nullify it immediately."
+      },
+      {
+        "level": 3,
+        "description": "When this Hero is hit by a control skill, there is a 60% chance to dispel it immediately and silence the source for 1s."
+      },
+      {
+        "level": 4,
+        "description": "When this Hero is hit by a control skill, there is a 75% chance to dispel it immediately and silence the source for 2s."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Psyche",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "immortality-eterna",
+    "branchId": "immortality",
+    "tier": 1,
+    "name": "Eterna",
+    "icon": "/img/skills/immortality/eterna.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "When attacking, ignore 20% of the target's Defense."
+      },
+      {
+        "level": 2,
+        "description": "When attacking, ignore 25% of the target's Defense."
+      },
+      {
+        "level": 3,
+        "description": "When attacking, ignore 25% of the target's Defense. If the target's current Defense is higher than base Defense, ignore an additional 10% Defense."
+      },
+      {
+        "level": 4,
+        "description": "When attacking, ignore 30% of the target's Defense. If the target's current Defense is higher than base Defense, ignore an additional 25% Defense."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Immortality",
+      "status": "needs-in-game-check"
+    }
   },
   {
     "id": "immortality-symbiosis",
     "branchId": "immortality",
+    "tier": 1,
     "name": "Symbiosis",
     "icon": "/img/skills/immortality/symbiosis.png",
-    "description": "At the beginning of battle, gain a shield equal to 15% of this Hero's max Health for 8s."
-  },
-  {
-    "id": "immortality-resonance",
-    "branchId": "immortality",
-    "name": "Resonance",
-    "icon": "/img/skills/immortality/resonance.png",
-    "description": "When this Hero is killed, stun nearby enemies for 3s."
-  },
-  {
-    "id": "immortality-recovery",
-    "branchId": "immortality",
-    "name": "Recovery",
-    "icon": "/img/skills/immortality/recovery.png",
-    "description": "During the first 15s of battle, recover 4% of max Health every second."
-  },
-  {
-    "id": "immortality-transcend",
-    "branchId": "immortality",
-    "name": "Transcend",
-    "icon": "/img/skills/immortality/transcend.png",
-    "description": "Dodge the first enemy damage dealt."
-  },
-  {
-    "id": "immortality-sunder",
-    "branchId": "immortality",
-    "name": "Sunder",
-    "icon": "/img/skills/immortality/sunder.png",
-    "description": "Increases damage dealt to shields by 100%."
-  },
-  {
-    "id": "immortality-savvy",
-    "branchId": "immortality",
-    "name": "Savvy",
-    "icon": "/img/skills/immortality/savvy.png",
-    "description": "Increases damage dealt from active skills by 25%."
+    "levels": [
+      {
+        "level": 1,
+        "description": "At battle start, gain a shield equal to 15% of this Hero's Max Health for 8s."
+      },
+      {
+        "level": 2,
+        "description": "At battle start, gain a shield equal to 20% of this Hero's Max Health for 10s."
+      },
+      {
+        "level": 3,
+        "description": "At battle start, gain a 10s shield equal to 24% Max Health and reduce damage received by 15%."
+      },
+      {
+        "level": 4,
+        "description": "At battle start, gain a 10s shield equal to 30% Max Health and reduce damage received by 35%."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Immortality",
+      "status": "needs-in-game-check"
+    }
   },
   {
     "id": "immortality-tenacious",
     "branchId": "immortality",
+    "tier": 1,
     "name": "Tenacious",
     "icon": "/img/skills/immortality/tenacious.png",
-    "description": "Increases all shields' strength by 20%."
+    "levels": [
+      {
+        "level": 1,
+        "description": "Whenever this Hero gains a shield, increase the shield value by 20%."
+      },
+      {
+        "level": 2,
+        "description": "Whenever this Hero gains a shield, increase the shield value by 30%."
+      },
+      {
+        "level": 3,
+        "description": "Whenever this Hero gains a shield, increase the shield value by 30% and recover 1% Max Health."
+      },
+      {
+        "level": 4,
+        "description": "Whenever this Hero gains a shield, increase the shield value by 30% and recover 2% Max Health."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Immortality",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "immortality-transcend",
+    "branchId": "immortality",
+    "tier": 1,
+    "name": "Transcend",
+    "icon": "/img/skills/immortality/transcend.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "Dodge the first enemy attack."
+      },
+      {
+        "level": 2,
+        "description": "Dodge the first enemy attack and increase auto-attack speed by 10% until the battle ends."
+      },
+      {
+        "level": 3,
+        "description": "Dodge the first 2 enemy attacks and increase auto-attack speed by 15% until the battle ends."
+      },
+      {
+        "level": 4,
+        "description": "Dodge the first 2 enemy attacks and increase auto-attack speed by 15% until the battle ends. This effect can stack up to 2 times."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Immortality",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "immortality-extraordinary",
+    "branchId": "immortality",
+    "tier": 2,
+    "name": "Extraordinary",
+    "icon": "/img/skills/immortality/extraordinary.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "15s after battle starts, increase all allies' Attack by 15% until battle ends."
+      },
+      {
+        "level": 2,
+        "description": "15s after battle starts, increase all allies' Attack by 20% until battle ends."
+      },
+      {
+        "level": 3,
+        "description": "12s after battle starts, increase all allies' Attack by 20% until battle ends."
+      },
+      {
+        "level": 4,
+        "description": "8s after battle starts, increase all allies' Attack by 20% until battle ends."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Immortality",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "immortality-resonance",
+    "branchId": "immortality",
+    "tier": 2,
+    "name": "Resonance",
+    "icon": "/img/skills/immortality/resonance.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "When this Hero is killed, stun nearby enemies for 3s."
+      },
+      {
+        "level": 2,
+        "description": "When this Hero is killed, stun nearby enemies for 3.5s."
+      },
+      {
+        "level": 3,
+        "description": "When this Hero is killed, stun nearby enemies for 4s."
+      },
+      {
+        "level": 4,
+        "description": "When this Hero is killed, stun all enemies for 4s."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Immortality",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "immortality-sunder",
+    "branchId": "immortality",
+    "tier": 2,
+    "name": "Sunder",
+    "icon": "/img/skills/immortality/sunder.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "Increase damage dealt to shields by 100%."
+      },
+      {
+        "level": 2,
+        "description": "Increase damage dealt to shields by 150%."
+      },
+      {
+        "level": 3,
+        "description": "Increase Shield Penetration by 20% and damage dealt to shields by 150%."
+      },
+      {
+        "level": 4,
+        "description": "Increase Shield Penetration by 50% and damage dealt to shields by 150%."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Immortality",
+      "status": "needs-in-game-check"
+    }
   },
   {
     "id": "immortality-waterdrop",
     "branchId": "immortality",
+    "tier": 2,
     "name": "Waterdrop",
     "icon": "/img/skills/immortality/waterdrop.png",
-    "description": "Reduces Crit damage taken by 35%."
+    "levels": [
+      {
+        "level": 1,
+        "description": "Reduce Crit Damage taken by 35%."
+      },
+      {
+        "level": 2,
+        "description": "Reduce Crit Damage taken by 35%. When hit by a Critical Strike, reduce the attacker's Attack by 10% for 5s."
+      },
+      {
+        "level": 3,
+        "description": "Reduce Crit Damage taken by 50%. When hit by a Critical Strike, reduce the attacker's Attack by 10% for 5s."
+      },
+      {
+        "level": 4,
+        "description": "Reduce Crit Damage taken by 50%. When hit by a Critical Strike, reduce the attacker's Attack by 20% for 5s."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Immortality",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "immortality-recovery",
+    "branchId": "immortality",
+    "tier": 3,
+    "name": "Recovery",
+    "icon": "/img/skills/immortality/recovery.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "During the first 15s of battle, recover 4% Max Health every second."
+      },
+      {
+        "level": 2,
+        "description": "During the first 15s of battle, recover 6% Max Health every second."
+      },
+      {
+        "level": 3,
+        "description": "During the first 15s of battle, recover 6% Max Health every second and heal nearby allies for 30% of the recovered amount."
+      },
+      {
+        "level": 4,
+        "description": "During the first 15s of battle, recover 6% Max Health every second and heal nearby allies for 50% of the recovered amount."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Immortality",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "immortality-savvy",
+    "branchId": "immortality",
+    "tier": 3,
+    "name": "Savvy",
+    "icon": "/img/skills/immortality/savvy.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "Increase damage dealt by active skills by 25%."
+      },
+      {
+        "level": 2,
+        "description": "Increase damage dealt by active skills by 30%."
+      },
+      {
+        "level": 3,
+        "description": "Increase damage dealt by active skills by 35%."
+      },
+      {
+        "level": 4,
+        "description": "Increase damage dealt by active skills by 35% and reduce their cooldown by 1s. Can trigger once every 4s."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Immortality",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "immortality-whisperer",
+    "branchId": "immortality",
+    "tier": 3,
+    "name": "Whisperer",
+    "icon": "/img/skills/immortality/whisperer.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "After this Hero dies, grant all allies 5s shields equal to 25% of each target's Max Health."
+      },
+      {
+        "level": 2,
+        "description": "After this Hero dies, grant all allies 5s shields equal to 35% of each target's Max Health."
+      },
+      {
+        "level": 3,
+        "description": "After this Hero dies, grant all allies 5s shields equal to 40% of each target's Max Health and increase their control resistance by 25%."
+      },
+      {
+        "level": 4,
+        "description": "After this Hero dies, grant all allies 5s shields equal to 40% of each target's Max Health and increase their control resistance by 50%."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Immortality",
+      "status": "needs-in-game-check"
+    }
   },
   {
     "id": "immortality-wrath",
     "branchId": "immortality",
+    "tier": 3,
     "name": "Wrath",
     "icon": "/img/skills/immortality/wrath.png",
-    "description": "For every 6% of Health lost, increase Attack by 1%, to a maximum of 30 stacks."
-  },
-  {
-    "id": "devoid-phantom",
-    "branchId": "devoid",
-    "name": "Phantom",
-    "icon": "/img/skills/devoid/phantom.png",
-    "description": "Healing received cannot be reduced."
-  },
-  {
-    "id": "devoid-broken-mirror",
-    "branchId": "devoid",
-    "name": "Broken Mirror",
-    "icon": "/img/skills/devoid/broken-mirror.png",
-    "description": "Reduces Hit Energy Restoration by 35% for nearby enemies."
-  },
-  {
-    "id": "devoid-energy-field",
-    "branchId": "devoid",
-    "name": "Energy Field",
-    "icon": "/img/skills/devoid/energy-field.png",
-    "description": "Ally Hero with the highest Combat Power is immune to first lethal damage, then gains a shield with 30% of this Hero's current Health for 8s. This effect can trigger once per battle."
+    "levels": [
+      {
+        "level": 1,
+        "description": "For every 6% Health lost, increase Attack by 1%, up to 30 stacks."
+      },
+      {
+        "level": 2,
+        "description": "For every 5% Health lost, increase Attack by 1%, up to 30 stacks."
+      },
+      {
+        "level": 3,
+        "description": "For every 4% Health lost, increase Attack by 1%, up to 30 stacks."
+      },
+      {
+        "level": 4,
+        "description": "For every 6% Health lost, increase Attack by 2%, up to 20 stacks. At max stacks, increase Crit Damage by 35%."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Immortality",
+      "status": "needs-in-game-check"
+    }
   },
   {
     "id": "devoid-animus",
     "branchId": "devoid",
+    "tier": 1,
     "name": "Animus",
     "icon": "/img/skills/devoid/animus.png",
-    "description": "Auto-Attacks have a 20% chance of generating a shield equal to their damage dealt."
+    "levels": [
+      {
+        "level": 1,
+        "description": "Auto-attacks have a 20% chance to generate a shield equal to the damage dealt."
+      },
+      {
+        "level": 2,
+        "description": "Auto-attacks have a 30% chance to generate a shield equal to the damage dealt."
+      },
+      {
+        "level": 3,
+        "description": "Auto-attacks have a 30% chance to generate a shield equal to 125% of the damage dealt."
+      },
+      {
+        "level": 4,
+        "description": "Auto-attacks and skills have a 30% chance to generate a shield equal to 125% of the damage dealt."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Devoid",
+      "status": "needs-in-game-check"
+    }
   },
   {
-    "id": "devoid-time-lapse",
+    "id": "devoid-obsession",
     "branchId": "devoid",
-    "name": "Time-lapse",
-    "icon": "/img/skills/devoid/time-lapse.png",
-    "description": "Hero's auto-attacks have a 20% chance to stun the target for 1.5s."
+    "tier": 1,
+    "name": "Obsession",
+    "icon": "/img/skills/devoid/obsession.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "At battle start, increase this Hero's Attack by 6% until the battle ends."
+      },
+      {
+        "level": 2,
+        "description": "At battle start, increase this Hero's Attack by 8% until the battle ends."
+      },
+      {
+        "level": 3,
+        "description": "At battle start, increase this Hero's Attack and Crit Damage by 10% until the battle ends."
+      },
+      {
+        "level": 4,
+        "description": "At battle start, increase this Hero's Attack and Crit Damage by 15% until the battle ends."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Devoid",
+      "status": "needs-in-game-check"
+    }
   },
   {
-    "id": "devoid-excitement",
+    "id": "devoid-phantom",
     "branchId": "devoid",
-    "name": "Excitement",
-    "icon": "/img/skills/devoid/excitement.png",
-    "description": "Restore 150 Energy within the first 5s of battle."
+    "tier": 1,
+    "name": "Phantom",
+    "icon": "/img/skills/devoid/phantom.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "Healing received cannot be reduced."
+      },
+      {
+        "level": 2,
+        "description": "Healing received cannot be reduced. When receiving a healing-reduction debuff, increase healing received by 5%."
+      },
+      {
+        "level": 3,
+        "description": "Healing received cannot be reduced. When receiving a healing-reduction debuff, increase healing received by 5%, stacking up to 2 times."
+      },
+      {
+        "level": 4,
+        "description": "Healing received cannot be reduced. When receiving a healing-reduction debuff, increase healing received by 5%, stacking up to 3 times."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Devoid",
+      "status": "needs-in-game-check"
+    }
   },
   {
     "id": "devoid-vexation",
     "branchId": "devoid",
+    "tier": 1,
     "name": "Vexation",
     "icon": "/img/skills/devoid/vexation.png",
-    "description": "When hitting enemy with auto-attacks, reduce their Hit Energy Restoration by 50%."
+    "levels": [
+      {
+        "level": 1,
+        "description": "When hitting an enemy with auto-attacks, reduce their Hit Energy Restoration by 50%."
+      },
+      {
+        "level": 2,
+        "description": "When hitting an enemy with auto-attacks, reduce their Hit Energy Restoration by 75%."
+      },
+      {
+        "level": 3,
+        "description": "When hitting an enemy with auto-attacks, prevent them from recovering Energy from that hit."
+      },
+      {
+        "level": 4,
+        "description": "When hitting an enemy with auto-attacks, reduce their Hit Energy Restoration by 25 and prevent Energy recovery from that hit."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Devoid",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "devoid-abyss",
+    "branchId": "devoid",
+    "tier": 2,
+    "name": "Abyss",
+    "icon": "/img/skills/devoid/abyss.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "At battle start, reduce Attack Energy Restoration and Hit Energy Restoration of the directly opposed enemy by 100% for 6s."
+      },
+      {
+        "level": 2,
+        "description": "At battle start, reduce Attack Energy Restoration and Hit Energy Restoration of the directly opposed enemy by 100% for 8s."
+      },
+      {
+        "level": 3,
+        "description": "At battle start, reduce Attack Energy Restoration and Hit Energy Restoration of the directly opposed enemy by 100%; after 8s, this effect weakens by 80%."
+      },
+      {
+        "level": 4,
+        "description": "At battle start, reduce Attack Energy Restoration and Hit Energy Restoration of the directly opposed enemy by 100%; after 8s, this effect weakens by 50%."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Devoid",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "devoid-broken-mirror",
+    "branchId": "devoid",
+    "tier": 2,
+    "name": "Broken Mirror",
+    "icon": "/img/skills/devoid/broken-mirror.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "Reduce Hit Energy Restoration by 35% for nearby enemies."
+      },
+      {
+        "level": 2,
+        "description": "Reduce Hit Energy Restoration by 50% for nearby enemies."
+      },
+      {
+        "level": 3,
+        "description": "Reduce Hit Energy Restoration by 75% for nearby enemies."
+      },
+      {
+        "level": 4,
+        "description": "Reduce Hit Energy Restoration by 100% for nearby enemies, and increase this Hero's Hit Energy Recovery by 50%."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Devoid",
+      "status": "needs-in-game-check"
+    }
   },
   {
     "id": "devoid-engulf",
     "branchId": "devoid",
+    "tier": 2,
     "name": "Engulf",
     "icon": "/img/skills/devoid/engulf.png",
-    "description": "After each of the first 2 Ultimates, Hero gains a buff which increases Lifesteal by 12%."
+    "levels": [
+      {
+        "level": 1,
+        "description": "After each of the first 2 Ultimates, gain a buff that increases Lifesteal by 12%."
+      },
+      {
+        "level": 2,
+        "description": "After each of the first 2 Ultimates, gain a buff that increases Lifesteal by 15%."
+      },
+      {
+        "level": 3,
+        "description": "After each of the first 2 Ultimates, gain a buff that increases Lifesteal by 18%."
+      },
+      {
+        "level": 4,
+        "description": "After each of the first 3 Ultimates, gain a buff that increases Lifesteal by 18%."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Devoid",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "devoid-time-lapse",
+    "branchId": "devoid",
+    "tier": 2,
+    "name": "Time-lapse",
+    "icon": "/img/skills/devoid/time-lapse.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "This Hero's auto-attacks have a 20% chance to stun the target for 1.5s."
+      },
+      {
+        "level": 2,
+        "description": "This Hero's auto-attacks have a 20% chance to stun the target for 2s."
+      },
+      {
+        "level": 3,
+        "description": "This Hero's auto-attacks have a 30% chance to stun the target for 2s."
+      },
+      {
+        "level": 4,
+        "description": "This Hero's auto-attacks have a 40% chance to stun the target for 2s."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Devoid",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "devoid-chaotic-power",
+    "branchId": "devoid",
+    "tier": 3,
+    "name": "Chaotic Power",
+    "icon": "/img/skills/devoid/chaotic-power.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "At battle start, increase Attack by 40%; this effect gradually declines over the next 20s."
+      },
+      {
+        "level": 2,
+        "description": "At battle start, increase Attack by 60%; this effect gradually declines over the next 30s."
+      },
+      {
+        "level": 3,
+        "description": "At battle start, increase Attack and Breakthrough by 60%; this effect gradually declines over the next 30s."
+      },
+      {
+        "level": 4,
+        "description": "At battle start, increase Attack and Breakthrough by 60%; this effect gradually declines to 30% over the next 30s."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Devoid",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "devoid-energy-field",
+    "branchId": "devoid",
+    "tier": 3,
+    "name": "Energy Field",
+    "icon": "/img/skills/devoid/energy-field.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "When the allied Hero with the highest Combat Power first receives lethal damage, negate it. Reduce this Hero's current HP by 30% and give the target an 8s shield equal to the reduced HP. Can trigger once per battle."
+      },
+      {
+        "level": 2,
+        "description": "When the allied Hero with the highest Combat Power first receives lethal damage, negate it. Reduce this Hero's current HP by 40% and give the target an 8s shield equal to the reduced HP. Can trigger once per battle."
+      },
+      {
+        "level": 3,
+        "description": "When the allied Hero with the highest Combat Power first receives lethal damage, negate it. Reduce this Hero's Max HP by 40% and give this Hero and the target an 8s shield equal to 50% of the reduced HP. Max HP cannot be reduced below 1. Can trigger once per battle."
+      },
+      {
+        "level": 4,
+        "description": "When the allied Hero with the highest Combat Power first receives lethal damage, negate it. Reduce this Hero's Max HP by 40% and give this Hero and the target an 8s shield equal to 100% of the reduced HP. Max HP cannot be reduced below 1. Can trigger once per battle."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Devoid",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "devoid-excitement",
+    "branchId": "devoid",
+    "tier": 3,
+    "name": "Excitement",
+    "icon": "/img/skills/devoid/excitement.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "Restore 150 Energy within the first 5s of battle."
+      },
+      {
+        "level": 2,
+        "description": "At battle start, restore 200 Energy."
+      },
+      {
+        "level": 3,
+        "description": "At battle start, restore 200 Energy. When Energy is below 40%, restore 15 Energy every second."
+      },
+      {
+        "level": 4,
+        "description": "At battle start, restore 200 Energy. When Energy is below 40%, restore 25 Energy every second."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Devoid",
+      "status": "needs-in-game-check"
+    }
   },
   {
     "id": "devoid-spirit-flash",
     "branchId": "devoid",
+    "tier": 3,
     "name": "Spirit Flash",
     "icon": "/img/skills/devoid/spirit-flash.png",
-    "description": "After the first time any enemy releases their Ultimate, generate a shield equal to 50% of max Health for 10s to protect this Hero."
+    "levels": [
+      {
+        "level": 1,
+        "description": "After any enemy releases their first Ultimate, generate a 10s shield equal to 50% Max Health for this Hero."
+      },
+      {
+        "level": 2,
+        "description": "After any enemy releases their first Ultimate, generate a 10s shield equal to 75% Max Health for this Hero."
+      },
+      {
+        "level": 3,
+        "description": "After any enemy releases their first Ultimate, generate a 10s shield equal to 75% Max Health for this Hero. The shield can only be removed by damage."
+      },
+      {
+        "level": 4,
+        "description": "After any enemy releases their first Ultimate, generate a 10s shield equal to 100% Max Health for this Hero. The shield can only be removed by damage."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Devoid",
+      "status": "needs-in-game-check"
+    }
   },
   {
     "id": "primeval-culmination",
     "branchId": "primeval",
+    "tier": 1,
     "name": "Culmination",
     "icon": "/img/skills/primeval/culmination.png",
-    "description": "Increase Attack by 1% every 4s during battle."
-  },
-  {
-    "id": "primeval-primal-totem",
-    "branchId": "primeval",
-    "name": "Primal Totem",
-    "icon": "/img/skills/primeval/primal-totem.png",
-    "description": "After releasing an Ultimate, gain immunity from control skills for 5s."
-  },
-  {
-    "id": "primeval-death-waiver",
-    "branchId": "primeval",
-    "name": "Death Waiver",
-    "icon": "/img/skills/primeval/death-waiver.png",
-    "description": "The first time this Hero takes lethal damage, gain full immunity for 2s instead."
-  },
-  {
-    "id": "primeval-inspiration",
-    "branchId": "primeval",
-    "name": "Inspiration",
-    "icon": "/img/skills/primeval/inspiration.png",
-    "description": "Whenever a skill targets an ally, increase their Attack and Defense by 10% for 5s."
-  },
-  {
-    "id": "primeval-purify",
-    "branchId": "primeval",
-    "name": "Purify",
-    "icon": "/img/skills/primeval/purify.png",
-    "description": "When healing an ally, there is a 20% chance to remove all debuffs inflicted upon them."
-  },
-  {
-    "id": "primeval-pristine",
-    "branchId": "primeval",
-    "name": "Pristine",
-    "icon": "/img/skills/primeval/pristine.png",
-    "description": "When Health is above 75%, increase Defense by 50%."
+    "levels": [
+      {
+        "level": 1,
+        "description": "Increase Attack by 1% every 4s during battle."
+      },
+      {
+        "level": 2,
+        "description": "Increase Attack by 1% every 3s during battle."
+      },
+      {
+        "level": 3,
+        "description": "Increase Attack by 1% and Crit Chance by 1% every 4s during battle."
+      },
+      {
+        "level": 4,
+        "description": "Increase Attack by 2% and Crit Chance by 1% every 4s during battle."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Primeval",
+      "status": "needs-in-game-check"
+    }
   },
   {
     "id": "primeval-embroilment",
     "branchId": "primeval",
+    "tier": 1,
     "name": "Embroilment",
     "icon": "/img/skills/primeval/embroilment.png",
-    "description": "When Health is above 50%, increase damage dealt by 10%. When Health is below 50%, reduce damage taken by 10%."
+    "levels": [
+      {
+        "level": 1,
+        "description": "Above 50% Health, increase damage dealt by 10%; below 50% Health, reduce damage taken by 10%."
+      },
+      {
+        "level": 2,
+        "description": "Above 50% Health, increase damage dealt by 15%; below 50% Health, reduce damage taken by 15%."
+      },
+      {
+        "level": 3,
+        "description": "Above 40% Health, increase damage dealt by 14%; below 60% Health, reduce damage taken by 15%."
+      },
+      {
+        "level": 4,
+        "description": "Above 25% Health, increase damage dealt by 18%; below 75% Health, reduce damage taken by 18%."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Primeval",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "primeval-inspiration",
+    "branchId": "primeval",
+    "tier": 1,
+    "name": "Inspiration",
+    "icon": "/img/skills/primeval/inspiration.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "When an active skill targets an ally, increase that ally's Attack and Defense by 10% for 5s."
+      },
+      {
+        "level": 2,
+        "description": "When an active skill targets an ally, increase that ally's Attack and Defense by 15% for 5s."
+      },
+      {
+        "level": 3,
+        "description": "When an active skill targets an ally, increase that ally's Attack and Defense by 15% for 5s, stacking up to 2 times."
+      },
+      {
+        "level": 4,
+        "description": "When an active skill targets an ally, increase that ally's Attack and Defense by 15% for 5s, stacking up to 3 times."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Primeval",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "primeval-vicissitudes",
+    "branchId": "primeval",
+    "tier": 1,
+    "name": "Vicissitudes",
+    "icon": "/img/skills/primeval/vicissitudes.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "While this Hero is alive, reduce healing received by 25% for the directly opposed enemy."
+      },
+      {
+        "level": 2,
+        "description": "While this Hero is alive, reduce healing received by 30% for the directly opposed enemy."
+      },
+      {
+        "level": 3,
+        "description": "While this Hero is alive, reduce healing received and shields gained by 30% for the directly opposed enemy."
+      },
+      {
+        "level": 4,
+        "description": "While this Hero is alive, reduce healing received and shields gained by 40% for the directly opposed enemy."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Primeval",
+      "status": "needs-in-game-check"
+    }
   },
   {
     "id": "primeval-corrosion",
     "branchId": "primeval",
+    "tier": 2,
     "name": "Corrosion",
     "icon": "/img/skills/primeval/corrosion.png",
-    "description": "When an auto-attack hits, reduce target's Defense by 30% for 5s."
+    "levels": [
+      {
+        "level": 1,
+        "description": "When an auto-attack hits, reduce the target's Defense by 30% for 5s."
+      },
+      {
+        "level": 2,
+        "description": "When an auto-attack hits, reduce the target's Defense by 40% for 5s."
+      },
+      {
+        "level": 3,
+        "description": "When an auto-attack hits, reduce the target's Defense by 40% and Crit Chance Resistance by 10% for 5s."
+      },
+      {
+        "level": 4,
+        "description": "When an auto-attack hits, reduce the target's Defense by 40% and Crit Chance Resistance by 15% for 5s."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Primeval",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "primeval-primal-totem",
+    "branchId": "primeval",
+    "tier": 2,
+    "name": "Primal Totem",
+    "icon": "/img/skills/primeval/primal-totem.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "After releasing an Ultimate, gain immunity to control skills for 5s."
+      },
+      {
+        "level": 2,
+        "description": "After releasing an Ultimate, gain immunity to control skills and reduce damage taken by 15% for 5s."
+      },
+      {
+        "level": 3,
+        "description": "After releasing an Ultimate, gain immunity to control skills and reduce damage taken by 20% for 5s."
+      },
+      {
+        "level": 4,
+        "description": "After releasing an Ultimate, gain immunity to control skills and reduce damage taken by 25% for 5s."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Primeval",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "primeval-purify",
+    "branchId": "primeval",
+    "tier": 2,
+    "name": "Purify",
+    "icon": "/img/skills/primeval/purify.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "When healing an ally, there is a 50% chance to remove all debuffs from them."
+      },
+      {
+        "level": 2,
+        "description": "When healing an ally, there is a 55% chance to remove all debuffs from them."
+      },
+      {
+        "level": 3,
+        "description": "When healing an ally, there is a 60% chance to remove all debuffs from them."
+      },
+      {
+        "level": 4,
+        "description": "When healing an ally, there is a 70% chance to remove all debuffs from them."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Primeval",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "primeval-toxicity",
+    "branchId": "primeval",
+    "tier": 2,
+    "name": "Toxicity",
+    "icon": "/img/skills/primeval/toxicity.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "Auto-attacks have a 30% chance to poison the target, dealing 2% of the target's Max Health every second for 5s. Cannot be dispelled."
+      },
+      {
+        "level": 2,
+        "description": "Auto-attacks have a 30% chance to poison the target, dealing 2% of the target's Max Health every second for 6s. Cannot be dispelled."
+      },
+      {
+        "level": 3,
+        "description": "Auto-attacks have a 40% chance to poison the target, dealing 2% of the target's Max Health every second for 6s. Cannot be dispelled."
+      },
+      {
+        "level": 4,
+        "description": "Auto-attacks have a 40% chance to poison the target, dealing 2% of the target's Max Health every second for 6s and increasing all continuous damage dealt to the target by 50% during this period. Cannot be dispelled."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Primeval",
+      "status": "needs-in-game-check"
+    }
   },
   {
     "id": "primeval-colossus",
     "branchId": "primeval",
+    "tier": 3,
     "name": "Colossus",
     "icon": "/img/skills/primeval/colossus.png",
-    "description": "Increases Attack by amount equal to 50% of Hero's Defense during battle."
+    "levels": [
+      {
+        "level": 1,
+        "description": "During battle, increase Attack by an amount equal to 50% of this Hero's Defense."
+      },
+      {
+        "level": 2,
+        "description": "During battle, increase Attack by an amount equal to 70% of this Hero's Defense."
+      },
+      {
+        "level": 3,
+        "description": "During battle, increase Attack by an amount equal to 70% of this Hero's Defense. When dealing damage, also deal additional damage equal to 15% Defense until battle ends."
+      },
+      {
+        "level": 4,
+        "description": "During battle, increase Attack by an amount equal to 70% of this Hero's Defense. When dealing damage, also deal additional damage equal to 35% Defense until battle ends."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Primeval",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "primeval-death-waiver",
+    "branchId": "primeval",
+    "tier": 3,
+    "name": "Death Waiver",
+    "icon": "/img/skills/primeval/death-waiver.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "The first time this Hero takes lethal damage, gain full damage immunity for 2s instead."
+      },
+      {
+        "level": 2,
+        "description": "The first time this Hero takes lethal damage, gain full damage immunity for 3s instead."
+      },
+      {
+        "level": 3,
+        "description": "The first time this Hero takes lethal damage, gain full immunity to damage and control effects for 3s."
+      },
+      {
+        "level": 4,
+        "description": "The first time this Hero takes lethal damage, gain full immunity to damage and control effects for 3s. If the fatal damage is lower than 10% of this Hero's Max Health, Death Waiver can trigger one additional time."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Primeval",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "primeval-fanaticism",
+    "branchId": "primeval",
+    "tier": 3,
+    "name": "Fanaticism",
+    "icon": "/img/skills/primeval/fanaticism.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "The first time this Hero's Health drops below 40%, increase Attack Speed by 20%, Lifesteal by 15%, and Attack by 15% for 12s."
+      },
+      {
+        "level": 2,
+        "description": "The first time this Hero's Health drops below 50%, increase Attack Speed by 20%, Lifesteal by 15%, and Attack by 15% for 12s."
+      },
+      {
+        "level": 3,
+        "description": "The first time this Hero's Health drops below 50%, increase Attack Speed by 25%, Lifesteal by 20%, and Attack by 20% for 12s."
+      },
+      {
+        "level": 4,
+        "description": "The first time this Hero's Health drops below 60%, increase Attack Speed by 30%, Lifesteal by 20%, and Attack by 20% for 15s."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Primeval",
+      "status": "needs-in-game-check"
+    }
+  },
+  {
+    "id": "primeval-pristine",
+    "branchId": "primeval",
+    "tier": 3,
+    "name": "Pristine",
+    "icon": "/img/skills/primeval/pristine.png",
+    "levels": [
+      {
+        "level": 1,
+        "description": "When Health is above 75%, increase Defense by 80%."
+      },
+      {
+        "level": 2,
+        "description": "When Health is above 50%, increase Defense by 80%."
+      },
+      {
+        "level": 3,
+        "description": "When current Health is above 50%, increase Defense by 80% and control resistance by 35%."
+      },
+      {
+        "level": 4,
+        "description": "When current Health is above 50%, increase Defense by 80% and control resistance by 60%."
+      }
+    ],
+    "source": {
+      "type": "fandom",
+      "url": "https://mythic-heroes.fandom.com/wiki/Primeval",
+      "status": "needs-in-game-check"
+    }
   }
 ]
