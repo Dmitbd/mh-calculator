@@ -1,4 +1,5 @@
 import type { Hero, HeroBuildSet } from "@/features/heroes/types/heroes.types";
+import { hasReadyBuildInTabs } from "@/features/heroes/utils/heroBuildTabs";
 
 import heroesData from "./heroes.json";
 import bastetBuild from "./builds/bastet.json";
@@ -17,11 +18,11 @@ export const heroBuilds: Record<string, HeroBuildSet> = {
 
 /** Проверяет, есть ли у героя хотя бы один готовый билд */
 export function hasReadyBuild(buildSet: HeroBuildSet | null | undefined): boolean {
-  if (!buildSet) {
+  if (!buildSet || buildSet.schemaVersion !== 2) {
     return false;
   }
 
-  return buildSet.pve !== null || buildSet.pvp !== null;
+  return hasReadyBuildInTabs(buildSet.tabs);
 }
 
 /** Герои с хотя бы одним готовым билдом */

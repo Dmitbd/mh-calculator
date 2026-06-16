@@ -150,6 +150,10 @@ export type DivinityBranchBuildValidationDraft = {
   equipment: EquipmentSelection;
 };
 
+/** Путь целевой вкладки при экспорте из билдера */
+export type HeroBuildTargetTabPath = string[];
+
+/** Чистый билд, хранящийся в committed hero build tree */
 export type DivinityBranchBuildExport = DivinityBranchBuildDraft & {
   schemaVersion: 1;
   /** Уровень прогресса по каждому столбцу */
@@ -160,6 +164,11 @@ export type DivinityBranchBuildExport = DivinityBranchBuildDraft & {
     createdAt: string;
     source: "manual-branch-builder";
   };
+};
+
+/** JSON, который скачивает админский билдер, с metadata о месте вставки */
+export type DivinityBranchBuilderExport = DivinityBranchBuildExport & {
+  targetTabPath: HeroBuildTargetTabPath;
 };
 
 export type BranchBuildValidationError = {

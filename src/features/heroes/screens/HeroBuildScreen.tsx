@@ -4,13 +4,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BranchBuilderGrid } from "@/features/admin/components/BranchBuilderGrid";
 import { EquipmentSelect } from "@/features/admin/components/EquipmentSelect";
-import { GameModeRadio } from "@/features/admin/components/GameModeRadio";
 import { WeaponAwakeningPicker } from "@/features/admin/components/WeaponAwakeningPicker";
 import type {
   Artifact,
   BranchColumn,
   DivinityBranch,
-  DivinityGameMode,
   DivinityMajorSkill,
   Rune,
   TreeTemplateNode,
@@ -28,11 +26,19 @@ import {
   getHeroById,
   getHeroBuildSet,
 } from "@/features/game-data/heroes/heroBuilds";
+import type { HeroBuildTabPath } from "@/features/heroes/types/heroes.types";
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 
-import { mapBuildToView } from "../utils/mapBuildToView";
+import { BuildFolderTabs } from "@/shared/ui/BuildFolderTabs";
 import { HeroMetadataRow } from "../components/HeroMetadataRow";
+import {
+  getBuildAtPath,
+  getDefaultTabPath,
+  getTabByPath,
+  sortBuildTabs,
+} from "../utils/heroBuildTabs";
+import { mapBuildToView } from "../utils/mapBuildToView";
 
 const columns: BranchColumn[] = [
   { id: "left", label: "левая", isMain: false },
@@ -63,38 +69,64 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
 
   const hero = getHeroById(heroId);
   const buildSet = getHeroBuildSet(heroId);
-  const availableModes = useMemo(() => {
-    if (!buildSet) {
-      return [] as DivinityGameMode[];
-    }
-
-    const modes: DivinityGameMode[] = [];
-
-    if (buildSet.pvp) {
-      modes.push("pvp");
-    }
-
-    if (buildSet.pve) {
-      modes.push("pve");
-    }
-
-    return modes;
-  }, [buildSet]);
-  const [gameMode, setGameMode] = useState<DivinityGameMode>(
-    availableModes[0] ?? "pvp",
+  const sortedTabs = useMemo(
+    () => (buildSet ? sortBuildTabs(buildSet.tabs) : []),
+    [buildSet],
   );
-  const effectiveGameMode = availableModes.includes(gameMode)
-    ? gameMode
-    : (availableModes[0] ?? "pvp");
-  const build = buildSet ? buildSet[effectiveGameMode] : null;
+  const defaultPath = useMemo(
+    () => (sortedTabs.length > 0 ? getDefaultTabPath(sortedTabs) : []),
+    [sortedTabs],
+  );
+  const [activePath, setActivePath] = useState<HeroBuildTabPath>(defaultPath);
 
   useEffect(() => {
-    if (availableModes.length > 0 && !availableModes.includes(gameMode)) {
-      setGameMode(availableModes[0]);
-    }
-  }, [availableModes, gameMode]);
+    setActivePath(defaultPath);
+  }, [defaultPath]);
 
+  const activeTopId = activePath[0] ?? "";
+  const activeChildId = activePath[1];
+  const activeTopTab = getTabByPath(sortedTabs, [activeTopId]);
+  const childTabs =
+    activeTopTab?.kind === "group" && activeTopTab.children && activeTopTab.children.length > 0
+      ? sortBuildTabs(activeTopTab.children)
+      : [];
+  const build = getBuildAtPath(sortedTabs, activePath);
   const view = useMemo(() => (build ? mapBuildToView(build) : null), [build]);
+
+  const topFolderTabs = sortedTabs.map((tab) => ({
+    id: tab.id,
+    label: tab.label,
+    accessibilityLabel: `Select ${tab.label} build tab`,
+  }));
+  const childFolderTabs = childTabs.map((tab) => ({
+    id: tab.id,
+    label: tab.label,
+    accessibilityLabel: `Select ${tab.label} build tab`,
+  }));
+
+  const handleSelectTopTab = (tabId: string) => {
+    const tab = getTabByPath(sortedTabs, [tabId]);
+
+    if (!tab) {
+      return;
+    }
+
+    if (tab.kind === "group" && tab.children && tab.children.length > 0) {
+      const firstChild = sortBuildTabs(tab.children)[0];
+      setActivePath([tabId, firstChild.id]);
+      return;
+    }
+
+    setActivePath([tabId]);
+  };
+
+  const handleSelectChildTab = (tabId: string) => {
+    if (!activeTopId) {
+      return;
+    }
+
+    setActivePath([activeTopId, tabId]);
+  };
 
   const contentPadding = {
     paddingTop: SCREEN_HEADER_HEIGHT + top + 10,
@@ -122,12 +154,15 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
           <HeroMetadataRow hero={hero} />
         </View>
 
-        {availableModes.length > 0 ? (
+        {sortedTabs.length > 0 ? (
           <View style={styles.section}>
-            <GameModeRadio
-              modes={availableModes}
-              onChange={setGameMode}
-              value={effectiveGameMode}
+            <BuildFolderTabs
+              childTabs={childFolderTabs.length > 0 ? childFolderTabs : undefined}
+              onSelectChildTab={handleSelectChildTab}
+              onSelectTab={handleSelectTopTab}
+              selectedChildTabId={activeChildId}
+              selectedTabId={activeTopId}
+              tabs={topFolderTabs}
             />
           </View>
         ) : null}

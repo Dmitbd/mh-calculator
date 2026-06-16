@@ -44,6 +44,7 @@ describe("useDivinityBranchBuilder", () => {
     const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
 
     expect(result.current.gameMode).toBe("pve");
+    expect(result.current.targetTabPath).toEqual(["pve", "bosses"]);
     expect(result.current.heroName).toBe("");
     expect(result.current.selectedBranches).toEqual({
       left: null,
@@ -85,9 +86,14 @@ describe("useDivinityBranchBuilder", () => {
     });
 
     expect(result.current.getMajorSkill("center", 1)).toBe("psyche-maestro");
+    expect(result.current.buildExport("2026-05-30T00:00:00.000Z")?.targetTabPath).toEqual([
+      "pve",
+      "bosses",
+    ]);
     expect(result.current.buildExport("2026-05-30T00:00:00.000Z")).toEqual({
       schemaVersion: 1,
       gameMode: "pve",
+      targetTabPath: ["pve", "bosses"],
       heroName: "Western Queen",
       columns: selectedBranches,
       weaponAwakening: filledWeaponAwakening,
@@ -155,5 +161,40 @@ describe("useDivinityBranchBuilder", () => {
         source: "manual-branch-builder",
       },
     });
+  });
+
+  it("selecting PvP sets target path to pvp", () => {
+    const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
+
+    act(() => {
+      result.current.setTargetTopTab("pvp");
+    });
+
+    expect(result.current.targetTabPath).toEqual(["pvp"]);
+    expect(result.current.gameMode).toBe("pvp");
+  });
+
+  it("selecting PvE bosses sets target path to pve bosses", () => {
+    const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
+
+    act(() => {
+      result.current.setTargetTopTab("pve");
+      result.current.setTargetChildTab("bosses");
+    });
+
+    expect(result.current.targetTabPath).toEqual(["pve", "bosses"]);
+    expect(result.current.gameMode).toBe("pve");
+  });
+
+  it("selecting PvE campaign sets target path to pve campaign", () => {
+    const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
+
+    act(() => {
+      result.current.setTargetTopTab("pve");
+      result.current.setTargetChildTab("campaign");
+    });
+
+    expect(result.current.targetTabPath).toEqual(["pve", "campaign"]);
+    expect(result.current.gameMode).toBe("pve");
   });
 });

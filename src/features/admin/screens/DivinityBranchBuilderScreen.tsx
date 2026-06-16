@@ -17,11 +17,13 @@ import skillsData from "@/features/game-data/divinity/divinity-skills.json";
 import templateData from "@/features/game-data/divinity/tree-template.json";
 import weaponAwakeningColorsData from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
 import weaponAwakeningSlotsData from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
+import { BuildFolderTabs } from "@/shared/ui/BuildFolderTabs";
+import { buildTargetTabs } from "@/features/admin/data/buildTargetTabs";
+import { getTabByPath, sortBuildTabs } from "@/features/heroes/utils/heroBuildTabs";
 
 import { BranchBuilderGrid } from "../components/BranchBuilderGrid";
 import { DownloadJsonButton } from "../components/DownloadJsonButton";
 import { EquipmentSelect } from "../components/EquipmentSelect";
-import { GameModeRadio } from "../components/GameModeRadio";
 import { HeroNameInput } from "../components/HeroNameInput";
 import { WeaponAwakeningPicker } from "../components/WeaponAwakeningPicker";
 import { useDivinityBranchBuilder } from "../hooks/useDivinityBranchBuilder";
@@ -64,6 +66,14 @@ const weaponAwakeningCatalog = {
 
 const SCREEN_PADDING = 20;
 
+function toFolderTabItems(tabs: ReturnType<typeof sortBuildTabs>) {
+  return tabs.map((tab) => ({
+    id: tab.id,
+    label: tab.label,
+    accessibilityLabel: `Select ${tab.label} build tab`,
+  }));
+}
+
 export function DivinityBranchBuilderScreen() {
   const { top, bottom } = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
@@ -83,6 +93,21 @@ export function DivinityBranchBuilderScreen() {
     () => builder.selectedMajorSkills,
     [builder.selectedMajorSkills],
   );
+
+  const selectedTopTabId = builder.targetTabPath[0] ?? "";
+  const selectedChildTabId = builder.targetTabPath[1];
+  const selectedTopTab = getTabByPath(buildTargetTabs, [selectedTopTabId]);
+  const buildTargetTopTabs = useMemo(
+    () => toFolderTabItems(sortBuildTabs(buildTargetTabs)),
+    [],
+  );
+  const buildTargetChildTabs = useMemo(() => {
+    if (!selectedTopTab?.children || selectedTopTab.children.length === 0) {
+      return undefined;
+    }
+
+    return toFolderTabItems(sortBuildTabs(selectedTopTab.children));
+  }, [selectedTopTab]);
 
   const scrollToErrors = () => {
     if (!pendingScrollToErrors.current) {
@@ -122,9 +147,13 @@ export function DivinityBranchBuilderScreen() {
         ]}
       >
       <View style={styles.section}>
-        <GameModeRadio
-          value={builder.gameMode}
-          onChange={builder.setGameMode}
+        <BuildFolderTabs
+          childTabs={buildTargetChildTabs}
+          onSelectChildTab={builder.setTargetChildTab}
+          onSelectTab={builder.setTargetTopTab}
+          selectedChildTabId={selectedChildTabId}
+          selectedTabId={selectedTopTabId}
+          tabs={buildTargetTopTabs}
         />
       </View>
 

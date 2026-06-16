@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 import { IconPreview } from "@/features/admin/components/IconPreview";
 import {
@@ -8,14 +8,24 @@ import {
   heroRarities,
   heroRoles,
 } from "@/features/game-data/heroes/heroDictionaries";
-import type { Hero } from "@/features/heroes/types/heroes.types";
+import type { Hero, HeroRarity } from "@/features/heroes/types/heroes.types";
+import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
+
+/** Высота бейджа редкости */
+const RARITY_BADGE_HEIGHT = 20;
+
+/** Соотношение сторон PNG редкостей */
+const RARITY_ASPECT_RATIO: Record<HeroRarity, number> = {
+  ssr: 101 / 43,
+  ur: 238 / 143,
+};
 
 type HeroMetadataRowProps = {
   /** Герой для отображения метаданных */
   hero: Hero;
 };
 
-/** Компактная строка метаданных героя: редкость, роль, фракции, стихия */
+/** Компактная строка метаданных героя: иконка, редкость, роль, фракции, стихия */
 export function HeroMetadataRow({ hero }: HeroMetadataRowProps) {
   const rarity = getDictionaryEntry(heroRarities, hero.rarity);
   const role = getDictionaryEntry(heroRoles, hero.role);
@@ -26,10 +36,20 @@ export function HeroMetadataRow({ hero }: HeroMetadataRowProps) {
 
   return (
     <View style={styles.row}>
+      <View style={styles.heroIconItem}>
+        <IconPreview label={hero.name.ru} size={36} source={hero.icon} />
+      </View>
       {rarity ? (
-        <View style={styles.item}>
-          <IconPreview label={rarity.name.ru} size={22} source={rarity.icon} />
-          <Text style={styles.label}>{rarity.name.ru}</Text>
+        <View style={styles.rarityItem}>
+          <Image
+            accessibilityLabel={`${rarity.name.ru} icon`}
+            resizeMode="contain"
+            source={{ uri: resolveAssetUri(rarity.icon) }}
+            style={{
+              height: RARITY_BADGE_HEIGHT,
+              width: RARITY_BADGE_HEIGHT * RARITY_ASPECT_RATIO[hero.rarity],
+            }}
+          />
         </View>
       ) : null}
       {role ? (
@@ -58,12 +78,21 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     flexWrap: "wrap",
+    alignItems: "center",
     gap: 12,
+  },
+  heroIconItem: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   item: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+  },
+  rarityItem: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   label: {
     color: "#d7c19a",

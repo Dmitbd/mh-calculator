@@ -2,17 +2,21 @@ import { useCallback, useMemo, useState } from "react";
 
 import template from "@/features/game-data/divinity/tree-template.json";
 
+import {
+  buildTargetTabs,
+  defaultBuildTargetTabPath,
+} from "../data/buildTargetTabs";
 import type {
   ActiveBranchNode,
   BranchColumnId,
   BranchProgressLevels,
-  DivinityBranchBuildExport,
+  DivinityBranchBuilderExport,
   DivinityBranchBuildMajorNode,
   DivinityBranchBuildValidationDraft,
   DivinityBranchId,
-  DivinityGameMode,
   DraftBranchColumns,
   EquipmentSelection,
+  HeroBuildTargetTabPath,
   WeaponAwakeningColor,
   WeaponAwakeningColorId,
   WeaponAwakeningSlot,
@@ -21,6 +25,11 @@ import {
   buildWeaponAwakeningSlots,
   getNextWeaponAwakeningColor,
 } from "../utils/weaponAwakening";
+import {
+  getGameModeForPath,
+  getTabByPath,
+  sortBuildTabs,
+} from "@/features/heroes/utils/heroBuildTabs";
 
 type MajorSkillSelections = Partial<Record<string, string>>;
 type WeaponAwakeningSelections = Partial<Record<number, WeaponAwakeningColorId>>;
@@ -32,6 +41,9 @@ const emptySelectedBranches: DraftBranchColumns = {
 };
 
 const columnIds: BranchColumnId[] = ["left", "center", "right"];
+
+/** Путь целевой вкладки по умолчанию: PvE → Боссы */
+const defaultTargetTabPath: HeroBuildTargetTabPath = defaultBuildTargetTabPath;
 
 // Уровни нод по каждому столбцу (отсортированы) — для расчёта прогресса и отката
 const columnNodeLevels: Record<string, number[]> = (() => {
@@ -62,7 +74,9 @@ export function useDivinityBranchBuilder(
     slots: readonly WeaponAwakeningSlot[];
   },
 ) {
-  const [gameMode, setGameMode] = useState<DivinityGameMode>("pve");
+  const [targetTabPath, setTargetTabPath] =
+    useState<HeroBuildTargetTabPath>(defaultTargetTabPath);
+  const gameMode = getGameModeForPath(buildTargetTabs, targetTabPath) ?? "pve";
   const [heroName, setHeroName] = useState("");
   const [selectedBranches, setSelectedBranches] =
     useState<DraftBranchColumns>(emptySelectedBranches);
@@ -73,6 +87,26 @@ export function useDivinityBranchBuilder(
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
   const [selectedRuneId, setSelectedRuneId] = useState<string | null>(null);
   const [progressLevels, setProgressLevels] = useState<BranchProgressLevels>({});
+
+  const setTargetTopTab = useCallback((topTabId: string) => {
+    const tab = getTabByPath(buildTargetTabs, [topTabId]);
+
+    if (!tab) {
+      return;
+    }
+
+    if (tab.kind === "group" && tab.children && tab.children.length > 0) {
+      const firstChild = sortBuildTabs(tab.children)[0];
+      setTargetTabPath([topTabId, firstChild.id]);
+      return;
+    }
+
+    setTargetTabPath([topTabId]);
+  }, []);
+
+  const setTargetChildTab = useCallback((childTabId: string) => {
+    setTargetTabPath((current) => [current[0], childTabId]);
+  }, []);
 
   const setColumnBranch = useCallback(
     (columnId: BranchColumnId, branchId: DivinityBranchId | null) => {
@@ -210,7 +244,13 @@ export function useDivinityBranchBuilder(
     ]);
 
   const buildExport = useCallback(
-    (createdAt = new Date().toISOString()): DivinityBranchBuildExport | null => {
+    (createdAt = new Date().toISOString()): DivinityBranchBuilderExport | null => {
+      const resolvedGameMode = getGameModeForPath(buildTargetTabs, targetTabPath);
+
+      if (!resolvedGameMode) {
+        return null;
+      }
+
       if (!hasSelectedAllBranches(selectedBranches)) {
         return null;
       }
@@ -228,8 +268,9 @@ export function useDivinityBranchBuilder(
 
       return {
         schemaVersion: 1,
-        gameMode,
+        gameMode: resolvedGameMode,
         heroName,
+        targetTabPath,
         columns: selectedBranches,
         majorNodes,
         weaponAwakening,
@@ -250,6 +291,7 @@ export function useDivinityBranchBuilder(
       selectedBranches,
       selectedMajorSkills,
       progressLevels,
+      targetTabPath,
       weaponAwakeningCatalog.slots.length,
     ],
   );
@@ -257,6 +299,7 @@ export function useDivinityBranchBuilder(
   return useMemo(
     () => ({
       gameMode,
+      targetTabPath,
       heroName,
       selectedBranches,
       selectedMajorSkills,
@@ -264,7 +307,8 @@ export function useDivinityBranchBuilder(
       selectedArtifactId,
       selectedRuneId,
       progressLevels,
-      setGameMode,
+      setTargetTopTab,
+      setTargetChildTab,
       setHeroName,
       cycleWeaponAwakeningSlot,
       setArtifact: setSelectedArtifactId,
@@ -289,12 +333,14 @@ export function useDivinityBranchBuilder(
       rollbackColumnProgress,
       selectedBranches,
       selectedMajorSkills,
+      targetTabPath,
       weaponAwakeningSelections,
       selectedArtifactId,
       selectedRuneId,
       setColumnBranch,
       setColumnProgress,
-      setGameMode,
+      setTargetTopTab,
+      setTargetChildTab,
       setMajorSkill,
       toggleColumnProgress,
     ],

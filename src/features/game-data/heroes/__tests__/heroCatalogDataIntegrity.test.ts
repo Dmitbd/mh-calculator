@@ -8,6 +8,16 @@ import { heroElements } from "@/features/game-data/heroes/heroDictionaries";
 import { heroFactions } from "@/features/game-data/heroes/heroDictionaries";
 import { heroRarities } from "@/features/game-data/heroes/heroDictionaries";
 import { heroRoles } from "@/features/game-data/heroes/heroDictionaries";
+import { hasReadyBuildInTabs, validateHeroBuildTabs } from "@/features/heroes/utils/heroBuildTabs";
+import type { HeroBuildTab } from "@/features/heroes/types/heroes.types";
+
+function assertNoTargetTabPathInCommittedBuild(tab: HeroBuildTab) {
+  if (tab.build) {
+    expect("targetTabPath" in tab.build).toBe(false);
+  }
+
+  tab.children?.forEach(assertNoTargetTabPathInCommittedBuild);
+}
 
 const rarityIds = new Set(heroRarities.map((entry) => entry.id));
 const roleIds = new Set(heroRoles.map((entry) => entry.id));
@@ -83,7 +93,68 @@ describe("build registry", () => {
     }
   });
 
-  test("fully null build set is excluded from heroesWithBuilds", () => {
-    expect(hasReadyBuild({ pve: null, pvp: null })).toBe(false);
+  test("fully empty build set is excluded from heroesWithBuilds", () => {
+    const emptyBuildSet = {
+      schemaVersion: 2 as const,
+      tabs: [
+        {
+          id: "pvp",
+          label: "PvP",
+          order: 1,
+          kind: "build" as const,
+          build: null,
+        },
+        {
+          id: "pve",
+          label: "PvE",
+          order: 2,
+          kind: "group" as const,
+          build: null,
+          children: [
+            {
+              id: "bosses",
+              label: "Боссы",
+              order: 1,
+              kind: "build" as const,
+              build: null,
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(hasReadyBuild(emptyBuildSet)).toBe(false);
+    expect(hasReadyBuildInTabs(emptyBuildSet.tabs)).toBe(false);
+  });
+
+  test("bastet build file uses schema version 2", () => {
+    expect(heroBuilds.bastet.schemaVersion).toBe(2);
+  });
+
+  test("bastet build tabs have valid structure", () => {
+    expect(validateHeroBuildTabs(heroBuilds.bastet)).toEqual([]);
+  });
+
+  test("bastet top-level tabs define gameMode", () => {
+    expect(heroBuilds.bastet.tabs.find((tab) => tab.id === "pvp")?.gameMode).toBe("pvp");
+    expect(heroBuilds.bastet.tabs.find((tab) => tab.id === "pve")?.gameMode).toBe("pve");
+    expect(heroBuilds.bastet.tabs.find((tab) => tab.id === "pvp")?.build?.gameMode).toBe("pvp");
+  });
+
+  test("bastet has no duplicate sibling tab ids", () => {
+    const rootIds = heroBuilds.bastet.tabs.map((tab) => tab.id);
+
+    expect(new Set(rootIds).size).toBe(rootIds.length);
+  });
+
+  test("committed hero builds do not store targetTabPath inside nested builds", () => {
+    for (const buildSet of Object.values(heroBuilds)) {
+      buildSet.tabs.forEach(assertNoTargetTabPathInCommittedBuild);
+    }
+  });
+
+  test("bastet has at least one ready nested build", () => {
+    expect(hasReadyBuildInTabs(heroBuilds.bastet.tabs)).toBe(true);
+    expect(hasReadyBuild(heroBuilds.bastet)).toBe(true);
   });
 });
