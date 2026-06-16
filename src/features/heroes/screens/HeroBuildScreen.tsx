@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -59,11 +59,39 @@ type HeroBuildScreenProps = {
 /** Read-only экран билда героя: вёрстка branch-builder без редактирования */
 export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
   const { top, bottom } = useSafeAreaInsets();
-  const [gameMode, setGameMode] = useState<DivinityGameMode>("pve");
 
   const hero = getHeroById(heroId);
   const buildSet = getHeroBuildSet(heroId);
-  const build = buildSet ? buildSet[gameMode] : null;
+  const availableModes = useMemo(() => {
+    if (!buildSet) {
+      return [] as DivinityGameMode[];
+    }
+
+    const modes: DivinityGameMode[] = [];
+
+    if (buildSet.pvp) {
+      modes.push("pvp");
+    }
+
+    if (buildSet.pve) {
+      modes.push("pve");
+    }
+
+    return modes;
+  }, [buildSet]);
+  const [gameMode, setGameMode] = useState<DivinityGameMode>(
+    availableModes[0] ?? "pvp",
+  );
+  const effectiveGameMode = availableModes.includes(gameMode)
+    ? gameMode
+    : (availableModes[0] ?? "pvp");
+  const build = buildSet ? buildSet[effectiveGameMode] : null;
+
+  useEffect(() => {
+    if (availableModes.length > 0 && !availableModes.includes(gameMode)) {
+      setGameMode(availableModes[0]);
+    }
+  }, [availableModes, gameMode]);
 
   const view = useMemo(() => (build ? mapBuildToView(build) : null), [build]);
 
@@ -89,9 +117,15 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
       <ScrollView
         contentContainerStyle={[styles.container, contentPadding]}
       >
-        <View style={styles.section}>
-          <GameModeRadio value={gameMode} onChange={setGameMode} />
-        </View>
+        {availableModes.length > 0 ? (
+          <View style={styles.section}>
+            <GameModeRadio
+              modes={availableModes}
+              onChange={setGameMode}
+              value={effectiveGameMode}
+            />
+          </View>
+        ) : null}
 
         {view ? (
           <>

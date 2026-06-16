@@ -1,12 +1,7 @@
 [
   {
-    "id": "western-queen",
-    "name": "Western Queen",
-    "icon": "/img/heroes/western-queen.png"
-  },
-  {
-    "id": "aurora",
-    "name": "Aurora",
-    "icon": "/img/heroes/aurora.png"
+    "id": "bastet",
+    "name": "Бастет",
+    "icon": "/img/heroes/bastet.png"
   }
 ]

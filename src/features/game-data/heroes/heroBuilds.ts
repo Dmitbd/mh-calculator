@@ -1,7 +1,7 @@
 import type { Hero, HeroBuildSet } from "@/features/heroes/types/heroes.types";
 
 import heroesData from "./heroes.json";
-import auroraBuild from "./builds/aurora.json";
+import bastetBuild from "./builds/bastet.json";
 
 /** Каталог героев для экрана выбора */
 export const heroes = heroesData as Hero[];
@@ -12,7 +12,7 @@ export const heroes = heroesData as Hero[];
  * импортировать его выше и добавить строку в этот объект.
  */
 export const heroBuilds: Record<string, HeroBuildSet> = {
-  aurora: auroraBuild as HeroBuildSet,
+  bastet: bastetBuild as HeroBuildSet,
 };
 
 /** Найти героя по id */

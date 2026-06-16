@@ -5,6 +5,7 @@ import type {
   TreeTemplateMajorSkillNode,
   TreeTemplateMinorStatNode,
 } from "../types/admin.types";
+import { deriveSkillLevel } from "@/features/game-data/divinity/deriveSkillLevel";
 import { IconPreview } from "./IconPreview";
 import { MajorSkillPicker } from "./MajorSkillPicker";
 
@@ -27,6 +28,9 @@ export function MinorStatCard({
   readOnly = false,
 }: MinorStatCardProps) {
   const cardStyle = [styles.card, styles.readonlyCard, active && styles.activeCard];
+  const displayValue = node.statId.includes("divinity-skill-level")
+    ? deriveSkillLevel(node.level)
+    : node.value;
   const content = (
     <>
       {node.icon ? (
@@ -35,7 +39,7 @@ export function MinorStatCard({
       <View style={styles.readonlyTextBlock}>
         <Text style={[styles.nodeTitle, styles.readonlyText]}>{node.label}</Text>
         <Text style={[styles.nodeMeta, styles.readonlyText]}>
-          +{node.value}
+          +{displayValue}
           {node.unit === "%" ? "%" : ""}
         </Text>
       </View>

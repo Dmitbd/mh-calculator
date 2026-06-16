@@ -10,15 +10,25 @@ const gameModeOptions: { id: DivinityGameMode; label: string }[] = [
 type GameModeRadioProps = {
   value: DivinityGameMode;
   onChange: (mode: DivinityGameMode) => void;
+  /** Доступные режимы; если не задано — показываются оба */
+  modes?: readonly DivinityGameMode[];
 };
 
 /** Выбор режима игры (PvP / PvE) */
-export function GameModeRadio({ value, onChange }: GameModeRadioProps) {
+export function GameModeRadio({ value, onChange, modes }: GameModeRadioProps) {
+  const visibleOptions = gameModeOptions.filter(
+    (option) => !modes || modes.includes(option.id),
+  );
+
+  if (visibleOptions.length === 0) {
+    return null;
+  }
+
   return (
     <View style={styles.wrapper}>
       <Text style={styles.label}>Режим</Text>
       <View style={styles.options}>
-        {gameModeOptions.map((option) => {
+        {visibleOptions.map((option) => {
           const selected = option.id === value;
 
           return (

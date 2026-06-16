@@ -77,6 +77,7 @@ describe("slugifyFileName", () => {
     expect(slugifyFileName("Apollo")).toBe("apollo.json");
     expect(slugifyFileName("Western Queen")).toBe("western-queen.json");
     expect(slugifyFileName("Oda Nobunaga")).toBe("oda-nobunaga.json");
+    expect(slugifyFileName("Бастет")).toBe("bastet.json");
   });
 });
 
