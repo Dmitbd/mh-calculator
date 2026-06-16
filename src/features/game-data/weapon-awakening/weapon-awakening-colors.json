@@ -3,30 +3,35 @@
     "id": "red",
     "label": "Красный",
     "order": 1,
-    "color": "#c94848"
+    "color": "#c94848",
+    "icon": "/img/weapon-awakening/red.png"
   },
   {
     "id": "yellow",
     "label": "Жёлтый",
     "order": 2,
-    "color": "#e0b93d"
+    "color": "#e0b93d",
+    "icon": "/img/weapon-awakening/yellow.png"
   },
   {
     "id": "green",
     "label": "Зелёный",
     "order": 3,
-    "color": "#4fa85c"
+    "color": "#4fa85c",
+    "icon": "/img/weapon-awakening/green.png"
   },
   {
     "id": "blue",
     "label": "Синий",
     "order": 4,
-    "color": "#4a7fd4"
+    "color": "#4a7fd4",
+    "icon": "/img/weapon-awakening/blue.png"
   },
   {
     "id": "purple",
     "label": "Фиолетовый",
     "order": 5,
-    "color": "#9b59d6"
+    "color": "#9b59d6",
+    "icon": "/img/weapon-awakening/purple.png"
   }
 ]

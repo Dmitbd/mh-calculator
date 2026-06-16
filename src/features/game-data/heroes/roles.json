@@ -1,0 +1,26 @@
+[
+  {
+    "id": "fighter",
+    "name": { "en": "Fighter", "ru": "Боец" },
+    "icon": "/img/hero-roles/fighter.png",
+    "order": 1
+  },
+  {
+    "id": "tank",
+    "name": { "en": "Tank", "ru": "Танк" },
+    "icon": "/img/hero-roles/tank.png",
+    "order": 2
+  },
+  {
+    "id": "mage",
+    "name": { "en": "Mage", "ru": "Маг" },
+    "icon": "/img/hero-roles/mage.png",
+    "order": 3
+  },
+  {
+    "id": "support",
+    "name": { "en": "Support", "ru": "Поддержка" },
+    "icon": "/img/hero-roles/support.png",
+    "order": 4
+  }
+]

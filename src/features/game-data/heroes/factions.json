@@ -1,0 +1,26 @@
+[
+  {
+    "id": "luminarch",
+    "name": { "en": "Luminarch", "ru": "Свет" },
+    "icon": "/img/hero-factions/luminarch.png",
+    "order": 1
+  },
+  {
+    "id": "shadowarch",
+    "name": { "en": "Shadowarch", "ru": "Тьма" },
+    "icon": "/img/hero-factions/shadowarch.png",
+    "order": 2
+  },
+  {
+    "id": "guardian",
+    "name": { "en": "Guardian", "ru": "Хранители" },
+    "icon": "/img/hero-factions/guardian.png",
+    "order": 3
+  },
+  {
+    "id": "verdian",
+    "name": { "en": "Verdian", "ru": "Лес" },
+    "icon": "/img/hero-factions/verdian.png",
+    "order": 4
+  }
+]

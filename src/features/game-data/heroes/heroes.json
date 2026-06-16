@@ -1,7 +1,1315 @@
 [
   {
+    "id": "aladdin",
+    "name": {
+      "en": "Aladdin",
+      "ru": "Аладдин"
+    },
+    "icon": "/img/heroes/aladdin.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "fire",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": "2022-10-29"
+  },
+  {
+    "id": "amaterasu",
+    "name": {
+      "en": "Amaterasu",
+      "ru": "Аматэрасу"
+    },
+    "icon": "/img/heroes/amaterasu.png",
+    "rarity": "ur",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "fire",
+    "factions": [
+      "luminarch",
+      "guardian"
+    ],
+    "releaseDate": "2022-03-19"
+  },
+  {
+    "id": "anubis",
+    "name": {
+      "en": "Anubis",
+      "ru": "Анубис"
+    },
+    "icon": "/img/heroes/anubis.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "earth",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "aphrodite",
+    "name": {
+      "en": "Aphrodite",
+      "ru": "Афродита"
+    },
+    "icon": "/img/heroes/aphrodite.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "wind",
+    "factions": [
+      "luminarch"
+    ],
+    "releaseDate": "2023-02-09"
+  },
+  {
+    "id": "apollo",
+    "name": {
+      "en": "Apollo",
+      "ru": "Аполлон"
+    },
+    "icon": "/img/heroes/apollo.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "earth",
+    "factions": [
+      "luminarch"
+    ],
+    "releaseDate": "2022-11-25"
+  },
+  {
+    "id": "archimedes",
+    "name": {
+      "en": "Archimedes",
+      "ru": "Архимед"
+    },
+    "icon": "/img/heroes/archimedes.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "metal",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": "2022-01-07"
+  },
+  {
+    "id": "ares",
+    "name": {
+      "en": "Ares",
+      "ru": "Арес"
+    },
+    "icon": "/img/heroes/ares.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "fire",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "artemis",
+    "name": {
+      "en": "Artemis",
+      "ru": "Артемида"
+    },
+    "icon": "/img/heroes/artemis.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "wind",
+    "factions": [
+      "luminarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "artio",
+    "name": {
+      "en": "Artio",
+      "ru": "Артио"
+    },
+    "icon": "/img/heroes/artio.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "fire",
+    "factions": [
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "athena",
+    "name": {
+      "en": "Athena",
+      "ru": "Афина"
+    },
+    "icon": "/img/heroes/athena.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "metal",
+    "factions": [
+      "luminarch"
+    ],
+    "releaseDate": null
+  },
+  {
     "id": "bastet",
-    "name": "Бастет",
-    "icon": "/img/heroes/bastet.png"
+    "name": {
+      "en": "Bastet",
+      "ru": "Бастет"
+    },
+    "icon": "/img/heroes/bastet.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "water",
+    "factions": [
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "belobog-chernobog",
+    "name": {
+      "en": "Belobog & Chernobog",
+      "ru": "Белобог и Чернобог"
+    },
+    "icon": "/img/heroes/belobog-chernobog.png",
+    "rarity": "ur",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "water",
+    "factions": [
+      "luminarch",
+      "shadowarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "brynhild",
+    "name": {
+      "en": "Brynhild",
+      "ru": "Брюнхильд"
+    },
+    "icon": "/img/heroes/brynhild.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "metal",
+    "factions": [
+      "luminarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "camazotz",
+    "name": {
+      "en": "Camazotz",
+      "ru": "Камазотль"
+    },
+    "icon": "/img/heroes/camazotz.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "wind",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "cao-cao",
+    "name": {
+      "en": "Cao Cao",
+      "ru": "Цао Цао"
+    },
+    "icon": "/img/heroes/cao-cao.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "earth",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": "2025-09-12"
+  },
+  {
+    "id": "cassandra",
+    "name": {
+      "en": "Cassandra",
+      "ru": "Кассандра"
+    },
+    "icon": "/img/heroes/cassandra.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "earth",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": "2021-11-28"
+  },
+  {
+    "id": "chang-e",
+    "name": {
+      "en": "Chang'e",
+      "ru": "Чанъэ"
+    },
+    "icon": "/img/heroes/chang-e.png",
+    "rarity": "ssr",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "water",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "chiron",
+    "name": {
+      "en": "Chiron",
+      "ru": "Хирон"
+    },
+    "icon": "/img/heroes/chiron.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "wind",
+    "factions": [
+      "verdian"
+    ],
+    "releaseDate": "2022-09-03"
+  },
+  {
+    "id": "circe",
+    "name": {
+      "en": "Circe",
+      "ru": "Цирцея"
+    },
+    "icon": "/img/heroes/circe.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "fire",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "cleopatra",
+    "name": {
+      "en": "Cleopatra",
+      "ru": "Клеопатра"
+    },
+    "icon": "/img/heroes/cleopatra.png",
+    "rarity": "ssr",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "wind",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "da-vinci",
+    "name": {
+      "en": "Da Vinci",
+      "ru": "Да Винчи"
+    },
+    "icon": "/img/heroes/da-vinci.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "wind",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "daji",
+    "name": {
+      "en": "Daji",
+      "ru": "Дацзи"
+    },
+    "icon": "/img/heroes/daji.png",
+    "rarity": "ssr",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "earth",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "dangun",
+    "name": {
+      "en": "Dangun",
+      "ru": "Дангун"
+    },
+    "icon": "/img/heroes/dangun.png",
+    "rarity": "ur",
+    "role": "support",
+    "damageType": null,
+    "element": "wind",
+    "factions": [
+      "luminarch",
+      "guardian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "dionysus",
+    "name": {
+      "en": "Dionysus",
+      "ru": "Дионис"
+    },
+    "icon": "/img/heroes/dionysus.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "metal",
+    "factions": [
+      "luminarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "dullahan",
+    "name": {
+      "en": "Dullahan",
+      "ru": "Дуллахан"
+    },
+    "icon": "/img/heroes/dullahan.png",
+    "rarity": "ssr",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "fire",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "epona",
+    "name": {
+      "en": "Epona",
+      "ru": "Эпона"
+    },
+    "icon": "/img/heroes/epona.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "fire",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": "2023-08-18"
+  },
+  {
+    "id": "faust",
+    "name": {
+      "en": "Faust",
+      "ru": "Фауст"
+    },
+    "icon": "/img/heroes/faust.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "wind",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": "2022-02-19"
+  },
+  {
+    "id": "flora",
+    "name": {
+      "en": "Flora",
+      "ru": "Флора"
+    },
+    "icon": "/img/heroes/flora.png",
+    "rarity": "ssr",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "earth",
+    "factions": [
+      "verdian"
+    ],
+    "releaseDate": "2021-11-02"
+  },
+  {
+    "id": "freyja",
+    "name": {
+      "en": "Freyja",
+      "ru": "Фрейя"
+    },
+    "icon": "/img/heroes/freyja.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "metal",
+    "factions": [
+      "verdian"
+    ],
+    "releaseDate": "2022-05-14"
+  },
+  {
+    "id": "freyr",
+    "name": {
+      "en": "Freyr",
+      "ru": "Фрейр"
+    },
+    "icon": "/img/heroes/freyr.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "metal",
+    "factions": [
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "gabriel",
+    "name": {
+      "en": "Gabriel",
+      "ru": "Гавриил"
+    },
+    "icon": "/img/heroes/gabriel.png",
+    "rarity": "ssr",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "water",
+    "factions": [
+      "luminarch"
+    ],
+    "releaseDate": "2022-08-20"
+  },
+  {
+    "id": "gaia",
+    "name": {
+      "en": "Gaia",
+      "ru": "Гея"
+    },
+    "icon": "/img/heroes/gaia.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "water",
+    "factions": [
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "ganjiang-moye",
+    "name": {
+      "en": "Ganjiang & Moye",
+      "ru": "Ганьцзян и Мо Е"
+    },
+    "icon": "/img/heroes/ganjiang-moye.png",
+    "rarity": "ssr",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "metal",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "gilgamesh",
+    "name": {
+      "en": "Gilgamesh",
+      "ru": "Гильгамеш"
+    },
+    "icon": "/img/heroes/gilgamesh.png",
+    "rarity": "ur",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "metal",
+    "factions": [
+      "luminarch",
+      "guardian"
+    ],
+    "releaseDate": "2025-12-05"
+  },
+  {
+    "id": "hades",
+    "name": {
+      "en": "Hades",
+      "ru": "Аид"
+    },
+    "icon": "/img/heroes/hades.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "water",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "hattori-hanzo",
+    "name": {
+      "en": "Hattori Hanzo",
+      "ru": "Хаттори Ханзо"
+    },
+    "icon": "/img/heroes/hattori-hanzo.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "earth",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": "2023-07-30"
+  },
+  {
+    "id": "hela",
+    "name": {
+      "en": "Hela",
+      "ru": "Хела"
+    },
+    "icon": "/img/heroes/hela.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "metal",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": "2021-12-11"
+  },
+  {
+    "id": "hercules",
+    "name": {
+      "en": "Hercules",
+      "ru": "Геракл"
+    },
+    "icon": "/img/heroes/hercules.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "wind",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "hermes",
+    "name": {
+      "en": "Hermes",
+      "ru": "Гермес"
+    },
+    "icon": "/img/heroes/hermes.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "wind",
+    "factions": [
+      "luminarch"
+    ],
+    "releaseDate": "2025-06-20"
+  },
+  {
+    "id": "hestia",
+    "name": {
+      "en": "Hestia",
+      "ru": "Гестия"
+    },
+    "icon": "/img/heroes/hestia.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "earth",
+    "factions": [
+      "luminarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "horus",
+    "name": {
+      "en": "Horus",
+      "ru": "Гор"
+    },
+    "icon": "/img/heroes/horus.png",
+    "rarity": "ssr",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "fire",
+    "factions": [
+      "luminarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "idun",
+    "name": {
+      "en": "Idun",
+      "ru": "Идун"
+    },
+    "icon": "/img/heroes/idun.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "fire",
+    "factions": [
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "iset",
+    "name": {
+      "en": "Iset",
+      "ru": "Исет"
+    },
+    "icon": "/img/heroes/iset.png",
+    "rarity": "ur",
+    "role": "support",
+    "damageType": null,
+    "element": "water",
+    "factions": [
+      "luminarch",
+      "verdian"
+    ],
+    "releaseDate": "2021-10-15"
+  },
+  {
+    "id": "izanagi",
+    "name": {
+      "en": "Izanagi",
+      "ru": "Идзанаги"
+    },
+    "icon": "/img/heroes/izanagi.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "metal",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "izanami",
+    "name": {
+      "en": "Izanami",
+      "ru": "Идзанами"
+    },
+    "icon": "/img/heroes/izanami.png",
+    "rarity": "ssr",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "metal",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "joan-of-arc",
+    "name": {
+      "en": "Joan of Arc",
+      "ru": "Жанна д'Арк"
+    },
+    "icon": "/img/heroes/joan-of-arc.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "water",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "king-arthur",
+    "name": {
+      "en": "King Arthur",
+      "ru": "Король Артур"
+    },
+    "icon": "/img/heroes/king-arthur.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "metal",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "kinich-ahau",
+    "name": {
+      "en": "Kinich Ahau",
+      "ru": "Кинич Ахау"
+    },
+    "icon": "/img/heroes/kinich-ahau.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "wind",
+    "factions": [
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "leonidas",
+    "name": {
+      "en": "Leonidas",
+      "ru": "Леонид"
+    },
+    "icon": "/img/heroes/leonidas.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "earth",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": "2022-06-11"
+  },
+  {
+    "id": "lilith",
+    "name": {
+      "en": "Lilith",
+      "ru": "Лилит"
+    },
+    "icon": "/img/heroes/lilith.png",
+    "rarity": "ur",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "earth",
+    "factions": [
+      "shadowarch",
+      "guardian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "loki",
+    "name": {
+      "en": "Loki",
+      "ru": "Локи"
+    },
+    "icon": "/img/heroes/loki.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "fire",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": "2022-04-16"
+  },
+  {
+    "id": "lu-bu",
+    "name": {
+      "en": "Lu Bu",
+      "ru": "Лю Бу"
+    },
+    "icon": "/img/heroes/lu-bu.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "fire",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "lucifer",
+    "name": {
+      "en": "Lucifer",
+      "ru": "Люцифер"
+    },
+    "icon": "/img/heroes/lucifer.png",
+    "rarity": "ur",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "metal",
+    "factions": [
+      "luminarch",
+      "shadowarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "luoshen",
+    "name": {
+      "en": "Luoshen",
+      "ru": "Ло Шэнь"
+    },
+    "icon": "/img/heroes/luoshen.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "earth",
+    "factions": [
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "marduk",
+    "name": {
+      "en": "Marduk",
+      "ru": "Мардук"
+    },
+    "icon": "/img/heroes/marduk.png",
+    "rarity": "ur",
+    "role": "tank",
+    "damageType": null,
+    "element": "earth",
+    "factions": [
+      "luminarch",
+      "shadowarch"
+    ],
+    "releaseDate": "2022-08-05"
+  },
+  {
+    "id": "medusa",
+    "name": {
+      "en": "Medusa",
+      "ru": "Медуза"
+    },
+    "icon": "/img/heroes/medusa.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "earth",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "morana",
+    "name": {
+      "en": "Morana",
+      "ru": "Морана"
+    },
+    "icon": "/img/heroes/morana.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "water",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "morrigan",
+    "name": {
+      "en": "Morrigan",
+      "ru": "Морриган"
+    },
+    "icon": "/img/heroes/morrigan.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "water",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": "2023-07-14"
+  },
+  {
+    "id": "murasaki-shikibu",
+    "name": {
+      "en": "Murasaki Shikibu",
+      "ru": "Мурасаки Сикибу"
+    },
+    "icon": "/img/heroes/murasaki-shikibu.png",
+    "rarity": "ssr",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "water",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": "2023-01-07"
+  },
+  {
+    "id": "nagakanya",
+    "name": {
+      "en": "Nagakanya",
+      "ru": "Нагаканья"
+    },
+    "icon": "/img/heroes/nagakanya.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "metal",
+    "factions": [
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "nephyths",
+    "name": {
+      "en": "Nephyths",
+      "ru": "Нефтида"
+    },
+    "icon": "/img/heroes/nephyths.png",
+    "rarity": "ssr",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "fire",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": "2022-10-15"
+  },
+  {
+    "id": "ninhursag",
+    "name": {
+      "en": "Ninhursag",
+      "ru": "Нинхурсаг"
+    },
+    "icon": "/img/heroes/ninhursag.png",
+    "rarity": "ur",
+    "role": "tank",
+    "damageType": null,
+    "element": "metal",
+    "factions": [
+      "luminarch",
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "nuwa",
+    "name": {
+      "en": "Nuwa",
+      "ru": "Нува"
+    },
+    "icon": "/img/heroes/nuwa.png",
+    "rarity": "ur",
+    "role": "support",
+    "damageType": null,
+    "element": "water",
+    "factions": [
+      "guardian",
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "nyx",
+    "name": {
+      "en": "Nyx",
+      "ru": "Никс"
+    },
+    "icon": "/img/heroes/nyx.png",
+    "rarity": "ur",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "metal",
+    "factions": [
+      "shadowarch",
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "oberon",
+    "name": {
+      "en": "Oberon",
+      "ru": "Оберон"
+    },
+    "icon": "/img/heroes/oberon.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "water",
+    "factions": [
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "oda-nobunaga",
+    "name": {
+      "en": "Oda Nobunaga",
+      "ru": "Ода Нобунага"
+    },
+    "icon": "/img/heroes/oda-nobunaga.png",
+    "rarity": "ur",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "wind",
+    "factions": [
+      "shadowarch",
+      "guardian"
+    ],
+    "releaseDate": "2022-12-08"
+  },
+  {
+    "id": "odin",
+    "name": {
+      "en": "Odin",
+      "ru": "Один"
+    },
+    "icon": "/img/heroes/odin.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "water",
+    "factions": [
+      "luminarch"
+    ],
+    "releaseDate": "2022-04-30"
+  },
+  {
+    "id": "pandora",
+    "name": {
+      "en": "Pandora",
+      "ru": "Пандора"
+    },
+    "icon": "/img/heroes/pandora.png",
+    "rarity": "ur",
+    "role": "support",
+    "damageType": null,
+    "element": "earth",
+    "factions": [
+      "shadowarch",
+      "guardian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "persephone",
+    "name": {
+      "en": "Persephone",
+      "ru": "Персефона"
+    },
+    "icon": "/img/heroes/persephone.png",
+    "rarity": "ssr",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "wind",
+    "factions": [
+      "shadowarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "poseidon",
+    "name": {
+      "en": "Poseidon",
+      "ru": "Посейдон"
+    },
+    "icon": "/img/heroes/poseidon.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "earth",
+    "factions": [
+      "verdian"
+    ],
+    "releaseDate": "2022-01-21"
+  },
+  {
+    "id": "prometheus",
+    "name": {
+      "en": "Prometheus",
+      "ru": "Прометей"
+    },
+    "icon": "/img/heroes/prometheus.png",
+    "rarity": "ur",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "wind",
+    "factions": [
+      "guardian",
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "sun-wukong",
+    "name": {
+      "en": "Sun WuKong",
+      "ru": "Сунь Укун"
+    },
+    "icon": "/img/heroes/sun-wukong.png",
+    "rarity": "ur",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "fire",
+    "factions": [
+      "shadowarch",
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "susanoo",
+    "name": {
+      "en": "Susanoo",
+      "ru": "Сусаноо"
+    },
+    "icon": "/img/heroes/susanoo.png",
+    "rarity": "ssr",
+    "role": "fighter",
+    "damageType": "physical",
+    "element": "water",
+    "factions": [
+      "luminarch"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "tamamo-no-mae",
+    "name": {
+      "en": "Tamamo no Mae",
+      "ru": "Тамамо-но-Маэ"
+    },
+    "icon": "/img/heroes/tamamo-no-mae.png",
+    "rarity": "ssr",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "wind",
+    "factions": [
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "thor",
+    "name": {
+      "en": "Thor",
+      "ru": "Тор"
+    },
+    "icon": "/img/heroes/thor.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "fire",
+    "factions": [
+      "luminarch"
+    ],
+    "releaseDate": "2021-11-14"
+  },
+  {
+    "id": "titania",
+    "name": {
+      "en": "Titania",
+      "ru": "Титания"
+    },
+    "icon": "/img/heroes/titania.png",
+    "rarity": "ssr",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "fire",
+    "factions": [
+      "verdian"
+    ],
+    "releaseDate": "2022-11-12"
+  },
+  {
+    "id": "typhon",
+    "name": {
+      "en": "Typhon",
+      "ru": "Тифон"
+    },
+    "icon": "/img/heroes/typhon.png",
+    "rarity": "ur",
+    "role": "tank",
+    "damageType": null,
+    "element": "fire",
+    "factions": [
+      "shadowarch",
+      "verdian"
+    ],
+    "releaseDate": "2021-12-25"
+  },
+  {
+    "id": "western-queen",
+    "name": {
+      "en": "Western Queen",
+      "ru": "Западная царица"
+    },
+    "icon": "/img/heroes/western-queen.png",
+    "rarity": "ssr",
+    "role": "support",
+    "damageType": null,
+    "element": "fire",
+    "factions": [
+      "luminarch"
+    ],
+    "releaseDate": "2022-02-04"
+  },
+  {
+    "id": "yi-sun-shin",
+    "name": {
+      "en": "Yi Sun-Shin",
+      "ru": "И Сун-син"
+    },
+    "icon": "/img/heroes/yi-sun-shin.png",
+    "rarity": "ssr",
+    "role": "tank",
+    "damageType": null,
+    "element": "water",
+    "factions": [
+      "guardian"
+    ],
+    "releaseDate": "2022-07-06"
+  },
+  {
+    "id": "ymir",
+    "name": {
+      "en": "Ymir",
+      "ru": "Имир"
+    },
+    "icon": "/img/heroes/ymir.png",
+    "rarity": "ur",
+    "role": "tank",
+    "damageType": null,
+    "element": "wind",
+    "factions": [
+      "guardian",
+      "verdian"
+    ],
+    "releaseDate": null
+  },
+  {
+    "id": "zeus",
+    "name": {
+      "en": "Zeus",
+      "ru": "Зевс"
+    },
+    "icon": "/img/heroes/zeus.png",
+    "rarity": "ssr",
+    "role": "mage",
+    "damageType": "magical",
+    "element": "earth",
+    "factions": [
+      "luminarch"
+    ],
+    "releaseDate": null
   }
 ]

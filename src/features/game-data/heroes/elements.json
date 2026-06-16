@@ -1,0 +1,32 @@
+[
+  {
+    "id": "fire",
+    "name": { "en": "Fire", "ru": "Огонь" },
+    "icon": "/img/hero-elements/fire.png",
+    "order": 1
+  },
+  {
+    "id": "water",
+    "name": { "en": "Water", "ru": "Вода" },
+    "icon": "/img/hero-elements/water.png",
+    "order": 2
+  },
+  {
+    "id": "earth",
+    "name": { "en": "Earth", "ru": "Земля" },
+    "icon": "/img/hero-elements/earth.png",
+    "order": 3
+  },
+  {
+    "id": "wind",
+    "name": { "en": "Wind", "ru": "Ветер" },
+    "icon": "/img/hero-elements/wind.png",
+    "order": 4
+  },
+  {
+    "id": "metal",
+    "name": { "en": "Metal", "ru": "Металл" },
+    "icon": "/img/hero-elements/metal.png",
+    "order": 5
+  }
+]

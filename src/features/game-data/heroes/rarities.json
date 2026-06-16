@@ -1,0 +1,14 @@
+[
+  {
+    "id": "ur",
+    "name": { "en": "UR", "ru": "UR" },
+    "icon": "/img/hero-rarities/ur.png",
+    "order": 1
+  },
+  {
+    "id": "ssr",
+    "name": { "en": "SSR", "ru": "SSR" },
+    "icon": "/img/hero-rarities/ssr.png",
+    "order": 2
+  }
+]

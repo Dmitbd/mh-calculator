@@ -32,6 +32,7 @@ import {
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 
 import { mapBuildToView } from "../utils/mapBuildToView";
+import { HeroMetadataRow } from "../components/HeroMetadataRow";
 
 const columns: BranchColumn[] = [
   { id: "left", label: "левая", isMain: false },
@@ -113,10 +114,14 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
 
   return (
     <View style={styles.screen}>
-      <ScreenHeader title={hero.name} fallbackHref="/heroes" />
+      <ScreenHeader title={hero.name.ru} fallbackHref="/heroes" />
       <ScrollView
         contentContainerStyle={[styles.container, contentPadding]}
       >
+        <View style={styles.section}>
+          <HeroMetadataRow hero={hero} />
+        </View>
+
         {availableModes.length > 0 ? (
           <View style={styles.section}>
             <GameModeRadio

@@ -46,6 +46,7 @@ export function ScreenHeader({ title, fallbackHref = "/" }: ScreenHeaderProps) {
         </Text>
         <View style={styles.backButtonPlaceholder} />
       </View>
+      <View pointerEvents="none" style={styles.divider} />
     </View>
   );
 }
@@ -56,9 +57,17 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 10,
+    zIndex: 100,
     backgroundColor: "#140d0b",
     paddingHorizontal: HORIZONTAL_PADDING,
+  },
+  divider: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 1,
+    backgroundColor: "#533b29",
   },
   headerRow: {
     height: SCREEN_HEADER_HEIGHT,

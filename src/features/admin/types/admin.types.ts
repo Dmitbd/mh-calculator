@@ -65,8 +65,10 @@ export type WeaponAwakeningColor = {
   label: string;
   /** Порядок переключения по клику */
   order: number;
-  /** HEX для отрисовки кружка */
+  /** HEX fallback для отрисовки кружка */
   color: string;
+  /** Локальная иконка сферы */
+  icon?: string;
 };
 
 /** Слот кружка из weapon-awakening-slots.json */

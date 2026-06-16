@@ -1,17 +1,30 @@
+import { useMemo, useState } from "react";
 import { router } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { IconPreview } from "@/features/admin/components/IconPreview";
-import { heroes } from "@/features/game-data/heroes/heroBuilds";
+import { heroesWithBuilds } from "@/features/game-data/heroes/heroBuilds";
+import { HeroListCard } from "@/features/heroes/components/HeroListCard";
+import { HeroListFiltersPanel } from "@/features/heroes/components/HeroListFiltersPanel";
+import {
+  EMPTY_HERO_LIST_FILTERS,
+  filterHeroes,
+} from "@/features/heroes/utils/heroListFilters";
+import { groupHeroesByZone } from "@/features/heroes/utils/heroListGrouping";
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 
 const SCREEN_PADDING = 24;
 
-/** Экран выбора героя — список из каталога ведёт на экран билда */
+/** Экран выбора героя — фильтруемый список героев с готовыми билдами */
 export function HeroSelectScreen() {
   const { top, bottom } = useSafeAreaInsets();
+  const [filters, setFilters] = useState(EMPTY_HERO_LIST_FILTERS);
+
+  const zoneGroups = useMemo(() => {
+    const filtered = filterHeroes(heroesWithBuilds, filters);
+    return groupHeroesByZone(filtered);
+  }, [filters]);
 
   const openHero = (heroId: string) => {
     router.push({ pathname: "/heroes/[heroId]", params: { heroId } });
@@ -29,19 +42,26 @@ export function HeroSelectScreen() {
           },
         ]}
       >
-        {heroes.map((hero) => (
-          <Pressable
-            accessibilityLabel={`Открыть билд ${hero.name}`}
-            accessibilityRole="button"
-            key={hero.id}
-            onPress={() => openHero(hero.id)}
-            style={styles.heroRow}
-          >
-            <IconPreview label={hero.name} source={hero.icon} size={44} />
-            <Text style={styles.heroName}>{hero.name}</Text>
-            <Text style={styles.chevron}>›</Text>
-          </Pressable>
-        ))}
+        <HeroListFiltersPanel filters={filters} onChange={setFilters} />
+
+        {zoneGroups.length > 0 ? (
+          zoneGroups.map((group) => (
+            <View key={group.zoneId} style={styles.zone}>
+              <Text style={styles.zoneTitle}>{group.title}</Text>
+              <View style={styles.zoneList}>
+                {group.heroes.map((hero) => (
+                  <HeroListCard hero={hero} key={hero.id} onPress={openHero} />
+                ))}
+              </View>
+            </View>
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>
+              Нет героев с готовыми билдами по выбранным фильтрам.
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -54,29 +74,33 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    gap: 12,
+    gap: 20,
     paddingHorizontal: SCREEN_PADDING,
   },
-  heroRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
+  zone: {
+    gap: 10,
+  },
+  zoneTitle: {
+    color: "#caa877",
+    fontSize: 14,
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+  zoneList: {
+    gap: 12,
+  },
+  emptyState: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#533b29",
-    backgroundColor: "#241610",
+    borderColor: "#3a2a1d",
+    backgroundColor: "#1d130f",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 24,
   },
-  heroName: {
-    flex: 1,
-    color: "#fff4d7",
-    fontSize: 17,
-    fontWeight: "700",
-  },
-  chevron: {
-    color: "#caa877",
-    fontSize: 24,
-    fontWeight: "900",
+  emptyText: {
+    color: "#d7c19a",
+    fontSize: 15,
+    fontWeight: "600",
+    textAlign: "center",
   },
 });

@@ -1,10 +1,11 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import type {
   WeaponAwakeningColor,
   WeaponAwakeningColorId,
   WeaponAwakeningSlot,
 } from "../types/admin.types";
+import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
 
 type WeaponAwakeningPickerProps = {
   colors: readonly WeaponAwakeningColor[];
@@ -35,12 +36,22 @@ export function WeaponAwakeningPicker({
           const circleStyle = [
             styles.circle,
             color
-              ? [styles.circleFilled, { backgroundColor: color.color }]
+              ? [
+                  styles.circleFilled,
+                  color.icon ? null : { backgroundColor: color.color },
+                ]
               : styles.circleEmpty,
           ];
           const accessibilityLabel = `Weapon awakening slot ${slot.slot}${
             color ? `, ${color.label}` : ", empty"
           }`;
+          const content = color?.icon ? (
+            <Image
+              accessibilityIgnoresInvertColors
+              source={{ uri: resolveAssetUri(color.icon) }}
+              style={styles.circleIcon}
+            />
+          ) : null;
 
           if (readOnly) {
             return (
@@ -48,7 +59,9 @@ export function WeaponAwakeningPicker({
                 accessibilityLabel={accessibilityLabel}
                 key={slot.slot}
                 style={circleStyle}
-              />
+              >
+                {content}
+              </View>
             );
           }
 
@@ -59,7 +72,9 @@ export function WeaponAwakeningPicker({
               key={slot.slot}
               onPress={() => onCycleSlot?.(slot.slot)}
               style={circleStyle}
-            />
+            >
+              {content}
+            </Pressable>
           );
         })}
       </View>
@@ -84,13 +99,20 @@ const styles = StyleSheet.create({
   },
   circle: {
     flex: 1,
+    alignItems: "center",
     aspectRatio: 1,
+    justifyContent: "center",
     maxWidth: 44,
     borderRadius: 999,
     borderWidth: 2,
+    overflow: "hidden",
   },
   circleFilled: {
     borderColor: "#644932",
+  },
+  circleIcon: {
+    width: "100%",
+    height: "100%",
   },
   circleEmpty: {
     backgroundColor: "#1c110d",
