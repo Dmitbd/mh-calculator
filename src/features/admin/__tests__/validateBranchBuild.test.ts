@@ -11,7 +11,7 @@ import { slugifyFileName } from "../utils/slugifyFileName";
 import { validateBranchBuild } from "../utils/validateBranchBuild";
 import type {
   BranchColumnId,
-  DivinityBranchBuildDraft,
+  DivinityBranchBuildValidationDraft,
   DivinityBranchId,
   DivinityMajorSkill,
 } from "../types/admin.types";
@@ -47,7 +47,7 @@ const validationSources = {
   runes,
 };
 
-function createValidDraft(): DivinityBranchBuildDraft {
+function createValidDraft(): DivinityBranchBuildValidationDraft {
   return {
     gameMode: "pve",
     heroId: "western-queen",
@@ -72,6 +72,11 @@ function createValidDraft(): DivinityBranchBuildDraft {
           skillId: skill.id,
         };
       }),
+    progress: {
+      left: 18,
+      center: 18,
+      right: 18,
+    },
   };
 }
 
@@ -335,5 +340,51 @@ describe("validateBranchBuild", () => {
       message: "Для левой колонки выбрана неизвестная ветка.",
       path: "columns.left",
     });
+  });
+
+  it("rejects progress below minimum level 18 for each column", () => {
+    const result = validateBranchBuild(
+      {
+        ...createValidDraft(),
+        progress: { left: 17, center: 18, right: 19 },
+      },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "progress.minimumLevel",
+      message: "Минимальный уровень левой ветки — 18.",
+      path: "progress.left",
+    });
+  });
+
+  it("rejects missing progress on any column", () => {
+    const result = validateBranchBuild(
+      {
+        ...createValidDraft(),
+        progress: { center: 20, right: 20 },
+      },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "progress.minimumLevel",
+      message: "Минимальный уровень левой ветки — 18.",
+      path: "progress.left",
+    });
+  });
+
+  it("accepts progress exactly at minimum level 18", () => {
+    const result = validateBranchBuild(
+      {
+        ...createValidDraft(),
+        progress: { left: 18, center: 18, right: 18 },
+      },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(true);
   });
 });

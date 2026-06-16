@@ -303,12 +303,14 @@ export function useDivinityBranchBuilder(
         majorNodes: buildMajorNodes(selectedBranches, selectedMajorSkills),
         weaponAwakening: buildWeaponAwakening(),
         equipment: buildEquipment(),
+        progress: progressLevels,
       };
     }, [
       buildEquipment,
       buildWeaponAwakening,
       gameMode,
       heroName,
+      progressLevels,
       selectedHeroId,
       selectedBranches,
       selectedMajorSkills,

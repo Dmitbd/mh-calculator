@@ -160,6 +160,8 @@ export type DivinityBranchBuildValidationDraft = {
   weaponAwakening: WeaponAwakeningSlotSelection[];
   /** Варианты артефактов и рун */
   equipment: EquipmentVariantSelection;
+  /** Уровень прогресса по каждому столбцу */
+  progress: BranchProgressLevels;
 };
 
 /** Путь целевой вкладки при экспорте из билдера */
@@ -191,6 +193,7 @@ export type BranchBuildValidationError = {
     | "hero.nameMismatch"
     | "column.branchRequired"
     | "column.branchUnknown"
+    | "progress.minimumLevel"
     | "majorNode.required"
     | "majorNode.slotUnknown"
     | "majorNode.branchMismatch"

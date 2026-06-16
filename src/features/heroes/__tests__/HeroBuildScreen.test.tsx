@@ -10,7 +10,7 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => mockUseSafeAreaInsets(),
 }));
 
-import { render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { getHeroBuildSet } from "@/features/game-data/heroes/heroBuilds";
 import { HeroBuildScreen } from "@/features/heroes/screens/HeroBuildScreen";
@@ -20,9 +20,14 @@ describe("HeroBuildScreen", () => {
     render(<HeroBuildScreen heroId="bastet" />);
 
     expect(screen.getByLabelText("Select PvP build tab")).toBeTruthy();
-    expect(screen.queryByLabelText("Select PvE build tab")).toBeNull();
+    expect(screen.getByLabelText("Select PvE build tab")).toBeTruthy();
     expect(screen.queryByLabelText("Select Кампания build tab")).toBeNull();
     expect(screen.queryByLabelText("Select Боссы build tab")).toBeNull();
+
+    fireEvent.press(screen.getByLabelText("Select PvE build tab"));
+
+    expect(screen.getByLabelText("Select Кампания build tab")).toBeTruthy();
+    expect(screen.getByLabelText("Select Боссы build tab")).toBeTruthy();
   });
 
   test("defaults to the first ready build path", () => {

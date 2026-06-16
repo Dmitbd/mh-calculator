@@ -106,8 +106,12 @@
           }
         ],
         "equipment": {
-          "artifactIds": ["axe-of-pangu"],
-          "runeIds": ["air"]
+          "artifactIds": [
+            "axe-of-pangu"
+          ],
+          "runeIds": [
+            "air"
+          ]
         },
         "progress": {
           "center": 30,
@@ -407,7 +411,8 @@
         "metadata": {
           "createdAt": "2026-06-16T12:25:14.491Z",
           "source": "manual-branch-builder"
-        }
+        },
+        "heroId": "bastet"
       },
       "gameMode": "pvp"
     },
@@ -423,14 +428,789 @@
           "label": "Боссы",
           "order": 1,
           "kind": "build",
-          "build": null
+          "build": {
+            "schemaVersion": 1,
+            "gameMode": "pve",
+            "heroId": "bastet",
+            "heroName": "Бастет",
+            "columns": {
+              "left": "asterial",
+              "center": "psyche",
+              "right": "devoid"
+            },
+            "majorNodes": [
+              {
+                "level": 1,
+                "columnId": "center",
+                "branchId": "psyche",
+                "skillId": "psyche-torment"
+              },
+              {
+                "level": 3,
+                "columnId": "left",
+                "branchId": "asterial",
+                "skillId": "asterial-brighten"
+              },
+              {
+                "level": 3,
+                "columnId": "right",
+                "branchId": "devoid",
+                "skillId": "devoid-animus"
+              },
+              {
+                "level": 7,
+                "columnId": "center",
+                "branchId": "psyche",
+                "skillId": "psyche-prevail"
+              },
+              {
+                "level": 10,
+                "columnId": "left",
+                "branchId": "asterial",
+                "skillId": "asterial-annihilation"
+              },
+              {
+                "level": 10,
+                "columnId": "right",
+                "branchId": "devoid",
+                "skillId": "devoid-broken-mirror"
+              },
+              {
+                "level": 13,
+                "columnId": "center",
+                "branchId": "psyche",
+                "skillId": "psyche-phantasmal"
+              },
+              {
+                "level": 15,
+                "columnId": "left",
+                "branchId": "asterial",
+                "skillId": "asterial-new-moon"
+              },
+              {
+                "level": 15,
+                "columnId": "right",
+                "branchId": "devoid",
+                "skillId": "devoid-chaotic-power"
+              }
+            ],
+            "weaponAwakening": [
+              {
+                "slot": 1,
+                "colorId": "green"
+              },
+              {
+                "slot": 2,
+                "colorId": "green"
+              },
+              {
+                "slot": 3,
+                "colorId": "green"
+              },
+              {
+                "slot": 4,
+                "colorId": "green"
+              },
+              {
+                "slot": 5,
+                "colorId": "green"
+              },
+              {
+                "slot": 6,
+                "colorId": "green"
+              },
+              {
+                "slot": 7,
+                "colorId": "green"
+              },
+              {
+                "slot": 8,
+                "colorId": "green"
+              }
+            ],
+            "equipment": {
+              "artifactIds": [
+                "axe-of-pangu"
+              ],
+              "runeIds": [
+                "fire"
+              ]
+            },
+            "progress": {
+              "center": 30,
+              "right": 28,
+              "left": 18
+            },
+            "activeNodes": [
+              {
+                "columnId": "left",
+                "level": 3
+              },
+              {
+                "columnId": "left",
+                "level": 4
+              },
+              {
+                "columnId": "left",
+                "level": 5
+              },
+              {
+                "columnId": "left",
+                "level": 7
+              },
+              {
+                "columnId": "left",
+                "level": 8
+              },
+              {
+                "columnId": "left",
+                "level": 10
+              },
+              {
+                "columnId": "left",
+                "level": 11
+              },
+              {
+                "columnId": "left",
+                "level": 13
+              },
+              {
+                "columnId": "left",
+                "level": 15
+              },
+              {
+                "columnId": "left",
+                "level": 16
+              },
+              {
+                "columnId": "left",
+                "level": 17
+              },
+              {
+                "columnId": "left",
+                "level": 18
+              },
+              {
+                "columnId": "center",
+                "level": 1
+              },
+              {
+                "columnId": "center",
+                "level": 2
+              },
+              {
+                "columnId": "center",
+                "level": 4
+              },
+              {
+                "columnId": "center",
+                "level": 6
+              },
+              {
+                "columnId": "center",
+                "level": 7
+              },
+              {
+                "columnId": "center",
+                "level": 8
+              },
+              {
+                "columnId": "center",
+                "level": 9
+              },
+              {
+                "columnId": "center",
+                "level": 10
+              },
+              {
+                "columnId": "center",
+                "level": 11
+              },
+              {
+                "columnId": "center",
+                "level": 12
+              },
+              {
+                "columnId": "center",
+                "level": 13
+              },
+              {
+                "columnId": "center",
+                "level": 14
+              },
+              {
+                "columnId": "center",
+                "level": 15
+              },
+              {
+                "columnId": "center",
+                "level": 16
+              },
+              {
+                "columnId": "center",
+                "level": 17
+              },
+              {
+                "columnId": "center",
+                "level": 18
+              },
+              {
+                "columnId": "center",
+                "level": 19
+              },
+              {
+                "columnId": "center",
+                "level": 20
+              },
+              {
+                "columnId": "center",
+                "level": 21
+              },
+              {
+                "columnId": "center",
+                "level": 22
+              },
+              {
+                "columnId": "center",
+                "level": 23
+              },
+              {
+                "columnId": "center",
+                "level": 24
+              },
+              {
+                "columnId": "center",
+                "level": 25
+              },
+              {
+                "columnId": "center",
+                "level": 26
+              },
+              {
+                "columnId": "center",
+                "level": 27
+              },
+              {
+                "columnId": "center",
+                "level": 28
+              },
+              {
+                "columnId": "center",
+                "level": 29
+              },
+              {
+                "columnId": "center",
+                "level": 30
+              },
+              {
+                "columnId": "right",
+                "level": 3
+              },
+              {
+                "columnId": "right",
+                "level": 4
+              },
+              {
+                "columnId": "right",
+                "level": 5
+              },
+              {
+                "columnId": "right",
+                "level": 7
+              },
+              {
+                "columnId": "right",
+                "level": 8
+              },
+              {
+                "columnId": "right",
+                "level": 10
+              },
+              {
+                "columnId": "right",
+                "level": 11
+              },
+              {
+                "columnId": "right",
+                "level": 13
+              },
+              {
+                "columnId": "right",
+                "level": 15
+              },
+              {
+                "columnId": "right",
+                "level": 16
+              },
+              {
+                "columnId": "right",
+                "level": 17
+              },
+              {
+                "columnId": "right",
+                "level": 18
+              },
+              {
+                "columnId": "right",
+                "level": 19
+              },
+              {
+                "columnId": "right",
+                "level": 20
+              },
+              {
+                "columnId": "right",
+                "level": 21
+              },
+              {
+                "columnId": "right",
+                "level": 22
+              },
+              {
+                "columnId": "right",
+                "level": 23
+              },
+              {
+                "columnId": "right",
+                "level": 24
+              },
+              {
+                "columnId": "right",
+                "level": 25
+              },
+              {
+                "columnId": "right",
+                "level": 26
+              },
+              {
+                "columnId": "right",
+                "level": 27
+              },
+              {
+                "columnId": "right",
+                "level": 28
+              }
+            ],
+            "metadata": {
+              "createdAt": "2026-06-16T12:37:31.748Z",
+              "source": "manual-branch-builder"
+            }
+          }
         },
         {
           "id": "campaign",
           "label": "Кампания",
           "order": 2,
           "kind": "build",
-          "build": null
+          "build": {
+            "schemaVersion": 1,
+            "gameMode": "pve",
+            "heroName": "Бастет",
+            "columns": {
+              "left": "asterial",
+              "center": "psyche",
+              "right": "devoid"
+            },
+            "majorNodes": [
+              {
+                "level": 1,
+                "columnId": "center",
+                "branchId": "psyche",
+                "skillId": "psyche-torment"
+              },
+              {
+                "level": 3,
+                "columnId": "left",
+                "branchId": "asterial",
+                "skillId": "asterial-brighten"
+              },
+              {
+                "level": 3,
+                "columnId": "right",
+                "branchId": "devoid",
+                "skillId": "devoid-animus"
+              },
+              {
+                "level": 7,
+                "columnId": "center",
+                "branchId": "psyche",
+                "skillId": "psyche-prevail"
+              },
+              {
+                "level": 10,
+                "columnId": "left",
+                "branchId": "asterial",
+                "skillId": "asterial-annihilation"
+              },
+              {
+                "level": 10,
+                "columnId": "right",
+                "branchId": "devoid",
+                "skillId": "devoid-broken-mirror"
+              },
+              {
+                "level": 13,
+                "columnId": "center",
+                "branchId": "psyche",
+                "skillId": "psyche-phantasmal"
+              },
+              {
+                "level": 15,
+                "columnId": "left",
+                "branchId": "asterial",
+                "skillId": "asterial-new-moon"
+              },
+              {
+                "level": 15,
+                "columnId": "right",
+                "branchId": "devoid",
+                "skillId": "devoid-chaotic-power"
+              }
+            ],
+            "weaponAwakening": [
+              {
+                "slot": 1,
+                "colorId": "green"
+              },
+              {
+                "slot": 2,
+                "colorId": "green"
+              },
+              {
+                "slot": 3,
+                "colorId": "green"
+              },
+              {
+                "slot": 4,
+                "colorId": "green"
+              },
+              {
+                "slot": 5,
+                "colorId": "green"
+              },
+              {
+                "slot": 6,
+                "colorId": "green"
+              },
+              {
+                "slot": 7,
+                "colorId": "green"
+              },
+              {
+                "slot": 8,
+                "colorId": "green"
+              }
+            ],
+            "equipment": {
+              "artifactIds": [
+                "axe-of-pangu",
+                "yasakani-magatama"
+              ],
+              "runeIds": [
+                "air"
+              ]
+            },
+            "progress": {
+              "center": 30,
+              "right": 28,
+              "left": 28
+            },
+            "activeNodes": [
+              {
+                "columnId": "left",
+                "level": 3
+              },
+              {
+                "columnId": "left",
+                "level": 4
+              },
+              {
+                "columnId": "left",
+                "level": 5
+              },
+              {
+                "columnId": "left",
+                "level": 7
+              },
+              {
+                "columnId": "left",
+                "level": 8
+              },
+              {
+                "columnId": "left",
+                "level": 10
+              },
+              {
+                "columnId": "left",
+                "level": 11
+              },
+              {
+                "columnId": "left",
+                "level": 13
+              },
+              {
+                "columnId": "left",
+                "level": 15
+              },
+              {
+                "columnId": "left",
+                "level": 16
+              },
+              {
+                "columnId": "left",
+                "level": 17
+              },
+              {
+                "columnId": "left",
+                "level": 18
+              },
+              {
+                "columnId": "left",
+                "level": 19
+              },
+              {
+                "columnId": "left",
+                "level": 20
+              },
+              {
+                "columnId": "left",
+                "level": 21
+              },
+              {
+                "columnId": "left",
+                "level": 22
+              },
+              {
+                "columnId": "left",
+                "level": 23
+              },
+              {
+                "columnId": "left",
+                "level": 24
+              },
+              {
+                "columnId": "left",
+                "level": 25
+              },
+              {
+                "columnId": "left",
+                "level": 26
+              },
+              {
+                "columnId": "left",
+                "level": 27
+              },
+              {
+                "columnId": "left",
+                "level": 28
+              },
+              {
+                "columnId": "center",
+                "level": 1
+              },
+              {
+                "columnId": "center",
+                "level": 2
+              },
+              {
+                "columnId": "center",
+                "level": 4
+              },
+              {
+                "columnId": "center",
+                "level": 6
+              },
+              {
+                "columnId": "center",
+                "level": 7
+              },
+              {
+                "columnId": "center",
+                "level": 8
+              },
+              {
+                "columnId": "center",
+                "level": 9
+              },
+              {
+                "columnId": "center",
+                "level": 10
+              },
+              {
+                "columnId": "center",
+                "level": 11
+              },
+              {
+                "columnId": "center",
+                "level": 12
+              },
+              {
+                "columnId": "center",
+                "level": 13
+              },
+              {
+                "columnId": "center",
+                "level": 14
+              },
+              {
+                "columnId": "center",
+                "level": 15
+              },
+              {
+                "columnId": "center",
+                "level": 16
+              },
+              {
+                "columnId": "center",
+                "level": 17
+              },
+              {
+                "columnId": "center",
+                "level": 18
+              },
+              {
+                "columnId": "center",
+                "level": 19
+              },
+              {
+                "columnId": "center",
+                "level": 20
+              },
+              {
+                "columnId": "center",
+                "level": 21
+              },
+              {
+                "columnId": "center",
+                "level": 22
+              },
+              {
+                "columnId": "center",
+                "level": 23
+              },
+              {
+                "columnId": "center",
+                "level": 24
+              },
+              {
+                "columnId": "center",
+                "level": 25
+              },
+              {
+                "columnId": "center",
+                "level": 26
+              },
+              {
+                "columnId": "center",
+                "level": 27
+              },
+              {
+                "columnId": "center",
+                "level": 28
+              },
+              {
+                "columnId": "center",
+                "level": 29
+              },
+              {
+                "columnId": "center",
+                "level": 30
+              },
+              {
+                "columnId": "right",
+                "level": 3
+              },
+              {
+                "columnId": "right",
+                "level": 4
+              },
+              {
+                "columnId": "right",
+                "level": 5
+              },
+              {
+                "columnId": "right",
+                "level": 7
+              },
+              {
+                "columnId": "right",
+                "level": 8
+              },
+              {
+                "columnId": "right",
+                "level": 10
+              },
+              {
+                "columnId": "right",
+                "level": 11
+              },
+              {
+                "columnId": "right",
+                "level": 13
+              },
+              {
+                "columnId": "right",
+                "level": 15
+              },
+              {
+                "columnId": "right",
+                "level": 16
+              },
+              {
+                "columnId": "right",
+                "level": 17
+              },
+              {
+                "columnId": "right",
+                "level": 18
+              },
+              {
+                "columnId": "right",
+                "level": 19
+              },
+              {
+                "columnId": "right",
+                "level": 20
+              },
+              {
+                "columnId": "right",
+                "level": 21
+              },
+              {
+                "columnId": "right",
+                "level": 22
+              },
+              {
+                "columnId": "right",
+                "level": 23
+              },
+              {
+                "columnId": "right",
+                "level": 24
+              },
+              {
+                "columnId": "right",
+                "level": 25
+              },
+              {
+                "columnId": "right",
+                "level": 26
+              },
+              {
+                "columnId": "right",
+                "level": 27
+              },
+              {
+                "columnId": "right",
+                "level": 28
+              }
+            ],
+            "metadata": {
+              "createdAt": "2026-06-16T12:25:14.491Z",
+              "source": "manual-branch-builder"
+            },
+            "heroId": "bastet"
+          }
         }
       ],
       "gameMode": "pve"

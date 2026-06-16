@@ -8,6 +8,9 @@ import type {
 } from "../types/admin.types";
 const columnIds: BranchColumnId[] = ["left", "center", "right"];
 
+/** Минимальный уровень прогресса по каждой колонке для экспорта билда */
+export const MIN_BRANCH_PROGRESS_LEVEL = 18;
+
 // Подписи колонок в родительном падеже для сообщений об ошибках
 const columnLabels: Record<BranchColumnId, string> = {
   left: "левой",
@@ -172,6 +175,18 @@ export function validateBranchBuild(
         code: "column.branchUnknown",
         message: `Для ${columnLabels[columnId]} колонки выбрана неизвестная ветка.`,
         path: `columns.${columnId}`,
+      });
+    }
+  }
+
+  for (const columnId of columnIds) {
+    const progress = draft.progress[columnId];
+
+    if (progress === undefined || progress < MIN_BRANCH_PROGRESS_LEVEL) {
+      errors.push({
+        code: "progress.minimumLevel",
+        message: `Минимальный уровень ${columnLabels[columnId]} ветки — ${MIN_BRANCH_PROGRESS_LEVEL}.`,
+        path: `progress.${columnId}`,
       });
     }
   }
