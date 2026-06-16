@@ -75,6 +75,7 @@ export function BuildFolderTabs({
       <View style={styles.row}>
         {tabs.map((tab, index) => {
           const selected = tab.id === selectedTabId;
+          const borderTotal = tabs.length === 1 ? 2 : tabs.length;
 
           return (
             <Pressable
@@ -85,7 +86,7 @@ export function BuildFolderTabs({
               onPress={() => onSelectTab(tab.id)}
               style={[
                 styles.tab,
-                getTopTabBorders(index, tabs.length, selected),
+                getTopTabBorders(index, borderTotal, selected),
                 selected ? styles.tabActive : styles.tabInactive,
                 index > 0 ? styles.tabAdjacent : null,
               ]}
@@ -102,6 +103,19 @@ export function BuildFolderTabs({
             </Pressable>
           );
         })}
+
+        {tabs.length === 1 ? (
+          <View
+            importantForAccessibility="no-hide-descendants"
+            pointerEvents="none"
+            style={[
+              styles.tab,
+              styles.tabInactive,
+              getTopTabBorders(1, 2, false),
+              styles.tabAdjacent,
+            ]}
+          />
+        ) : null}
       </View>
 
       {childTabs && childTabs.length > 0 ? (

@@ -1,6 +1,7 @@
 import { act, renderHook } from "@testing-library/react-native";
 
 import template from "@/features/game-data/divinity/tree-template.json";
+import { getHeroById } from "@/features/game-data/heroes/heroBuilds";
 import weaponAwakeningColors from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
 import weaponAwakeningSlots from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
 
@@ -39,12 +40,45 @@ const selectedSkills: Record<string, string> = {
   "right:15": "immortality-symbiosis",
 };
 
+const filledBuild = () => {
+  const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
+
+  act(() => {
+    result.current.selectHero("western-queen");
+    result.current.setColumnBranch("left", selectedBranches.left);
+    result.current.setColumnBranch("center", selectedBranches.center);
+    result.current.setColumnBranch("right", selectedBranches.right);
+
+    for (const node of template) {
+      if (node.nodeType === "majorSkill") {
+        result.current.setMajorSkill(
+          node.columnId as BranchColumnId,
+          node.level,
+          selectedSkills[`${node.columnId}:${node.level}`],
+        );
+      }
+    }
+
+    for (const slot of weaponAwakeningSlots) {
+      result.current.cycleWeaponAwakeningSlot(slot.slot);
+    }
+
+    result.current.addArtifact("excalibur");
+    result.current.addRune("fire");
+  });
+
+  return result;
+};
+
 describe("useDivinityBranchBuilder", () => {
   it("starts with an empty editable draft", () => {
     const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
 
     expect(result.current.gameMode).toBe("pvp");
     expect(result.current.targetTabPath).toEqual(["pvp"]);
+    expect(result.current.heroQuery).toBe("");
+    expect(result.current.selectedHeroId).toBeNull();
+    expect(result.current.selectedHero).toBeNull();
     expect(result.current.heroName).toBe("");
     expect(result.current.selectedBranches).toEqual({
       left: null,
@@ -58,40 +92,53 @@ describe("useDivinityBranchBuilder", () => {
     expect(result.current.buildExport("2026-05-30T00:00:00.000Z")).toBeNull();
   });
 
-  it("stores user selections and builds the export json payload", () => {
+  it("typing search query does not create a valid hero selection", () => {
     const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
 
     act(() => {
-      result.current.setHeroName("Western Queen");
-      result.current.setColumnBranch("left", selectedBranches.left);
-      result.current.setColumnBranch("center", selectedBranches.center);
-      result.current.setColumnBranch("right", selectedBranches.right);
-
-      for (const node of template) {
-        if (node.nodeType === "majorSkill") {
-          result.current.setMajorSkill(
-            node.columnId as BranchColumnId,
-            node.level,
-            selectedSkills[`${node.columnId}:${node.level}`],
-          );
-        }
-      }
-
-      for (const slot of weaponAwakeningSlots) {
-        result.current.cycleWeaponAwakeningSlot(slot.slot);
-      }
-
-      result.current.addArtifact("excalibur");
-      result.current.addRune("fire");
+      result.current.setHeroQuery("бас");
     });
 
-    expect(result.current.getMajorSkill("center", 1)).toBe("psyche-maestro");
+    expect(result.current.selectedHeroId).toBeNull();
+    expect(result.current.heroQuery).toBe("бас");
+    expect(result.current.buildExport("2026-05-30T00:00:00.000Z")).toBeNull();
+  });
+
+  it("selecting a hero sets selectedHeroId and Russian heroName", () => {
+    const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
+    const hero = getHeroById("bastet");
+
+    act(() => {
+      result.current.selectHero("bastet");
+    });
+
+    expect(result.current.selectedHeroId).toBe("bastet");
+    expect(result.current.heroQuery).toBe(hero?.name.ru);
+    expect(result.current.heroName).toBe(hero?.name.ru);
+    expect(result.current.selectedHero?.id).toBe("bastet");
+  });
+
+  it("editing text after selecting a hero clears selectedHeroId", () => {
+    const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
+
+    act(() => {
+      result.current.selectHero("bastet");
+      result.current.setHeroQuery("баст");
+    });
+
+    expect(result.current.selectedHeroId).toBeNull();
+    expect(result.current.heroQuery).toBe("баст");
+  });
+
+  it("stores user selections and builds the export json payload", () => {
+    const result = filledBuild();
     expect(result.current.buildExport("2026-05-30T00:00:00.000Z")?.targetTabPath).toEqual(["pvp"]);
     expect(result.current.buildExport("2026-05-30T00:00:00.000Z")).toEqual({
       schemaVersion: 1,
       gameMode: "pvp",
       targetTabPath: ["pvp"],
-      heroName: "Western Queen",
+      heroId: "western-queen",
+      heroName: "Западная царица",
       columns: selectedBranches,
       weaponAwakening: filledWeaponAwakening,
       equipment: { artifactIds: ["excalibur"], runeIds: ["fire"] },
@@ -213,11 +260,25 @@ describe("useDivinityBranchBuilder", () => {
     expect(result.current.selectedArtifactIds).toEqual(["axe-of-pangu"]);
   });
 
+  it("export returns null without selected hero", () => {
+    const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
+
+    act(() => {
+      result.current.setColumnBranch("left", selectedBranches.left);
+      result.current.setColumnBranch("center", selectedBranches.center);
+      result.current.setColumnBranch("right", selectedBranches.right);
+      result.current.addArtifact("excalibur");
+      result.current.addRune("fire");
+    });
+
+    expect(result.current.buildExport("2026-05-30T00:00:00.000Z")).toBeNull();
+  });
+
   it("can add several rune variants and preserves order in export", () => {
     const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
 
     act(() => {
-      result.current.setHeroName("Western Queen");
+      result.current.selectHero("western-queen");
       result.current.setColumnBranch("left", selectedBranches.left);
       result.current.setColumnBranch("center", selectedBranches.center);
       result.current.setColumnBranch("right", selectedBranches.right);

@@ -1,6 +1,7 @@
 import type { HeroBuildSet, HeroBuildTab } from "@/features/heroes/types/heroes.types";
 
 import {
+  filterTabsWithReadyBuilds,
   findFirstReadyBuildTab,
   getBuildAtPath,
   getDefaultTabPath,
@@ -16,6 +17,7 @@ import {
 const readyBuild = {
   schemaVersion: 1 as const,
   gameMode: "pvp" as const,
+  heroId: "test-hero",
   heroName: "Test",
   columns: { left: "asterial" as const, center: "psyche" as const, right: "devoid" as const },
   majorNodes: [],
@@ -62,6 +64,37 @@ const sampleTabs: HeroBuildTab[] = [
 ];
 
 describe("heroBuildTabs", () => {
+  test("filterTabsWithReadyBuilds hides empty build tabs", () => {
+    const filtered = filterTabsWithReadyBuilds(sampleTabs);
+
+    expect(filtered.map((tab) => tab.id)).toEqual(["pve"]);
+    expect(filtered[0].children?.map((tab) => tab.id)).toEqual(["campaign"]);
+  });
+
+  test("filterTabsWithReadyBuilds hides empty group tabs", () => {
+    const tabs: HeroBuildTab[] = [
+      { ...sampleTabs[0] },
+      {
+        ...sampleTabs[1],
+        children: sampleTabs[1].children?.map((child) => ({ ...child, build: null })),
+      },
+    ];
+
+    expect(filterTabsWithReadyBuilds(tabs)).toEqual([]);
+  });
+
+  test("filterTabsWithReadyBuilds keeps top-level ready build tabs", () => {
+    const tabs: HeroBuildTab[] = [
+      { ...sampleTabs[0], build: readyBuild },
+      {
+        ...sampleTabs[1],
+        children: sampleTabs[1].children?.map((child) => ({ ...child, build: null })),
+      },
+    ];
+
+    expect(filterTabsWithReadyBuilds(tabs).map((tab) => tab.id)).toEqual(["pvp"]);
+  });
+
   test("sortBuildTabs keeps tab order stable", () => {
     const shuffled: HeroBuildTab[] = [
       { ...sampleTabs[1], order: 2 },

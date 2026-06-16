@@ -10,16 +10,18 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => mockUseSafeAreaInsets(),
 }));
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { render, screen } from "@testing-library/react-native";
 
 import { HeroBuildScreen } from "@/features/heroes/screens/HeroBuildScreen";
 
 describe("HeroBuildScreen", () => {
-  test("renders top-level folder tabs for bastet", () => {
+  test("renders only tabs with ready builds for bastet", () => {
     render(<HeroBuildScreen heroId="bastet" />);
 
     expect(screen.getByLabelText("Select PvP build tab")).toBeTruthy();
-    expect(screen.getByLabelText("Select PvE build tab")).toBeTruthy();
+    expect(screen.queryByLabelText("Select PvE build tab")).toBeNull();
+    expect(screen.queryByLabelText("Select Кампания build tab")).toBeNull();
+    expect(screen.queryByLabelText("Select Боссы build tab")).toBeNull();
   });
 
   test("defaults to the first ready build path", () => {
@@ -28,30 +30,10 @@ describe("HeroBuildScreen", () => {
     expect(screen.getByText("Axe of Pangu")).toBeTruthy();
   });
 
-  test("renders PvE child tabs when PvE is active", () => {
+  test("does not render empty placeholder when only ready tabs are visible", () => {
     render(<HeroBuildScreen heroId="bastet" />);
 
-    fireEvent.press(screen.getByLabelText("Select PvE build tab"));
-
-    expect(screen.getByLabelText("Select Боссы build tab")).toBeTruthy();
-    expect(screen.getByLabelText("Select Кампания build tab")).toBeTruthy();
-  });
-
-  test("shows placeholder for an empty selected tab", () => {
-    render(<HeroBuildScreen heroId="bastet" />);
-
-    fireEvent.press(screen.getByLabelText("Select PvE build tab"));
-    fireEvent.press(screen.getByLabelText("Select Боссы build tab"));
-
-    expect(screen.getByText("Билд для этого режима ещё не готов.")).toBeTruthy();
-  });
-
-  test("renders build content after switching back to PvP tab", () => {
-    render(<HeroBuildScreen heroId="bastet" />);
-
-    fireEvent.press(screen.getByLabelText("Select PvE build tab"));
-    fireEvent.press(screen.getByLabelText("Select PvP build tab"));
-
+    expect(screen.queryByText("Билд для этого режима ещё не готов.")).toBeNull();
     expect(screen.getByText("Axe of Pangu")).toBeTruthy();
   });
 });

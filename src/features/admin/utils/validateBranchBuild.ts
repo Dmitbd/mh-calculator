@@ -16,6 +16,7 @@ const columnLabels: Record<BranchColumnId, string> = {
 };
 
 type ValidationSources = {
+  heroes: readonly { id: string; name: { ru: string; en: string } }[];
   branches: readonly { id: string }[];
   skills: readonly { id: string; branchId: string; tier: number }[];
   template: readonly {
@@ -60,19 +61,37 @@ export function validateBranchBuild(
   );
   const knownArtifactIds = new Set(sources.artifacts.map((artifact) => artifact.id));
   const knownRuneIds = new Set(sources.runes.map((rune) => rune.id));
+  const heroesById = new Map(sources.heroes.map((hero) => [hero.id, hero]));
+
+  if (!draft.heroId?.trim()) {
+    errors.push({
+      code: "hero.required",
+      message: "Выберите героя из списка.",
+      path: "heroId",
+    });
+  } else {
+    const catalogHero = heroesById.get(draft.heroId);
+
+    if (!catalogHero) {
+      errors.push({
+        code: "hero.unknown",
+        message: "Выбранный герой отсутствует в базе.",
+        path: "heroId",
+      });
+    } else if (draft.heroName !== catalogHero.name.ru) {
+      errors.push({
+        code: "hero.nameMismatch",
+        message: "Имя героя должно соответствовать выбранному герою из базы.",
+        path: "heroName",
+      });
+    }
+  }
 
   if (!isDivinityGameMode(draft.gameMode)) {
     errors.push({
       code: "gameMode.invalid",
       message: "Режим игры должен быть PvP или PvE.",
       path: "gameMode",
-    });
-  }
-
-  if (!draft.heroName.trim()) {
-    errors.push({
-      code: "heroName.required",
-      message: "Укажите имя героя.",
     });
   }
 

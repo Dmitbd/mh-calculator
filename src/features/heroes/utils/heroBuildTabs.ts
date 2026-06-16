@@ -15,6 +15,37 @@ export function sortBuildTabs(tabs: HeroBuildTab[]): HeroBuildTab[] {
     }));
 }
 
+/**
+ * Оставляет только вкладки с готовым билдом.
+ * Группа показывается, если у неё есть хотя бы одна видимая дочерняя вкладка.
+ */
+export function filterTabsWithReadyBuilds(tabs: HeroBuildTab[]): HeroBuildTab[] {
+  const result: HeroBuildTab[] = [];
+
+  for (const tab of sortBuildTabs(tabs)) {
+    if (tab.kind === "build") {
+      if (tab.build !== null) {
+        result.push(tab);
+      }
+
+      continue;
+    }
+
+    if (tab.kind === "group" && tab.children) {
+      const visibleChildren = filterTabsWithReadyBuilds(tab.children);
+
+      if (visibleChildren.length > 0) {
+        result.push({
+          ...tab,
+          children: visibleChildren,
+        });
+      }
+    }
+  }
+
+  return result;
+}
+
 /** Ищет первую вкладку с готовым билдом в дереве */
 export function findFirstReadyBuildTab(tabs: HeroBuildTab[]): HeroBuildTab | null {
   for (const tab of sortBuildTabs(tabs)) {

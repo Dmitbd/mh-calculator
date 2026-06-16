@@ -15,6 +15,7 @@ import runesData from "@/features/game-data/equipment/runes.json";
 import branchesData from "@/features/game-data/divinity/divinity-branches.json";
 import skillsData from "@/features/game-data/divinity/divinity-skills.json";
 import templateData from "@/features/game-data/divinity/tree-template.json";
+import { heroes } from "@/features/game-data/heroes/heroBuilds";
 import weaponAwakeningColorsData from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
 import weaponAwakeningSlotsData from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
 import { BuildFolderTabs } from "@/shared/ui/BuildFolderTabs";
@@ -24,7 +25,7 @@ import { getTabByPath, sortBuildTabs } from "@/features/heroes/utils/heroBuildTa
 import { BranchBuilderGrid } from "../components/BranchBuilderGrid";
 import { DownloadJsonButton } from "../components/DownloadJsonButton";
 import { EquipmentVariantBuilder } from "../components/EquipmentVariantBuilder";
-import { HeroNameInput } from "../components/HeroNameInput";
+import { HeroSelectInput } from "../components/HeroSelectInput";
 import { WeaponAwakeningPicker } from "../components/WeaponAwakeningPicker";
 import { useDivinityBranchBuilder } from "../hooks/useDivinityBranchBuilder";
 import type {
@@ -40,7 +41,6 @@ import type {
   WeaponAwakeningSlot,
 } from "../types/admin.types";
 import { downloadJson } from "../utils/downloadJson";
-import { slugifyFileName } from "../utils/slugifyFileName";
 import { validateBranchBuild } from "../utils/validateBranchBuild";
 
 const columns: BranchColumn[] = [
@@ -158,7 +158,13 @@ export function DivinityBranchBuilderScreen() {
       </View>
 
       <View style={styles.section}>
-        <HeroNameInput value={builder.heroName} onChange={builder.setHeroName} />
+        <HeroSelectInput
+          heroQuery={builder.heroQuery}
+          heroes={heroes}
+          onQueryChange={builder.setHeroQuery}
+          onSelectHero={builder.selectHero}
+          selectedHeroId={builder.selectedHeroId}
+        />
       </View>
 
       <View style={styles.section}>
@@ -230,6 +236,7 @@ export function DivinityBranchBuilderScreen() {
           onErrorsLayout={handleErrorsLayout}
           onPress={() => {
             const result = validateBranchBuild(builder.buildValidationDraft(), {
+              heroes,
               branches,
               skills,
               template,
@@ -255,7 +262,7 @@ export function DivinityBranchBuilderScreen() {
               const build = builder.buildExport();
 
               if (build) {
-                downloadJson(build, slugifyFileName(build.heroName));
+                downloadJson(build, `${build.heroId}.json`);
               }
             }
           }}

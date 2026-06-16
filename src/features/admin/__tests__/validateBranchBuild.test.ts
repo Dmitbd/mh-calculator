@@ -3,6 +3,7 @@ import skills from "@/features/game-data/divinity/divinity-skills.json";
 import template from "@/features/game-data/divinity/tree-template.json";
 import artifacts from "@/features/game-data/equipment/artifacts.json";
 import runes from "@/features/game-data/equipment/runes.json";
+import heroes from "@/features/game-data/heroes/heroes.json";
 import weaponAwakeningColors from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
 import weaponAwakeningSlots from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
 
@@ -36,6 +37,7 @@ const filledWeaponAwakening = weaponAwakeningSlots.map((slot) => ({
 }));
 
 const validationSources = {
+  heroes,
   branches,
   skills: catalogSkills,
   template,
@@ -48,7 +50,8 @@ const validationSources = {
 function createValidDraft(): DivinityBranchBuildDraft {
   return {
     gameMode: "pve",
-    heroName: "Western Queen",
+    heroId: "western-queen",
+    heroName: "Западная царица",
     columns,
     weaponAwakening: filledWeaponAwakening,
     equipment: { artifactIds: ["excalibur"], runeIds: ["fire"] },
@@ -89,16 +92,45 @@ describe("validateBranchBuild", () => {
     expect(result.errors).toEqual([]);
   });
 
-  it("rejects an empty hero name", () => {
+  it("rejects a missing hero id", () => {
     const result = validateBranchBuild(
-      { ...createValidDraft(), heroName: "   " },
+      { ...createValidDraft(), heroId: null, heroName: "   " },
       validationSources,
     );
 
     expect(result.isValid).toBe(false);
     expect(result.errors).toContainEqual({
-      code: "heroName.required",
-      message: "Укажите имя героя.",
+      code: "hero.required",
+      message: "Выберите героя из списка.",
+      path: "heroId",
+    });
+  });
+
+  it("rejects an unknown hero id", () => {
+    const result = validateBranchBuild(
+      { ...createValidDraft(), heroId: "unknown-hero", heroName: "Unknown" },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "hero.unknown",
+      message: "Выбранный герой отсутствует в базе.",
+      path: "heroId",
+    });
+  });
+
+  it("rejects a mismatched hero name", () => {
+    const result = validateBranchBuild(
+      { ...createValidDraft(), heroId: "western-queen", heroName: "Western Queen" },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "hero.nameMismatch",
+      message: "Имя героя должно соответствовать выбранному герою из базы.",
+      path: "heroName",
     });
   });
 

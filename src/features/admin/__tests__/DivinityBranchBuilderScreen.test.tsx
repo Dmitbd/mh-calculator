@@ -23,7 +23,7 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByText("Builder")).toBeTruthy();
     expect(screen.getByLabelText("Select PvP build tab")).toBeTruthy();
     expect(screen.getByLabelText("Select PvE build tab")).toBeTruthy();
-    expect(screen.getByPlaceholderText("Имя героя")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Начните вводить имя героя")).toBeTruthy();
     expect(screen.getByLabelText("Добавить оружие")).toBeTruthy();
     expect(screen.getByLabelText("Добавить руну")).toBeTruthy();
     expect(screen.getByText("Пробуждение оружия")).toBeTruthy();
@@ -47,7 +47,7 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(
       screen.getByText("Выберите цвет пробуждения оружия для слота 1."),
     ).toBeTruthy();
-    expect(screen.getByText("Укажите имя героя.")).toBeTruthy();
+    expect(screen.getByText("Выберите героя из списка.")).toBeTruthy();
     expect(screen.getByText("Выберите оружие.")).toBeTruthy();
     expect(screen.getByText("Выберите руну.")).toBeTruthy();
     expect(screen.getByText("Выберите ветку для левой колонки.")).toBeTruthy();
@@ -59,7 +59,8 @@ describe("DivinityBranchBuilderScreen", () => {
   it("selects branch types from the grid column headers", () => {
     render(<DivinityBranchBuilderScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText("Имя героя"), "Western Queen");
+    fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "bastet");
+    fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
 
     fireEvent.press(screen.getByLabelText("Choose branch for центр"));
     expect(screen.getByText("Psyche Skills")).toBeTruthy();
@@ -73,6 +74,15 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByText("Energy Bubble")).toBeTruthy();
     expect(screen.queryByText("Maestro")).toBeNull();
     expect(screen.queryByText("Gemini")).toBeNull();
+  });
+
+  it("shows hero error if text was typed but no dropdown option was selected", () => {
+    render(<DivinityBranchBuilderScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "бастет без выбора");
+    fireEvent.press(screen.getByText("Скачать JSON"));
+
+    expect(screen.getByText("Выберите героя из списка.")).toBeTruthy();
   });
 
   it("prefixes web branch header image paths with the configured base URL", () => {

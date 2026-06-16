@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 
 import template from "@/features/game-data/divinity/tree-template.json";
+import { getHeroById } from "@/features/game-data/heroes/heroBuilds";
 
 import {
   buildTargetTabs,
@@ -81,7 +82,10 @@ export function useDivinityBranchBuilder(
     getGameModeForPath(buildTargetTabs, defaultTargetTabPath) ??
     buildTargetTabs[0]?.gameMode ??
     "pvp";
-  const [heroName, setHeroName] = useState("");
+  const [heroQuery, setHeroQueryState] = useState("");
+  const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
+  const selectedHero = selectedHeroId ? getHeroById(selectedHeroId) : null;
+  const heroName = selectedHero?.name.ru ?? heroQuery;
   const [selectedBranches, setSelectedBranches] =
     useState<DraftBranchColumns>(emptySelectedBranches);
   const [selectedMajorSkills, setSelectedMajorSkills] =
@@ -110,6 +114,39 @@ export function useDivinityBranchBuilder(
 
   const setTargetChildTab = useCallback((childTabId: string) => {
     setTargetTabPath((current) => [current[0], childTabId]);
+  }, []);
+
+  const setHeroQuery = useCallback((value: string) => {
+    setHeroQueryState(value);
+    setSelectedHeroId((currentId) => {
+      if (!currentId) {
+        return null;
+      }
+
+      const hero = getHeroById(currentId);
+
+      if (!hero || value !== hero.name.ru) {
+        return null;
+      }
+
+      return currentId;
+    });
+  }, []);
+
+  const selectHero = useCallback((heroId: string) => {
+    const hero = getHeroById(heroId);
+
+    if (!hero) {
+      return;
+    }
+
+    setSelectedHeroId(heroId);
+    setHeroQueryState(hero.name.ru);
+  }, []);
+
+  const clearSelectedHero = useCallback(() => {
+    setSelectedHeroId(null);
+    setHeroQueryState("");
   }, []);
 
   const setColumnBranch = useCallback(
@@ -260,6 +297,7 @@ export function useDivinityBranchBuilder(
     useCallback((): DivinityBranchBuildValidationDraft => {
       return {
         gameMode,
+        heroId: selectedHeroId,
         heroName,
         columns: selectedBranches,
         majorNodes: buildMajorNodes(selectedBranches, selectedMajorSkills),
@@ -271,6 +309,7 @@ export function useDivinityBranchBuilder(
       buildWeaponAwakening,
       gameMode,
       heroName,
+      selectedHeroId,
       selectedBranches,
       selectedMajorSkills,
     ]);
@@ -280,6 +319,18 @@ export function useDivinityBranchBuilder(
       const resolvedGameMode = getGameModeForPath(buildTargetTabs, targetTabPath);
 
       if (!resolvedGameMode) {
+        return null;
+      }
+
+      const catalogHero = selectedHeroId ? getHeroById(selectedHeroId) : null;
+
+      if (!catalogHero) {
+        return null;
+      }
+
+      const equipment = buildEquipment();
+
+      if (equipment.artifactIds.length === 0 || equipment.runeIds.length === 0) {
         return null;
       }
 
@@ -301,12 +352,13 @@ export function useDivinityBranchBuilder(
       return {
         schemaVersion: 1,
         gameMode: resolvedGameMode,
-        heroName,
+        heroId: catalogHero.id,
+        heroName: catalogHero.name.ru,
         targetTabPath,
         columns: selectedBranches,
         majorNodes,
         weaponAwakening,
-        equipment: buildEquipment(),
+        equipment,
         progress: progressLevels,
         activeNodes: buildActiveNodes(progressLevels),
         metadata: {
@@ -318,11 +370,10 @@ export function useDivinityBranchBuilder(
     [
       buildEquipment,
       buildWeaponAwakening,
-      gameMode,
-      heroName,
       selectedBranches,
       selectedMajorSkills,
       progressLevels,
+      selectedHeroId,
       targetTabPath,
       weaponAwakeningCatalog.slots.length,
     ],
@@ -332,6 +383,9 @@ export function useDivinityBranchBuilder(
     () => ({
       gameMode,
       targetTabPath,
+      heroQuery,
+      selectedHeroId,
+      selectedHero,
       heroName,
       selectedBranches,
       selectedMajorSkills,
@@ -341,7 +395,9 @@ export function useDivinityBranchBuilder(
       progressLevels,
       setTargetTopTab,
       setTargetChildTab,
-      setHeroName,
+      setHeroQuery,
+      selectHero,
+      clearSelectedHero,
       cycleWeaponAwakeningSlot,
       addArtifact,
       removeArtifact,
@@ -363,8 +419,11 @@ export function useDivinityBranchBuilder(
       gameMode,
       getMajorSkill,
       heroName,
+      heroQuery,
       progressLevels,
       rollbackColumnProgress,
+      selectedHero,
+      selectedHeroId,
       selectedBranches,
       selectedMajorSkills,
       targetTabPath,

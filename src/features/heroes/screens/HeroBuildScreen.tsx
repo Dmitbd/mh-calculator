@@ -33,6 +33,7 @@ import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 import { BuildFolderTabs } from "@/shared/ui/BuildFolderTabs";
 import { HeroMetadataRow } from "../components/HeroMetadataRow";
 import {
+  filterTabsWithReadyBuilds,
   getBuildAtPath,
   getDefaultTabPath,
   getTabByPath,
@@ -70,7 +71,7 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
   const hero = getHeroById(heroId);
   const buildSet = getHeroBuildSet(heroId);
   const sortedTabs = useMemo(
-    () => (buildSet ? sortBuildTabs(buildSet.tabs) : []),
+    () => (buildSet ? filterTabsWithReadyBuilds(buildSet.tabs) : []),
     [buildSet],
   );
   const defaultPath = useMemo(

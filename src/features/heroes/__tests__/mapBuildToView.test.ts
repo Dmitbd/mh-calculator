@@ -5,6 +5,7 @@ import { mapBuildToView } from "../utils/mapBuildToView";
 const pve: DivinityBranchBuildExport = {
   schemaVersion: 1,
   gameMode: "pve",
+  heroId: "western-queen",
   heroName: "Western Queen",
   columns: {
     left: "asterial",

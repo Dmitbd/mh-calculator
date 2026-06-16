@@ -1,3 +1,9 @@
+import type {
+  DivinityBranchId,
+  DivinityMajorSkill,
+  DivinitySkillTier,
+} from "@/features/game-data/divinity/types";
+
 export type {
   DivinityBranchId,
   DivinityMajorSkill,
@@ -132,6 +138,9 @@ export type ActiveBranchNode = {
 
 export type DivinityBranchBuildDraft = {
   gameMode: DivinityGameMode;
+  /** Канонический id героя из каталога heroes.json */
+  heroId: string;
+  /** Русское имя из каталога после выбора героя */
   heroName: string;
   columns: SelectedBranchColumns;
   majorNodes: DivinityBranchBuildMajorNode[];
@@ -142,6 +151,9 @@ export type DivinityBranchBuildDraft = {
 
 export type DivinityBranchBuildValidationDraft = {
   gameMode: DivinityGameMode;
+  /** Id выбранного героя или null, если герой не выбран из каталога */
+  heroId: string | null;
+  /** Текст в поле поиска или имя выбранного героя */
   heroName: string;
   columns: DraftBranchColumns;
   majorNodes: DivinityBranchBuildMajorNode[];
@@ -174,7 +186,9 @@ export type DivinityBranchBuilderExport = DivinityBranchBuildExport & {
 export type BranchBuildValidationError = {
   code:
     | "gameMode.invalid"
-    | "heroName.required"
+    | "hero.required"
+    | "hero.unknown"
+    | "hero.nameMismatch"
     | "column.branchRequired"
     | "column.branchUnknown"
     | "majorNode.required"
