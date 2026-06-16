@@ -103,6 +103,21 @@ export function getFirstSelectablePath(tabs: HeroBuildTab[]): HeroBuildTabPath {
   return [first.id];
 }
 
+/** Путь по умолчанию: tabs[0]; для группы — первый дочерний элемент массива */
+export function getDefaultTabPathFromTabs(tabs: HeroBuildTab[]): HeroBuildTabPath {
+  const first = tabs[0];
+
+  if (!first) {
+    return [];
+  }
+
+  if (first.kind === "group" && first.children && first.children.length > 0) {
+    return [first.id, ...getDefaultTabPathFromTabs(first.children)];
+  }
+
+  return [first.id];
+}
+
 /** Билд по пути вкладки */
 export function getBuildAtPath(
   tabs: HeroBuildTab[],

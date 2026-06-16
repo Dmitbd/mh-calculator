@@ -15,10 +15,10 @@ export type BranchBuildViewModel = {
   progressLevels: BranchProgressLevels;
   /** Цвета пробуждения оружия по номеру слота */
   weaponAwakeningSelections: Partial<Record<number, WeaponAwakeningColorId>>;
-  /** Id выбранного артефакта или null */
-  artifactId: string | null;
-  /** Id выбранной руны или null */
-  runeId: string | null;
+  /** Список id подходящих артефактов */
+  artifactIds: string[];
+  /** Список id подходящих рун */
+  runeIds: string[];
 };
 
 /** Ключ мажорной ноды — совпадает с форматом BranchBuilderGrid */
@@ -51,7 +51,7 @@ export function mapBuildToView(
     selectedMajorSkills,
     progressLevels: build.progress,
     weaponAwakeningSelections,
-    artifactId: build.equipment.artifactId,
-    runeId: build.equipment.runeId,
+    artifactIds: build.equipment.artifactIds,
+    runeIds: build.equipment.runeIds,
   };
 }

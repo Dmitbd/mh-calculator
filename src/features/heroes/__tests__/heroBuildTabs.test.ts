@@ -4,6 +4,7 @@ import {
   findFirstReadyBuildTab,
   getBuildAtPath,
   getDefaultTabPath,
+  getDefaultTabPathFromTabs,
   getFirstSelectablePath,
   getGameModeForPath,
   getTabByPath,
@@ -19,7 +20,7 @@ const readyBuild = {
   columns: { left: "asterial" as const, center: "psyche" as const, right: "devoid" as const },
   majorNodes: [],
   weaponAwakening: [],
-  equipment: { artifactId: null, runeId: null },
+  equipment: { artifactIds: [], runeIds: [] },
   progress: {},
   activeNodes: [],
   metadata: { createdAt: "2026-01-01T00:00:00.000Z", source: "manual-branch-builder" as const },
@@ -132,6 +133,17 @@ describe("heroBuildTabs", () => {
 
   test("getFirstSelectablePath returns first leaf path for grouped tab", () => {
     expect(getFirstSelectablePath(sampleTabs)).toEqual(["pvp"]);
+  });
+
+  test("getDefaultTabPathFromTabs uses tabs array index 0", () => {
+    expect(getDefaultTabPathFromTabs(sampleTabs)).toEqual(["pvp"]);
+
+    const pveFirst: HeroBuildTab[] = [
+      sampleTabs[1],
+      sampleTabs[0],
+    ];
+
+    expect(getDefaultTabPathFromTabs(pveFirst)).toEqual(["pve", "bosses"]);
   });
 
   test("getDefaultTabPath prefers first ready build path", () => {

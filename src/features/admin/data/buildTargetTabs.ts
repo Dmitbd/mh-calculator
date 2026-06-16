@@ -1,4 +1,5 @@
 import type { HeroBuildTab, HeroBuildTabPath } from "@/features/heroes/types/heroes.types";
+import { getDefaultTabPathFromTabs } from "@/features/heroes/utils/heroBuildTabs";
 
 /** Шаблон дерева вкладок назначения в билдере */
 export const buildTargetTabs: HeroBuildTab[] = [
@@ -36,5 +37,6 @@ export const buildTargetTabs: HeroBuildTab[] = [
   },
 ];
 
-/** Начальный путь назначения билда в билдере */
-export const defaultBuildTargetTabPath: HeroBuildTabPath = ["pve", "bosses"];
+/** Начальный путь назначения билда в билдере — первая вкладка массива */
+export const defaultBuildTargetTabPath: HeroBuildTabPath =
+  getDefaultTabPathFromTabs(buildTargetTabs);

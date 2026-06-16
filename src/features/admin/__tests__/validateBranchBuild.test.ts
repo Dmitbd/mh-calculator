@@ -51,7 +51,7 @@ function createValidDraft(): DivinityBranchBuildDraft {
     heroName: "Western Queen",
     columns,
     weaponAwakening: filledWeaponAwakening,
-    equipment: { artifactId: "excalibur", runeId: "fire" },
+    equipment: { artifactIds: ["excalibur"], runeIds: ["fire"] },
     majorNodes: template
       .filter((node) => node.nodeType === "majorSkill")
       .map((node) => {
@@ -104,7 +104,7 @@ describe("validateBranchBuild", () => {
 
   it("rejects a missing artifact", () => {
     const result = validateBranchBuild(
-      { ...createValidDraft(), equipment: { artifactId: null, runeId: "fire" } },
+      { ...createValidDraft(), equipment: { artifactIds: [], runeIds: ["fire"] } },
       validationSources,
     );
 
@@ -112,13 +112,13 @@ describe("validateBranchBuild", () => {
     expect(result.errors).toContainEqual({
       code: "equipment.artifactRequired",
       message: "Выберите оружие.",
-      path: "equipment.artifactId",
+      path: "equipment.artifactIds",
     });
   });
 
   it("rejects a missing rune", () => {
     const result = validateBranchBuild(
-      { ...createValidDraft(), equipment: { artifactId: "excalibur", runeId: null } },
+      { ...createValidDraft(), equipment: { artifactIds: ["excalibur"], runeIds: [] } },
       validationSources,
     );
 
@@ -126,7 +126,75 @@ describe("validateBranchBuild", () => {
     expect(result.errors).toContainEqual({
       code: "equipment.runeRequired",
       message: "Выберите руну.",
-      path: "equipment.runeId",
+      path: "equipment.runeIds",
+    });
+  });
+
+  it("rejects unknown artifact ids", () => {
+    const result = validateBranchBuild(
+      {
+        ...createValidDraft(),
+        equipment: { artifactIds: ["unknown-artifact"], runeIds: ["fire"] },
+      },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "equipment.artifactUnknown",
+      message: "Выбрано неизвестное оружие.",
+      path: "equipment.artifactIds.0",
+    });
+  });
+
+  it("rejects unknown rune ids", () => {
+    const result = validateBranchBuild(
+      {
+        ...createValidDraft(),
+        equipment: { artifactIds: ["excalibur"], runeIds: ["unknown-rune"] },
+      },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "equipment.runeUnknown",
+      message: "Выбрана неизвестная руна.",
+      path: "equipment.runeIds.0",
+    });
+  });
+
+  it("rejects duplicate artifact ids", () => {
+    const result = validateBranchBuild(
+      {
+        ...createValidDraft(),
+        equipment: { artifactIds: ["excalibur", "excalibur"], runeIds: ["fire"] },
+      },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "equipment.artifactDuplicate",
+      message: "Оружие уже добавлено в список вариантов.",
+      path: "equipment.artifactIds.1",
+    });
+  });
+
+  it("rejects duplicate rune ids", () => {
+    const result = validateBranchBuild(
+      {
+        ...createValidDraft(),
+        equipment: { artifactIds: ["excalibur"], runeIds: ["fire", "fire"] },
+      },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "equipment.runeDuplicate",
+      message: "Руна уже добавлена в список вариантов.",
+      path: "equipment.runeIds.1",
     });
   });
 

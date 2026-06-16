@@ -15,7 +15,7 @@ import type {
   DivinityBranchBuildValidationDraft,
   DivinityBranchId,
   DraftBranchColumns,
-  EquipmentSelection,
+  EquipmentVariantSelection,
   HeroBuildTargetTabPath,
   WeaponAwakeningColor,
   WeaponAwakeningColorId,
@@ -42,7 +42,7 @@ const emptySelectedBranches: DraftBranchColumns = {
 
 const columnIds: BranchColumnId[] = ["left", "center", "right"];
 
-/** Путь целевой вкладки по умолчанию: PvE → Боссы */
+/** Путь целевой вкладки по умолчанию — первая вкладка в buildTargetTabs */
 const defaultTargetTabPath: HeroBuildTargetTabPath = defaultBuildTargetTabPath;
 
 // Уровни нод по каждому столбцу (отсортированы) — для расчёта прогресса и отката
@@ -76,7 +76,11 @@ export function useDivinityBranchBuilder(
 ) {
   const [targetTabPath, setTargetTabPath] =
     useState<HeroBuildTargetTabPath>(defaultTargetTabPath);
-  const gameMode = getGameModeForPath(buildTargetTabs, targetTabPath) ?? "pve";
+  const gameMode =
+    getGameModeForPath(buildTargetTabs, targetTabPath) ??
+    getGameModeForPath(buildTargetTabs, defaultTargetTabPath) ??
+    buildTargetTabs[0]?.gameMode ??
+    "pvp";
   const [heroName, setHeroName] = useState("");
   const [selectedBranches, setSelectedBranches] =
     useState<DraftBranchColumns>(emptySelectedBranches);
@@ -84,8 +88,8 @@ export function useDivinityBranchBuilder(
     useState<MajorSkillSelections>({});
   const [weaponAwakeningSelections, setWeaponAwakeningSelections] =
     useState<WeaponAwakeningSelections>({});
-  const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
-  const [selectedRuneId, setSelectedRuneId] = useState<string | null>(null);
+  const [selectedArtifactIds, setSelectedArtifactIds] = useState<string[]>([]);
+  const [selectedRuneIds, setSelectedRuneIds] = useState<string[]>([]);
   const [progressLevels, setProgressLevels] = useState<BranchProgressLevels>({});
 
   const setTargetTopTab = useCallback((topTabId: string) => {
@@ -165,13 +169,41 @@ export function useDivinityBranchBuilder(
     [weaponAwakeningCatalog.slots, weaponAwakeningSelections],
   );
 
-  // Текущий выбор экипировки (артефакт + руна) для выгрузки в JSON
+  const addArtifact = useCallback((id: string) => {
+    setSelectedArtifactIds((current) => {
+      if (current.includes(id)) {
+        return current;
+      }
+
+      return [...current, id];
+    });
+  }, []);
+
+  const removeArtifact = useCallback((id: string) => {
+    setSelectedArtifactIds((current) => current.filter((artifactId) => artifactId !== id));
+  }, []);
+
+  const addRune = useCallback((id: string) => {
+    setSelectedRuneIds((current) => {
+      if (current.includes(id)) {
+        return current;
+      }
+
+      return [...current, id];
+    });
+  }, []);
+
+  const removeRune = useCallback((id: string) => {
+    setSelectedRuneIds((current) => current.filter((runeId) => runeId !== id));
+  }, []);
+
+  // Текущий выбор экипировки (артефакты + руны) для выгрузки в JSON
   const buildEquipment = useCallback(
-    (): EquipmentSelection => ({
-      artifactId: selectedArtifactId,
-      runeId: selectedRuneId,
+    (): EquipmentVariantSelection => ({
+      artifactIds: selectedArtifactIds,
+      runeIds: selectedRuneIds,
     }),
-    [selectedArtifactId, selectedRuneId],
+    [selectedArtifactIds, selectedRuneIds],
   );
 
   // Установить прогресс столбца точно до уровня (null — снять)
@@ -304,15 +336,17 @@ export function useDivinityBranchBuilder(
       selectedBranches,
       selectedMajorSkills,
       weaponAwakeningSelections,
-      selectedArtifactId,
-      selectedRuneId,
+      selectedArtifactIds,
+      selectedRuneIds,
       progressLevels,
       setTargetTopTab,
       setTargetChildTab,
       setHeroName,
       cycleWeaponAwakeningSlot,
-      setArtifact: setSelectedArtifactId,
-      setRune: setSelectedRuneId,
+      addArtifact,
+      removeArtifact,
+      addRune,
+      removeRune,
       setColumnBranch,
       setMajorSkill,
       getMajorSkill,
@@ -335,8 +369,8 @@ export function useDivinityBranchBuilder(
       selectedMajorSkills,
       targetTabPath,
       weaponAwakeningSelections,
-      selectedArtifactId,
-      selectedRuneId,
+      selectedArtifactIds,
+      selectedRuneIds,
       setColumnBranch,
       setColumnProgress,
       setTargetTopTab,

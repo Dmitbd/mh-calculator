@@ -106,8 +106,8 @@
           }
         ],
         "equipment": {
-          "artifactId": "axe-of-pangu",
-          "runeId": "air"
+          "artifactIds": ["axe-of-pangu"],
+          "runeIds": ["air"]
         },
         "progress": {
           "center": 30,

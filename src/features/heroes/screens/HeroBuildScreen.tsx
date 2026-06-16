@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BranchBuilderGrid } from "@/features/admin/components/BranchBuilderGrid";
-import { EquipmentSelect } from "@/features/admin/components/EquipmentSelect";
+import { EquipmentVariantTabs } from "../components/EquipmentVariantTabs";
 import { WeaponAwakeningPicker } from "@/features/admin/components/WeaponAwakeningPicker";
 import type {
   Artifact,
@@ -170,22 +170,18 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
         {view ? (
           <>
             <View style={styles.section}>
-              <EquipmentSelect
+              <EquipmentVariantTabs
                 label="Оружие"
                 options={artifacts}
-                placeholder="Оружие не выбрано"
-                readOnly
-                selectedId={view.artifactId}
+                selectedIds={view.artifactIds}
               />
             </View>
 
             <View style={styles.section}>
-              <EquipmentSelect
-                label="руны"
+              <EquipmentVariantTabs
+                label="Руны"
                 options={runes}
-                placeholder="Руна не выбрана"
-                readOnly
-                selectedId={view.runeId}
+                selectedIds={view.runeIds}
               />
             </View>
 

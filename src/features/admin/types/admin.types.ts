@@ -103,12 +103,12 @@ export type Rune = {
   elementalResonance: string;
 };
 
-/** Выбор экипировки героя — для сохранения в JSON формы */
-export type EquipmentSelection = {
-  /** Id выбранного артефакта или null */
-  artifactId: string | null;
-  /** Id выбранной руны или null */
-  runeId: string | null;
+/** Варианты экипировки героя — для сохранения в JSON формы */
+export type EquipmentVariantSelection = {
+  /** Список подходящих артефактов (порядок важен) */
+  artifactIds: string[];
+  /** Список подходящих рун (порядок важен) */
+  runeIds: string[];
 };
 
 /** Выбранный цвет в слоте — для export */
@@ -136,8 +136,8 @@ export type DivinityBranchBuildDraft = {
   columns: SelectedBranchColumns;
   majorNodes: DivinityBranchBuildMajorNode[];
   weaponAwakening: WeaponAwakeningSlotSelection[];
-  /** Выбранные артефакт и руна */
-  equipment: EquipmentSelection;
+  /** Варианты артефактов и рун */
+  equipment: EquipmentVariantSelection;
 };
 
 export type DivinityBranchBuildValidationDraft = {
@@ -146,8 +146,8 @@ export type DivinityBranchBuildValidationDraft = {
   columns: DraftBranchColumns;
   majorNodes: DivinityBranchBuildMajorNode[];
   weaponAwakening: WeaponAwakeningSlotSelection[];
-  /** Выбранные артефакт и руна */
-  equipment: EquipmentSelection;
+  /** Варианты артефактов и рун */
+  equipment: EquipmentVariantSelection;
 };
 
 /** Путь целевой вкладки при экспорте из билдера */
@@ -187,8 +187,10 @@ export type BranchBuildValidationError = {
     | "weaponAwakening.colorUnknown"
     | "equipment.artifactRequired"
     | "equipment.artifactUnknown"
+    | "equipment.artifactDuplicate"
     | "equipment.runeRequired"
-    | "equipment.runeUnknown";
+    | "equipment.runeUnknown"
+    | "equipment.runeDuplicate";
   message: string;
   path?: string;
 };

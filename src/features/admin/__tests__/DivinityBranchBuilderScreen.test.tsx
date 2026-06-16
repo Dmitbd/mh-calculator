@@ -24,6 +24,8 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByLabelText("Select PvP build tab")).toBeTruthy();
     expect(screen.getByLabelText("Select PvE build tab")).toBeTruthy();
     expect(screen.getByPlaceholderText("Имя героя")).toBeTruthy();
+    expect(screen.getByLabelText("Добавить оружие")).toBeTruthy();
+    expect(screen.getByLabelText("Добавить руну")).toBeTruthy();
     expect(screen.getByText("Пробуждение оружия")).toBeTruthy();
     expect(screen.getByLabelText("Weapon awakening slot 1, empty")).toBeTruthy();
     expect(screen.getAllByLabelText("Choose branch for левая")).toHaveLength(1);

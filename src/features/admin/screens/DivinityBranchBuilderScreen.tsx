@@ -23,7 +23,7 @@ import { getTabByPath, sortBuildTabs } from "@/features/heroes/utils/heroBuildTa
 
 import { BranchBuilderGrid } from "../components/BranchBuilderGrid";
 import { DownloadJsonButton } from "../components/DownloadJsonButton";
-import { EquipmentSelect } from "../components/EquipmentSelect";
+import { EquipmentVariantBuilder } from "../components/EquipmentVariantBuilder";
 import { HeroNameInput } from "../components/HeroNameInput";
 import { WeaponAwakeningPicker } from "../components/WeaponAwakeningPicker";
 import { useDivinityBranchBuilder } from "../hooks/useDivinityBranchBuilder";
@@ -162,24 +162,24 @@ export function DivinityBranchBuilderScreen() {
       </View>
 
       <View style={styles.section}>
-        <EquipmentSelect
+        <EquipmentVariantBuilder
+          addLabel="Добавить оружие"
           label="Оружие"
-          onClear={() => builder.setArtifact(null)}
-          onSelect={builder.setArtifact}
+          onAdd={builder.addArtifact}
+          onRemove={builder.removeArtifact}
           options={artifacts}
-          placeholder="Выберите оружие"
-          selectedId={builder.selectedArtifactId}
+          selectedIds={builder.selectedArtifactIds}
         />
       </View>
 
       <View style={styles.section}>
-        <EquipmentSelect
-          label="руны"
-          onClear={() => builder.setRune(null)}
-          onSelect={builder.setRune}
+        <EquipmentVariantBuilder
+          addLabel="Добавить руну"
+          label="Руны"
+          onAdd={builder.addRune}
+          onRemove={builder.removeRune}
           options={runes}
-          placeholder="Выберите руну"
-          selectedId={builder.selectedRuneId}
+          selectedIds={builder.selectedRuneIds}
         />
       </View>
 

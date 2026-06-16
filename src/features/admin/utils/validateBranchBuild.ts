@@ -58,8 +58,8 @@ export function validateBranchBuild(
   const selectedWeaponSlots = new Map(
     draft.weaponAwakening.map((entry) => [entry.slot, entry]),
   );
-  const artifactIds = new Set(sources.artifacts.map((artifact) => artifact.id));
-  const runeIds = new Set(sources.runes.map((rune) => rune.id));
+  const knownArtifactIds = new Set(sources.artifacts.map((artifact) => artifact.id));
+  const knownRuneIds = new Set(sources.runes.map((rune) => rune.id));
 
   if (!isDivinityGameMode(draft.gameMode)) {
     errors.push({
@@ -76,31 +76,63 @@ export function validateBranchBuild(
     });
   }
 
-  if (!draft.equipment.artifactId) {
+  if (!Array.isArray(draft.equipment.artifactIds) || draft.equipment.artifactIds.length === 0) {
     errors.push({
       code: "equipment.artifactRequired",
       message: "Выберите оружие.",
-      path: "equipment.artifactId",
+      path: "equipment.artifactIds",
     });
-  } else if (!artifactIds.has(draft.equipment.artifactId)) {
-    errors.push({
-      code: "equipment.artifactUnknown",
-      message: "Выбрано неизвестное оружие.",
-      path: "equipment.artifactId",
+  } else {
+    const seenArtifactIds = new Set<string>();
+
+    draft.equipment.artifactIds.forEach((artifactId, index) => {
+      if (!knownArtifactIds.has(artifactId)) {
+        errors.push({
+          code: "equipment.artifactUnknown",
+          message: "Выбрано неизвестное оружие.",
+          path: `equipment.artifactIds.${index}`,
+        });
+      }
+
+      if (seenArtifactIds.has(artifactId)) {
+        errors.push({
+          code: "equipment.artifactDuplicate",
+          message: "Оружие уже добавлено в список вариантов.",
+          path: `equipment.artifactIds.${index}`,
+        });
+      }
+
+      seenArtifactIds.add(artifactId);
     });
   }
 
-  if (!draft.equipment.runeId) {
+  if (!Array.isArray(draft.equipment.runeIds) || draft.equipment.runeIds.length === 0) {
     errors.push({
       code: "equipment.runeRequired",
       message: "Выберите руну.",
-      path: "equipment.runeId",
+      path: "equipment.runeIds",
     });
-  } else if (!runeIds.has(draft.equipment.runeId)) {
-    errors.push({
-      code: "equipment.runeUnknown",
-      message: "Выбрана неизвестная руна.",
-      path: "equipment.runeId",
+  } else {
+    const seenRuneIds = new Set<string>();
+
+    draft.equipment.runeIds.forEach((runeId, index) => {
+      if (!knownRuneIds.has(runeId)) {
+        errors.push({
+          code: "equipment.runeUnknown",
+          message: "Выбрана неизвестная руна.",
+          path: `equipment.runeIds.${index}`,
+        });
+      }
+
+      if (seenRuneIds.has(runeId)) {
+        errors.push({
+          code: "equipment.runeDuplicate",
+          message: "Руна уже добавлена в список вариантов.",
+          path: `equipment.runeIds.${index}`,
+        });
+      }
+
+      seenRuneIds.add(runeId);
     });
   }
 

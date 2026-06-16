@@ -32,7 +32,7 @@ const pve: DivinityBranchBuildExport = {
     { slot: 7, colorId: "yellow" },
     { slot: 8, colorId: "yellow" },
   ],
-  equipment: { artifactId: "excalibur", runeId: "fire" },
+  equipment: { artifactIds: ["excalibur"], runeIds: ["fire"] },
   progress: { left: 10, center: 13, right: 10 },
   activeNodes: [],
   metadata: {
@@ -65,8 +65,21 @@ describe("mapBuildToView", () => {
     const view = mapBuildToView(pve);
 
     expect(view.progressLevels).toEqual({ left: 10, center: 13, right: 10 });
-    expect(view.artifactId).toBe("excalibur");
-    expect(view.runeId).toBe("fire");
+    expect(view.artifactIds).toEqual(["excalibur"]);
+    expect(view.runeIds).toEqual(["fire"]);
+  });
+
+  it("сохраняет порядок вариантов экипировки", () => {
+    const view = mapBuildToView({
+      ...pve,
+      equipment: {
+        artifactIds: ["axe-of-pangu", "staff-of-sharur"],
+        runeIds: ["air", "fire", "thunder"],
+      },
+    });
+
+    expect(view.artifactIds).toEqual(["axe-of-pangu", "staff-of-sharur"]);
+    expect(view.runeIds).toEqual(["air", "fire", "thunder"]);
   });
 
   it("строит карту цветов пробуждения оружия по слотам", () => {

@@ -43,8 +43,8 @@ describe("useDivinityBranchBuilder", () => {
   it("starts with an empty editable draft", () => {
     const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
 
-    expect(result.current.gameMode).toBe("pve");
-    expect(result.current.targetTabPath).toEqual(["pve", "bosses"]);
+    expect(result.current.gameMode).toBe("pvp");
+    expect(result.current.targetTabPath).toEqual(["pvp"]);
     expect(result.current.heroName).toBe("");
     expect(result.current.selectedBranches).toEqual({
       left: null,
@@ -53,8 +53,8 @@ describe("useDivinityBranchBuilder", () => {
     });
     expect(result.current.selectedMajorSkills).toEqual({});
     expect(result.current.weaponAwakeningSelections).toEqual({});
-    expect(result.current.selectedArtifactId).toBeNull();
-    expect(result.current.selectedRuneId).toBeNull();
+    expect(result.current.selectedArtifactIds).toEqual([]);
+    expect(result.current.selectedRuneIds).toEqual([]);
     expect(result.current.buildExport("2026-05-30T00:00:00.000Z")).toBeNull();
   });
 
@@ -81,23 +81,20 @@ describe("useDivinityBranchBuilder", () => {
         result.current.cycleWeaponAwakeningSlot(slot.slot);
       }
 
-      result.current.setArtifact("excalibur");
-      result.current.setRune("fire");
+      result.current.addArtifact("excalibur");
+      result.current.addRune("fire");
     });
 
     expect(result.current.getMajorSkill("center", 1)).toBe("psyche-maestro");
-    expect(result.current.buildExport("2026-05-30T00:00:00.000Z")?.targetTabPath).toEqual([
-      "pve",
-      "bosses",
-    ]);
+    expect(result.current.buildExport("2026-05-30T00:00:00.000Z")?.targetTabPath).toEqual(["pvp"]);
     expect(result.current.buildExport("2026-05-30T00:00:00.000Z")).toEqual({
       schemaVersion: 1,
-      gameMode: "pve",
-      targetTabPath: ["pve", "bosses"],
+      gameMode: "pvp",
+      targetTabPath: ["pvp"],
       heroName: "Western Queen",
       columns: selectedBranches,
       weaponAwakening: filledWeaponAwakening,
-      equipment: { artifactId: "excalibur", runeId: "fire" },
+      equipment: { artifactIds: ["excalibur"], runeIds: ["fire"] },
       majorNodes: [
         {
           level: 1,
@@ -196,5 +193,58 @@ describe("useDivinityBranchBuilder", () => {
 
     expect(result.current.targetTabPath).toEqual(["pve", "campaign"]);
     expect(result.current.gameMode).toBe("pve");
+  });
+
+  it("can add and remove artifact variants without duplicates", () => {
+    const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
+
+    act(() => {
+      result.current.addArtifact("excalibur");
+      result.current.addArtifact("axe-of-pangu");
+      result.current.addArtifact("excalibur");
+    });
+
+    expect(result.current.selectedArtifactIds).toEqual(["excalibur", "axe-of-pangu"]);
+
+    act(() => {
+      result.current.removeArtifact("excalibur");
+    });
+
+    expect(result.current.selectedArtifactIds).toEqual(["axe-of-pangu"]);
+  });
+
+  it("can add several rune variants and preserves order in export", () => {
+    const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
+
+    act(() => {
+      result.current.setHeroName("Western Queen");
+      result.current.setColumnBranch("left", selectedBranches.left);
+      result.current.setColumnBranch("center", selectedBranches.center);
+      result.current.setColumnBranch("right", selectedBranches.right);
+
+      for (const node of template) {
+        if (node.nodeType === "majorSkill") {
+          result.current.setMajorSkill(
+            node.columnId as BranchColumnId,
+            node.level,
+            selectedSkills[`${node.columnId}:${node.level}`],
+          );
+        }
+      }
+
+      for (const slot of weaponAwakeningSlots) {
+        result.current.cycleWeaponAwakeningSlot(slot.slot);
+      }
+
+      result.current.addArtifact("excalibur");
+      result.current.addRune("fire");
+      result.current.addRune("air");
+    });
+
+    expect(result.current.selectedRuneIds).toEqual(["fire", "air"]);
+    expect(result.current.buildExport("2026-05-30T00:00:00.000Z")?.equipment).toEqual({
+      artifactIds: ["excalibur"],
+      runeIds: ["fire", "air"],
+    });
   });
 });
