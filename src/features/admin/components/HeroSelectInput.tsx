@@ -22,6 +22,8 @@ type HeroSelectInputProps = {
   onQueryChange: (value: string) => void;
   /** Выбор героя из выпадающего списка */
   onSelectHero: (heroId: string) => void;
+  /** Сброс выбранного героя */
+  onClearHero?: () => void;
 };
 
 /** Поле выбора героя из локального каталога с поиском */
@@ -31,6 +33,7 @@ export function HeroSelectInput({
   selectedHeroId,
   onQueryChange,
   onSelectHero,
+  onClearHero,
 }: HeroSelectInputProps) {
   const selectedHero = useMemo(
     () => heroes.find((hero) => hero.id === selectedHeroId) ?? null,
@@ -42,8 +45,12 @@ export function HeroSelectInput({
     [heroes, heroQuery],
   );
 
-  const showDropdown = heroQuery.trim().length > 0;
   const isSelected = selectedHeroId !== null && selectedHero !== null;
+  const showDropdown = heroQuery.trim().length > 0 && !isSelected;
+
+  const handleClearHero = () => {
+    onClearHero?.();
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -64,7 +71,16 @@ export function HeroSelectInput({
           value={heroQuery}
         />
 
-        {isSelected ? <Text style={styles.selectedMark}>✓</Text> : null}
+        {isSelected ? (
+          <Pressable
+            accessibilityLabel="Очистить выбранного героя"
+            accessibilityRole="button"
+            onPress={handleClearHero}
+            style={styles.clearButton}
+          >
+            <Text style={styles.clearButtonText}>×</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       {showDropdown ? (
@@ -158,10 +174,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingVertical: 10,
   },
-  selectedMark: {
-    color: "#caa877",
-    fontSize: 16,
+  clearButton: {
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 14,
+    backgroundColor: "#3a241a",
+  },
+  clearButtonText: {
+    color: "#f3d9b3",
+    fontSize: 18,
     fontWeight: "900",
+    lineHeight: 20,
   },
   dropdown: {
     gap: 6,

@@ -95,4 +95,48 @@ describe("DivinityBranchBuilderScreen", () => {
 
     expect(images[0].props.src).toBe("/mh-calculator/img/branches/asterial.png");
   });
+
+  it("shows active weapon bonus when hero is selected and two nodes share a color", () => {
+    render(<DivinityBranchBuilderScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "bastet");
+    fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
+
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, empty"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 2, empty"));
+
+    expect(screen.getByText("Активные бонусы цветов")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Whenever this Hero's Health is below 50%, their Lifesteal increases by 4.5%.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("does not show weapon bonus when only one node of a color is selected", () => {
+    render(<DivinityBranchBuilderScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "bastet");
+    fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, empty"));
+
+    expect(screen.queryByText("Активные бонусы цветов")).toBeNull();
+  });
+
+  it("hides weapon bonus when hero query changes without catalog selection", () => {
+    render(<DivinityBranchBuilderScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "bastet");
+    fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, empty"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 2, empty"));
+    expect(screen.getByText("Активные бонусы цветов")).toBeTruthy();
+
+    fireEvent.changeText(
+      screen.getByPlaceholderText("Начните вводить имя героя"),
+      "бастет без выбора",
+    );
+
+    expect(screen.queryByText("Активные бонусы цветов")).toBeNull();
+  });
 });

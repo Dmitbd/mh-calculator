@@ -21,7 +21,10 @@ import branchesData from "@/features/game-data/divinity/divinity-branches.json";
 import skillsData from "@/features/game-data/divinity/divinity-skills.json";
 import templateData from "@/features/game-data/divinity/tree-template.json";
 import weaponAwakeningColorsData from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
+import weaponAwakeningCombosData from "@/features/game-data/weapon-awakening/weapon-awakening-combos.json";
 import weaponAwakeningSlotsData from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
+import type { WeaponAwakeningCombosData } from "@/features/game-data/weapon-awakening/types";
+import { resolveWeaponAwakeningBonuses } from "@/features/game-data/weapon-awakening/resolveWeaponAwakeningBonuses";
 import {
   getHeroById,
   getHeroBuildSet,
@@ -32,6 +35,7 @@ import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 
 import { BuildFolderTabs } from "@/shared/ui/BuildFolderTabs";
 import { HeroMetadataRow } from "../components/HeroMetadataRow";
+import { WeaponAwakeningBonusList } from "../components/WeaponAwakeningBonusList";
 import {
   filterTabsWithReadyBuilds,
   getBuildAtPath,
@@ -53,6 +57,7 @@ const branches = [...(branchesData as DivinityBranch[])].sort(
 const skills = skillsData as DivinityMajorSkill[];
 const template = templateData as TreeTemplateNode[];
 const weaponAwakeningColors = weaponAwakeningColorsData as WeaponAwakeningColor[];
+const weaponAwakeningCombos = weaponAwakeningCombosData as WeaponAwakeningCombosData;
 const weaponAwakeningSlots = weaponAwakeningSlotsData as WeaponAwakeningSlot[];
 const artifacts = artifactsData as Artifact[];
 const runes = runesData as Rune[];
@@ -93,6 +98,18 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
       : [];
   const build = getBuildAtPath(sortedTabs, activePath);
   const view = useMemo(() => (build ? mapBuildToView(build) : null), [build]);
+
+  const weaponAwakeningBonuses = useMemo(
+    () =>
+      view
+        ? resolveWeaponAwakeningBonuses({
+            hero,
+            selections: view.weaponAwakeningSelections,
+            combosData: weaponAwakeningCombos,
+          })
+        : [],
+    [hero, view],
+  );
 
   const topFolderTabs = sortedTabs.map((tab) => ({
     id: tab.id,
@@ -186,12 +203,16 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
               />
             </View>
 
-            <View style={styles.section}>
+            <View style={styles.weaponAwakeningSection}>
               <WeaponAwakeningPicker
                 colors={weaponAwakeningColors}
                 readOnly
                 selections={view.weaponAwakeningSelections}
                 slots={weaponAwakeningSlots}
+              />
+              <WeaponAwakeningBonusList
+                bonuses={weaponAwakeningBonuses}
+                colors={weaponAwakeningColors}
               />
             </View>
 
@@ -236,6 +257,10 @@ const styles = StyleSheet.create({
   },
   section: {
     width: "100%",
+  },
+  weaponAwakeningSection: {
+    width: "100%",
+    gap: 12,
   },
   branchSection: {
     gap: 8,

@@ -4,6 +4,7 @@ import {
   heroesWithBuilds,
   hasReadyBuild,
 } from "@/features/game-data/heroes/heroBuilds";
+import { getIconicWeaponHeroClass } from "@/features/game-data/weapon-awakening/weaponAwakeningBonuses";
 import { heroElements } from "@/features/game-data/heroes/heroDictionaries";
 import { heroFactions } from "@/features/game-data/heroes/heroDictionaries";
 import { heroRarities } from "@/features/game-data/heroes/heroDictionaries";
@@ -64,6 +65,12 @@ describe("master hero catalog", () => {
   test("hero icons use local heroes path", () => {
     for (const hero of heroes) {
       expect(hero.icon.startsWith("/img/heroes/")).toBe(true);
+    }
+  });
+
+  test("every hero maps to an iconic weapon class", () => {
+    for (const hero of heroes) {
+      expect(getIconicWeaponHeroClass(hero)).not.toBeNull();
     }
   });
 });

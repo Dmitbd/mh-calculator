@@ -76,5 +76,36 @@ describe("HeroSelectInput", () => {
     );
 
     expect(screen.getByLabelText("Герой").props.accessibilityState).toEqual({ selected: true });
+    expect(screen.getByLabelText("Очистить выбранного героя")).toBeTruthy();
+    expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
+  });
+
+  it("hides dropdown after hero is selected", () => {
+    render(
+      <HeroSelectInput
+        {...defaultProps}
+        heroQuery="Аполлон"
+        selectedHeroId="apollo"
+      />,
+    );
+
+    expect(screen.queryByLabelText("Выбрать героя Аполлон")).toBeNull();
+  });
+
+  it("clear button calls onClearHero", () => {
+    const onClearHero = jest.fn();
+
+    render(
+      <HeroSelectInput
+        {...defaultProps}
+        heroQuery="Бастет"
+        onClearHero={onClearHero}
+        selectedHeroId="bastet"
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Очистить выбранного героя"));
+
+    expect(onClearHero).toHaveBeenCalledTimes(1);
   });
 });

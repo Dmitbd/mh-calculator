@@ -1,4 +1,166 @@
 {
   "schemaVersion": 1,
-  "combos": []
+  "thresholds": [2, 4, 8],
+  "combos": [
+    {
+      "heroClass": "tank",
+      "color": "red",
+      "values": [4, 12, 32],
+      "description": {
+        "en": "Whenever this Hero's Health is above 50%, their Parry increases by {value}%."
+      }
+    },
+    {
+      "heroClass": "tank",
+      "color": "yellow",
+      "values": [6, 18, 48],
+      "description": {
+        "en": "Reduce the Physical damage taken by {value}%."
+      }
+    },
+    {
+      "heroClass": "tank",
+      "color": "green",
+      "values": [6, 18, 48],
+      "description": {
+        "en": "Reduce the Magical damage taken by {value}%."
+      }
+    },
+    {
+      "heroClass": "tank",
+      "color": "blue",
+      "values": [4, 12, 32],
+      "description": {
+        "en": "Reduces the Health Bestowal of the enemy directly across from this Hero in opposing formation by {value}%."
+      }
+    },
+    {
+      "heroClass": "tank",
+      "color": "purple",
+      "values": [4.5, 13.5, 36],
+      "description": {
+        "en": "Increases the Defense of any allied Heroes behind this Hero (only those on immediate flanks) by {value}%."
+      }
+    },
+    {
+      "heroClass": "physical-fighter",
+      "color": "red",
+      "values": [4.5, 13.5, 36],
+      "description": {
+        "en": "Whenever this Hero's Health is below 50%, their Lifesteal increases by {value}%."
+      }
+    },
+    {
+      "heroClass": "physical-fighter",
+      "color": "yellow",
+      "values": [4, 12, 32],
+      "description": {
+        "en": "Increase this Hero's damage dealt to the frontline enemies by {value}%."
+      }
+    },
+    {
+      "heroClass": "physical-fighter",
+      "color": "green",
+      "values": [3, 9, 24],
+      "description": {
+        "en": "If any allied frontline Hero is still alive, this Hero's damage taken is reduced by {value}%."
+      }
+    },
+    {
+      "heroClass": "physical-fighter",
+      "color": "blue",
+      "values": [4, 12, 32],
+      "description": {
+        "en": "For the Hero directly opposed to this Hero in the enemy's formation, Physical Damage taken is increased by {value}%."
+      }
+    },
+    {
+      "heroClass": "physical-fighter",
+      "color": "purple",
+      "values": [1.5, 4.5, 12],
+      "description": {
+        "en": "Increase the Attack of allied Heroes on the same formational line by {value}%."
+      }
+    },
+    {
+      "heroClass": "magical-fighter",
+      "color": "red",
+      "values": [3, 9, 24],
+      "description": {
+        "en": "When this Hero attacks an enemy unit with Health higher than 50%, their damage dealt increases by {value}%."
+      }
+    },
+    {
+      "heroClass": "magical-fighter",
+      "color": "yellow",
+      "values": [4, 12, 32],
+      "description": {
+        "en": "Increase this Hero's damage dealt to the frontline enemies by {value}%."
+      }
+    },
+    {
+      "heroClass": "magical-fighter",
+      "color": "green",
+      "values": [3, 9, 24],
+      "description": {
+        "en": "If any allied frontline Hero is still alive, this Hero's damage taken is reduced by {value}%."
+      }
+    },
+    {
+      "heroClass": "magical-fighter",
+      "color": "blue",
+      "values": [4, 12, 32],
+      "description": {
+        "en": "For the Hero directly opposed to this Hero in the enemy's formation, Magical Damage taken is increased by {value}%."
+      }
+    },
+    {
+      "heroClass": "magical-fighter",
+      "color": "purple",
+      "values": [1.5, 4.5, 12],
+      "description": {
+        "en": "Increase the Attack of allied Heroes on the same formational line by {value}%."
+      }
+    },
+    {
+      "heroClass": "support",
+      "color": "red",
+      "values": [3, 15, 40],
+      "description": {
+        "en": "When healing an ally unit with Health lower than 50%, increases this Hero's Health Bestowal by {value}%."
+      }
+    },
+    {
+      "heroClass": "support",
+      "color": "yellow",
+      "values": [6, 18, 48],
+      "description": {
+        "en": "Reduce the Physical Damage taken by this Hero by {value}%."
+      }
+    },
+    {
+      "heroClass": "support",
+      "color": "green",
+      "values": [6, 18, 48],
+      "description": {
+        "en": "Reduce the Magical Damage taken by this Hero by {value}%."
+      }
+    },
+    {
+      "heroClass": "support",
+      "color": "blue",
+      "values": [8, 24, 64],
+      "description": {
+        "en": "Reduce the Defense of the enemy Hero directly opposing this one in the enemy formation by {value}%."
+      }
+    },
+    {
+      "heroClass": "support",
+      "color": "purple",
+      "values": [4.5, 13.5, 36],
+      "description": {
+        "en": "Increases the Defense of any allied Heroes in front of this Hero (only those on immediate flanks) by {value}%."
+      }
+    }
+  ]
 }
