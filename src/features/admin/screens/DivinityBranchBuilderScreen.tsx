@@ -12,19 +12,23 @@ import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 import { BranchBuilderGrid } from "@/features/builds/components/BranchBuilderGrid";
 import { WeaponAwakeningPicker } from "@/features/builds/components/WeaponAwakeningPicker";
 
-import artifactsData from "@/features/game-data/equipment/artifacts.json";
-import runesData from "@/features/game-data/equipment/runes.json";
-import branchesData from "@/features/game-data/divinity/divinity-branches.json";
-import skillsData from "@/features/game-data/divinity/divinity-skills.json";
-import templateData from "@/features/game-data/divinity/tree-template.json";
-import { heroes } from "@/features/game-data/heroes/heroBuilds";
-import weaponAwakeningColorsData from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
-import weaponAwakeningCombosData from "@/features/game-data/weapon-awakening/weapon-awakening-combos.json";
-import weaponAwakeningSlotsData from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
-import type { WeaponAwakeningCombosData } from "@/features/game-data/weapon-awakening/types";
 import { resolveWeaponAwakeningBonuses } from "@/features/game-data/weapon-awakening/resolveWeaponAwakeningBonuses";
 import { WeaponAwakeningBonusList } from "@/features/builds/components/WeaponAwakeningBonusList";
 import { BuildFolderTabs } from "@/shared/ui/BuildFolderTabs";
+import {
+  branchBuilderArtifacts,
+  branchBuilderBranches,
+  branchBuilderColumns,
+  branchBuilderHeroes,
+  branchBuilderRunes,
+  branchBuilderSkills,
+  branchBuilderTemplate,
+  branchBuilderValidationCatalog,
+  branchBuilderWeaponAwakeningCatalog,
+  branchBuilderWeaponAwakeningColors,
+  branchBuilderWeaponAwakeningCombos,
+  branchBuilderWeaponAwakeningSlots,
+} from "@/features/admin/data/branchBuilderCatalogs";
 import { buildTargetTabs } from "@/features/admin/data/buildTargetTabs";
 import { getTabByPath, sortBuildTabs } from "@/features/game-data/heroes/heroBuildTabs";
 
@@ -33,41 +37,11 @@ import { EquipmentVariantBuilder } from "../components/EquipmentVariantBuilder";
 import { HeroSelectInput } from "../components/HeroSelectInput";
 import { useDivinityBranchBuilder } from "../hooks/useDivinityBranchBuilder";
 import type {
-  Artifact,
   BranchBuildValidationError,
-  BranchColumn,
   BranchColumnId,
-  DivinityBranch,
-  DivinityMajorSkill,
-  Rune,
-  TreeTemplateNode,
-  WeaponAwakeningColor,
-  WeaponAwakeningSlot,
 } from "../types/admin.types";
 import { downloadJson } from "../utils/downloadJson";
 import { validateBranchBuild } from "../utils/validateBranchBuild";
-
-const columns: BranchColumn[] = [
-  { id: "left", label: "левая", isMain: false },
-  { id: "center", label: "центр", isMain: true },
-  { id: "right", label: "правая", isMain: false },
-];
-
-const branches = [...(branchesData as DivinityBranch[])].sort(
-  (first, second) => first.order - second.order,
-);
-const skills = skillsData as DivinityMajorSkill[];
-const template = templateData as TreeTemplateNode[];
-const weaponAwakeningColors = weaponAwakeningColorsData as WeaponAwakeningColor[];
-const weaponAwakeningCombos = weaponAwakeningCombosData as WeaponAwakeningCombosData;
-const weaponAwakeningSlots = weaponAwakeningSlotsData as WeaponAwakeningSlot[];
-const artifacts = artifactsData as Artifact[];
-const runes = runesData as Rune[];
-
-const weaponAwakeningCatalog = {
-  colors: weaponAwakeningColors,
-  slots: weaponAwakeningSlots,
-};
 
 const SCREEN_PADDING = 20;
 
@@ -113,7 +87,7 @@ export function DivinityBranchBuilderScreen() {
     targetTabPath,
     toggleColumnProgress,
     weaponAwakeningSelections,
-  } = useDivinityBranchBuilder(weaponAwakeningCatalog);
+  } = useDivinityBranchBuilder(branchBuilderWeaponAwakeningCatalog);
   const [activeMajorSlot, setActiveMajorSlot] = useState<{
     columnId: BranchColumnId;
     level: number;
@@ -125,7 +99,7 @@ export function DivinityBranchBuilderScreen() {
   const weaponAwakeningBonuses = resolveWeaponAwakeningBonuses({
     hero: selectedHero,
     selections: weaponAwakeningSelections,
-    combosData: weaponAwakeningCombos,
+    combosData: branchBuilderWeaponAwakeningCombos,
   });
   const hasWeaponAwakeningSelections = Object.keys(weaponAwakeningSelections).length > 0;
 
@@ -195,7 +169,7 @@ export function DivinityBranchBuilderScreen() {
       <View style={styles.section}>
         <HeroSelectInput
           heroQuery={heroQuery}
-          heroes={heroes}
+          heroes={branchBuilderHeroes}
           onClearHero={clearSelectedHero}
           onQueryChange={setHeroQuery}
           onSelectHero={selectHero}
@@ -209,7 +183,7 @@ export function DivinityBranchBuilderScreen() {
           label="Оружие"
           onAdd={addArtifact}
           onRemove={removeArtifact}
-          options={artifacts}
+          options={branchBuilderArtifacts}
           selectedIds={selectedArtifactIds}
         />
       </View>
@@ -220,21 +194,21 @@ export function DivinityBranchBuilderScreen() {
           label="Руны"
           onAdd={addRune}
           onRemove={removeRune}
-          options={runes}
+          options={branchBuilderRunes}
           selectedIds={selectedRuneIds}
         />
       </View>
 
       <View style={styles.weaponAwakeningSection}>
         <WeaponAwakeningPicker
-          colors={weaponAwakeningColors}
+          colors={branchBuilderWeaponAwakeningColors}
           onCycleSlot={cycleWeaponAwakeningSlot}
           selections={weaponAwakeningSelections}
-          slots={weaponAwakeningSlots}
+          slots={branchBuilderWeaponAwakeningSlots}
         />
         <WeaponAwakeningBonusList
           bonuses={weaponAwakeningBonuses}
-          colors={weaponAwakeningColors}
+          colors={branchBuilderWeaponAwakeningColors}
         />
         {!selectedHero && hasWeaponAwakeningSelections ? (
           <Text style={styles.weaponAwakeningHint}>
@@ -253,8 +227,8 @@ export function DivinityBranchBuilderScreen() {
           <Text style={styles.sectionLabel}>Ветка</Text>
           <BranchBuilderGrid
             activeMajorSlot={activeMajorSlot}
-            branches={branches}
-            columns={columns}
+            branches={branchBuilderBranches}
+            columns={branchBuilderColumns}
             onOpenMajorSlot={(columnId, level) =>
               setActiveMajorSlot({ columnId, level })
             }
@@ -273,9 +247,9 @@ export function DivinityBranchBuilderScreen() {
             progressLevels={progressLevels}
             selectedBranches={selectedBranches}
             selectedMajorSkills={selectedMajorSkills}
-            skillCatalog={skills}
-            skills={skills}
-            template={template}
+            skillCatalog={branchBuilderSkills}
+            skills={branchBuilderSkills}
+            template={branchBuilderTemplate}
           />
         </View>
       </View>
@@ -285,16 +259,10 @@ export function DivinityBranchBuilderScreen() {
           errors={validationErrors}
           onErrorsLayout={handleErrorsLayout}
           onPress={() => {
-            const result = validateBranchBuild(buildValidationDraft(), {
-              heroes,
-              branches,
-              skills,
-              template,
-              weaponAwakeningColors,
-              weaponAwakeningSlots,
-              artifacts,
-              runes,
-            });
+            const result = validateBranchBuild(
+              buildValidationDraft(),
+              branchBuilderValidationCatalog,
+            );
 
             setValidationErrors(result.errors);
 
