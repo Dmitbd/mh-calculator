@@ -9,6 +9,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
+import { BranchBuilderGrid } from "@/features/builds/components/BranchBuilderGrid";
+import { WeaponAwakeningPicker } from "@/features/builds/components/WeaponAwakeningPicker";
 
 import artifactsData from "@/features/game-data/equipment/artifacts.json";
 import runesData from "@/features/game-data/equipment/runes.json";
@@ -26,11 +28,9 @@ import { BuildFolderTabs } from "@/shared/ui/BuildFolderTabs";
 import { buildTargetTabs } from "@/features/admin/data/buildTargetTabs";
 import { getTabByPath, sortBuildTabs } from "@/features/heroes/utils/heroBuildTabs";
 
-import { BranchBuilderGrid } from "../components/BranchBuilderGrid";
 import { DownloadJsonButton } from "../components/DownloadJsonButton";
 import { EquipmentVariantBuilder } from "../components/EquipmentVariantBuilder";
 import { HeroSelectInput } from "../components/HeroSelectInput";
-import { WeaponAwakeningPicker } from "../components/WeaponAwakeningPicker";
 import { useDivinityBranchBuilder } from "../hooks/useDivinityBranchBuilder";
 import type {
   Artifact,

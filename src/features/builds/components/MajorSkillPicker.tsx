@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import type {
   DivinityMajorSkill,
   TreeTemplateMajorSkillNode,
-} from "../types/admin.types";
+} from "@/features/game-data/divinity/types";
 import { IconPreview } from "@/shared/ui/IconPreview";
 
 type MajorSkillPickerProps = {

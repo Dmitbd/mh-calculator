@@ -1,21 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import type { EquipmentOption } from "@/features/game-data/equipment/types";
 import { IconPreview } from "@/shared/ui/IconPreview";
-
-/** Элемент справочника экипировки для выбора (артефакт или руна) */
-export type EquipmentOption = {
-  /** Уникальный id элемента */
-  id: string;
-  /** Название для UI */
-  name: string;
-  /** Путь к иконке */
-  icon: string;
-  /** Описание эффекта */
-  description: string;
-  /** Эффект резонанса (только у рун) */
-  elementalResonance?: string;
-};
 
 type EquipmentSelectProps = {
   /** Заголовок строки */

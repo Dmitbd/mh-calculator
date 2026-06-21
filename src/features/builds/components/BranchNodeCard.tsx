@@ -4,7 +4,7 @@ import type {
   DivinityMajorSkill,
   TreeTemplateMajorSkillNode,
   TreeTemplateMinorStatNode,
-} from "../types/admin.types";
+} from "@/features/game-data/divinity/types";
 import { deriveSkillLevel } from "@/features/game-data/divinity/deriveSkillLevel";
 import { IconPreview } from "@/shared/ui/IconPreview";
 import { MajorSkillPicker } from "./MajorSkillPicker";

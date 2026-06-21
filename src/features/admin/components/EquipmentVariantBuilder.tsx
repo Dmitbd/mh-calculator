@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import type { EquipmentOption } from "./EquipmentSelect";
+import type { EquipmentOption } from "@/features/game-data/equipment/types";
 import { IconPreview } from "@/shared/ui/IconPreview";
 
 type EquipmentVariantBuilderProps = {

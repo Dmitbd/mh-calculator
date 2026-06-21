@@ -4,7 +4,7 @@ import type {
   WeaponAwakeningColor,
   WeaponAwakeningColorId,
   WeaponAwakeningSlot,
-} from "../types/admin.types";
+} from "@/features/game-data/weapon-awakening/types";
 import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
 
 type WeaponAwakeningPickerProps = {

@@ -12,7 +12,7 @@ import type {
   DivinityMajorSkill,
   DraftBranchColumns,
   TreeTemplateNode,
-} from "../types/admin.types";
+} from "@/features/game-data/divinity/types";
 import { MajorNodeCard, MinorStatCard } from "./BranchNodeCard";
 import { IconPreview } from "@/shared/ui/IconPreview";
 
