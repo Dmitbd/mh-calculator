@@ -33,7 +33,7 @@ jest.mock("expo-router", () => ({
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
-import DivinityScreen from "../../../../app/divinity";
+import DivinityScreen from "../screens/DivinityScreen";
 
 test("increments level and shows updated totals", async () => {
   mockStorage.clear();
