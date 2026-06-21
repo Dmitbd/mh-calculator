@@ -44,6 +44,8 @@
 ## JSON Data
 
 - Trusted static project JSON MAY be cast near the import only with an explicit domain type and narrow reason.
+- Static local JSON MAY be cast at catalog boundaries when integrity tests cover ids, relationships, and asset paths.
+- Runtime validation SHOULD be added when JSON becomes generated, user-provided, remote, or frequently edited by non-developers.
 - Untrusted, external, or generated JSON MUST be validated or normalized before broad use.
 - JSON data MUST map to explicit domain types before reaching UI components.
 - Optional JSON fields MUST mean something specific; they MUST NOT be added for speculative future data.
