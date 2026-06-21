@@ -23,8 +23,6 @@ import {
   branchBuilderWeaponAwakeningCombos,
   branchBuilderWeaponAwakeningSlots,
 } from "@/features/admin/data/branchBuilderCatalogs";
-import { buildTargetTabs } from "@/features/admin/data/buildTargetTabs";
-import { getTabByPath, sortBuildTabs } from "@/features/game-data/heroes/heroBuildTabs";
 
 import { BranchGridSection } from "../components/branch-builder/BranchGridSection";
 import { BuildTargetSection } from "../components/branch-builder/BuildTargetSection";
@@ -33,6 +31,7 @@ import { EquipmentBuilderSection } from "../components/branch-builder/EquipmentB
 import { HeroBuilderSection } from "../components/branch-builder/HeroBuilderSection";
 import { WeaponAwakeningSection } from "../components/branch-builder/WeaponAwakeningSection";
 import { useDivinityBranchBuilder } from "../hooks/useDivinityBranchBuilder";
+import { getBranchBuilderTargetTabs } from "../model/branchBuilderTabs";
 import type {
   BranchBuildValidationError,
   BranchColumnId,
@@ -41,14 +40,6 @@ import { downloadJson } from "../utils/downloadJson";
 import { validateBranchBuild } from "../utils/validateBranchBuild";
 
 const SCREEN_PADDING = 20;
-
-function toFolderTabItems(tabs: ReturnType<typeof sortBuildTabs>) {
-  return tabs.map((tab) => ({
-    id: tab.id,
-    label: tab.label,
-    accessibilityLabel: `Select ${tab.label} build tab`,
-  }));
-}
 
 export function DivinityBranchBuilderScreen() {
   const { top, bottom } = useSafeAreaInsets();
@@ -99,20 +90,12 @@ export function DivinityBranchBuilderScreen() {
     combosData: branchBuilderWeaponAwakeningCombos,
   });
 
-  const selectedTopTabId = targetTabPath[0] ?? "";
-  const selectedChildTabId = targetTabPath[1];
-  const selectedTopTab = getTabByPath(buildTargetTabs, [selectedTopTabId]);
-  const buildTargetTopTabs = useMemo(
-    () => toFolderTabItems(sortBuildTabs(buildTargetTabs)),
-    [],
-  );
-  const buildTargetChildTabs = useMemo(() => {
-    if (!selectedTopTab?.children || selectedTopTab.children.length === 0) {
-      return undefined;
-    }
-
-    return toFolderTabItems(sortBuildTabs(selectedTopTab.children));
-  }, [selectedTopTab]);
+  const {
+    childTabs: buildTargetChildTabs,
+    selectedChildTabId,
+    selectedTopTabId,
+    topTabs: buildTargetTopTabs,
+  } = useMemo(() => getBranchBuilderTargetTabs(targetTabPath), [targetTabPath]);
 
   const scrollToErrors = () => {
     if (!pendingScrollToErrors.current) {
