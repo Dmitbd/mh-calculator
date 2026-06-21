@@ -11,6 +11,7 @@ Current violations are refactor targets, not patterns to copy.
 - `app/` MUST contain thin Expo Router entrypoints only.
 - `src/features/<feature>/` MUST own feature-specific screens, UI, hooks, model, storage, utils, types, data, and tests when those concerns exist.
 - Feature folders MUST NOT create empty directories only to satisfy the ownership list.
+- `src/features/builds/` MUST contain reusable build presentation components and build UI types shared by admin and user-facing build screens.
 - `src/features/game-data/` MUST contain local read-only game catalogs and pure helpers around those catalogs.
 - `src/shared/` MUST contain reusable UI and library code with no game-domain knowledge.
 - `src/types/` MUST be reserved for ambient or truly global types.
@@ -23,13 +24,15 @@ Current violations are refactor targets, not patterns to copy.
 - `app -> src/shared` is allowed for route-level wrappers only.
 - `src/features/* -> src/shared` is allowed.
 - User-facing and admin features MAY read `src/features/game-data`.
+- User-facing and admin build workflows MAY use reusable build presentation modules from `src/features/builds`.
 - `src/features/game-data -> src/features/*/screens` is FORBIDDEN.
 - `src/features/game-data -> src/features/*/ui` is FORBIDDEN.
 - `src/features/game-data -> src/features/*/components` is FORBIDDEN.
 - `src/features/game-data -> src/features/admin` is FORBIDDEN.
 - `src/features/game-data` MUST NOT import feature UI, screens, components, or admin code.
 - Cross-feature imports are FORBIDDEN by default.
-- A cross-feature type or helper used by multiple features MUST move to a neutral owner before reuse.
+- A cross-feature type, helper, or component used by multiple features MUST move to a neutral owner before reuse.
+- Build-specific reusable UI MUST live in `src/features/builds`, not `src/shared`.
 - Shared contracts MUST NOT live under `src/features/admin`.
 - Feature internals SHOULD be consumed through explicit public APIs after the refactor introduces them.
 - Feature public APIs SHOULD be explicit `index.ts` exports or documented module entrypoints introduced by refactor work.
@@ -84,9 +87,6 @@ Current violations are refactor targets, not patterns to copy.
 
 ## Refactor Targets
 
-- Move shared build and export types out of `src/features/admin/types/admin.types.ts`.
-- Move `IconPreview` or an equivalent generic image preview into `src/shared/ui`.
-- Make `app/divinity.tsx` a thin route that renders a feature screen.
-- Split large orchestration sections out of `src/features/admin/screens/DivinityBranchBuilderScreen.tsx`.
 - Standardize when a feature uses `ui` versus `components`.
 - Introduce feature public APIs only when they reduce unsafe deep imports.
+- Keep tightening screen-level orchestration when pure view-model mapping appears during feature work.

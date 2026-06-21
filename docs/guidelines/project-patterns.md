@@ -31,6 +31,13 @@
 - Admin builder code MAY depend on game-data and admin-specific controls.
 - Builder export behavior MUST preserve the existing approved JSON contract unless a spec changes it.
 
+## Build Presentation
+
+- Reusable build presentation components MUST live in `src/features/builds/components`.
+- Build UI types shared by admin and user-facing build screens MUST live in `src/features/builds/types`.
+- Hero-specific metadata, filters, grouping, and hero list UI MUST remain in `src/features/heroes`.
+- Admin-specific editing controls MUST remain in `src/features/admin`.
+
 ## Asset Paths
 
 - Data files MUST store asset paths as `/img/...`.
@@ -50,7 +57,8 @@
 
 - User-facing features MUST NOT depend on admin components.
 - User-facing features MUST NOT depend on admin-only types.
-- Shared display helpers MUST move to `src/shared` when used by both admin and user-facing screens.
+- Generic display helpers MUST move to `src/shared` when used by both admin and user-facing screens.
+- Build-specific display helpers MUST move to `src/features/builds`.
 - Shared build contracts MUST move to a neutral owner before more features depend on them.
 - Admin code MAY depend on game-data, but game-data MUST NOT depend on admin code.
 
@@ -63,7 +71,6 @@
 
 ## Refactor Targets
 
-- Neutralize shared build types.
-- Move generic preview components to `shared`.
 - Add or document public APIs for features.
 - Keep data integrity tests for catalog relationships and asset references.
+- Standardize when feature-local presentation folders are named `ui` versus `components`.

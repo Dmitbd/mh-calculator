@@ -14,7 +14,7 @@
 - Optional fields MUST mean something specific; they MUST NOT be added for speculative future data.
 - Type assertions MUST stay near external, JSON, platform, or library boundaries.
 - Shared contracts used by multiple features MUST live in a neutral owner.
-- A neutral owner MUST be `src/shared` for domain-agnostic shared UI or library code, or a future explicitly documented shared contract module introduced by refactor; `src/features/admin` is not neutral.
+- A neutral owner MUST be `src/shared` for domain-agnostic shared UI or library code, `src/features/game-data` for catalog/domain contracts, or `src/features/builds` for reusable build presentation contracts; `src/features/admin` is not neutral.
 
 ## React Native Components
 
