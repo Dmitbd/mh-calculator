@@ -5,6 +5,8 @@ export type DivinityBranchId =
   | "devoid"
   | "primeval";
 
+export type BranchColumnId = "left" | "center" | "right";
+
 /** Tier мажорного скилла — соответствует слоту в tree-template */
 export type DivinitySkillTier = 1 | 2 | 3;
 
@@ -39,4 +41,57 @@ export type DivinityMajorSkill = {
     url?: string;
     status?: string;
   };
+};
+
+export type DivinityBranch = {
+  id: DivinityBranchId;
+  title: string;
+  icon: string;
+  order: number;
+};
+
+export type BranchColumn = {
+  id: BranchColumnId;
+  label: string;
+  isMain: boolean;
+};
+
+export type DraftBranchColumns = Record<BranchColumnId, DivinityBranchId | null>;
+
+export type SelectedBranchColumns = Record<BranchColumnId, DivinityBranchId>;
+
+export type TreeTemplateMajorSkillNode = {
+  level: number;
+  columnId: BranchColumnId;
+  nodeType: "majorSkill";
+  tier: DivinitySkillTier;
+};
+
+export type TreeTemplateMinorStatNode = {
+  level: number;
+  columnId: BranchColumnId;
+  nodeType: "minorStat";
+  statId: string;
+  label: string;
+  value: number;
+  unit: "%" | "flat" | "level";
+  icon: string;
+};
+
+export type TreeTemplateNode =
+  | TreeTemplateMajorSkillNode
+  | TreeTemplateMinorStatNode;
+
+export type DivinityBranchBuildMajorNode = {
+  level: number;
+  columnId: BranchColumnId;
+  branchId: DivinityBranchId;
+  skillId: string;
+};
+
+export type BranchProgressLevels = Partial<Record<BranchColumnId, number>>;
+
+export type ActiveBranchNode = {
+  columnId: BranchColumnId;
+  level: number;
 };

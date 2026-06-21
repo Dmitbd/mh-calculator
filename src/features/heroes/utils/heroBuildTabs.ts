@@ -1,4 +1,4 @@
-import type { DivinityGameMode, DivinityBranchBuildExport } from "@/features/admin/types/admin.types";
+import type { DivinityGameMode, DivinityBranchBuildExport } from "@/features/game-data/builds/types";
 import type {
   HeroBuildSet,
   HeroBuildTab,

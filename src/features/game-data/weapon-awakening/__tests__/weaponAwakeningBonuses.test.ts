@@ -1,4 +1,4 @@
-import type { WeaponAwakeningSlotSelection } from "@/features/admin/types/admin.types";
+import type { WeaponAwakeningSlotSelection } from "../types";
 import type { Hero } from "@/features/heroes/types/heroes.types";
 
 import {

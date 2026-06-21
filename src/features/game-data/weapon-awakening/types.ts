@@ -1,4 +1,21 @@
-import type { WeaponAwakeningColorId } from "@/features/admin/types/admin.types";
+export type WeaponAwakeningColorId = "red" | "yellow" | "green" | "blue" | "purple";
+
+export type WeaponAwakeningColor = {
+  id: WeaponAwakeningColorId;
+  label: string;
+  order: number;
+  color: string;
+  icon?: string;
+};
+
+export type WeaponAwakeningSlot = {
+  slot: number;
+};
+
+export type WeaponAwakeningSlotSelection = {
+  slot: number;
+  colorId: WeaponAwakeningColorId;
+};
 
 /** Класс героя для бонусов Iconic Weapon */
 export type IconicWeaponHeroClass =

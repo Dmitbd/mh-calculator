@@ -6,15 +6,16 @@ import { BranchBuilderGrid } from "@/features/admin/components/BranchBuilderGrid
 import { EquipmentVariantTabs } from "../components/EquipmentVariantTabs";
 import { WeaponAwakeningPicker } from "@/features/admin/components/WeaponAwakeningPicker";
 import type {
-  Artifact,
   BranchColumn,
   DivinityBranch,
   DivinityMajorSkill,
-  Rune,
   TreeTemplateNode,
+} from "@/features/game-data/divinity/types";
+import type { Artifact, Rune } from "@/features/game-data/equipment/types";
+import type {
   WeaponAwakeningColor,
   WeaponAwakeningSlot,
-} from "@/features/admin/types/admin.types";
+} from "@/features/game-data/weapon-awakening/types";
 import artifactsData from "@/features/game-data/equipment/artifacts.json";
 import runesData from "@/features/game-data/equipment/runes.json";
 import branchesData from "@/features/game-data/divinity/divinity-branches.json";

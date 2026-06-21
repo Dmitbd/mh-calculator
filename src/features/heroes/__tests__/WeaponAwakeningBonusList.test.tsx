@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react-native";
 
-import type { WeaponAwakeningColor } from "@/features/admin/types/admin.types";
+import type { WeaponAwakeningColor } from "@/features/game-data/weapon-awakening/types";
 
 import { WeaponAwakeningBonusList } from "../components/WeaponAwakeningBonusList";
 

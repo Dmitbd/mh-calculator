@@ -1,12 +1,10 @@
-import type {
-  WeaponAwakeningColorId,
-  WeaponAwakeningSlotSelection,
-} from "@/features/admin/types/admin.types";
 import type { Hero } from "@/features/heroes/types/heroes.types";
 
 import type {
   WeaponAwakeningActiveBonus,
+  WeaponAwakeningColorId,
   WeaponAwakeningCombosData,
+  WeaponAwakeningSlotSelection,
 } from "./types";
 import {
   getIconicWeaponHeroClass,

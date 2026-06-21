@@ -1,14 +1,12 @@
-import type {
-  WeaponAwakeningColorId,
-  WeaponAwakeningSlotSelection,
-} from "@/features/admin/types/admin.types";
 import type { Hero } from "@/features/heroes/types/heroes.types";
 
 import type {
   IconicWeaponHeroClass,
   WeaponAwakeningActiveBonus,
   WeaponAwakeningBonusThreshold,
+  WeaponAwakeningColorId,
   WeaponAwakeningComboRule,
+  WeaponAwakeningSlotSelection,
 } from "./types";
 
 const colorOrder: WeaponAwakeningColorId[] = [

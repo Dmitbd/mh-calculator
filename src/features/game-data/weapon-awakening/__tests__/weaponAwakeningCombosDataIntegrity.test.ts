@@ -1,6 +1,6 @@
 import colorsData from "../weapon-awakening-colors.json";
 import combosData from "../weapon-awakening-combos.json";
-import type { WeaponAwakeningColor } from "@/features/admin/types/admin.types";
+import type { WeaponAwakeningColor } from "../types";
 
 import type { IconicWeaponHeroClass, WeaponAwakeningCombosData } from "../types";
 

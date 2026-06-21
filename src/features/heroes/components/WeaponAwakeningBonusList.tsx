@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, View } from "react-native";
 
-import type { WeaponAwakeningColor } from "@/features/admin/types/admin.types";
+import type { WeaponAwakeningColor } from "@/features/game-data/weapon-awakening/types";
 import type { WeaponAwakeningActiveBonus } from "@/features/game-data/weapon-awakening/types";
 import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
 

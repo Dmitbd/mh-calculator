@@ -1,7 +1,7 @@
 import type {
   DivinityBranchBuildExport,
   DivinityGameMode,
-} from "@/features/admin/types/admin.types";
+} from "@/features/game-data/builds/types";
 
 /** Локализованное имя */
 export type LocalizedName = {
