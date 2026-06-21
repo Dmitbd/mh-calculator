@@ -51,6 +51,8 @@
 - Divinity calculation functions MUST be pure.
 - Divinity storage MUST stay isolated from calculation and rendering.
 - Divinity UI MUST render derived state and call explicit actions rather than mutate calculation data directly.
+- `src/features/divinity/ui` is currently an allowed local convention for divinity presentation components.
+- Do not introduce new `ui` folders without updating architecture guidelines and boundary tests.
 - Divinity calculator behavior MUST preserve the product rules in `docs/divinity-screen-spec.md`.
 
 ## Admin Boundaries

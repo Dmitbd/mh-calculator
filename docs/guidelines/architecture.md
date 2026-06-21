@@ -49,7 +49,8 @@ Current violations are refactor targets, not patterns to copy.
 - Feature folders MUST own `screens`, `ui` or `components`, `hooks`, `model`, `storage`, `utils`, `types`, `data`, and `__tests__` responsibilities when those concerns exist.
 - Feature folders MUST NOT add placeholder directories for responsibilities they do not yet need.
 - `screens` MUST compose feature UI and connect feature state for route-level experiences.
-- `ui` or `components` MUST contain feature-specific presentational components; each feature SHOULD standardize on one name after refactoring.
+- New feature presentation folders SHOULD be named `components`.
+- Existing `src/features/divinity/ui` is an allowed legacy exception until a dedicated rename is scheduled.
 - `hooks` MUST coordinate feature state, effects, and orchestration without rendering UI.
 - `model` MUST contain domain calculations, state transitions, validation, and other rules with feature meaning.
 - `utils` MUST contain small generic helpers that do not encode domain workflow or persistent state.

@@ -98,3 +98,19 @@ test("features consume builds through public entrypoints", () => {
 
   expect(offenders).toEqual([]);
 });
+
+test("new feature presentation folders use components unless explicitly allowed", () => {
+  const allowedUiFolders = new Set(["src/features/divinity/ui"]);
+  const featureDirs = fs
+    .readdirSync(path.join(repoRoot, "src/features"), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => path.join(repoRoot, "src/features", entry.name));
+
+  const offenders = featureDirs
+    .map((featureDir) => path.join(featureDir, "ui"))
+    .filter((uiDir) => fs.existsSync(uiDir))
+    .map(relative)
+    .filter((uiDir) => !allowedUiFolders.has(uiDir));
+
+  expect(offenders).toEqual([]);
+});
