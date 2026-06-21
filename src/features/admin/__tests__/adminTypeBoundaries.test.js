@@ -39,3 +39,11 @@ test("non-admin feature code does not import admin type contracts", () => {
 
   expect(offenders).toEqual([]);
 });
+
+test("admin hooks do not import raw json catalogs", () => {
+  const offenders = listSourceFiles(path.join(repoRoot, "src/features/admin/hooks"))
+    .filter((filePath) => fs.readFileSync(filePath, "utf8").includes(".json"))
+    .map((filePath) => path.relative(repoRoot, filePath));
+
+  expect(offenders).toEqual([]);
+});

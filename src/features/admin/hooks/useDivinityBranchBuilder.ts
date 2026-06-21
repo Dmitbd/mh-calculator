@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 
-import template from "@/features/game-data/divinity/tree-template.json";
 import { getHeroById } from "@/features/game-data/heroes/heroBuilds";
 
+import { branchBuilderTemplate as template } from "../data/branchBuilderCatalogs";
 import {
   buildTargetTabs,
   defaultBuildTargetTabPath,
