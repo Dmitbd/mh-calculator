@@ -10,7 +10,6 @@ type IconPreviewProps = {
 
 export function IconPreview({ source, label, size = 34 }: IconPreviewProps) {
   if (!source) {
-    // Иконки нет — показываем пустой круг с пунктирной обводкой
     return (
       <View
         accessibilityLabel={`${label} icon placeholder`}

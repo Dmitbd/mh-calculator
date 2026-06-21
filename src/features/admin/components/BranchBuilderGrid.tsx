@@ -14,7 +14,7 @@ import type {
   TreeTemplateNode,
 } from "../types/admin.types";
 import { MajorNodeCard, MinorStatCard } from "./BranchNodeCard";
-import { IconPreview } from "./IconPreview";
+import { IconPreview } from "@/shared/ui/IconPreview";
 
 // Отступы сетки: по X (между колонками) и по Y (между уровнями)
 const COLUMN_GAP = 16;

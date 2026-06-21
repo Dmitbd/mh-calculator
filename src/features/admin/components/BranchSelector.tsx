@@ -4,7 +4,7 @@ import type {
   DivinityBranch,
   DivinityBranchId,
 } from "../types/admin.types";
-import { IconPreview } from "./IconPreview";
+import { IconPreview } from "@/shared/ui/IconPreview";
 
 type BranchSelectorProps = {
   label: string;

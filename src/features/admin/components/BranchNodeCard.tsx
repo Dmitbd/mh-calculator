@@ -6,7 +6,7 @@ import type {
   TreeTemplateMinorStatNode,
 } from "../types/admin.types";
 import { deriveSkillLevel } from "@/features/game-data/divinity/deriveSkillLevel";
-import { IconPreview } from "./IconPreview";
+import { IconPreview } from "@/shared/ui/IconPreview";
 import { MajorSkillPicker } from "./MajorSkillPicker";
 
 type MinorStatCardProps = {

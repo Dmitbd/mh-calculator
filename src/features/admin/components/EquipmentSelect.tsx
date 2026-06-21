@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { IconPreview } from "./IconPreview";
+import { IconPreview } from "@/shared/ui/IconPreview";
 
 /** Элемент справочника экипировки для выбора (артефакт или руна) */
 export type EquipmentOption = {

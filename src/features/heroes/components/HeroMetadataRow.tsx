@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, View } from "react-native";
 
-import { IconPreview } from "@/features/admin/components/IconPreview";
+import { IconPreview } from "@/shared/ui/IconPreview";
 import {
   getDictionaryEntry,
   heroElements,

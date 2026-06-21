@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { EquipmentOption } from "./EquipmentSelect";
-import { IconPreview } from "./IconPreview";
+import { IconPreview } from "@/shared/ui/IconPreview";
 
 type EquipmentVariantBuilderProps = {
   /** Заголовок секции */

@@ -8,7 +8,7 @@ import {
 import type { Hero } from "@/features/heroes/types/heroes.types";
 import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
 
-import { IconPreview } from "./IconPreview";
+import { IconPreview } from "@/shared/ui/IconPreview";
 import { searchHeroCatalog } from "../utils/searchHeroCatalog";
 
 type HeroSelectInputProps = {

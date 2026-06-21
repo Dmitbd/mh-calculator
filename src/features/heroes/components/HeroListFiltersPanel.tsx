@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { IconPreview } from "@/features/admin/components/IconPreview";
+import { IconPreview } from "@/shared/ui/IconPreview";
 import {
   heroElements,
   heroFactions,

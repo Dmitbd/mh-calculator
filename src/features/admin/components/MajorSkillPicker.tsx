@@ -4,7 +4,7 @@ import type {
   DivinityMajorSkill,
   TreeTemplateMajorSkillNode,
 } from "../types/admin.types";
-import { IconPreview } from "./IconPreview";
+import { IconPreview } from "@/shared/ui/IconPreview";
 
 type MajorSkillPickerProps = {
   node: TreeTemplateMajorSkillNode;
