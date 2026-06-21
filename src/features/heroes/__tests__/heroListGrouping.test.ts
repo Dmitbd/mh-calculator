@@ -1,4 +1,4 @@
-import type { Hero } from "@/features/heroes/types/heroes.types";
+import type { Hero } from "@/features/game-data/heroes/types";
 import {
   getHeroZoneId,
   groupHeroesByZone,

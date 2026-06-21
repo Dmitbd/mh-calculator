@@ -1,4 +1,4 @@
-import type { HeroBuildSet, HeroBuildTab } from "@/features/heroes/types/heroes.types";
+import type { HeroBuildSet, HeroBuildTab } from "@/features/game-data/heroes/types";
 
 import {
   filterTabsWithReadyBuilds,
@@ -12,7 +12,7 @@ import {
   hasReadyBuildInTabs,
   sortBuildTabs,
   validateHeroBuildTabs,
-} from "../utils/heroBuildTabs";
+} from "@/features/game-data/heroes/heroBuildTabs";
 
 const readyBuild = {
   schemaVersion: 1 as const,

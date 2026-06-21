@@ -30,7 +30,7 @@ import {
   getGameModeForPath,
   getTabByPath,
   sortBuildTabs,
-} from "@/features/heroes/utils/heroBuildTabs";
+} from "@/features/game-data/heroes/heroBuildTabs";
 
 type MajorSkillSelections = Partial<Record<string, string>>;
 type WeaponAwakeningSelections = Partial<Record<number, WeaponAwakeningColorId>>;

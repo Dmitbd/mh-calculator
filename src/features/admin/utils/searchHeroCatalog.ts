@@ -1,4 +1,4 @@
-import type { Hero } from "@/features/heroes/types/heroes.types";
+import type { Hero } from "@/features/game-data/heroes/types";
 
 /** Проверяет совпадение героя с поисковым запросом (ru, en, id) */
 export function matchesHeroCatalogSearch(hero: Hero, search: string): boolean {

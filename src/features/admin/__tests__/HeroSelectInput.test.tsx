@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import heroesData from "@/features/game-data/heroes/heroes.json";
-import type { Hero } from "@/features/heroes/types/heroes.types";
+import type { Hero } from "@/features/game-data/heroes/types";
 
 import { HeroSelectInput } from "../components/HeroSelectInput";
 

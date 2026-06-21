@@ -3,7 +3,7 @@ import type {
   HeroElement,
   HeroFaction,
   HeroRole,
-} from "@/features/heroes/types/heroes.types";
+} from "@/features/game-data/heroes/types";
 
 /** Параметры фильтрации списка героев */
 export type HeroListFilters = {

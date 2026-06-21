@@ -11,7 +11,7 @@ import type {
   HeroElement,
   HeroFaction,
   HeroRole,
-} from "@/features/heroes/types/heroes.types";
+} from "@/features/game-data/heroes/types";
 import type { HeroListFilters } from "@/features/heroes/utils/heroListFilters";
 
 type HeroListFiltersProps = {

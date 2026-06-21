@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react-native";
 
 import type { WeaponAwakeningColor } from "@/features/game-data/weapon-awakening/types";
 
-import { WeaponAwakeningBonusList } from "../components/WeaponAwakeningBonusList";
+import { WeaponAwakeningBonusList } from "@/features/builds/components/WeaponAwakeningBonusList";
 
 const colors: WeaponAwakeningColor[] = [
   {

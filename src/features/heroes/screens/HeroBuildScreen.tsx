@@ -30,20 +30,20 @@ import {
   getHeroById,
   getHeroBuildSet,
 } from "@/features/game-data/heroes/heroBuilds";
-import type { HeroBuildTabPath } from "@/features/heroes/types/heroes.types";
+import type { HeroBuildTabPath } from "@/features/game-data/heroes/types";
+import { WeaponAwakeningBonusList } from "@/features/builds/components/WeaponAwakeningBonusList";
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 
 import { BuildFolderTabs } from "@/shared/ui/BuildFolderTabs";
 import { HeroMetadataRow } from "../components/HeroMetadataRow";
-import { WeaponAwakeningBonusList } from "../components/WeaponAwakeningBonusList";
 import {
   filterTabsWithReadyBuilds,
   getBuildAtPath,
   getDefaultTabPath,
   getTabByPath,
   sortBuildTabs,
-} from "../utils/heroBuildTabs";
+} from "@/features/game-data/heroes/heroBuildTabs";
 import { mapBuildToView } from "../utils/mapBuildToView";
 
 const columns: BranchColumn[] = [

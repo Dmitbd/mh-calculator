@@ -1,4 +1,4 @@
-import type { HeroDictionaryEntry } from "@/features/heroes/types/heroes.types";
+import type { HeroDictionaryEntry } from "@/features/game-data/heroes/types";
 
 import elementsData from "./elements.json";
 import factionsData from "./factions.json";

@@ -9,8 +9,8 @@ import { heroElements } from "@/features/game-data/heroes/heroDictionaries";
 import { heroFactions } from "@/features/game-data/heroes/heroDictionaries";
 import { heroRarities } from "@/features/game-data/heroes/heroDictionaries";
 import { heroRoles } from "@/features/game-data/heroes/heroDictionaries";
-import { hasReadyBuildInTabs, validateHeroBuildTabs } from "@/features/heroes/utils/heroBuildTabs";
-import type { HeroBuildTab } from "@/features/heroes/types/heroes.types";
+import { hasReadyBuildInTabs, validateHeroBuildTabs } from "@/features/game-data/heroes/heroBuildTabs";
+import type { HeroBuildTab } from "@/features/game-data/heroes/types";
 
 function assertNoTargetTabPathInCommittedBuild(tab: HeroBuildTab) {
   if (tab.build) {

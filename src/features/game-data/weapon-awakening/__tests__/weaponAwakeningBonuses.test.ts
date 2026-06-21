@@ -1,5 +1,5 @@
 import type { WeaponAwakeningSlotSelection } from "../types";
-import type { Hero } from "@/features/heroes/types/heroes.types";
+import type { Hero } from "@/features/game-data/heroes/types";
 
 import {
   countWeaponAwakeningColors,

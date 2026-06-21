@@ -23,10 +23,10 @@ import weaponAwakeningCombosData from "@/features/game-data/weapon-awakening/wea
 import weaponAwakeningSlotsData from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
 import type { WeaponAwakeningCombosData } from "@/features/game-data/weapon-awakening/types";
 import { resolveWeaponAwakeningBonuses } from "@/features/game-data/weapon-awakening/resolveWeaponAwakeningBonuses";
-import { WeaponAwakeningBonusList } from "@/features/heroes/components/WeaponAwakeningBonusList";
+import { WeaponAwakeningBonusList } from "@/features/builds/components/WeaponAwakeningBonusList";
 import { BuildFolderTabs } from "@/shared/ui/BuildFolderTabs";
 import { buildTargetTabs } from "@/features/admin/data/buildTargetTabs";
-import { getTabByPath, sortBuildTabs } from "@/features/heroes/utils/heroBuildTabs";
+import { getTabByPath, sortBuildTabs } from "@/features/game-data/heroes/heroBuildTabs";
 
 import { DownloadJsonButton } from "../components/DownloadJsonButton";
 import { EquipmentVariantBuilder } from "../components/EquipmentVariantBuilder";

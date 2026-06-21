@@ -1,4 +1,4 @@
-import type { Hero, HeroFaction } from "@/features/heroes/types/heroes.types";
+import type { Hero, HeroFaction } from "@/features/game-data/heroes/types";
 
 /** Id зоны отображения героев */
 export type HeroZoneId = "ur" | HeroFaction;

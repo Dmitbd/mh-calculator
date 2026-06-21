@@ -8,7 +8,7 @@ import {
   heroRarities,
   heroRoles,
 } from "@/features/game-data/heroes/heroDictionaries";
-import type { Hero, HeroRarity } from "@/features/heroes/types/heroes.types";
+import type { Hero, HeroRarity } from "@/features/game-data/heroes/types";
 import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
 
 /** Высота бейджа редкости */

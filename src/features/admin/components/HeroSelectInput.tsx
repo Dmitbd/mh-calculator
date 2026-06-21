@@ -5,7 +5,7 @@ import {
   getDictionaryEntry,
   heroRarities,
 } from "@/features/game-data/heroes/heroDictionaries";
-import type { Hero } from "@/features/heroes/types/heroes.types";
+import type { Hero } from "@/features/game-data/heroes/types";
 import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
 
 import { IconPreview } from "@/shared/ui/IconPreview";

@@ -3,7 +3,7 @@ import type {
   HeroBuildSet,
   HeroBuildTab,
   HeroBuildTabPath,
-} from "@/features/heroes/types/heroes.types";
+} from "@/features/game-data/heroes/types";
 
 /** Сортирует вкладки и дочерние вкладки по order */
 export function sortBuildTabs(tabs: HeroBuildTab[]): HeroBuildTab[] {
