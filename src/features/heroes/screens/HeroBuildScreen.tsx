@@ -2,43 +2,43 @@ import { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BranchBuilderGrid } from "@/features/builds/components/BranchBuilderGrid";
-import { EquipmentVariantTabs } from "@/features/builds/components/EquipmentVariantTabs";
-import { WeaponAwakeningPicker } from "@/features/builds/components/WeaponAwakeningPicker";
+import {
+  BranchBuilderGrid,
+  BuildFolderTabs,
+  EquipmentVariantTabs,
+  WeaponAwakeningBonusList,
+  WeaponAwakeningPicker,
+} from "@/features/builds";
 import type { BranchColumn } from "@/features/game-data/divinity/types";
 import {
   divinityBranches,
   divinitySkills,
   divinityTreeTemplate,
-} from "@/features/game-data/divinity/catalog";
+} from "@/features/game-data/divinity";
 import {
   equipmentArtifacts,
   equipmentRunes,
-} from "@/features/game-data/equipment/catalog";
+} from "@/features/game-data/equipment";
 import {
   weaponAwakeningColors,
   weaponAwakeningCombos,
   weaponAwakeningSlots,
-} from "@/features/game-data/weapon-awakening/catalog";
-import { resolveWeaponAwakeningBonuses } from "@/features/game-data/weapon-awakening/resolveWeaponAwakeningBonuses";
+  resolveWeaponAwakeningBonuses,
+} from "@/features/game-data/weapon-awakening";
 import {
   getHeroById,
   getHeroBuildSet,
-} from "@/features/game-data/heroes/heroBuilds";
-import type { HeroBuildTabPath } from "@/features/game-data/heroes/types";
-import { WeaponAwakeningBonusList } from "@/features/builds/components/WeaponAwakeningBonusList";
-
-import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
-
-import { BuildFolderTabs } from "@/features/builds/components/BuildFolderTabs";
-import { HeroMetadataRow } from "../components/HeroMetadataRow";
-import {
   filterTabsWithReadyBuilds,
   getBuildAtPath,
   getDefaultTabPath,
   getTabByPath,
   sortBuildTabs,
-} from "@/features/game-data/heroes/heroBuildTabs";
+} from "@/features/game-data/heroes";
+import type { HeroBuildTabPath } from "@/features/game-data/heroes/types";
+
+import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
+
+import { HeroMetadataRow } from "../components/HeroMetadataRow";
 import { mapBuildToView } from "../utils/mapBuildToView";
 
 const columns: BranchColumn[] = [

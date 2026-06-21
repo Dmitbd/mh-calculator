@@ -1,7 +1,6 @@
 import { View } from "react-native";
 
-import { BuildFolderTabs } from "@/features/builds/components/BuildFolderTabs";
-import type { BuildFolderTabItem } from "@/features/builds/types/buildTabs";
+import { BuildFolderTabs, type BuildFolderTabItem } from "@/features/builds";
 
 type BuildTargetSectionProps = {
   childTabs?: BuildFolderTabItem[];

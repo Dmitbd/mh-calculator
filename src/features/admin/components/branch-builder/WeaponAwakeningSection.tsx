@@ -1,7 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { WeaponAwakeningBonusList } from "@/features/builds/components/WeaponAwakeningBonusList";
-import { WeaponAwakeningPicker } from "@/features/builds/components/WeaponAwakeningPicker";
+import { WeaponAwakeningBonusList, WeaponAwakeningPicker } from "@/features/builds";
 import type { Hero } from "@/features/game-data/heroes/types";
 import type {
   WeaponAwakeningActiveBonus,

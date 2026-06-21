@@ -87,3 +87,14 @@ test("shared production UI does not contain build-specific components", () => {
 
   expect(offenders).toEqual([]);
 });
+
+test("features consume builds through public entrypoints", () => {
+  const offenders = listSourceFiles(path.join(repoRoot, "src/features"))
+    .filter((filePath) => !filePath.includes(`${path.sep}builds${path.sep}`))
+    .filter((filePath) =>
+      /@\/features\/builds\/(components|types)\//.test(read(filePath)),
+    )
+    .map(relative);
+
+  expect(offenders).toEqual([]);
+});

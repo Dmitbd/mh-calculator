@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 
-import { getHeroById } from "@/features/game-data/heroes/heroBuilds";
+import { getHeroById } from "@/features/game-data/heroes";
 
 import { branchBuilderTemplate as template } from "../data/branchBuilderCatalogs";
 import {
@@ -30,7 +30,7 @@ import {
   getGameModeForPath,
   getTabByPath,
   sortBuildTabs,
-} from "@/features/game-data/heroes/heroBuildTabs";
+} from "@/features/game-data/heroes";
 
 type MajorSkillSelections = Partial<Record<string, string>>;
 type WeaponAwakeningSelections = Partial<Record<number, WeaponAwakeningColorId>>;

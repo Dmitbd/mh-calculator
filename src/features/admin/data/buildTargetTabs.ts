@@ -1,5 +1,5 @@
 import type { HeroBuildTab, HeroBuildTabPath } from "@/features/game-data/heroes/types";
-import { getDefaultTabPathFromTabs } from "@/features/game-data/heroes/heroBuildTabs";
+import { getDefaultTabPathFromTabs } from "@/features/game-data/heroes";
 
 /** Шаблон дерева вкладок назначения в билдере */
 export const buildTargetTabs: HeroBuildTab[] = [

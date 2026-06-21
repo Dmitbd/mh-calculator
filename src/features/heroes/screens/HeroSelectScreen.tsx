@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { heroesWithBuilds } from "@/features/game-data/heroes/heroBuilds";
+import { heroesWithBuilds } from "@/features/game-data/heroes";
 import { HeroListCard } from "@/features/heroes/components/HeroListCard";
 import { HeroListFiltersPanel } from "@/features/heroes/components/HeroListFiltersPanel";
 import {

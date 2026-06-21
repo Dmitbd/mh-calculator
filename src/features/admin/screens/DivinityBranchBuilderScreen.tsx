@@ -8,7 +8,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
-import { resolveWeaponAwakeningBonuses } from "@/features/game-data/weapon-awakening/resolveWeaponAwakeningBonuses";
+import { resolveWeaponAwakeningBonuses } from "@/features/game-data/weapon-awakening";
 import {
   branchBuilderArtifacts,
   branchBuilderBranches,

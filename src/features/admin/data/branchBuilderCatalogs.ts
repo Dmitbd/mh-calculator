@@ -1,18 +1,18 @@
-import { heroes } from "@/features/game-data/heroes/heroBuilds";
+import { heroes } from "@/features/game-data/heroes";
 import {
   divinityBranches,
   divinitySkills,
   divinityTreeTemplate,
-} from "@/features/game-data/divinity/catalog";
+} from "@/features/game-data/divinity";
 import {
   equipmentArtifacts,
   equipmentRunes,
-} from "@/features/game-data/equipment/catalog";
+} from "@/features/game-data/equipment";
 import {
   weaponAwakeningColors,
   weaponAwakeningCombos,
   weaponAwakeningSlots,
-} from "@/features/game-data/weapon-awakening/catalog";
+} from "@/features/game-data/weapon-awakening";
 
 import type { BranchColumn } from "../types/admin.types";
 

@@ -46,7 +46,7 @@ test("hero build screen uses reusable build components from builds feature", () 
   );
 
   expect(source).toContain(
-    "@/features/builds/components/EquipmentVariantTabs",
+    "@/features/builds",
   );
   expect(source).not.toContain("../components/EquipmentVariantTabs");
 });

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { BranchBuilderGrid } from "@/features/builds/components/BranchBuilderGrid";
+import { BranchBuilderGrid } from "@/features/builds";
 import type {
   BranchColumn,
   BranchColumnId,
