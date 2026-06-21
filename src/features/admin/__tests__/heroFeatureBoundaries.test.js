@@ -38,3 +38,15 @@ test("admin and game-data code do not import heroes feature internals", () => {
 
   expect(offenders).toEqual([]);
 });
+
+test("hero build screen uses reusable build components from builds feature", () => {
+  const source = fs.readFileSync(
+    path.join(repoRoot, "src/features/heroes/screens/HeroBuildScreen.tsx"),
+    "utf8",
+  );
+
+  expect(source).toContain(
+    "@/features/builds/components/EquipmentVariantTabs",
+  );
+  expect(source).not.toContain("../components/EquipmentVariantTabs");
+});

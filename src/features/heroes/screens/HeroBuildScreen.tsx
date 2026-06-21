@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BranchBuilderGrid } from "@/features/builds/components/BranchBuilderGrid";
-import { EquipmentVariantTabs } from "../components/EquipmentVariantTabs";
+import { EquipmentVariantTabs } from "@/features/builds/components/EquipmentVariantTabs";
 import { WeaponAwakeningPicker } from "@/features/builds/components/WeaponAwakeningPicker";
 import type { BranchColumn } from "@/features/game-data/divinity/types";
 import {
