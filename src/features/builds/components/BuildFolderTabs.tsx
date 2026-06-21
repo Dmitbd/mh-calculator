@@ -1,13 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-export type BuildFolderTabItem = {
-  /** Id вкладки */
-  id: string;
-  /** Подпись */
-  label: string;
-  /** Accessibility label */
-  accessibilityLabel: string;
-};
+import type { BuildFolderTabItem } from "../types/buildTabs";
 
 type BuildFolderTabsProps = {
   /** Вкладки верхнего уровня */

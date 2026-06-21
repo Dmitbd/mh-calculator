@@ -79,3 +79,11 @@ test("shared production code does not import feature modules", () => {
 
   expect(offenders).toEqual([]);
 });
+
+test("shared production UI does not contain build-specific components", () => {
+  const offenders = listSourceFiles(path.join(repoRoot, "src/shared/ui"))
+    .filter((filePath) => path.basename(filePath).includes("Build"))
+    .map(relative);
+
+  expect(offenders).toEqual([]);
+});

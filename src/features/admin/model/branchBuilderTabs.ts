@@ -1,4 +1,4 @@
-import type { BuildFolderTabItem } from "@/shared/ui/BuildFolderTabs";
+import type { BuildFolderTabItem } from "@/features/builds/types/buildTabs";
 import {
   getTabByPath,
   sortBuildTabs,

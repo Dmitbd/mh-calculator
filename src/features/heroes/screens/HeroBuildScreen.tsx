@@ -30,7 +30,7 @@ import { WeaponAwakeningBonusList } from "@/features/builds/components/WeaponAwa
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 
-import { BuildFolderTabs } from "@/shared/ui/BuildFolderTabs";
+import { BuildFolderTabs } from "@/features/builds/components/BuildFolderTabs";
 import { HeroMetadataRow } from "../components/HeroMetadataRow";
 import {
   filterTabsWithReadyBuilds,
