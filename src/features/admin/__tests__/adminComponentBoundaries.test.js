@@ -34,3 +34,24 @@ test("heroes feature code does not import admin components", () => {
 
   expect(offenders).toEqual([]);
 });
+
+test("divinity branch builder screen is composed from focused sections", () => {
+  const source = fs.readFileSync(
+    path.join(repoRoot, "src/features/admin/screens/DivinityBranchBuilderScreen.tsx"),
+    "utf8",
+  );
+  const requiredSections = [
+    "BuildTargetSection",
+    "HeroBuilderSection",
+    "EquipmentBuilderSection",
+    "WeaponAwakeningSection",
+    "BranchGridSection",
+    "DownloadSection",
+  ];
+
+  const missingSections = requiredSections.filter(
+    (sectionName) => !source.includes(sectionName),
+  );
+
+  expect(missingSections).toEqual([]);
+});

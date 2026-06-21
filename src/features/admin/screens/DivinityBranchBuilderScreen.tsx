@@ -3,18 +3,12 @@ import {
   type LayoutChangeEvent,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
-import { BranchBuilderGrid } from "@/features/builds/components/BranchBuilderGrid";
-import { WeaponAwakeningPicker } from "@/features/builds/components/WeaponAwakeningPicker";
-
 import { resolveWeaponAwakeningBonuses } from "@/features/game-data/weapon-awakening/resolveWeaponAwakeningBonuses";
-import { WeaponAwakeningBonusList } from "@/features/builds/components/WeaponAwakeningBonusList";
-import { BuildFolderTabs } from "@/shared/ui/BuildFolderTabs";
 import {
   branchBuilderArtifacts,
   branchBuilderBranches,
@@ -32,9 +26,12 @@ import {
 import { buildTargetTabs } from "@/features/admin/data/buildTargetTabs";
 import { getTabByPath, sortBuildTabs } from "@/features/game-data/heroes/heroBuildTabs";
 
-import { DownloadJsonButton } from "../components/DownloadJsonButton";
-import { EquipmentVariantBuilder } from "../components/EquipmentVariantBuilder";
-import { HeroSelectInput } from "../components/HeroSelectInput";
+import { BranchGridSection } from "../components/branch-builder/BranchGridSection";
+import { BuildTargetSection } from "../components/branch-builder/BuildTargetSection";
+import { DownloadSection } from "../components/branch-builder/DownloadSection";
+import { EquipmentBuilderSection } from "../components/branch-builder/EquipmentBuilderSection";
+import { HeroBuilderSection } from "../components/branch-builder/HeroBuilderSection";
+import { WeaponAwakeningSection } from "../components/branch-builder/WeaponAwakeningSection";
 import { useDivinityBranchBuilder } from "../hooks/useDivinityBranchBuilder";
 import type {
   BranchBuildValidationError,
@@ -101,7 +98,6 @@ export function DivinityBranchBuilderScreen() {
     selections: weaponAwakeningSelections,
     combosData: branchBuilderWeaponAwakeningCombos,
   });
-  const hasWeaponAwakeningSelections = Object.keys(weaponAwakeningSelections).length > 0;
 
   const selectedTopTabId = targetTabPath[0] ?? "";
   const selectedChildTabId = targetTabPath[1];
@@ -156,7 +152,7 @@ export function DivinityBranchBuilderScreen() {
         ]}
       >
       <View style={styles.section}>
-        <BuildFolderTabs
+        <BuildTargetSection
           childTabs={buildTargetChildTabs}
           onSelectChildTab={setTargetChildTab}
           onSelectTab={setTargetTopTab}
@@ -167,7 +163,7 @@ export function DivinityBranchBuilderScreen() {
       </View>
 
       <View style={styles.section}>
-        <HeroSelectInput
+        <HeroBuilderSection
           heroQuery={heroQuery}
           heroes={branchBuilderHeroes}
           onClearHero={clearSelectedHero}
@@ -178,86 +174,62 @@ export function DivinityBranchBuilderScreen() {
       </View>
 
       <View style={styles.section}>
-        <EquipmentVariantBuilder
-          addLabel="Добавить оружие"
-          label="Оружие"
-          onAdd={addArtifact}
-          onRemove={removeArtifact}
-          options={branchBuilderArtifacts}
-          selectedIds={selectedArtifactIds}
+        <EquipmentBuilderSection
+          artifacts={branchBuilderArtifacts}
+          onAddArtifact={addArtifact}
+          onAddRune={addRune}
+          onRemoveArtifact={removeArtifact}
+          onRemoveRune={removeRune}
+          runes={branchBuilderRunes}
+          selectedArtifactIds={selectedArtifactIds}
+          selectedRuneIds={selectedRuneIds}
         />
       </View>
 
       <View style={styles.section}>
-        <EquipmentVariantBuilder
-          addLabel="Добавить руну"
-          label="Руны"
-          onAdd={addRune}
-          onRemove={removeRune}
-          options={branchBuilderRunes}
-          selectedIds={selectedRuneIds}
-        />
-      </View>
-
-      <View style={styles.weaponAwakeningSection}>
-        <WeaponAwakeningPicker
+        <WeaponAwakeningSection
+          bonuses={weaponAwakeningBonuses}
           colors={branchBuilderWeaponAwakeningColors}
           onCycleSlot={cycleWeaponAwakeningSlot}
+          selectedHero={selectedHero}
           selections={weaponAwakeningSelections}
           slots={branchBuilderWeaponAwakeningSlots}
         />
-        <WeaponAwakeningBonusList
-          bonuses={weaponAwakeningBonuses}
-          colors={branchBuilderWeaponAwakeningColors}
-        />
-        {!selectedHero && hasWeaponAwakeningSelections ? (
-          <Text style={styles.weaponAwakeningHint}>
-            Выберите героя из списка, чтобы увидеть бонусы цветов.
-          </Text>
-        ) : null}
-        {selectedHero && hasWeaponAwakeningSelections && weaponAwakeningBonuses.length === 0 ? (
-          <Text style={styles.weaponAwakeningHint}>
-            Бонусы появятся, когда минимум 2 ноды будут одного цвета.
-          </Text>
-        ) : null}
       </View>
 
       <View style={styles.section}>
-        <View style={styles.branchSection}>
-          <Text style={styles.sectionLabel}>Ветка</Text>
-          <BranchBuilderGrid
-            activeMajorSlot={activeMajorSlot}
-            branches={branchBuilderBranches}
-            columns={branchBuilderColumns}
-            onOpenMajorSlot={(columnId, level) =>
-              setActiveMajorSlot({ columnId, level })
-            }
-            onClearMajorSkill={(columnId, level) => {
-              setMajorSkill(columnId, level, null);
-              rollbackColumnProgress(columnId, level);
-              setActiveMajorSlot(null);
-            }}
-            onSelectBranch={setColumnBranch}
-            onSelectMajorSkill={(columnId, level, skillId) => {
-              setMajorSkill(columnId, level, skillId);
-              setColumnProgress(columnId, level);
-              setActiveMajorSlot(null);
-            }}
-            onToggleProgress={toggleColumnProgress}
-            progressLevels={progressLevels}
-            selectedBranches={selectedBranches}
-            selectedMajorSkills={selectedMajorSkills}
-            skillCatalog={branchBuilderSkills}
-            skills={branchBuilderSkills}
-            template={branchBuilderTemplate}
-          />
-        </View>
+        <BranchGridSection
+          activeMajorSlot={activeMajorSlot}
+          branches={branchBuilderBranches}
+          columns={branchBuilderColumns}
+          onClearMajorSkill={(columnId, level) => {
+            setMajorSkill(columnId, level, null);
+            rollbackColumnProgress(columnId, level);
+            setActiveMajorSlot(null);
+          }}
+          onOpenMajorSlot={(columnId, level) =>
+            setActiveMajorSlot({ columnId, level })
+          }
+          onSelectBranch={setColumnBranch}
+          onSelectMajorSkill={(columnId, level, skillId) => {
+            setMajorSkill(columnId, level, skillId);
+            setColumnProgress(columnId, level);
+            setActiveMajorSlot(null);
+          }}
+          onToggleProgress={toggleColumnProgress}
+          progressLevels={progressLevels}
+          selectedBranches={selectedBranches}
+          selectedMajorSkills={selectedMajorSkills}
+          skills={branchBuilderSkills}
+          template={branchBuilderTemplate}
+        />
       </View>
 
-      <View onLayout={handleDownloadSectionLayout} style={styles.section}>
-        <DownloadJsonButton
+      <View style={styles.section}>
+        <DownloadSection
           errors={validationErrors}
           onErrorsLayout={handleErrorsLayout}
+          onLayout={handleDownloadSectionLayout}
           onPress={() => {
             const result = validateBranchBuild(
               buildValidationDraft(),
@@ -304,24 +276,5 @@ const styles = StyleSheet.create({
   },
   section: {
     width: "100%",
-  },
-  weaponAwakeningSection: {
-    width: "100%",
-    gap: 12,
-  },
-  weaponAwakeningHint: {
-    color: "#917968",
-    fontSize: 13,
-    fontWeight: "600",
-    lineHeight: 18,
-  },
-  branchSection: {
-    gap: 8,
-  },
-  sectionLabel: {
-    color: "#d6c2a4",
-    fontSize: 13,
-    fontWeight: "800",
-    textTransform: "uppercase",
   },
 });
