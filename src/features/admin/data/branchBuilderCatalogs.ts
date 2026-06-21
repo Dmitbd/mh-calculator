@@ -1,24 +1,20 @@
-import artifactsData from "@/features/game-data/equipment/artifacts.json";
-import runesData from "@/features/game-data/equipment/runes.json";
-import branchesData from "@/features/game-data/divinity/divinity-branches.json";
-import skillsData from "@/features/game-data/divinity/divinity-skills.json";
-import templateData from "@/features/game-data/divinity/tree-template.json";
 import { heroes } from "@/features/game-data/heroes/heroBuilds";
-import weaponAwakeningColorsData from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
-import weaponAwakeningCombosData from "@/features/game-data/weapon-awakening/weapon-awakening-combos.json";
-import weaponAwakeningSlotsData from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
-import type { WeaponAwakeningCombosData } from "@/features/game-data/weapon-awakening/types";
+import {
+  divinityBranches,
+  divinitySkills,
+  divinityTreeTemplate,
+} from "@/features/game-data/divinity/catalog";
+import {
+  equipmentArtifacts,
+  equipmentRunes,
+} from "@/features/game-data/equipment/catalog";
+import {
+  weaponAwakeningColors,
+  weaponAwakeningCombos,
+  weaponAwakeningSlots,
+} from "@/features/game-data/weapon-awakening/catalog";
 
-import type {
-  Artifact,
-  BranchColumn,
-  DivinityBranch,
-  DivinityMajorSkill,
-  Rune,
-  TreeTemplateNode,
-  WeaponAwakeningColor,
-  WeaponAwakeningSlot,
-} from "../types/admin.types";
+import type { BranchColumn } from "../types/admin.types";
 
 export const branchBuilderColumns: BranchColumn[] = [
   { id: "left", label: "левая", isMain: false },
@@ -26,19 +22,14 @@ export const branchBuilderColumns: BranchColumn[] = [
   { id: "right", label: "правая", isMain: false },
 ];
 
-export const branchBuilderBranches = [...(branchesData as DivinityBranch[])].sort(
-  (first, second) => first.order - second.order,
-);
-export const branchBuilderSkills = skillsData as DivinityMajorSkill[];
-export const branchBuilderTemplate = templateData as TreeTemplateNode[];
-export const branchBuilderWeaponAwakeningColors =
-  weaponAwakeningColorsData as WeaponAwakeningColor[];
-export const branchBuilderWeaponAwakeningCombos =
-  weaponAwakeningCombosData as WeaponAwakeningCombosData;
-export const branchBuilderWeaponAwakeningSlots =
-  weaponAwakeningSlotsData as WeaponAwakeningSlot[];
-export const branchBuilderArtifacts = artifactsData as Artifact[];
-export const branchBuilderRunes = runesData as Rune[];
+export const branchBuilderBranches = divinityBranches;
+export const branchBuilderSkills = divinitySkills;
+export const branchBuilderTemplate = divinityTreeTemplate;
+export const branchBuilderWeaponAwakeningColors = weaponAwakeningColors;
+export const branchBuilderWeaponAwakeningCombos = weaponAwakeningCombos;
+export const branchBuilderWeaponAwakeningSlots = weaponAwakeningSlots;
+export const branchBuilderArtifacts = equipmentArtifacts;
+export const branchBuilderRunes = equipmentRunes;
 export const branchBuilderHeroes = heroes;
 
 export const branchBuilderWeaponAwakeningCatalog = {

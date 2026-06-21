@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import levels from "@/features/divinity/data/divinity-levels.json";
+import { divinityLevels } from "@/features/divinity/data/divinityLevels";
 import { useDivinityProgress } from "@/features/divinity/hooks/useDivinityProgress";
 import { calculateDivinityTotals } from "@/features/divinity/model/calculateDivinityTotals";
 import { getCurrentDivinityStep } from "@/features/divinity/model/getCurrentDivinityStep";
@@ -67,8 +67,9 @@ export default function DivinityScreen() {
     isLoaded,
     resetLevel,
     toggleAutofill,
-  } = useDivinityProgress(levels);
-  const autofillLevel = levels.find((level) => level.level === endLevel) ?? null;
+  } = useDivinityProgress(divinityLevels);
+  const autofillLevel =
+    divinityLevels.find((level) => level.level === endLevel) ?? null;
   const effectiveProgress = autofillEnabled
     ? {
         startLevel,
@@ -82,10 +83,10 @@ export default function DivinityScreen() {
         currentLevel,
         filledSegments,
       };
-  const totalCost = calculateDivinityTotals(levels, effectiveProgress);
+  const totalCost = calculateDivinityTotals(divinityLevels, effectiveProgress);
   const nextStep = autofillEnabled
     ? null
-    : getCurrentDivinityStep(levels, {
+    : getCurrentDivinityStep(divinityLevels, {
         startLevel,
         endLevel,
         currentLevel,

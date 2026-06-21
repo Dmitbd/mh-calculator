@@ -5,26 +5,21 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BranchBuilderGrid } from "@/features/builds/components/BranchBuilderGrid";
 import { EquipmentVariantTabs } from "../components/EquipmentVariantTabs";
 import { WeaponAwakeningPicker } from "@/features/builds/components/WeaponAwakeningPicker";
-import type {
-  BranchColumn,
-  DivinityBranch,
-  DivinityMajorSkill,
-  TreeTemplateNode,
-} from "@/features/game-data/divinity/types";
-import type { Artifact, Rune } from "@/features/game-data/equipment/types";
-import type {
-  WeaponAwakeningColor,
-  WeaponAwakeningSlot,
-} from "@/features/game-data/weapon-awakening/types";
-import artifactsData from "@/features/game-data/equipment/artifacts.json";
-import runesData from "@/features/game-data/equipment/runes.json";
-import branchesData from "@/features/game-data/divinity/divinity-branches.json";
-import skillsData from "@/features/game-data/divinity/divinity-skills.json";
-import templateData from "@/features/game-data/divinity/tree-template.json";
-import weaponAwakeningColorsData from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
-import weaponAwakeningCombosData from "@/features/game-data/weapon-awakening/weapon-awakening-combos.json";
-import weaponAwakeningSlotsData from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
-import type { WeaponAwakeningCombosData } from "@/features/game-data/weapon-awakening/types";
+import type { BranchColumn } from "@/features/game-data/divinity/types";
+import {
+  divinityBranches,
+  divinitySkills,
+  divinityTreeTemplate,
+} from "@/features/game-data/divinity/catalog";
+import {
+  equipmentArtifacts,
+  equipmentRunes,
+} from "@/features/game-data/equipment/catalog";
+import {
+  weaponAwakeningColors,
+  weaponAwakeningCombos,
+  weaponAwakeningSlots,
+} from "@/features/game-data/weapon-awakening/catalog";
 import { resolveWeaponAwakeningBonuses } from "@/features/game-data/weapon-awakening/resolveWeaponAwakeningBonuses";
 import {
   getHeroById,
@@ -51,17 +46,6 @@ const columns: BranchColumn[] = [
   { id: "center", label: "центр", isMain: true },
   { id: "right", label: "правая", isMain: false },
 ];
-
-const branches = [...(branchesData as DivinityBranch[])].sort(
-  (first, second) => first.order - second.order,
-);
-const skills = skillsData as DivinityMajorSkill[];
-const template = templateData as TreeTemplateNode[];
-const weaponAwakeningColors = weaponAwakeningColorsData as WeaponAwakeningColor[];
-const weaponAwakeningCombos = weaponAwakeningCombosData as WeaponAwakeningCombosData;
-const weaponAwakeningSlots = weaponAwakeningSlotsData as WeaponAwakeningSlot[];
-const artifacts = artifactsData as Artifact[];
-const runes = runesData as Rune[];
 
 const SCREEN_PADDING = 20;
 
@@ -191,7 +175,7 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
             <View style={styles.section}>
               <EquipmentVariantTabs
                 label="Оружие"
-                options={artifacts}
+                options={equipmentArtifacts}
                 selectedIds={view.artifactIds}
               />
             </View>
@@ -199,7 +183,7 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
             <View style={styles.section}>
               <EquipmentVariantTabs
                 label="Руны"
-                options={runes}
+                options={equipmentRunes}
                 selectedIds={view.runeIds}
               />
             </View>
@@ -221,15 +205,15 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
               <View style={styles.branchSection}>
                 <Text style={styles.sectionLabel}>Ветка</Text>
                 <BranchBuilderGrid
-                  branches={branches}
+                  branches={divinityBranches}
                   columns={columns}
                   progressLevels={view.progressLevels}
                   readOnly
                   selectedBranches={view.selectedBranches}
                   selectedMajorSkills={view.selectedMajorSkills}
-                  skillCatalog={skills}
-                  skills={skills}
-                  template={template}
+                  skillCatalog={divinitySkills}
+                  skills={divinitySkills}
+                  template={divinityTreeTemplate}
                 />
               </View>
             </View>
