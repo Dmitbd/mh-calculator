@@ -40,13 +40,39 @@ test("admin and game-data code do not import heroes feature internals", () => {
 });
 
 test("hero build screen uses reusable build components from builds feature", () => {
+  const screenSource = fs.readFileSync(
+    path.join(repoRoot, "src/features/heroes/screens/HeroBuildScreen.tsx"),
+    "utf8",
+  );
+  const sectionSources = [
+    "HeroBuildBranchSection.tsx",
+    "HeroBuildEquipmentSection.tsx",
+    "HeroBuildTabsSection.tsx",
+    "HeroBuildWeaponAwakeningSection.tsx",
+  ].map((fileName) =>
+    fs.readFileSync(
+      path.join(repoRoot, "src/features/heroes/components/hero-build", fileName),
+      "utf8",
+    ),
+  );
+
+  expect(sectionSources.some((source) => source.includes("@/features/builds"))).toBe(
+    true,
+  );
+  expect(screenSource).not.toContain("../components/EquipmentVariantTabs");
+});
+
+test("hero build screen is composed from focused sections", () => {
   const source = fs.readFileSync(
     path.join(repoRoot, "src/features/heroes/screens/HeroBuildScreen.tsx"),
     "utf8",
   );
+  const requiredSections = [
+    "HeroBuildTabsSection",
+    "HeroBuildEquipmentSection",
+    "HeroBuildWeaponAwakeningSection",
+    "HeroBuildBranchSection",
+  ];
 
-  expect(source).toContain(
-    "@/features/builds",
-  );
-  expect(source).not.toContain("../components/EquipmentVariantTabs");
+  expect(requiredSections.filter((name) => !source.includes(name))).toEqual([]);
 });
