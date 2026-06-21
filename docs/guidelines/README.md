@@ -8,6 +8,8 @@ These documents are strict rules for future MH Calculator implementation and ref
 2. Read `code-style.md` before editing TypeScript, React Native components, hooks, tests, or JSON data.
 3. Read `project-patterns.md` before changing game data, hero builds, divinity logic, assets, builder flows, or admin tooling.
 
+This handbook is complete only when all files listed in the Reading Order exist.
+
 ## Authority
 
 - Product specs in `docs/` define user-facing behavior.
