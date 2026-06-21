@@ -4,6 +4,7 @@ import {
   heroesWithBuilds,
   hasReadyBuild,
 } from "@/features/game-data/heroes/heroBuilds";
+import { equipmentArtifacts, equipmentRunes } from "@/features/game-data/equipment";
 import { getIconicWeaponHeroClass } from "@/features/game-data/weapon-awakening/weaponAwakeningBonuses";
 import { heroElements } from "@/features/game-data/heroes/heroDictionaries";
 import { heroFactions } from "@/features/game-data/heroes/heroDictionaries";
@@ -11,6 +12,7 @@ import { heroRarities } from "@/features/game-data/heroes/heroDictionaries";
 import { heroRoles } from "@/features/game-data/heroes/heroDictionaries";
 import { hasReadyBuildInTabs, validateHeroBuildTabs } from "@/features/game-data/heroes/heroBuildTabs";
 import type { HeroBuildTab } from "@/features/game-data/heroes/types";
+import type { DivinityBranchBuildExport } from "@/features/game-data/builds/types";
 
 function assertNoTargetTabPathInCommittedBuild(tab: HeroBuildTab) {
   if (tab.build) {
@@ -24,6 +26,14 @@ const rarityIds = new Set(heroRarities.map((entry) => entry.id));
 const roleIds = new Set(heroRoles.map((entry) => entry.id));
 const elementIds = new Set(heroElements.map((entry) => entry.id));
 const factionIds = new Set(heroFactions.map((entry) => entry.id));
+
+function collectBuilds(tabs: readonly HeroBuildTab[]): DivinityBranchBuildExport[] {
+  return tabs.flatMap((tab) => {
+    const nestedBuilds = tab.children ? collectBuilds(tab.children) : [];
+
+    return tab.build ? [tab.build, ...nestedBuilds] : nestedBuilds;
+  });
+}
 
 describe("master hero catalog", () => {
   test("every hero has required fields", () => {
@@ -158,6 +168,22 @@ describe("build registry", () => {
     for (const buildSet of Object.values(heroBuilds)) {
       buildSet.tabs.forEach(assertNoTargetTabPathInCommittedBuild);
     }
+  });
+
+  test("hero builds reference known equipment ids", () => {
+    const artifactIds = new Set(equipmentArtifacts.map((artifact) => artifact.id));
+    const runeIds = new Set(equipmentRunes.map((rune) => rune.id));
+
+    Object.values(heroBuilds).forEach((buildSet) => {
+      collectBuilds(buildSet.tabs).forEach((build) => {
+        build.equipment.artifactIds.forEach((artifactId) => {
+          expect(artifactIds.has(artifactId)).toBe(true);
+        });
+        build.equipment.runeIds.forEach((runeId) => {
+          expect(runeIds.has(runeId)).toBe(true);
+        });
+      });
+    });
   });
 
   test("bastet has at least one ready nested build", () => {
