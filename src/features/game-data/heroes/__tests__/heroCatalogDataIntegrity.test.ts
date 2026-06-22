@@ -153,6 +153,13 @@ describe("build registry", () => {
     expect(heroesWithBuilds.map((hero) => hero.id)).toContain("morana");
   });
 
+  test("morana pvp build uses the latest equipment selection", () => {
+    const pvpBuild = heroBuilds.morana.tabs.find((tab) => tab.id === "pvp")?.build;
+
+    expect(pvpBuild?.equipment.artifactIds).toEqual(["aegis-shield"]);
+    expect(pvpBuild?.equipment.runeIds).toEqual(["earth"]);
+  });
+
   test("registered hero build tabs have valid structure", () => {
     for (const buildSet of Object.values(heroBuilds)) {
       expect(validateHeroBuildTabs(buildSet)).toEqual([]);

@@ -34,7 +34,7 @@
             "level": 3,
             "columnId": "right",
             "branchId": "psyche",
-            "skillId": "psyche-sprout"
+            "skillId": "psyche-energy-bubble"
           },
           {
             "level": 7,
@@ -109,19 +109,16 @@
         ],
         "equipment": {
           "artifactIds": [
-            "aegis-shield",
-            "axe-of-pangu"
+            "aegis-shield"
           ],
           "runeIds": [
-            "fire",
-            "thunder",
             "earth"
           ]
         },
         "progress": {
           "center": 30,
-          "left": 18,
-          "right": 28
+          "right": 18,
+          "left": 18
         },
         "activeNodes": [
           {
@@ -331,50 +328,10 @@
           {
             "columnId": "right",
             "level": 18
-          },
-          {
-            "columnId": "right",
-            "level": 19
-          },
-          {
-            "columnId": "right",
-            "level": 20
-          },
-          {
-            "columnId": "right",
-            "level": 21
-          },
-          {
-            "columnId": "right",
-            "level": 22
-          },
-          {
-            "columnId": "right",
-            "level": 23
-          },
-          {
-            "columnId": "right",
-            "level": 24
-          },
-          {
-            "columnId": "right",
-            "level": 25
-          },
-          {
-            "columnId": "right",
-            "level": 26
-          },
-          {
-            "columnId": "right",
-            "level": 27
-          },
-          {
-            "columnId": "right",
-            "level": 28
           }
         ],
         "metadata": {
-          "createdAt": "2026-06-22T16:24:07.829Z",
+          "createdAt": "2026-06-22T18:09:34.349Z",
           "source": "manual-branch-builder"
         }
       }
@@ -419,7 +376,7 @@
                 "level": 3,
                 "columnId": "right",
                 "branchId": "psyche",
-                "skillId": "psyche-sprout"
+                "skillId": "psyche-energy-bubble"
               },
               {
                 "level": 7,
@@ -461,52 +418,51 @@
             "weaponAwakening": [
               {
                 "slot": 1,
-                "colorId": "green"
+                "colorId": "yellow"
               },
               {
                 "slot": 2,
-                "colorId": "green"
+                "colorId": "yellow"
               },
               {
                 "slot": 3,
-                "colorId": "green"
+                "colorId": "yellow"
               },
               {
                 "slot": 4,
-                "colorId": "green"
+                "colorId": "yellow"
               },
               {
                 "slot": 5,
-                "colorId": "green"
+                "colorId": "yellow"
               },
               {
                 "slot": 6,
-                "colorId": "green"
+                "colorId": "yellow"
               },
               {
                 "slot": 7,
-                "colorId": "green"
+                "colorId": "yellow"
               },
               {
                 "slot": 8,
-                "colorId": "green"
+                "colorId": "yellow"
               }
             ],
             "equipment": {
               "artifactIds": [
-                "aegis-shield",
-                "axe-of-pangu"
+                "axe-of-pangu",
+                "staff-of-sharur"
               ],
               "runeIds": [
                 "fire",
-                "thunder",
-                "earth"
+                "thunder"
               ]
             },
             "progress": {
               "center": 30,
-              "left": 18,
-              "right": 28
+              "right": 18,
+              "left": 18
             },
             "activeNodes": [
               {
@@ -716,50 +672,10 @@
               {
                 "columnId": "right",
                 "level": 18
-              },
-              {
-                "columnId": "right",
-                "level": 19
-              },
-              {
-                "columnId": "right",
-                "level": 20
-              },
-              {
-                "columnId": "right",
-                "level": 21
-              },
-              {
-                "columnId": "right",
-                "level": 22
-              },
-              {
-                "columnId": "right",
-                "level": 23
-              },
-              {
-                "columnId": "right",
-                "level": 24
-              },
-              {
-                "columnId": "right",
-                "level": 25
-              },
-              {
-                "columnId": "right",
-                "level": 26
-              },
-              {
-                "columnId": "right",
-                "level": 27
-              },
-              {
-                "columnId": "right",
-                "level": 28
               }
             ],
             "metadata": {
-              "createdAt": "2026-06-22T16:24:15.341Z",
+              "createdAt": "2026-06-22T18:10:50.213Z",
               "source": "manual-branch-builder"
             }
           }
@@ -796,7 +712,7 @@
                 "level": 3,
                 "columnId": "right",
                 "branchId": "psyche",
-                "skillId": "psyche-sprout"
+                "skillId": "psyche-energy-bubble"
               },
               {
                 "level": 7,
@@ -875,15 +791,13 @@
                 "axe-of-pangu"
               ],
               "runeIds": [
-                "fire",
-                "thunder",
                 "earth"
               ]
             },
             "progress": {
               "center": 30,
-              "left": 18,
-              "right": 28
+              "right": 18,
+              "left": 18
             },
             "activeNodes": [
               {
@@ -1093,50 +1007,10 @@
               {
                 "columnId": "right",
                 "level": 18
-              },
-              {
-                "columnId": "right",
-                "level": 19
-              },
-              {
-                "columnId": "right",
-                "level": 20
-              },
-              {
-                "columnId": "right",
-                "level": 21
-              },
-              {
-                "columnId": "right",
-                "level": 22
-              },
-              {
-                "columnId": "right",
-                "level": 23
-              },
-              {
-                "columnId": "right",
-                "level": 24
-              },
-              {
-                "columnId": "right",
-                "level": 25
-              },
-              {
-                "columnId": "right",
-                "level": 26
-              },
-              {
-                "columnId": "right",
-                "level": 27
-              },
-              {
-                "columnId": "right",
-                "level": 28
               }
             ],
             "metadata": {
-              "createdAt": "2026-06-22T16:24:21.054Z",
+              "createdAt": "2026-06-22T18:09:51.839Z",
               "source": "manual-branch-builder"
             }
           }
