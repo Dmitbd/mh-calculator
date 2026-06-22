@@ -7,11 +7,19 @@ import {
   buildTargetTabs,
   defaultBuildTargetTabPath,
 } from "../data/buildTargetTabs";
+import { branchBuilderValidationCatalog } from "../data/branchBuilderCatalogs";
+import {
+  buildHeroBuildSetFromSavedBuilds,
+  getBuildTargetPathKey,
+  validateMultiBuildExport,
+  type SavedBuildsByPath,
+} from "../model/multiBuildExport";
 import type {
   ActiveBranchNode,
   BranchColumnId,
   BranchProgressLevels,
   DivinityBranchBuilderExport,
+  DivinityBranchBuildExport,
   DivinityBranchBuildMajorNode,
   DivinityBranchBuildValidationDraft,
   DivinityBranchId,
@@ -95,6 +103,7 @@ export function useDivinityBranchBuilder(
   const [selectedArtifactIds, setSelectedArtifactIds] = useState<string[]>([]);
   const [selectedRuneIds, setSelectedRuneIds] = useState<string[]>([]);
   const [progressLevels, setProgressLevels] = useState<BranchProgressLevels>({});
+  const [savedBuildsByPath, setSavedBuildsByPath] = useState<SavedBuildsByPath>({});
 
   const setTargetTopTab = useCallback((topTabId: string) => {
     const tab = getTabByPath(buildTargetTabs, [topTabId]);
@@ -381,6 +390,40 @@ export function useDivinityBranchBuilder(
     ],
   );
 
+  const saveCurrentTargetBuild = useCallback(
+    (createdAt?: string) => {
+      const exported = buildExport(createdAt);
+
+      if (!exported) {
+        return false;
+      }
+
+      const key = getBuildTargetPathKey(targetTabPath);
+
+      setSavedBuildsByPath((current) => ({
+        ...current,
+        [key]: toCommittedBuild(exported),
+      }));
+
+      return true;
+    },
+    [buildExport, targetTabPath],
+  );
+
+  const buildFullExport = useCallback(() => {
+    const result = validateMultiBuildExport({
+      targetTabs: buildTargetTabs,
+      savedBuilds: savedBuildsByPath,
+      validationCatalog: branchBuilderValidationCatalog,
+    });
+
+    if (!result.isValid) {
+      return null;
+    }
+
+    return buildHeroBuildSetFromSavedBuilds(buildTargetTabs, savedBuildsByPath);
+  }, [savedBuildsByPath]);
+
   return useMemo(
     () => ({
       gameMode,
@@ -395,6 +438,7 @@ export function useDivinityBranchBuilder(
       selectedArtifactIds,
       selectedRuneIds,
       progressLevels,
+      savedBuildsByPath,
       setTargetTopTab,
       setTargetChildTab,
       setHeroQuery,
@@ -413,6 +457,8 @@ export function useDivinityBranchBuilder(
       rollbackColumnProgress,
       buildValidationDraft,
       buildExport,
+      saveCurrentTargetBuild,
+      buildFullExport,
     }),
     [
       buildValidationDraft,
@@ -432,14 +478,24 @@ export function useDivinityBranchBuilder(
       weaponAwakeningSelections,
       selectedArtifactIds,
       selectedRuneIds,
+      savedBuildsByPath,
       setColumnBranch,
       setColumnProgress,
       setTargetTopTab,
       setTargetChildTab,
       setMajorSkill,
       toggleColumnProgress,
+      saveCurrentTargetBuild,
+      buildFullExport,
     ],
   );
+}
+
+function toCommittedBuild(
+  exported: DivinityBranchBuilderExport,
+): DivinityBranchBuildExport {
+  const { targetTabPath: _targetTabPath, ...build } = exported;
+  return build;
 }
 
 function getMajorSkillKey(columnId: BranchColumnId, level: number): string {

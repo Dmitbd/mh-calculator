@@ -207,6 +207,27 @@ describe("useDivinityBranchBuilder", () => {
     });
   });
 
+  it("saves the current tab build without targetTabPath", () => {
+    const result = filledBuild();
+
+    act(() => {
+      result.current.saveCurrentTargetBuild("2026-05-30T00:00:00.000Z");
+    });
+
+    expect(result.current.savedBuildsByPath.pvp).toBeTruthy();
+    expect("targetTabPath" in result.current.savedBuildsByPath.pvp).toBe(false);
+  });
+
+  it("full export is blocked until every target tab is saved", () => {
+    const result = filledBuild();
+
+    act(() => {
+      result.current.saveCurrentTargetBuild("2026-05-30T00:00:00.000Z");
+    });
+
+    expect(result.current.buildFullExport()).toBeNull();
+  });
+
   it("selecting PvP sets target path to pvp", () => {
     const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
 
