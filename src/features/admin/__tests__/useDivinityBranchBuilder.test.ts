@@ -258,7 +258,7 @@ describe("useDivinityBranchBuilder", () => {
     expect(result.current.selectedRuneIds).toEqual(["fire"]);
   });
 
-  it("seeds empty target tabs from the first saved build", () => {
+  it("seeds empty target tab drafts from the first saved build without marking them saved", () => {
     const result = filledBuild();
 
     act(() => {
@@ -268,13 +268,9 @@ describe("useDivinityBranchBuilder", () => {
     expect(result.current.savedBuildsByPath.pvp?.equipment.artifactIds).toEqual([
       "excalibur",
     ]);
-    expect(
-      result.current.savedBuildsByPath["pve/bosses"]?.equipment.artifactIds,
-    ).toEqual(["excalibur"]);
-    expect(result.current.savedBuildsByPath["pve/bosses"]?.gameMode).toBe("pve");
-    expect(
-      result.current.savedBuildsByPath["pve/campaign"]?.equipment.artifactIds,
-    ).toEqual(["excalibur"]);
+    expect(result.current.savedBuildsByPath["pve/bosses"]).toBeUndefined();
+    expect(result.current.savedBuildsByPath["pve/campaign"]).toBeUndefined();
+    expect(result.current.buildFullExport()).toBeNull();
 
     act(() => {
       result.current.setTargetTopTab("pve");
@@ -307,9 +303,24 @@ describe("useDivinityBranchBuilder", () => {
     expect(
       result.current.savedBuildsByPath["pve/bosses"]?.equipment.artifactIds,
     ).toEqual(["excalibur", "axe-of-pangu"]);
-    expect(
-      result.current.savedBuildsByPath["pve/campaign"]?.equipment.artifactIds,
-    ).toEqual(["excalibur"]);
+    expect(result.current.savedBuildsByPath["pve/campaign"]).toBeUndefined();
+  });
+
+  it("clears a saved tab when its draft changes", () => {
+    const result = filledBuild();
+
+    act(() => {
+      result.current.saveCurrentTargetBuild("2026-05-30T00:00:00.000Z");
+    });
+
+    expect(result.current.savedBuildsByPath.pvp).toBeTruthy();
+
+    act(() => {
+      result.current.removeRune("fire");
+    });
+
+    expect(result.current.savedBuildsByPath.pvp).toBeUndefined();
+    expect(result.current.buildFullExport()).toBeNull();
   });
 
   it("selecting PvP sets target path to pvp", () => {

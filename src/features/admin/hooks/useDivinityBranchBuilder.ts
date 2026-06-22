@@ -127,6 +127,11 @@ export function useDivinityBranchBuilder(
 
   const updateCurrentDraft = useCallback(
     (update: (current: EditableBuildDraft) => EditableBuildDraft) => {
+      setSavedBuildsByPath((savedBuilds) => {
+        const { [targetPathKey]: _changedBuild, ...remainingBuilds } = savedBuilds;
+
+        return remainingBuilds;
+      });
       setDraftsByPath((current) => {
         const draft = current[targetPathKey] ?? emptyDraft;
 
@@ -169,6 +174,7 @@ export function useDivinityBranchBuilder(
       const hero = getHeroById(currentId);
 
       if (!hero || value !== hero.name.ru) {
+        setSavedBuildsByPath({});
         return null;
       }
 
@@ -183,11 +189,16 @@ export function useDivinityBranchBuilder(
       return;
     }
 
+    if (selectedHeroId !== heroId) {
+      setSavedBuildsByPath({});
+    }
+
     setSelectedHeroId(heroId);
     setHeroQueryState(hero.name.ru);
-  }, []);
+  }, [selectedHeroId]);
 
   const clearSelectedHero = useCallback(() => {
+    setSavedBuildsByPath({});
     setSelectedHeroId(null);
     setHeroQueryState("");
   }, []);
@@ -469,7 +480,7 @@ export function useDivinityBranchBuilder(
       const key = getBuildTargetPathKey(targetTabPath);
 
       setSavedBuildsByPath((current) => ({
-        ...seedEmptySavedBuilds(current, exported),
+        ...current,
         [key]: toCommittedBuild(exported),
       }));
       setDraftsByPath((current) => seedEmptyDrafts(current, exported));
@@ -573,27 +584,6 @@ function toCommittedBuild(
 ): DivinityBranchBuildExport {
   const { targetTabPath: _targetTabPath, ...build } = exported;
   return build;
-}
-
-function seedEmptySavedBuilds(
-  current: SavedBuildsByPath,
-  exported: DivinityBranchBuilderExport,
-): SavedBuildsByPath {
-  if (Object.keys(current).length > 0) {
-    return current;
-  }
-
-  return getBuildTargetLeafTabs(buildTargetTabs).reduce<SavedBuildsByPath>(
-    (seededBuilds, leaf) => {
-      seededBuilds[getBuildTargetPathKey(leaf.path)] = {
-        ...toCommittedBuild(exported),
-        gameMode: leaf.gameMode,
-      };
-
-      return seededBuilds;
-    },
-    {},
-  );
 }
 
 function seedEmptyDrafts(
