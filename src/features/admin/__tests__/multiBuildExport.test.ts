@@ -6,7 +6,9 @@ import {
   getBuildTargetLeafTabs,
   getBuildTargetPathKey,
   getBuildTargetPathLabel,
+  validateMultiBuildExport,
 } from "../model/multiBuildExport";
+import { branchBuilderValidationCatalog } from "../data/branchBuilderCatalogs";
 import { buildTargetTabs } from "../data/buildTargetTabs";
 
 const build = (gameMode: "pvp" | "pve"): DivinityBranchBuildExport => ({
@@ -56,5 +58,61 @@ describe("multiBuildExport assembly", () => {
     expect(buildSet.tabs[1].children?.[0].build?.gameMode).toBe("pve");
     expect("targetTabPath" in buildSet.tabs[0].build!).toBe(false);
     expect(validateHeroBuildTabs(buildSet)).toEqual([]);
+  });
+});
+
+describe("multiBuildExport validation", () => {
+  test("requires every target leaf tab to have a saved build", () => {
+    const result = validateMultiBuildExport({
+      targetTabs: buildTargetTabs,
+      savedBuilds: {
+        pvp: build("pvp"),
+      },
+      validationCatalog: branchBuilderValidationCatalog,
+    });
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors.map((error) => error.message)).toContain(
+      "PvE -> Боссы: Сохраните билд для этой вкладки.",
+    );
+    expect(result.errors.map((error) => error.message)).toContain(
+      "PvE -> Кампания: Сохраните билд для этой вкладки.",
+    );
+  });
+
+  test("rejects saved build with wrong target game mode", () => {
+    const result = validateMultiBuildExport({
+      targetTabs: buildTargetTabs,
+      savedBuilds: {
+        pvp: build("pve"),
+        "pve/bosses": build("pve"),
+        "pve/campaign": build("pve"),
+      },
+      validationCatalog: branchBuilderValidationCatalog,
+    });
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors.map((error) => error.message)).toContain(
+      "PvP: Режим игры не соответствует выбранной вкладке.",
+    );
+  });
+
+  test("keeps existing branch depth validation per tab", () => {
+    const invalidPvp = { ...build("pvp"), progress: {} };
+    const result = validateMultiBuildExport({
+      targetTabs: buildTargetTabs,
+      savedBuilds: {
+        pvp: invalidPvp,
+        "pve/bosses": build("pve"),
+        "pve/campaign": build("pve"),
+      },
+      validationCatalog: branchBuilderValidationCatalog,
+    });
+
+    expect(
+      result.errors.some((error) =>
+        error.message.includes("PvP: Минимальный уровень левой ветки"),
+      ),
+    ).toBe(true);
   });
 });

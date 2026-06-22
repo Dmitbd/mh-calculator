@@ -3,6 +3,12 @@ import type { HeroBuildTab, HeroBuildTabPath } from "@/features/game-data/heroes
 import type { HeroBuildSet } from "@/features/game-data/heroes";
 import { sortBuildTabs } from "@/features/game-data/heroes";
 
+import type {
+  BranchBuildValidationError,
+  BranchBuildValidationResult,
+} from "../types/admin.types";
+import { validateBranchBuild } from "../utils/validateBranchBuild";
+
 export type BuildTargetLeafTab = {
   path: HeroBuildTabPath;
   label: string;
@@ -10,6 +16,8 @@ export type BuildTargetLeafTab = {
 };
 
 export type SavedBuildsByPath = Record<string, DivinityBranchBuildExport>;
+
+type ValidationCatalog = Parameters<typeof validateBranchBuild>[1];
 
 export function getBuildTargetPathKey(path: HeroBuildTabPath): string {
   return path.join("/");
@@ -40,13 +48,14 @@ export function getBuildTargetLeafTabs(
   tabs: readonly HeroBuildTab[],
   parentPath: HeroBuildTabPath = [],
   inheritedGameMode?: HeroBuildTab["gameMode"],
+  rootTabs: readonly HeroBuildTab[] = tabs,
 ): BuildTargetLeafTab[] {
   return sortBuildTabs([...tabs]).flatMap((tab) => {
     const path = [...parentPath, tab.id];
     const gameMode = tab.gameMode ?? inheritedGameMode;
 
     if (tab.kind === "group" && tab.children) {
-      return getBuildTargetLeafTabs(tab.children, path, gameMode);
+      return getBuildTargetLeafTabs(tab.children, path, gameMode, rootTabs);
     }
 
     if (!gameMode) {
@@ -56,7 +65,7 @@ export function getBuildTargetLeafTabs(
     return [
       {
         path,
-        label: getBuildTargetPathLabel(tabs, path),
+        label: getBuildTargetPathLabel(rootTabs, path),
         gameMode,
       },
     ];
@@ -95,5 +104,62 @@ function attachSavedBuildToTab(
   return {
     ...tab,
     build: savedBuilds[getBuildTargetPathKey(path)] ?? null,
+  };
+}
+
+export function validateMultiBuildExport(params: {
+  targetTabs: readonly HeroBuildTab[];
+  savedBuilds: SavedBuildsByPath;
+  validationCatalog: ValidationCatalog;
+}): BranchBuildValidationResult {
+  const errors: BranchBuildValidationError[] = [];
+
+  getBuildTargetLeafTabs(params.targetTabs).forEach((leaf) => {
+    const key = getBuildTargetPathKey(leaf.path);
+    const build = params.savedBuilds[key];
+
+    if (!build) {
+      errors.push({
+        code: "multiBuild.missingTab",
+        message: `${leaf.label}: Сохраните билд для этой вкладки.`,
+        path: key,
+      });
+      return;
+    }
+
+    if (build.gameMode !== leaf.gameMode) {
+      errors.push({
+        code: "multiBuild.gameModeMismatch",
+        message: `${leaf.label}: Режим игры не соответствует выбранной вкладке.`,
+        path: key,
+      });
+    }
+
+    const result = validateBranchBuild(
+      {
+        gameMode: build.gameMode,
+        heroId: build.heroId,
+        heroName: build.heroName,
+        columns: build.columns,
+        majorNodes: build.majorNodes,
+        weaponAwakening: build.weaponAwakening,
+        equipment: build.equipment,
+        progress: build.progress,
+      },
+      params.validationCatalog,
+    );
+
+    result.errors.forEach((error) => {
+      errors.push({
+        ...error,
+        message: `${leaf.label}: ${error.message}`,
+        path: error.path ? `${key}.${error.path}` : key,
+      });
+    });
+  });
+
+  return {
+    isValid: errors.length === 0,
+    errors,
   };
 }

@@ -19,4 +19,6 @@ export type BranchBuildValidationErrorCode =
   | "equipment.artifactDuplicate"
   | "equipment.runeRequired"
   | "equipment.runeUnknown"
-  | "equipment.runeDuplicate";
+  | "equipment.runeDuplicate"
+  | "multiBuild.missingTab"
+  | "multiBuild.gameModeMismatch";
