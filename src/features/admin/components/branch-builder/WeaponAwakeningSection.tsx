@@ -9,9 +9,12 @@ import type {
   WeaponAwakeningSlot,
 } from "@/features/game-data/weapon-awakening/types";
 
+import { ValidationErrorMessages } from "../ValidationErrorMessages";
+
 type WeaponAwakeningSectionProps = {
   bonuses: readonly WeaponAwakeningActiveBonus[];
   colors: readonly WeaponAwakeningColor[];
+  errors: readonly string[];
   onCycleSlot: (slot: number) => void;
   selectedHero: Hero | null;
   selections: Partial<Record<number, WeaponAwakeningColorId>>;
@@ -21,6 +24,7 @@ type WeaponAwakeningSectionProps = {
 export function WeaponAwakeningSection({
   bonuses,
   colors,
+  errors,
   onCycleSlot,
   selectedHero,
   selections,
@@ -36,6 +40,7 @@ export function WeaponAwakeningSection({
         selections={selections}
         slots={slots}
       />
+      <ValidationErrorMessages messages={errors} />
       <WeaponAwakeningBonusList bonuses={bonuses} colors={colors} />
       {!selectedHero && hasSelections ? (
         <Text style={styles.hint}>

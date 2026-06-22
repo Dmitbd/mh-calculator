@@ -12,6 +12,8 @@ import type {
   TreeTemplateNode,
 } from "@/features/game-data/divinity/types";
 
+import { ValidationErrorMessages } from "../ValidationErrorMessages";
+
 type ActiveMajorSlot = {
   columnId: BranchColumnId;
   level: number;
@@ -21,6 +23,7 @@ type BranchGridSectionProps = {
   activeMajorSlot: ActiveMajorSlot;
   branches: readonly DivinityBranch[];
   columns: readonly BranchColumn[];
+  errors: readonly string[];
   onClearMajorSkill: (columnId: BranchColumnId, level: number) => void;
   onOpenMajorSlot: (columnId: BranchColumnId, level: number) => void;
   onSelectBranch: (columnId: BranchColumnId, branchId: DivinityBranchId) => void;
@@ -41,6 +44,7 @@ export function BranchGridSection({
   activeMajorSlot,
   branches,
   columns,
+  errors,
   onClearMajorSkill,
   onOpenMajorSlot,
   onSelectBranch,
@@ -71,6 +75,7 @@ export function BranchGridSection({
         skills={skills}
         template={template}
       />
+      <ValidationErrorMessages messages={errors} />
     </View>
   );
 }

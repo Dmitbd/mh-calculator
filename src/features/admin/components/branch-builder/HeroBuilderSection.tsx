@@ -1,10 +1,12 @@
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import type { Hero } from "@/features/game-data/heroes/types";
 
 import { HeroSelectInput } from "../HeroSelectInput";
+import { ValidationErrorMessages } from "../ValidationErrorMessages";
 
 type HeroBuilderSectionProps = {
+  errors: readonly string[];
   heroQuery: string;
   heroes: readonly Hero[];
   onClearHero: () => void;
@@ -14,6 +16,7 @@ type HeroBuilderSectionProps = {
 };
 
 export function HeroBuilderSection({
+  errors,
   heroQuery,
   heroes,
   onClearHero,
@@ -22,7 +25,7 @@ export function HeroBuilderSection({
   selectedHeroId,
 }: HeroBuilderSectionProps) {
   return (
-    <View>
+    <View style={styles.wrapper}>
       <HeroSelectInput
         heroQuery={heroQuery}
         heroes={heroes}
@@ -31,6 +34,13 @@ export function HeroBuilderSection({
         onSelectHero={onSelectHero}
         selectedHeroId={selectedHeroId}
       />
+      <ValidationErrorMessages messages={errors} />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  wrapper: {
+    gap: 8,
+  },
+});

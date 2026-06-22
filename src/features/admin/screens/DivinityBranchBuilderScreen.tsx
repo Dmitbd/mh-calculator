@@ -98,6 +98,26 @@ export function DivinityBranchBuilderScreen() {
     selectedTopTabId,
     topTabs: buildTargetTopTabs,
   } = useMemo(() => getBranchBuilderTargetTabs(targetTabPath), [targetTabPath]);
+  const targetTabErrors = getErrorMessages(validationErrors, (path, error) =>
+    error.code.startsWith("multiBuild.") || isTargetTabErrorPath(path),
+  );
+  const heroErrors = getErrorMessages(validationErrors, (path) =>
+    path === "heroId" || path === "heroName",
+  );
+  const artifactErrors = getErrorMessages(validationErrors, (path) =>
+    path.startsWith("equipment.artifactIds"),
+  );
+  const runeErrors = getErrorMessages(validationErrors, (path) =>
+    path.startsWith("equipment.runeIds"),
+  );
+  const weaponAwakeningErrors = getErrorMessages(validationErrors, (path) =>
+    path.startsWith("weaponAwakening."),
+  );
+  const branchGridErrors = getErrorMessages(validationErrors, (path) =>
+    path.startsWith("columns.") ||
+    path.startsWith("progress.") ||
+    path.startsWith("majorNodes."),
+  );
 
   const scrollToErrors = () => {
     if (!pendingScrollToErrors.current) {
@@ -189,6 +209,7 @@ export function DivinityBranchBuilderScreen() {
       <View style={styles.section}>
         <BuildTargetSection
           childTabs={buildTargetChildTabs}
+          errors={targetTabErrors}
           onSelectChildTab={setTargetChildTab}
           onSelectTab={setTargetTopTab}
           selectedChildTabId={selectedChildTabId}
@@ -199,6 +220,7 @@ export function DivinityBranchBuilderScreen() {
 
       <View style={styles.section}>
         <HeroBuilderSection
+          errors={heroErrors}
           heroQuery={heroQuery}
           heroes={branchBuilderHeroes}
           onClearHero={clearSelectedHero}
@@ -210,11 +232,13 @@ export function DivinityBranchBuilderScreen() {
 
       <View style={styles.section}>
         <EquipmentBuilderSection
+          artifactErrors={artifactErrors}
           artifacts={branchBuilderArtifacts}
           onAddArtifact={addArtifact}
           onAddRune={addRune}
           onRemoveArtifact={removeArtifact}
           onRemoveRune={removeRune}
+          runeErrors={runeErrors}
           runes={branchBuilderRunes}
           selectedArtifactIds={selectedArtifactIds}
           selectedRuneIds={selectedRuneIds}
@@ -225,6 +249,7 @@ export function DivinityBranchBuilderScreen() {
         <WeaponAwakeningSection
           bonuses={weaponAwakeningBonuses}
           colors={branchBuilderWeaponAwakeningColors}
+          errors={weaponAwakeningErrors}
           onCycleSlot={cycleWeaponAwakeningSlot}
           selectedHero={selectedHero}
           selections={weaponAwakeningSelections}
@@ -237,6 +262,7 @@ export function DivinityBranchBuilderScreen() {
           activeMajorSlot={activeMajorSlot}
           branches={branchBuilderBranches}
           columns={branchBuilderColumns}
+          errors={branchGridErrors}
           onClearMajorSkill={(columnId, level) => {
             setMajorSkill(columnId, level, null);
             rollbackColumnProgress(columnId, level);
@@ -289,3 +315,19 @@ const styles = StyleSheet.create({
     width: "100%",
   },
 });
+
+function getErrorMessages(
+  errors: readonly BranchBuildValidationError[],
+  matches: (path: string, error: BranchBuildValidationError) => boolean,
+): string[] {
+  return errors
+    .filter((error) => error.path && matches(error.path, error))
+    .map((error) => error.message);
+}
+
+function isTargetTabErrorPath(path: string): boolean {
+  return (
+    !path.includes(".") &&
+    (path.includes("/") || path === "pvp" || path === "pve")
+  );
+}

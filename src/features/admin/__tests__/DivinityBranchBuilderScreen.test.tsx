@@ -45,15 +45,38 @@ describe("DivinityBranchBuilderScreen", () => {
     fireEvent.press(screen.getByText("Сохранить вкладку"));
 
     expect(
-      screen.getByText("Выберите цвет пробуждения оружия для слота 1."),
+      screen.getAllByText("Выберите цвет пробуждения оружия для слота 1.").length,
     ).toBeTruthy();
-    expect(screen.getByText("Выберите героя из списка.")).toBeTruthy();
-    expect(screen.getByText("Выберите оружие.")).toBeTruthy();
-    expect(screen.getByText("Выберите руну.")).toBeTruthy();
-    expect(screen.getByText("Выберите ветку для левой колонки.")).toBeTruthy();
+    expect(screen.getAllByText("Выберите героя из списка.").length).toBeTruthy();
+    expect(screen.getAllByText("Выберите оружие.").length).toBeTruthy();
+    expect(screen.getAllByText("Выберите руну.").length).toBeTruthy();
     expect(
-      screen.getByText("Выберите крупный навык для центральной колонки на уровне 1."),
+      screen.getAllByText("Выберите ветку для левой колонки.").length,
     ).toBeTruthy();
+    expect(
+      screen.getAllByText(
+        "Выберите крупный навык для центральной колонки на уровне 1.",
+      ).length,
+    ).toBeTruthy();
+  });
+
+  it("shows current tab validation messages next to related fields", () => {
+    render(<DivinityBranchBuilderScreen />);
+
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+
+    expect(screen.getAllByText("Выберите героя из списка.")).toHaveLength(2);
+    expect(screen.getAllByText("Выберите оружие.")).toHaveLength(2);
+    expect(screen.getAllByText("Выберите руну.")).toHaveLength(2);
+    expect(
+      screen.getAllByText("Выберите цвет пробуждения оружия для слота 1."),
+    ).toHaveLength(2);
+    expect(
+      screen.getAllByText("Выберите ветку для левой колонки."),
+    ).toHaveLength(2);
+    expect(
+      screen.getAllByText("Выберите крупный навык для центральной колонки на уровне 1."),
+    ).toHaveLength(2);
   });
 
   it("shows save tab and full json download actions", () => {
@@ -68,13 +91,31 @@ describe("DivinityBranchBuilderScreen", () => {
 
     fireEvent.press(screen.getByText("Скачать полный JSON"));
 
-    expect(screen.getByText("PvP: Сохраните билд для этой вкладки.")).toBeTruthy();
     expect(
-      screen.getByText("PvE -> Боссы: Сохраните билд для этой вкладки."),
+      screen.getAllByText("PvP: Сохраните билд для этой вкладки.").length,
     ).toBeTruthy();
     expect(
-      screen.getByText("PvE -> Кампания: Сохраните билд для этой вкладки."),
+      screen.getAllByText("PvE -> Боссы: Сохраните билд для этой вкладки.").length,
     ).toBeTruthy();
+    expect(
+      screen.getAllByText("PvE -> Кампания: Сохраните билд для этой вкладки.").length,
+    ).toBeTruthy();
+  });
+
+  it("shows full export target tab errors above the target tabs", () => {
+    render(<DivinityBranchBuilderScreen />);
+
+    fireEvent.press(screen.getByText("Скачать полный JSON"));
+
+    expect(
+      screen.getAllByText("PvP: Сохраните билд для этой вкладки."),
+    ).toHaveLength(2);
+    expect(
+      screen.getAllByText("PvE -> Боссы: Сохраните билд для этой вкладки."),
+    ).toHaveLength(2);
+    expect(
+      screen.getAllByText("PvE -> Кампания: Сохраните билд для этой вкладки."),
+    ).toHaveLength(2);
   });
 
   it("selects branch types from the grid column headers", () => {
@@ -103,7 +144,7 @@ describe("DivinityBranchBuilderScreen", () => {
     fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "бастет без выбора");
     fireEvent.press(screen.getByText("Сохранить вкладку"));
 
-    expect(screen.getByText("Выберите героя из списка.")).toBeTruthy();
+    expect(screen.getAllByText("Выберите героя из списка.").length).toBeTruthy();
   });
 
   it("prefixes web branch header image paths with the configured base URL", () => {

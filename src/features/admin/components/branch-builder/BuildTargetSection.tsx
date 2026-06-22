@@ -1,9 +1,12 @@
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { BuildFolderTabs, type BuildFolderTabItem } from "@/features/builds";
 
+import { ValidationErrorMessages } from "../ValidationErrorMessages";
+
 type BuildTargetSectionProps = {
   childTabs?: BuildFolderTabItem[];
+  errors: readonly string[];
   onSelectChildTab: (tabId: string) => void;
   onSelectTab: (tabId: string) => void;
   selectedChildTabId?: string;
@@ -13,6 +16,7 @@ type BuildTargetSectionProps = {
 
 export function BuildTargetSection({
   childTabs,
+  errors,
   onSelectChildTab,
   onSelectTab,
   selectedChildTabId,
@@ -20,7 +24,8 @@ export function BuildTargetSection({
   tabs,
 }: BuildTargetSectionProps) {
   return (
-    <View>
+    <View style={styles.wrapper}>
+      <ValidationErrorMessages messages={errors} />
       <BuildFolderTabs
         childTabs={childTabs}
         onSelectChildTab={onSelectChildTab}
@@ -32,3 +37,9 @@ export function BuildTargetSection({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  wrapper: {
+    gap: 8,
+  },
+});
