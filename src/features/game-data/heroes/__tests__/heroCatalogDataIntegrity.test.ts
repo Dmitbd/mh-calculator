@@ -148,8 +148,15 @@ describe("build registry", () => {
     expect(heroBuilds.bastet.schemaVersion).toBe(2);
   });
 
-  test("bastet build tabs have valid structure", () => {
-    expect(validateHeroBuildTabs(heroBuilds.bastet)).toEqual([]);
+  test("morana build file is registered for the hero list", () => {
+    expect(heroBuilds.morana.schemaVersion).toBe(2);
+    expect(heroesWithBuilds.map((hero) => hero.id)).toContain("morana");
+  });
+
+  test("registered hero build tabs have valid structure", () => {
+    for (const buildSet of Object.values(heroBuilds)) {
+      expect(validateHeroBuildTabs(buildSet)).toEqual([]);
+    }
   });
 
   test("bastet top-level tabs define gameMode", () => {

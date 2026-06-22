@@ -3,6 +3,7 @@ import { hasReadyBuildInTabs } from "@/features/game-data/heroes/heroBuildTabs";
 
 import heroesData from "./heroes.json";
 import bastetBuild from "./builds/bastet.json";
+import moranaBuild from "./builds/morana.json";
 
 /** Полный каталог героев UR/SSR */
 export const heroes = heroesData as Hero[];
@@ -14,6 +15,7 @@ export const heroes = heroesData as Hero[];
  */
 export const heroBuilds: Record<string, HeroBuildSet> = {
   bastet: bastetBuild as HeroBuildSet,
+  morana: moranaBuild as HeroBuildSet,
 };
 
 /** Проверяет, есть ли у героя хотя бы один готовый билд */
