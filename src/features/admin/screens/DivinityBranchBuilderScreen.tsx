@@ -37,16 +37,20 @@ import type {
   BranchColumnId,
 } from "../types/admin.types";
 import { downloadJson } from "../utils/downloadJson";
-import { validateBranchBuild } from "../utils/validateBranchBuild";
+import {
+  MIN_BRANCH_PROGRESS_LEVEL,
+  validateBranchBuild,
+} from "../utils/validateBranchBuild";
 
 const SCREEN_PADDING = 20;
+type PendingScrollTarget = "errors" | "top";
 
 export function DivinityBranchBuilderScreen() {
   const { top, bottom } = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const downloadSectionY = useRef(0);
   const errorsBlockY = useRef(0);
-  const pendingScrollToErrors = useRef(false);
+  const pendingScrollTarget = useRef<PendingScrollTarget | null>(null);
   const {
     addArtifact,
     addRune,
@@ -119,28 +123,31 @@ export function DivinityBranchBuilderScreen() {
     path.startsWith("majorNodes."),
   );
 
-  const scrollToErrors = () => {
-    if (!pendingScrollToErrors.current) {
+  const scrollToPendingTarget = () => {
+    const target = pendingScrollTarget.current;
+
+    if (!target) {
       return;
     }
 
-    pendingScrollToErrors.current = false;
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({
-        animated: true,
-        y: Math.max(0, downloadSectionY.current + errorsBlockY.current - 12),
-      });
+    pendingScrollTarget.current = null;
+    scrollRef.current?.scrollTo({
+      animated: true,
+      y:
+        target === "top"
+          ? 0
+          : Math.max(0, downloadSectionY.current + errorsBlockY.current - 12),
     });
   };
 
   const handleDownloadSectionLayout = (event: LayoutChangeEvent) => {
     downloadSectionY.current = event.nativeEvent.layout.y;
-    scrollToErrors();
+    scrollToPendingTarget();
   };
 
   const handleErrorsLayout = (event: LayoutChangeEvent) => {
     errorsBlockY.current = event.nativeEvent.layout.y;
-    scrollToErrors();
+    scrollToPendingTarget();
   };
 
   const showValidationErrors = (
@@ -149,14 +156,29 @@ export function DivinityBranchBuilderScreen() {
     setValidationErrors([...errors]);
 
     if (errors.length > 0) {
-      pendingScrollToErrors.current = true;
+      const target = hasTargetTabErrors(errors) ? "top" : "errors";
+      pendingScrollTarget.current = target;
 
-      if (validationErrors.length > 0) {
+      if (target === "top" || validationErrors.length > 0) {
         requestAnimationFrame(() => {
-          scrollToErrors();
+          scrollToPendingTarget();
         });
       }
     }
+  };
+
+  const clearValidationErrors = (
+    matches: (path: string, error: BranchBuildValidationError) => boolean,
+  ) => {
+    setValidationErrors((current) =>
+      current.filter((error) => !error.path || !matches(error.path, error)),
+    );
+  };
+
+  const clearTargetTabErrors = () => {
+    clearValidationErrors((path, error) =>
+      error.code.startsWith("multiBuild.") || isTargetTabErrorPath(path),
+    );
   };
 
   const handleSaveCurrentTargetBuild = () => {
@@ -193,6 +215,76 @@ export function DivinityBranchBuilderScreen() {
     }
   };
 
+  const handleSelectTopTab = (tabId: string) => {
+    clearTargetTabErrors();
+    setTargetTopTab(tabId);
+  };
+
+  const handleSelectChildTab = (tabId: string) => {
+    clearTargetTabErrors();
+    setTargetChildTab(tabId);
+  };
+
+  const handleSelectHero = (heroId: string) => {
+    selectHero(heroId);
+    clearValidationErrors(isHeroErrorPath);
+  };
+
+  const handleAddArtifact = (id: string) => {
+    addArtifact(id);
+    clearValidationErrors(isArtifactErrorPath);
+  };
+
+  const handleRemoveArtifact = (id: string) => {
+    removeArtifact(id);
+    clearValidationErrors(isArtifactErrorPath);
+  };
+
+  const handleAddRune = (id: string) => {
+    addRune(id);
+    clearValidationErrors(isRuneErrorPath);
+  };
+
+  const handleRemoveRune = (id: string) => {
+    removeRune(id);
+    clearValidationErrors(isRuneErrorPath);
+  };
+
+  const handleCycleWeaponAwakeningSlot = (slot: number) => {
+    cycleWeaponAwakeningSlot(slot);
+    clearValidationErrors((path) => path === `weaponAwakening.${slot}`);
+  };
+
+  const handleSetColumnBranch = (
+    columnId: BranchColumnId,
+    branchId: Parameters<typeof setColumnBranch>[1],
+  ) => {
+    setColumnBranch(columnId, branchId);
+    clearValidationErrors((path) => path === `columns.${columnId}`);
+  };
+
+  const handleSetMajorSkill = (
+    columnId: BranchColumnId,
+    level: number,
+    skillId: string,
+  ) => {
+    setMajorSkill(columnId, level, skillId);
+    setColumnProgress(columnId, level);
+    clearValidationErrors((path) =>
+      path === getMajorNodePath(columnId, level) ||
+      (level >= MIN_BRANCH_PROGRESS_LEVEL && path === `progress.${columnId}`),
+    );
+    setActiveMajorSlot(null);
+  };
+
+  const handleToggleProgress = (columnId: BranchColumnId, level: number) => {
+    toggleColumnProgress(columnId, level);
+
+    if (level >= MIN_BRANCH_PROGRESS_LEVEL) {
+      clearValidationErrors((path) => path === `progress.${columnId}`);
+    }
+  };
+
   return (
     <View style={styles.screen}>
       <ScreenHeader title="Builder" fallbackHref="/" />
@@ -210,8 +302,8 @@ export function DivinityBranchBuilderScreen() {
         <BuildTargetSection
           childTabs={buildTargetChildTabs}
           errors={targetTabErrors}
-          onSelectChildTab={setTargetChildTab}
-          onSelectTab={setTargetTopTab}
+          onSelectChildTab={handleSelectChildTab}
+          onSelectTab={handleSelectTopTab}
           selectedChildTabId={selectedChildTabId}
           selectedTabId={selectedTopTabId}
           tabs={buildTargetTopTabs}
@@ -225,7 +317,7 @@ export function DivinityBranchBuilderScreen() {
           heroes={branchBuilderHeroes}
           onClearHero={clearSelectedHero}
           onQueryChange={setHeroQuery}
-          onSelectHero={selectHero}
+          onSelectHero={handleSelectHero}
           selectedHeroId={selectedHeroId}
         />
       </View>
@@ -234,10 +326,10 @@ export function DivinityBranchBuilderScreen() {
         <EquipmentBuilderSection
           artifactErrors={artifactErrors}
           artifacts={branchBuilderArtifacts}
-          onAddArtifact={addArtifact}
-          onAddRune={addRune}
-          onRemoveArtifact={removeArtifact}
-          onRemoveRune={removeRune}
+          onAddArtifact={handleAddArtifact}
+          onAddRune={handleAddRune}
+          onRemoveArtifact={handleRemoveArtifact}
+          onRemoveRune={handleRemoveRune}
           runeErrors={runeErrors}
           runes={branchBuilderRunes}
           selectedArtifactIds={selectedArtifactIds}
@@ -250,7 +342,7 @@ export function DivinityBranchBuilderScreen() {
           bonuses={weaponAwakeningBonuses}
           colors={branchBuilderWeaponAwakeningColors}
           errors={weaponAwakeningErrors}
-          onCycleSlot={cycleWeaponAwakeningSlot}
+          onCycleSlot={handleCycleWeaponAwakeningSlot}
           selectedHero={selectedHero}
           selections={weaponAwakeningSelections}
           slots={branchBuilderWeaponAwakeningSlots}
@@ -271,13 +363,11 @@ export function DivinityBranchBuilderScreen() {
           onOpenMajorSlot={(columnId, level) =>
             setActiveMajorSlot({ columnId, level })
           }
-          onSelectBranch={setColumnBranch}
           onSelectMajorSkill={(columnId, level, skillId) => {
-            setMajorSkill(columnId, level, skillId);
-            setColumnProgress(columnId, level);
-            setActiveMajorSlot(null);
+            handleSetMajorSkill(columnId, level, skillId);
           }}
-          onToggleProgress={toggleColumnProgress}
+          onSelectBranch={handleSetColumnBranch}
+          onToggleProgress={handleToggleProgress}
           progressLevels={progressLevels}
           selectedBranches={selectedBranches}
           selectedMajorSkills={selectedMajorSkills}
@@ -330,4 +420,30 @@ function isTargetTabErrorPath(path: string): boolean {
     !path.includes(".") &&
     (path.includes("/") || path === "pvp" || path === "pve")
   );
+}
+
+function hasTargetTabErrors(
+  errors: readonly BranchBuildValidationError[],
+): boolean {
+  return errors.some(
+    (error) =>
+      error.code.startsWith("multiBuild.") ||
+      (error.path ? isTargetTabErrorPath(error.path) : false),
+  );
+}
+
+function isHeroErrorPath(path: string): boolean {
+  return path === "heroId" || path === "heroName";
+}
+
+function isArtifactErrorPath(path: string): boolean {
+  return path.startsWith("equipment.artifactIds");
+}
+
+function isRuneErrorPath(path: string): boolean {
+  return path.startsWith("equipment.runeIds");
+}
+
+function getMajorNodePath(columnId: BranchColumnId, level: number): string {
+  return `majorNodes.${columnId}.${level}`;
 }

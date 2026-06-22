@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
-import { Platform } from "react-native";
+import { Platform, ScrollView } from "react-native";
 
 import { DivinityBranchBuilderScreen } from "../screens/DivinityBranchBuilderScreen";
 
@@ -116,6 +116,32 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(
       screen.getAllByText("PvE -> Кампания: Сохраните билд для этой вкладки."),
     ).toHaveLength(2);
+  });
+
+  it("scrolls to the top when full export has target tab errors", () => {
+    const scrollToSpy = jest.spyOn(ScrollView.prototype, "scrollTo");
+
+    render(<DivinityBranchBuilderScreen />);
+
+    fireEvent.press(screen.getByText("Скачать полный JSON"));
+
+    expect(scrollToSpy).toHaveBeenCalledWith({ animated: true, y: 0 });
+
+    scrollToSpy.mockRestore();
+  });
+
+  it("clears fixed field errors while the form is being filled", () => {
+    render(<DivinityBranchBuilderScreen />);
+
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+
+    expect(screen.getAllByText("Выберите героя из списка.")).toHaveLength(2);
+
+    fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "bastet");
+    fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
+
+    expect(screen.queryByText("Выберите героя из списка.")).toBeNull();
+    expect(screen.getAllByText("Выберите оружие.")).toHaveLength(2);
   });
 
   it("selects branch types from the grid column headers", () => {
