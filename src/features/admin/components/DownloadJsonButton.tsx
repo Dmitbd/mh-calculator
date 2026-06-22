@@ -11,23 +11,36 @@ import type { BranchBuildValidationError } from "../types/admin.types";
 type DownloadJsonButtonProps = {
   errors: readonly BranchBuildValidationError[];
   onErrorsLayout?: (event: LayoutChangeEvent) => void;
-  onPress: () => void;
+  onDownloadFull: () => void;
+  onSaveCurrent: () => void;
 };
 
 export function DownloadJsonButton({
   errors,
   onErrorsLayout,
-  onPress,
+  onDownloadFull,
+  onSaveCurrent,
 }: DownloadJsonButtonProps) {
   return (
     <View style={styles.wrapper}>
-      <Pressable
-        accessibilityRole="button"
-        onPress={onPress}
-        style={styles.button}
-      >
-        <Text style={styles.buttonText}>Скачать JSON</Text>
-      </Pressable>
+      <View style={styles.actions}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onSaveCurrent}
+          style={[styles.button, styles.secondaryButton]}
+        >
+          <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+            Сохранить вкладку
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onDownloadFull}
+          style={styles.button}
+        >
+          <Text style={styles.buttonText}>Скачать полный JSON</Text>
+        </Pressable>
+      </View>
       {errors.length > 0 ? (
         <View onLayout={onErrorsLayout} style={styles.errors}>
           {errors.map((error) => (
@@ -45,6 +58,9 @@ const styles = StyleSheet.create({
   wrapper: {
     gap: 10,
   },
+  actions: {
+    gap: 10,
+  },
   button: {
     minHeight: 48,
     alignItems: "center",
@@ -53,10 +69,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#795125",
     paddingHorizontal: 18,
   },
+  secondaryButton: {
+    borderWidth: 1,
+    borderColor: "#8a6a44",
+    backgroundColor: "#2c2118",
+  },
   buttonText: {
     color: "#fff8e8",
     fontSize: 16,
     fontWeight: "900",
+  },
+  secondaryButtonText: {
+    color: "#f6d59a",
   },
   errors: {
     gap: 6,

@@ -410,19 +410,25 @@ export function useDivinityBranchBuilder(
     [buildExport, targetTabPath],
   );
 
+  const validateFullExport = useCallback(
+    () =>
+      validateMultiBuildExport({
+        targetTabs: buildTargetTabs,
+        savedBuilds: savedBuildsByPath,
+        validationCatalog: branchBuilderValidationCatalog,
+      }),
+    [savedBuildsByPath],
+  );
+
   const buildFullExport = useCallback(() => {
-    const result = validateMultiBuildExport({
-      targetTabs: buildTargetTabs,
-      savedBuilds: savedBuildsByPath,
-      validationCatalog: branchBuilderValidationCatalog,
-    });
+    const result = validateFullExport();
 
     if (!result.isValid) {
       return null;
     }
 
     return buildHeroBuildSetFromSavedBuilds(buildTargetTabs, savedBuildsByPath);
-  }, [savedBuildsByPath]);
+  }, [savedBuildsByPath, validateFullExport]);
 
   return useMemo(
     () => ({
@@ -458,6 +464,7 @@ export function useDivinityBranchBuilder(
       buildValidationDraft,
       buildExport,
       saveCurrentTargetBuild,
+      validateFullExport,
       buildFullExport,
     }),
     [
@@ -486,6 +493,7 @@ export function useDivinityBranchBuilder(
       setMajorSkill,
       toggleColumnProgress,
       saveCurrentTargetBuild,
+      validateFullExport,
       buildFullExport,
     ],
   );

@@ -50,8 +50,8 @@ export function DivinityBranchBuilderScreen() {
   const {
     addArtifact,
     addRune,
-    buildExport,
     buildValidationDraft,
+    buildFullExport,
     clearSelectedHero,
     cycleWeaponAwakeningSlot,
     heroQuery,
@@ -59,6 +59,7 @@ export function DivinityBranchBuilderScreen() {
     removeArtifact,
     removeRune,
     rollbackColumnProgress,
+    saveCurrentTargetBuild,
     selectHero,
     selectedArtifactIds,
     selectedBranches,
@@ -74,6 +75,7 @@ export function DivinityBranchBuilderScreen() {
     setTargetTopTab,
     targetTabPath,
     toggleColumnProgress,
+    validateFullExport,
     weaponAwakeningSelections,
   } = useDivinityBranchBuilder(branchBuilderWeaponAwakeningCatalog);
   const [activeMajorSlot, setActiveMajorSlot] = useState<{
@@ -119,6 +121,56 @@ export function DivinityBranchBuilderScreen() {
   const handleErrorsLayout = (event: LayoutChangeEvent) => {
     errorsBlockY.current = event.nativeEvent.layout.y;
     scrollToErrors();
+  };
+
+  const showValidationErrors = (
+    errors: readonly BranchBuildValidationError[],
+  ) => {
+    setValidationErrors([...errors]);
+
+    if (errors.length > 0) {
+      pendingScrollToErrors.current = true;
+
+      if (validationErrors.length > 0) {
+        requestAnimationFrame(() => {
+          scrollToErrors();
+        });
+      }
+    }
+  };
+
+  const handleSaveCurrentTargetBuild = () => {
+    const result = validateBranchBuild(
+      buildValidationDraft(),
+      branchBuilderValidationCatalog,
+    );
+
+    showValidationErrors(result.errors);
+
+    if (result.isValid) {
+      saveCurrentTargetBuild();
+    }
+  };
+
+  const handleDownloadFullJson = () => {
+    const result = validateFullExport();
+
+    showValidationErrors(result.errors);
+
+    if (!result.isValid) {
+      return;
+    }
+
+    const buildSet = buildFullExport();
+
+    if (buildSet) {
+      const firstBuildTab = buildSet.tabs[0];
+      const heroId = firstBuildTab
+        ? firstBuildTab.build?.heroId
+        : selectedHeroId ?? "hero-builds";
+
+      downloadJson(buildSet, `${heroId ?? "hero-builds"}-build-set.json`);
+    }
   };
 
   return (
@@ -212,33 +264,9 @@ export function DivinityBranchBuilderScreen() {
         <DownloadSection
           errors={validationErrors}
           onErrorsLayout={handleErrorsLayout}
+          onDownloadFull={handleDownloadFullJson}
           onLayout={handleDownloadSectionLayout}
-          onPress={() => {
-            const result = validateBranchBuild(
-              buildValidationDraft(),
-              branchBuilderValidationCatalog,
-            );
-
-            setValidationErrors(result.errors);
-
-            if (result.errors.length > 0) {
-              pendingScrollToErrors.current = true;
-
-              if (validationErrors.length > 0) {
-                requestAnimationFrame(() => {
-                  scrollToErrors();
-                });
-              }
-            }
-
-            if (result.isValid) {
-              const build = buildExport();
-
-              if (build) {
-                downloadJson(build, `${build.heroId}.json`);
-              }
-            }
-          }}
+          onSaveCurrent={handleSaveCurrentTargetBuild}
         />
       </View>
       </ScrollView>

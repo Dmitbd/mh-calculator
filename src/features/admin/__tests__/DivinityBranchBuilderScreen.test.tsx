@@ -42,7 +42,7 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByText("1")).toBeTruthy();
     expect(screen.getAllByText("Divinity skill level").length).toBeGreaterThan(0);
 
-    fireEvent.press(screen.getByText("Скачать JSON"));
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
 
     expect(
       screen.getByText("Выберите цвет пробуждения оружия для слота 1."),
@@ -53,6 +53,27 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByText("Выберите ветку для левой колонки.")).toBeTruthy();
     expect(
       screen.getByText("Выберите крупный навык для центральной колонки на уровне 1."),
+    ).toBeTruthy();
+  });
+
+  it("shows save tab and full json download actions", () => {
+    render(<DivinityBranchBuilderScreen />);
+
+    expect(screen.getByText("Сохранить вкладку")).toBeTruthy();
+    expect(screen.getByText("Скачать полный JSON")).toBeTruthy();
+  });
+
+  it("blocks full json download when target tabs are missing", () => {
+    render(<DivinityBranchBuilderScreen />);
+
+    fireEvent.press(screen.getByText("Скачать полный JSON"));
+
+    expect(screen.getByText("PvP: Сохраните билд для этой вкладки.")).toBeTruthy();
+    expect(
+      screen.getByText("PvE -> Боссы: Сохраните билд для этой вкладки."),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("PvE -> Кампания: Сохраните билд для этой вкладки."),
     ).toBeTruthy();
   });
 
@@ -80,7 +101,7 @@ describe("DivinityBranchBuilderScreen", () => {
     render(<DivinityBranchBuilderScreen />);
 
     fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "бастет без выбора");
-    fireEvent.press(screen.getByText("Скачать JSON"));
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
 
     expect(screen.getByText("Выберите героя из списка.")).toBeTruthy();
   });

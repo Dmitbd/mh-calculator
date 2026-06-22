@@ -6,22 +6,25 @@ import type { BranchBuildValidationError } from "../../types/admin.types";
 type DownloadSectionProps = {
   errors: readonly BranchBuildValidationError[];
   onErrorsLayout: (event: LayoutChangeEvent) => void;
+  onDownloadFull: () => void;
   onLayout: (event: LayoutChangeEvent) => void;
-  onPress: () => void;
+  onSaveCurrent: () => void;
 };
 
 export function DownloadSection({
   errors,
   onErrorsLayout,
+  onDownloadFull,
   onLayout,
-  onPress,
+  onSaveCurrent,
 }: DownloadSectionProps) {
   return (
     <View onLayout={onLayout}>
       <DownloadJsonButton
         errors={errors}
         onErrorsLayout={onErrorsLayout}
-        onPress={onPress}
+        onDownloadFull={onDownloadFull}
+        onSaveCurrent={onSaveCurrent}
       />
     </View>
   );
