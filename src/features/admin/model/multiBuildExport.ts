@@ -1,4 +1,6 @@
+import type { DivinityBranchBuildExport } from "@/features/game-data/builds/types";
 import type { HeroBuildTab, HeroBuildTabPath } from "@/features/game-data/heroes";
+import type { HeroBuildSet } from "@/features/game-data/heroes";
 import { sortBuildTabs } from "@/features/game-data/heroes";
 
 export type BuildTargetLeafTab = {
@@ -6,6 +8,8 @@ export type BuildTargetLeafTab = {
   label: string;
   gameMode: NonNullable<HeroBuildTab["gameMode"]>;
 };
+
+export type SavedBuildsByPath = Record<string, DivinityBranchBuildExport>;
 
 export function getBuildTargetPathKey(path: HeroBuildTabPath): string {
   return path.join("/");
@@ -57,4 +61,39 @@ export function getBuildTargetLeafTabs(
       },
     ];
   });
+}
+
+export function buildHeroBuildSetFromSavedBuilds(
+  tabs: readonly HeroBuildTab[],
+  savedBuilds: SavedBuildsByPath,
+): HeroBuildSet {
+  return {
+    schemaVersion: 2,
+    tabs: sortBuildTabs([...tabs]).map((tab) =>
+      attachSavedBuildToTab(tab, savedBuilds, []),
+    ),
+  };
+}
+
+function attachSavedBuildToTab(
+  tab: HeroBuildTab,
+  savedBuilds: SavedBuildsByPath,
+  parentPath: HeroBuildTabPath,
+): HeroBuildTab {
+  const path = [...parentPath, tab.id];
+
+  if (tab.kind === "group") {
+    return {
+      ...tab,
+      build: null,
+      children: tab.children?.map((child) =>
+        attachSavedBuildToTab(child, savedBuilds, path),
+      ),
+    };
+  }
+
+  return {
+    ...tab,
+    build: savedBuilds[getBuildTargetPathKey(path)] ?? null,
+  };
 }
