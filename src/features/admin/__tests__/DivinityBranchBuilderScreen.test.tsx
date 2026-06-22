@@ -86,6 +86,23 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByText("Скачать полный JSON")).toBeTruthy();
   });
 
+  it("keeps equipment selections independent between target tabs", () => {
+    render(<DivinityBranchBuilderScreen />);
+
+    fireEvent.press(screen.getByLabelText("Добавить оружие"));
+    fireEvent.press(screen.getByLabelText("Add Excalibur"));
+
+    expect(screen.getByText("Excalibur")).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText("Select PvE build tab"));
+
+    expect(screen.queryByText("Excalibur")).toBeNull();
+
+    fireEvent.press(screen.getByLabelText("Select PvP build tab"));
+
+    expect(screen.getByText("Excalibur")).toBeTruthy();
+  });
+
   it("blocks full json download when target tabs are missing", () => {
     render(<DivinityBranchBuilderScreen />);
 

@@ -228,6 +228,90 @@ describe("useDivinityBranchBuilder", () => {
     expect(result.current.buildFullExport()).toBeNull();
   });
 
+  it("keeps editable build data isolated per target tab before saving", () => {
+    const result = filledBuild();
+
+    act(() => {
+      result.current.setTargetTopTab("pve");
+    });
+
+    expect(result.current.targetTabPath).toEqual(["pve", "bosses"]);
+    expect(result.current.selectedBranches).toEqual({
+      left: null,
+      center: null,
+      right: null,
+    });
+    expect(result.current.selectedMajorSkills).toEqual({});
+    expect(result.current.weaponAwakeningSelections).toEqual({});
+    expect(result.current.selectedArtifactIds).toEqual([]);
+    expect(result.current.selectedRuneIds).toEqual([]);
+    expect(result.current.progressLevels).toEqual({});
+
+    act(() => {
+      result.current.setTargetTopTab("pvp");
+    });
+
+    expect(result.current.selectedBranches).toEqual(selectedBranches);
+    expect(result.current.selectedMajorSkills).toEqual(selectedSkills);
+    expect(result.current.weaponAwakeningSelections[1]).toBe("red");
+    expect(result.current.selectedArtifactIds).toEqual(["excalibur"]);
+    expect(result.current.selectedRuneIds).toEqual(["fire"]);
+  });
+
+  it("seeds empty target tabs from the first saved build", () => {
+    const result = filledBuild();
+
+    act(() => {
+      result.current.saveCurrentTargetBuild("2026-05-30T00:00:00.000Z");
+    });
+
+    expect(result.current.savedBuildsByPath.pvp?.equipment.artifactIds).toEqual([
+      "excalibur",
+    ]);
+    expect(
+      result.current.savedBuildsByPath["pve/bosses"]?.equipment.artifactIds,
+    ).toEqual(["excalibur"]);
+    expect(result.current.savedBuildsByPath["pve/bosses"]?.gameMode).toBe("pve");
+    expect(
+      result.current.savedBuildsByPath["pve/campaign"]?.equipment.artifactIds,
+    ).toEqual(["excalibur"]);
+
+    act(() => {
+      result.current.setTargetTopTab("pve");
+    });
+
+    expect(result.current.selectedArtifactIds).toEqual(["excalibur"]);
+    expect(result.current.selectedRuneIds).toEqual(["fire"]);
+    expect(result.current.selectedBranches).toEqual(selectedBranches);
+  });
+
+  it("does not overwrite existing saved tabs after the first saved build", () => {
+    const result = filledBuild();
+
+    act(() => {
+      result.current.saveCurrentTargetBuild("2026-05-30T00:00:00.000Z");
+      result.current.setTargetTopTab("pve");
+    });
+
+    act(() => {
+      result.current.addArtifact("axe-of-pangu");
+    });
+
+    act(() => {
+      result.current.saveCurrentTargetBuild("2026-05-31T00:00:00.000Z");
+    });
+
+    expect(result.current.savedBuildsByPath.pvp?.equipment.artifactIds).toEqual([
+      "excalibur",
+    ]);
+    expect(
+      result.current.savedBuildsByPath["pve/bosses"]?.equipment.artifactIds,
+    ).toEqual(["excalibur", "axe-of-pangu"]);
+    expect(
+      result.current.savedBuildsByPath["pve/campaign"]?.equipment.artifactIds,
+    ).toEqual(["excalibur"]);
+  });
+
   it("selecting PvP sets target path to pvp", () => {
     const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
 

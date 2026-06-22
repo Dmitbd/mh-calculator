@@ -10,6 +10,7 @@ import {
 import { branchBuilderValidationCatalog } from "../data/branchBuilderCatalogs";
 import {
   buildHeroBuildSetFromSavedBuilds,
+  getBuildTargetLeafTabs,
   getBuildTargetPathKey,
   validateMultiBuildExport,
   type SavedBuildsByPath,
@@ -42,11 +43,28 @@ import {
 
 type MajorSkillSelections = Partial<Record<string, string>>;
 type WeaponAwakeningSelections = Partial<Record<number, WeaponAwakeningColorId>>;
+type EditableBuildDraft = {
+  selectedBranches: DraftBranchColumns;
+  selectedMajorSkills: MajorSkillSelections;
+  weaponAwakeningSelections: WeaponAwakeningSelections;
+  selectedArtifactIds: string[];
+  selectedRuneIds: string[];
+  progressLevels: BranchProgressLevels;
+};
+type DraftsByPath = Record<string, EditableBuildDraft>;
 
 const emptySelectedBranches: DraftBranchColumns = {
   left: null,
   center: null,
   right: null,
+};
+const emptyDraft: EditableBuildDraft = {
+  selectedBranches: emptySelectedBranches,
+  selectedMajorSkills: {},
+  weaponAwakeningSelections: {},
+  selectedArtifactIds: [],
+  selectedRuneIds: [],
+  progressLevels: {},
 };
 
 const columnIds: BranchColumnId[] = ["left", "center", "right"];
@@ -94,16 +112,32 @@ export function useDivinityBranchBuilder(
   const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
   const selectedHero = selectedHeroId ? getHeroById(selectedHeroId) : null;
   const heroName = selectedHero?.name.ru ?? heroQuery;
-  const [selectedBranches, setSelectedBranches] =
-    useState<DraftBranchColumns>(emptySelectedBranches);
-  const [selectedMajorSkills, setSelectedMajorSkills] =
-    useState<MajorSkillSelections>({});
-  const [weaponAwakeningSelections, setWeaponAwakeningSelections] =
-    useState<WeaponAwakeningSelections>({});
-  const [selectedArtifactIds, setSelectedArtifactIds] = useState<string[]>([]);
-  const [selectedRuneIds, setSelectedRuneIds] = useState<string[]>([]);
-  const [progressLevels, setProgressLevels] = useState<BranchProgressLevels>({});
+  const [draftsByPath, setDraftsByPath] = useState<DraftsByPath>({});
   const [savedBuildsByPath, setSavedBuildsByPath] = useState<SavedBuildsByPath>({});
+  const targetPathKey = getBuildTargetPathKey(targetTabPath);
+  const currentDraft = draftsByPath[targetPathKey] ?? emptyDraft;
+  const {
+    progressLevels,
+    selectedArtifactIds,
+    selectedBranches,
+    selectedMajorSkills,
+    selectedRuneIds,
+    weaponAwakeningSelections,
+  } = currentDraft;
+
+  const updateCurrentDraft = useCallback(
+    (update: (current: EditableBuildDraft) => EditableBuildDraft) => {
+      setDraftsByPath((current) => {
+        const draft = current[targetPathKey] ?? emptyDraft;
+
+        return {
+          ...current,
+          [targetPathKey]: update(cloneDraft(draft)),
+        };
+      });
+    },
+    [targetPathKey],
+  );
 
   const setTargetTopTab = useCallback((topTabId: string) => {
     const tab = getTabByPath(buildTargetTabs, [topTabId]);
@@ -160,31 +194,42 @@ export function useDivinityBranchBuilder(
 
   const setColumnBranch = useCallback(
     (columnId: BranchColumnId, branchId: DivinityBranchId | null) => {
-      setSelectedBranches((current) => ({
+      updateCurrentDraft((current) => ({
         ...current,
-        [columnId]: branchId,
+        selectedBranches: {
+          ...current.selectedBranches,
+          [columnId]: branchId,
+        },
       }));
     },
-    [],
+    [updateCurrentDraft],
   );
 
   const setMajorSkill = useCallback(
     (columnId: BranchColumnId, level: number, skillId: string | null) => {
-      setSelectedMajorSkills((current) => {
+      updateCurrentDraft((current) => {
         const key = getMajorSkillKey(columnId, level);
 
         if (!skillId) {
-          const { [key]: _removedSkill, ...remainingSkills } = current;
-          return remainingSkills;
+          const { [key]: _removedSkill, ...remainingSkills } =
+            current.selectedMajorSkills;
+
+          return {
+            ...current,
+            selectedMajorSkills: remainingSkills,
+          };
         }
 
         return {
           ...current,
-          [key]: skillId,
+          selectedMajorSkills: {
+            ...current.selectedMajorSkills,
+            [key]: skillId,
+          },
         };
       });
     },
-    [],
+    [updateCurrentDraft],
   );
 
   const getMajorSkill = useCallback(
@@ -195,15 +240,18 @@ export function useDivinityBranchBuilder(
 
   const cycleWeaponAwakeningSlot = useCallback(
     (slot: number) => {
-      setWeaponAwakeningSelections((current) => ({
+      updateCurrentDraft((current) => ({
         ...current,
-        [slot]: getNextWeaponAwakeningColor(
-          current[slot] ?? null,
-          weaponAwakeningCatalog.colors,
-        ),
+        weaponAwakeningSelections: {
+          ...current.weaponAwakeningSelections,
+          [slot]: getNextWeaponAwakeningColor(
+            current.weaponAwakeningSelections[slot] ?? null,
+            weaponAwakeningCatalog.colors,
+          ),
+        },
       }));
     },
-    [weaponAwakeningCatalog.colors],
+    [updateCurrentDraft, weaponAwakeningCatalog.colors],
   );
 
   const buildWeaponAwakening = useCallback(
@@ -216,32 +264,46 @@ export function useDivinityBranchBuilder(
   );
 
   const addArtifact = useCallback((id: string) => {
-    setSelectedArtifactIds((current) => {
-      if (current.includes(id)) {
+    updateCurrentDraft((current) => {
+      if (current.selectedArtifactIds.includes(id)) {
         return current;
       }
 
-      return [...current, id];
+      return {
+        ...current,
+        selectedArtifactIds: [...current.selectedArtifactIds, id],
+      };
     });
-  }, []);
+  }, [updateCurrentDraft]);
 
   const removeArtifact = useCallback((id: string) => {
-    setSelectedArtifactIds((current) => current.filter((artifactId) => artifactId !== id));
-  }, []);
+    updateCurrentDraft((current) => ({
+      ...current,
+      selectedArtifactIds: current.selectedArtifactIds.filter(
+        (artifactId) => artifactId !== id,
+      ),
+    }));
+  }, [updateCurrentDraft]);
 
   const addRune = useCallback((id: string) => {
-    setSelectedRuneIds((current) => {
-      if (current.includes(id)) {
+    updateCurrentDraft((current) => {
+      if (current.selectedRuneIds.includes(id)) {
         return current;
       }
 
-      return [...current, id];
+      return {
+        ...current,
+        selectedRuneIds: [...current.selectedRuneIds, id],
+      };
     });
-  }, []);
+  }, [updateCurrentDraft]);
 
   const removeRune = useCallback((id: string) => {
-    setSelectedRuneIds((current) => current.filter((runeId) => runeId !== id));
-  }, []);
+    updateCurrentDraft((current) => ({
+      ...current,
+      selectedRuneIds: current.selectedRuneIds.filter((runeId) => runeId !== id),
+    }));
+  }, [updateCurrentDraft]);
 
   // Текущий выбор экипировки (артефакты + руны) для выгрузки в JSON
   const buildEquipment = useCallback(
@@ -255,43 +317,49 @@ export function useDivinityBranchBuilder(
   // Установить прогресс столбца точно до уровня (null — снять)
   const setColumnProgress = useCallback(
     (columnId: BranchColumnId, level: number | null) => {
-      setProgressLevels((current) => {
-        const next = { ...current };
+      updateCurrentDraft((current) => {
+        const nextProgress = { ...current.progressLevels };
 
         if (level === null) {
-          delete next[columnId];
+          delete nextProgress[columnId];
         } else {
-          next[columnId] = level;
+          nextProgress[columnId] = level;
         }
 
-        return next;
+        return {
+          ...current,
+          progressLevels: nextProgress,
+        };
       });
     },
-    [],
+    [updateCurrentDraft],
   );
 
   // Клик по ноде: до неё — активна; повторный клик по верхней — откат на ноду ниже
   const toggleColumnProgress = useCallback(
     (columnId: BranchColumnId, level: number) => {
-      setProgressLevels((current) => {
-        const next = { ...current };
+      updateCurrentDraft((current) => {
+        const nextProgress = { ...current.progressLevels };
 
-        if (current[columnId] === level) {
+        if (current.progressLevels[columnId] === level) {
           const previous = getPreviousNodeLevel(columnId, level);
 
           if (previous === null) {
-            delete next[columnId];
+            delete nextProgress[columnId];
           } else {
-            next[columnId] = previous;
+            nextProgress[columnId] = previous;
           }
         } else {
-          next[columnId] = level;
+          nextProgress[columnId] = level;
         }
 
-        return next;
+        return {
+          ...current,
+          progressLevels: nextProgress,
+        };
       });
     },
-    [],
+    [updateCurrentDraft],
   );
 
   // Откат прогресса столбца на ноду ниже переданного уровня (при сбросе мажорной ноды)
@@ -401,9 +469,10 @@ export function useDivinityBranchBuilder(
       const key = getBuildTargetPathKey(targetTabPath);
 
       setSavedBuildsByPath((current) => ({
-        ...current,
+        ...seedEmptySavedBuilds(current, exported),
         [key]: toCommittedBuild(exported),
       }));
+      setDraftsByPath((current) => seedEmptyDrafts(current, exported));
 
       return true;
     },
@@ -504,6 +573,93 @@ function toCommittedBuild(
 ): DivinityBranchBuildExport {
   const { targetTabPath: _targetTabPath, ...build } = exported;
   return build;
+}
+
+function seedEmptySavedBuilds(
+  current: SavedBuildsByPath,
+  exported: DivinityBranchBuilderExport,
+): SavedBuildsByPath {
+  if (Object.keys(current).length > 0) {
+    return current;
+  }
+
+  return getBuildTargetLeafTabs(buildTargetTabs).reduce<SavedBuildsByPath>(
+    (seededBuilds, leaf) => {
+      seededBuilds[getBuildTargetPathKey(leaf.path)] = {
+        ...toCommittedBuild(exported),
+        gameMode: leaf.gameMode,
+      };
+
+      return seededBuilds;
+    },
+    {},
+  );
+}
+
+function seedEmptyDrafts(
+  current: DraftsByPath,
+  exported: DivinityBranchBuilderExport,
+): DraftsByPath {
+  const seededDraft = exportToEditableDraft(exported);
+
+  return getBuildTargetLeafTabs(buildTargetTabs).reduce<DraftsByPath>(
+    (drafts, leaf) => {
+      const key = getBuildTargetPathKey(leaf.path);
+      const existingDraft = drafts[key];
+
+      if (existingDraft && !isEmptyDraft(existingDraft)) {
+        return drafts;
+      }
+
+      return {
+        ...drafts,
+        [key]: cloneDraft(seededDraft),
+      };
+    },
+    current,
+  );
+}
+
+function exportToEditableDraft(
+  exported: DivinityBranchBuilderExport,
+): EditableBuildDraft {
+  return {
+    selectedBranches: { ...exported.columns },
+    selectedMajorSkills: Object.fromEntries(
+      exported.majorNodes.map((node) => [
+        getMajorSkillKey(node.columnId, node.level),
+        node.skillId,
+      ]),
+    ),
+    weaponAwakeningSelections: Object.fromEntries(
+      exported.weaponAwakening.map((entry) => [entry.slot, entry.colorId]),
+    ),
+    selectedArtifactIds: [...exported.equipment.artifactIds],
+    selectedRuneIds: [...exported.equipment.runeIds],
+    progressLevels: { ...exported.progress },
+  };
+}
+
+function cloneDraft(draft: EditableBuildDraft): EditableBuildDraft {
+  return {
+    selectedBranches: { ...draft.selectedBranches },
+    selectedMajorSkills: { ...draft.selectedMajorSkills },
+    weaponAwakeningSelections: { ...draft.weaponAwakeningSelections },
+    selectedArtifactIds: [...draft.selectedArtifactIds],
+    selectedRuneIds: [...draft.selectedRuneIds],
+    progressLevels: { ...draft.progressLevels },
+  };
+}
+
+function isEmptyDraft(draft: EditableBuildDraft): boolean {
+  return (
+    columnIds.every((columnId) => draft.selectedBranches[columnId] === null) &&
+    Object.keys(draft.selectedMajorSkills).length === 0 &&
+    Object.keys(draft.weaponAwakeningSelections).length === 0 &&
+    draft.selectedArtifactIds.length === 0 &&
+    draft.selectedRuneIds.length === 0 &&
+    Object.keys(draft.progressLevels).length === 0
+  );
 }
 
 function getMajorSkillKey(columnId: BranchColumnId, level: number): string {
