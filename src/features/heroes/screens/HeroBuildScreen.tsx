@@ -3,6 +3,11 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
+  loadPublishedHeroBuildSet,
+  type HeroBuildSetSupabaseClient,
+} from "@/features/builds";
+import { getSupabaseClient } from "@/shared/lib/supabaseClient";
+import {
   weaponAwakeningCombos,
   resolveWeaponAwakeningBonuses,
 } from "@/features/game-data/weapon-awakening";
@@ -44,7 +49,35 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
   const { top, bottom } = useSafeAreaInsets();
 
   const hero = getHeroById(heroId);
-  const buildSet = getHeroBuildSet(heroId);
+  const fallbackBuildSet = getHeroBuildSet(heroId);
+  const [buildSet, setBuildSet] = useState(fallbackBuildSet);
+
+  useEffect(() => {
+    const client = getSupabaseClient();
+    let isMounted = true;
+
+    setBuildSet(fallbackBuildSet);
+
+    if (!client) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    void loadPublishedHeroBuildSet({
+      client: client as unknown as HeroBuildSetSupabaseClient,
+      fallbackBuildSet,
+      heroId,
+    }).then((loadedBuildSet) => {
+      if (isMounted && loadedBuildSet !== fallbackBuildSet) {
+        setBuildSet(loadedBuildSet);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [fallbackBuildSet, heroId]);
   const sortedTabs = useMemo(
     () => (buildSet ? filterTabsWithReadyBuilds(buildSet.tabs) : []),
     [buildSet],

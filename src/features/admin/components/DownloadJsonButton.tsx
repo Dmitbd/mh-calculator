@@ -9,17 +9,27 @@ import {
 import type { BranchBuildValidationError } from "../types/admin.types";
 
 type DownloadJsonButtonProps = {
+  backendStatus?: string | null;
   errors: readonly BranchBuildValidationError[];
   onErrorsLayout?: (event: LayoutChangeEvent) => void;
+  onDeleteFull: () => void;
   onDownloadFull: () => void;
+  onLoadFull: () => void;
+  onPublishFull: () => void;
   onSaveCurrent: () => void;
+  onSaveDraft: () => void;
 };
 
 export function DownloadJsonButton({
+  backendStatus,
   errors,
   onErrorsLayout,
+  onDeleteFull,
   onDownloadFull,
+  onLoadFull,
+  onPublishFull,
   onSaveCurrent,
+  onSaveDraft,
 }: DownloadJsonButtonProps) {
   return (
     <View style={styles.wrapper}>
@@ -40,7 +50,42 @@ export function DownloadJsonButton({
         >
           <Text style={styles.buttonText}>Скачать полный JSON</Text>
         </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onLoadFull}
+          style={[styles.button, styles.secondaryButton]}
+        >
+          <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+            Загрузить билд
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onSaveDraft}
+          style={[styles.button, styles.secondaryButton]}
+        >
+          <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+            Сохранить черновик
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onPublishFull}
+          style={styles.button}
+        >
+          <Text style={styles.buttonText}>Опубликовать</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onDeleteFull}
+          style={[styles.button, styles.dangerButton]}
+        >
+          <Text style={styles.buttonText}>Удалить билд</Text>
+        </Pressable>
       </View>
+      {backendStatus ? (
+        <Text style={styles.backendStatus}>{backendStatus}</Text>
+      ) : null}
       {errors.length > 0 ? (
         <View onLayout={onErrorsLayout} style={styles.errors}>
           {errors.map((error) => (
@@ -81,6 +126,16 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: "#f6d59a",
+  },
+  dangerButton: {
+    borderWidth: 1,
+    borderColor: "#9c5144",
+    backgroundColor: "#55231c",
+  },
+  backendStatus: {
+    color: "#e8d7b5",
+    fontSize: 13,
+    fontWeight: "700",
   },
   errors: {
     gap: 6,

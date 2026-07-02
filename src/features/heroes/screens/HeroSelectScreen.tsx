@@ -1,9 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { router } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { heroesWithBuilds } from "@/features/game-data/heroes";
+import {
+  fetchPublishedHeroIds,
+  type HeroBuildSetSupabaseClient,
+} from "@/features/builds";
+import { heroes, heroesWithBuilds } from "@/features/game-data/heroes";
 import { HeroListCard } from "@/features/heroes/components/HeroListCard";
 import { HeroListFiltersPanel } from "@/features/heroes/components/HeroListFiltersPanel";
 import {
@@ -13,6 +17,7 @@ import {
 import { groupHeroesByZone } from "@/features/heroes/utils/heroListGrouping";
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
+import { getSupabaseClient } from "@/shared/lib/supabaseClient";
 
 const SCREEN_PADDING = 24;
 
@@ -20,11 +25,39 @@ const SCREEN_PADDING = 24;
 export function HeroSelectScreen() {
   const { top, bottom } = useSafeAreaInsets();
   const [filters, setFilters] = useState(EMPTY_HERO_LIST_FILTERS);
+  const [remoteHeroIds, setRemoteHeroIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    const client = getSupabaseClient();
+
+    if (!client) {
+      return;
+    }
+
+    let isMounted = true;
+
+    void fetchPublishedHeroIds(
+      client as unknown as HeroBuildSetSupabaseClient,
+    ).then((heroIds) => {
+      if (isMounted) {
+        setRemoteHeroIds(heroIds);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const zoneGroups = useMemo(() => {
-    const filtered = filterHeroes(heroesWithBuilds, filters);
+    const buildReadyHeroIds = new Set([
+      ...heroesWithBuilds.map((hero) => hero.id),
+      ...remoteHeroIds,
+    ]);
+    const buildReadyHeroes = heroes.filter((hero) => buildReadyHeroIds.has(hero.id));
+    const filtered = filterHeroes(buildReadyHeroes, filters);
     return groupHeroesByZone(filtered);
-  }, [filters]);
+  }, [filters, remoteHeroIds]);
 
   const openHero = (heroId: string) => {
     router.push({ pathname: "/heroes/[heroId]", params: { heroId } });

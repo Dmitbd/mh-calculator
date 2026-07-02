@@ -43,6 +43,8 @@ import {
   getGameModeForPath,
   getTabByPath,
   sortBuildTabs,
+  type HeroBuildSet,
+  type HeroBuildTab,
 } from "@/features/game-data/heroes";
 
 type MajorSkillSelections = Partial<Record<string, string>>;
@@ -571,6 +573,35 @@ export function useDivinityBranchBuilder(
     return buildHeroBuildSetFromSavedBuilds(buildTargetTabs, savedBuildsByPath);
   }, [savedBuildsByPath, validateFullExport]);
 
+  const loadBuildSetForEditing = useCallback((buildSet: HeroBuildSet) => {
+    const loadedBuilds = extractSavedBuildsFromTabs(buildSet.tabs);
+    const entries = Object.entries(loadedBuilds);
+    const firstBuild = entries[0]?.[1];
+    const hero = firstBuild ? getHeroById(firstBuild.heroId) : null;
+
+    if (!firstBuild || !hero) {
+      return false;
+    }
+
+    const loadedDrafts = entries.reduce<DraftsByPath>((drafts, [key, build]) => {
+      return {
+        ...drafts,
+        [key]: exportToEditableDraft({
+          ...build,
+          targetTabPath: key.split("/"),
+        }),
+      };
+    }, {});
+
+    setSelectedHeroId(hero.id);
+    setHeroQueryState(hero.name.ru);
+    setSavedBuildsByPath(loadedBuilds);
+    setDraftsByPath(loadedDrafts);
+    setTargetTabPath(entries[0][0].split("/"));
+
+    return true;
+  }, []);
+
   return useMemo(
     () => ({
       gameMode,
@@ -607,6 +638,7 @@ export function useDivinityBranchBuilder(
       rollbackColumnProgress,
       buildValidationDraft,
       buildExport,
+      loadBuildSetForEditing,
       saveCurrentTargetBuild,
       validateFullExport,
       buildFullExport,
@@ -639,6 +671,7 @@ export function useDivinityBranchBuilder(
       setDivinitySkill,
       showAwakenedDivinitySkills,
       toggleColumnProgress,
+      loadBuildSetForEditing,
       saveCurrentTargetBuild,
       validateFullExport,
       buildFullExport,
@@ -651,6 +684,31 @@ function toCommittedBuild(
 ): DivinityBranchBuildExport {
   const { targetTabPath: _targetTabPath, ...build } = exported;
   return build;
+}
+
+function extractSavedBuildsFromTabs(
+  tabs: readonly HeroBuildTab[],
+  parentPath: HeroBuildTargetTabPath = [],
+): SavedBuildsByPath {
+  return tabs.reduce<SavedBuildsByPath>((savedBuilds, tab) => {
+    const path = [...parentPath, tab.id];
+
+    if (tab.kind === "group" && tab.children) {
+      return {
+        ...savedBuilds,
+        ...extractSavedBuildsFromTabs(tab.children, path),
+      };
+    }
+
+    if (!tab.build) {
+      return savedBuilds;
+    }
+
+    return {
+      ...savedBuilds,
+      [getBuildTargetPathKey(path)]: tab.build,
+    };
+  }, {});
 }
 
 function seedEmptyDrafts(

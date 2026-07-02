@@ -17,8 +17,16 @@ describe("DivinityBranchBuilderScreen", () => {
     process.env.NODE_ENV = originalNodeEnv;
   });
 
+  function renderAdminBuilder() {
+    return render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+      />,
+    );
+  }
+
   it("renders builder controls and validates an incomplete form", () => {
-    render(<DivinityBranchBuilderScreen />);
+    renderAdminBuilder();
 
     expect(screen.getByText("Builder")).toBeTruthy();
     expect(screen.getByLabelText("Select PvP build tab")).toBeTruthy();
@@ -65,7 +73,7 @@ describe("DivinityBranchBuilderScreen", () => {
   });
 
   it("shows current tab validation messages next to related fields", () => {
-    render(<DivinityBranchBuilderScreen />);
+    renderAdminBuilder();
 
     fireEvent.press(screen.getByText("Сохранить вкладку"));
 
@@ -84,14 +92,25 @@ describe("DivinityBranchBuilderScreen", () => {
   });
 
   it("shows save tab and full json download actions", () => {
-    render(<DivinityBranchBuilderScreen />);
+    renderAdminBuilder();
 
     expect(screen.getByText("Сохранить вкладку")).toBeTruthy();
     expect(screen.getByText("Скачать полный JSON")).toBeTruthy();
+    expect(screen.getByText("Загрузить билд")).toBeTruthy();
+    expect(screen.getByText("Удалить билд")).toBeTruthy();
+  });
+
+  it("hides builder controls until admin signs in", () => {
+    render(<DivinityBranchBuilderScreen initialAdminSession={null} />);
+
+    expect(screen.getByPlaceholderText("Email")).toBeTruthy();
+    expect(screen.queryByLabelText("Select PvP build tab")).toBeNull();
+    expect(screen.queryByText("Сохранить вкладку")).toBeNull();
+    expect(screen.queryByText("Опубликовать")).toBeNull();
   });
 
   it("keeps equipment selections independent between target tabs", () => {
-    render(<DivinityBranchBuilderScreen />);
+    renderAdminBuilder();
 
     fireEvent.press(screen.getByLabelText("Добавить оружие"));
     fireEvent.press(screen.getByLabelText("Add Excalibur"));
@@ -108,7 +127,7 @@ describe("DivinityBranchBuilderScreen", () => {
   });
 
   it("blocks full json download when target tabs are missing", () => {
-    render(<DivinityBranchBuilderScreen />);
+    renderAdminBuilder();
 
     fireEvent.press(screen.getByText("Скачать полный JSON"));
 
@@ -124,7 +143,7 @@ describe("DivinityBranchBuilderScreen", () => {
   });
 
   it("shows full export target tab errors above the target tabs", () => {
-    render(<DivinityBranchBuilderScreen />);
+    renderAdminBuilder();
 
     fireEvent.press(screen.getByText("Скачать полный JSON"));
 
@@ -142,7 +161,7 @@ describe("DivinityBranchBuilderScreen", () => {
   it("scrolls to the top when full export has target tab errors", () => {
     const scrollToSpy = jest.spyOn(ScrollView.prototype, "scrollTo");
 
-    render(<DivinityBranchBuilderScreen />);
+    renderAdminBuilder();
 
     fireEvent.press(screen.getByText("Скачать полный JSON"));
 
@@ -152,7 +171,7 @@ describe("DivinityBranchBuilderScreen", () => {
   });
 
   it("clears fixed field errors while the form is being filled", () => {
-    render(<DivinityBranchBuilderScreen />);
+    renderAdminBuilder();
 
     fireEvent.press(screen.getByText("Сохранить вкладку"));
 
@@ -166,7 +185,7 @@ describe("DivinityBranchBuilderScreen", () => {
   });
 
   it("selects branch types from the grid column headers", () => {
-    render(<DivinityBranchBuilderScreen />);
+    renderAdminBuilder();
 
     fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "bastet");
     fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
@@ -186,7 +205,7 @@ describe("DivinityBranchBuilderScreen", () => {
   });
 
   it("shows hero error if text was typed but no dropdown option was selected", () => {
-    render(<DivinityBranchBuilderScreen />);
+    renderAdminBuilder();
 
     fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "бастет без выбора");
     fireEvent.press(screen.getByText("Сохранить вкладку"));
@@ -198,7 +217,7 @@ describe("DivinityBranchBuilderScreen", () => {
     Object.defineProperty(Platform, "OS", { value: "web" });
     process.env.NODE_ENV = "production";
 
-    const view = render(<DivinityBranchBuilderScreen />);
+    const view = renderAdminBuilder();
 
     const images = view.UNSAFE_getAllByType("img" as never);
 
@@ -206,7 +225,7 @@ describe("DivinityBranchBuilderScreen", () => {
   });
 
   it("shows active weapon bonus when hero is selected and two nodes share a color", () => {
-    render(<DivinityBranchBuilderScreen />);
+    renderAdminBuilder();
 
     fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "bastet");
     fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
@@ -223,7 +242,7 @@ describe("DivinityBranchBuilderScreen", () => {
   });
 
   it("does not show weapon bonus when only one node of a color is selected", () => {
-    render(<DivinityBranchBuilderScreen />);
+    renderAdminBuilder();
 
     fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "bastet");
     fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
@@ -233,7 +252,7 @@ describe("DivinityBranchBuilderScreen", () => {
   });
 
   it("hides weapon bonus when hero query changes without catalog selection", () => {
-    render(<DivinityBranchBuilderScreen />);
+    renderAdminBuilder();
 
     fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "bastet");
     fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));

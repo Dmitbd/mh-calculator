@@ -1,14 +1,24 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   type LayoutChangeEvent,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { getSupabaseClient } from "@/shared/lib/supabaseClient";
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
-import { DivinitySkillLoadoutSection } from "@/features/builds";
+import {
+  deleteHeroBuildSet,
+  DivinitySkillLoadoutSection,
+  loadPublishedHeroBuildSet,
+  saveHeroBuildSet,
+  type HeroBuildSetStatus,
+  type HeroBuildSetSupabaseClient,
+} from "@/features/builds";
+import { getHeroBuildSet } from "@/features/game-data/heroes";
 import { resolveWeaponAwakeningBonuses } from "@/features/game-data/weapon-awakening";
 import {
   branchBuilderArtifacts,
@@ -25,6 +35,7 @@ import {
   branchBuilderWeaponAwakeningSlots,
 } from "@/features/admin/data/branchBuilderCatalogs";
 
+import { AdminAuthPanel } from "../components/AdminAuthPanel";
 import { BranchGridSection } from "../components/branch-builder/BranchGridSection";
 import { BuildTargetSection } from "../components/branch-builder/BuildTargetSection";
 import { DownloadSection } from "../components/branch-builder/DownloadSection";
@@ -43,11 +54,23 @@ import {
   MIN_BRANCH_PROGRESS_LEVEL,
   validateBranchBuild,
 } from "../utils/validateBranchBuild";
+import {
+  getCurrentAdminSession,
+  signInAdmin,
+  signOutAdmin,
+  type AdminSession,
+} from "../api/adminAuthRepository";
 
 const SCREEN_PADDING = 20;
 type PendingScrollTarget = "errors" | "top";
 
-export function DivinityBranchBuilderScreen() {
+type DivinityBranchBuilderScreenProps = {
+  initialAdminSession?: AdminSession | null;
+};
+
+export function DivinityBranchBuilderScreen({
+  initialAdminSession,
+}: DivinityBranchBuilderScreenProps = {}) {
   const { top, bottom } = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const downloadSectionY = useRef(0);
@@ -61,6 +84,7 @@ export function DivinityBranchBuilderScreen() {
     clearSelectedHero,
     cycleWeaponAwakeningSlot,
     heroQuery,
+    loadBuildSetForEditing,
     progressLevels,
     removeArtifact,
     removeRune,
@@ -94,6 +118,50 @@ export function DivinityBranchBuilderScreen() {
   const [validationErrors, setValidationErrors] = useState<
     BranchBuildValidationError[]
   >([]);
+  const [backendStatus, setBackendStatus] = useState<string | null>(null);
+  const [adminSession, setAdminSession] = useState<AdminSession | null>(
+    initialAdminSession ?? null,
+  );
+  const [isAuthChecked, setIsAuthChecked] = useState(
+    initialAdminSession !== undefined,
+  );
+
+  useEffect(() => {
+    if (initialAdminSession !== undefined) {
+      return;
+    }
+
+    const client = getSupabaseClient();
+
+    if (!client) {
+      setIsAuthChecked(true);
+      return;
+    }
+
+    let isMounted = true;
+
+    void getCurrentAdminSession(client)
+      .then((session) => {
+        if (isMounted) {
+          setAdminSession(session);
+          setIsAuthChecked(true);
+        }
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setIsAuthChecked(true);
+          setBackendStatus(
+            error instanceof Error
+              ? `Ошибка Supabase: ${error.message}`
+              : "Ошибка Supabase.",
+          );
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initialAdminSession]);
 
   const weaponAwakeningBonuses = resolveWeaponAwakeningBonuses({
     hero: selectedHero,
@@ -223,6 +291,171 @@ export function DivinityBranchBuilderScreen() {
     }
   };
 
+  const saveFullBuildSetToBackend = async (status: HeroBuildSetStatus) => {
+    const result = validateFullExport();
+
+    showValidationErrors(result.errors);
+
+    if (!result.isValid) {
+      setBackendStatus("Сначала исправьте ошибки полного экспорта.");
+      return;
+    }
+
+    const client = getSupabaseClient();
+
+    if (!client) {
+      setBackendStatus("Supabase не настроен.");
+      return;
+    }
+
+    const buildSet = buildFullExport();
+
+    if (!buildSet) {
+      setBackendStatus("Не удалось собрать полный билд.");
+      return;
+    }
+
+    const firstBuildTab = buildSet.tabs[0];
+    const heroId = firstBuildTab?.build?.heroId ?? selectedHeroId;
+
+    if (!heroId) {
+      setBackendStatus("Не удалось определить героя для сохранения.");
+      return;
+    }
+
+    try {
+      await saveHeroBuildSet(client as unknown as HeroBuildSetSupabaseClient, {
+        buildSet,
+        heroId,
+        status,
+      });
+      setBackendStatus(
+        status === "published" ? "Билд опубликован." : "Черновик сохранён.",
+      );
+    } catch (error) {
+      setBackendStatus(
+        error instanceof Error
+          ? `Ошибка Supabase: ${error.message}`
+          : "Ошибка Supabase.",
+      );
+    }
+  };
+
+  const handleLoadFullBuildSet = async () => {
+    if (!selectedHeroId) {
+      setBackendStatus("Сначала выберите героя.");
+      return;
+    }
+
+    const client = getSupabaseClient();
+
+    if (!client) {
+      const fallbackBuildSet = getHeroBuildSet(selectedHeroId);
+
+      if (fallbackBuildSet && loadBuildSetForEditing(fallbackBuildSet)) {
+        setBackendStatus("Локальный билд загружен для редактирования.");
+        return;
+      }
+
+      setBackendStatus("Supabase не настроен.");
+      return;
+    }
+
+    try {
+      const buildSet = await loadPublishedHeroBuildSet({
+        client: client as unknown as HeroBuildSetSupabaseClient,
+        fallbackBuildSet: getHeroBuildSet(selectedHeroId),
+        heroId: selectedHeroId,
+      });
+
+      if (!buildSet || !loadBuildSetForEditing(buildSet)) {
+        setBackendStatus("Билд для выбранного героя не найден.");
+        return;
+      }
+
+      setBackendStatus("Билд загружен для редактирования.");
+    } catch (error) {
+      setBackendStatus(
+        error instanceof Error
+          ? `Ошибка Supabase: ${error.message}`
+          : "Ошибка Supabase.",
+      );
+    }
+  };
+
+  const handleDeleteFullBuildSet = async () => {
+    if (!selectedHeroId) {
+      setBackendStatus("Сначала выберите героя.");
+      return;
+    }
+
+    const client = getSupabaseClient();
+
+    if (!client) {
+      setBackendStatus("Supabase не настроен.");
+      return;
+    }
+
+    try {
+      await deleteHeroBuildSet(
+        client as unknown as HeroBuildSetSupabaseClient,
+        selectedHeroId,
+      );
+      setBackendStatus("Билд удалён.");
+    } catch (error) {
+      setBackendStatus(
+        error instanceof Error
+          ? `Ошибка Supabase: ${error.message}`
+          : "Ошибка Supabase.",
+      );
+    }
+  };
+
+  const handleAdminSignIn = async (credentials: {
+    email: string;
+    password: string;
+  }) => {
+    const client = getSupabaseClient();
+
+    if (!client) {
+      setBackendStatus("Supabase не настроен.");
+      return;
+    }
+
+    try {
+      const session = await signInAdmin(client, credentials);
+      setAdminSession(session);
+      setBackendStatus("Админ вошёл.");
+    } catch (error) {
+      setBackendStatus(
+        error instanceof Error
+          ? `Ошибка входа: ${error.message}`
+          : "Ошибка входа.",
+      );
+    }
+  };
+
+  const handleAdminSignOut = async () => {
+    const client = getSupabaseClient();
+
+    if (!client) {
+      setAdminSession(null);
+      return;
+    }
+
+    try {
+      await signOutAdmin(client);
+      setAdminSession(null);
+      setBackendStatus("Админ вышел.");
+    } catch (error) {
+      setBackendStatus(
+        error instanceof Error
+          ? `Ошибка выхода: ${error.message}`
+          : "Ошибка выхода.",
+      );
+    }
+  };
+
   const handleSelectTopTab = (tabId: string) => {
     clearTargetTabErrors();
     setTargetTopTab(tabId);
@@ -319,6 +552,26 @@ export function DivinityBranchBuilderScreen() {
         ]}
       >
       <View style={styles.section}>
+        <AdminAuthPanel
+          adminEmail={adminSession?.email}
+          onSignIn={(credentials) => {
+            void handleAdminSignIn(credentials);
+          }}
+          onSignOut={() => {
+            void handleAdminSignOut();
+          }}
+        />
+      </View>
+
+      {backendStatus ? (
+        <View style={styles.section}>
+          <Text style={styles.backendStatus}>{backendStatus}</Text>
+        </View>
+      ) : null}
+
+      {isAuthChecked && adminSession ? (
+        <>
+      <View style={styles.section}>
         <BuildTargetSection
           childTabs={buildTargetChildTabs}
           errors={targetTabErrors}
@@ -411,13 +664,28 @@ export function DivinityBranchBuilderScreen() {
 
       <View style={styles.section}>
         <DownloadSection
+          backendStatus={backendStatus}
           errors={validationErrors}
           onErrorsLayout={handleErrorsLayout}
+          onDeleteFull={() => {
+            void handleDeleteFullBuildSet();
+          }}
           onDownloadFull={handleDownloadFullJson}
+          onLoadFull={() => {
+            void handleLoadFullBuildSet();
+          }}
           onLayout={handleDownloadSectionLayout}
+          onPublishFull={() => {
+            void saveFullBuildSetToBackend("published");
+          }}
           onSaveCurrent={handleSaveCurrentTargetBuild}
+          onSaveDraft={() => {
+            void saveFullBuildSetToBackend("draft");
+          }}
         />
       </View>
+        </>
+      ) : null}
       </ScrollView>
     </View>
   );
@@ -436,6 +704,11 @@ const styles = StyleSheet.create({
   },
   section: {
     width: "100%",
+  },
+  backendStatus: {
+    color: "#e8d7b5",
+    fontSize: 13,
+    fontWeight: "700",
   },
 });
 

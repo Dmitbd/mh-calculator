@@ -1,7 +1,10 @@
 import { act, renderHook } from "@testing-library/react-native";
 
 import template from "@/features/game-data/divinity/tree-template.json";
-import { getHeroById } from "@/features/game-data/heroes/heroBuilds";
+import {
+  getHeroBuildSet,
+  getHeroById,
+} from "@/features/game-data/heroes/heroBuilds";
 import weaponAwakeningColors from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
 import weaponAwakeningSlots from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
 
@@ -494,5 +497,36 @@ describe("useDivinityBranchBuilder", () => {
         "devoid-chaotic-power",
       ],
     });
+  });
+
+  it("loads an existing build set into editable drafts", () => {
+    const completeBuildSet = getHeroBuildSet("bastet");
+
+    if (!completeBuildSet) {
+      throw new Error("Expected complete build set.");
+    }
+
+    const { result } = renderHook(() =>
+      useDivinityBranchBuilder(weaponAwakeningCatalog),
+    );
+
+    act(() => {
+      result.current.loadBuildSetForEditing(completeBuildSet);
+    });
+
+    expect(result.current.selectedHeroId).toBe("bastet");
+    expect(result.current.heroQuery).toBe("Бастет");
+    expect(result.current.savedBuildsByPath.pvp).toBeTruthy();
+    expect(result.current.savedBuildsByPath["pve/bosses"]).toBeTruthy();
+    expect(result.current.savedBuildsByPath["pve/campaign"]).toBeTruthy();
+    expect(result.current.selectedBranches).toEqual(
+      result.current.savedBuildsByPath.pvp.columns,
+    );
+    expect(result.current.selectedArtifactIds).toEqual(
+      result.current.savedBuildsByPath.pvp.equipment.artifactIds,
+    );
+    expect(result.current.selectedRuneIds).toEqual(
+      result.current.savedBuildsByPath.pvp.equipment.runeIds,
+    );
   });
 });
