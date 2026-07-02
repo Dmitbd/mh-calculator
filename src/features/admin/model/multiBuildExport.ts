@@ -142,6 +142,7 @@ export function validateMultiBuildExport(params: {
         heroName: build.heroName,
         columns: build.columns,
         majorNodes: build.majorNodes,
+        divinitySkills: build.divinitySkills,
         weaponAwakening: build.weaponAwakening,
         equipment: build.equipment,
         progress: build.progress,

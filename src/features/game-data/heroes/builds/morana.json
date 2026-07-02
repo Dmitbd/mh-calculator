@@ -115,6 +115,9 @@
             "earth"
           ]
         },
+        "divinitySkills": {
+          "base": []
+        },
         "progress": {
           "center": 30,
           "right": 18,
@@ -459,6 +462,9 @@
                 "thunder"
               ]
             },
+            "divinitySkills": {
+              "base": []
+            },
             "progress": {
               "center": 30,
               "right": 18,
@@ -793,6 +799,9 @@
               "runeIds": [
                 "earth"
               ]
+            },
+            "divinitySkills": {
+              "base": []
             },
             "progress": {
               "center": 30,

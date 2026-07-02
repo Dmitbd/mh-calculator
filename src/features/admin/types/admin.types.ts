@@ -36,6 +36,9 @@ export type {
   DivinityBranchBuildExport,
   DivinityBranchBuildValidationDraft,
   DivinityGameMode,
+  DivinitySkillLoadout,
+  DivinitySkillLoadoutDraft,
+  DivinitySkillLoadoutRowId,
   HeroBuildTargetTabPath,
 } from "@/features/game-data/builds/types";
 

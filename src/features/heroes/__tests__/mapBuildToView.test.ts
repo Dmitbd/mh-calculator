@@ -34,6 +34,10 @@ const pve: DivinityBranchBuildExport = {
     { slot: 8, colorId: "yellow" },
   ],
   equipment: { artifactIds: ["excalibur"], runeIds: ["fire"] },
+  divinitySkills: {
+    base: ["asterial-gemini", "asterial-annihilation", "asterial-supernova"],
+    awakened: ["devoid-animus", "devoid-broken-mirror", "devoid-chaotic-power"],
+  },
   progress: { left: 10, center: 13, right: 10 },
   activeNodes: [],
   metadata: {
@@ -89,5 +93,25 @@ describe("mapBuildToView", () => {
     expect(view.weaponAwakeningSelections[1]).toBe("red");
     expect(view.weaponAwakeningSelections[8]).toBe("yellow");
     expect(Object.keys(view.weaponAwakeningSelections)).toHaveLength(8);
+  });
+
+  it("переносит выбранные навыки божественности", () => {
+    const view = mapBuildToView(pve);
+
+    expect(view.divinitySkills).toEqual({
+      base: ["asterial-gemini", "asterial-annihilation", "asterial-supernova"],
+      awakened: [
+        "devoid-animus",
+        "devoid-broken-mirror",
+        "devoid-chaotic-power",
+      ],
+    });
+  });
+
+  it("использует пустой выбор навыков божественности для старого билда", () => {
+    const { divinitySkills: _divinitySkills, ...legacyBuild } = pve;
+    const view = mapBuildToView(legacyBuild);
+
+    expect(view.divinitySkills).toEqual({ base: [] });
   });
 });

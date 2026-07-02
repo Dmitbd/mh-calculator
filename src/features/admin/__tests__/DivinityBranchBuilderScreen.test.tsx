@@ -27,6 +27,10 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByLabelText("Добавить оружие")).toBeTruthy();
     expect(screen.getByLabelText("Добавить руну")).toBeTruthy();
     expect(screen.getByText("Пробуждение оружия")).toBeTruthy();
+    expect(screen.getByText("Навыки божественности")).toBeTruthy();
+    expect(
+      screen.getByText("Добавить навыки для 7 божественных узлов"),
+    ).toBeTruthy();
     expect(screen.getByLabelText("Weapon awakening slot 1, empty")).toBeTruthy();
     expect(screen.getAllByLabelText("Choose branch for левая")).toHaveLength(1);
     expect(screen.getAllByLabelText("Choose branch for центр")).toHaveLength(1);

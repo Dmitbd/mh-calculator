@@ -34,6 +34,7 @@ describe("HeroBuildScreen", () => {
     render(<HeroBuildScreen heroId="bastet" />);
 
     expect(screen.getByText("Axe of Pangu")).toBeTruthy();
+    expect(screen.getByText("Навыки божественности")).toBeTruthy();
   });
 
   test("does not render empty placeholder when only ready tabs are visible", () => {

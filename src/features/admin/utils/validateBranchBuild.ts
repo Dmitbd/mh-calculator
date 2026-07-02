@@ -6,6 +6,12 @@ import type {
   DivinityGameMode,
   TreeTemplateMajorSkillNode,
 } from "../types/admin.types";
+import {
+  DIVINITY_SKILL_AWAKENED_NODE_BUDGET,
+  DIVINITY_SKILL_BASE_NODE_BUDGET,
+  DIVINITY_SKILL_LOADOUT_MAX_SLOTS,
+  getDivinitySkillLoadoutCost,
+} from "@/features/game-data/divinity";
 const columnIds: BranchColumnId[] = ["left", "center", "right"];
 
 /** Минимальный уровень прогресса по каждой колонке для экспорта билда */
@@ -21,7 +27,12 @@ const columnLabels: Record<BranchColumnId, string> = {
 type ValidationSources = {
   heroes: readonly { id: string; name: { ru: string; en: string } }[];
   branches: readonly { id: string }[];
-  skills: readonly { id: string; branchId: string; tier: number }[];
+  skills: readonly {
+    id: string;
+    branchId: string;
+    tier: number;
+    nodeCost?: 1 | 2 | 3;
+  }[];
   template: readonly {
     level: number;
     columnId: string;
@@ -41,6 +52,14 @@ export function validateBranchBuild(
   const errors: BranchBuildValidationError[] = [];
   const branchIds = new Set(sources.branches.map((branch) => branch.id));
   const skillsById = new Map(sources.skills.map((skill) => [skill.id, skill]));
+  const divinitySkillCostsById = new Map(
+    sources.skills
+      .filter(
+        (skill): skill is typeof skill & { nodeCost: 1 | 2 | 3 } =>
+          skill.nodeCost === 1 || skill.nodeCost === 2 || skill.nodeCost === 3,
+      )
+      .map((skill) => [skill.id, skill]),
+  );
   const majorSlots = sources.template
     .filter((node) => node.nodeType === "majorSkill")
     .filter(isMajorSkillSlot);
@@ -157,6 +176,24 @@ export function validateBranchBuild(
       seenRuneIds.add(runeId);
     });
   }
+
+  validateDivinitySkillLoadoutRow({
+    errors,
+    skillsById: divinitySkillCostsById,
+    skillIds: draft.divinitySkills?.base ?? [],
+    label: "для 6 узлов",
+    maxNodes: DIVINITY_SKILL_BASE_NODE_BUDGET,
+    path: "divinitySkills.base",
+  });
+
+  validateDivinitySkillLoadoutRow({
+    errors,
+    skillsById: divinitySkillCostsById,
+    skillIds: draft.divinitySkills?.awakened ?? [],
+    label: "для 7 узлов",
+    maxNodes: DIVINITY_SKILL_AWAKENED_NODE_BUDGET,
+    path: "divinitySkills.awakened",
+  });
 
   for (const columnId of columnIds) {
     const branchId = draft.columns[columnId];
@@ -328,4 +365,58 @@ function isDivinitySkillTier(tier: number | undefined): tier is 1 | 2 | 3 {
 
 function isDivinityGameMode(mode: string): mode is DivinityGameMode {
   return mode === "pvp" || mode === "pve";
+}
+
+function validateDivinitySkillLoadoutRow(params: {
+  errors: BranchBuildValidationError[];
+  skillsById: ReadonlyMap<string, { nodeCost: 1 | 2 | 3; tier: number }>;
+  skillIds: readonly string[];
+  label: string;
+  maxNodes: number;
+  path: string;
+}) {
+  const seenSkillIds = new Set<string>();
+
+  if (params.skillIds.length > DIVINITY_SKILL_LOADOUT_MAX_SLOTS) {
+    params.errors.push({
+      code: "divinitySkills.slotLimitExceeded",
+      message: "В полосе навыков божественности может быть не больше 3 навыков.",
+      path: params.path,
+    });
+  }
+
+  params.skillIds.forEach((skillId, index) => {
+    const entryPath = `${params.path}.${index}`;
+
+    if (!params.skillsById.has(skillId)) {
+      params.errors.push({
+        code: "divinitySkills.skillUnknown",
+        message: "Выбран неизвестный навык божественности.",
+        path: entryPath,
+      });
+    }
+
+    if (seenSkillIds.has(skillId)) {
+      params.errors.push({
+        code: "divinitySkills.duplicate",
+        message: "Навык божественности уже выбран в этой полосе.",
+        path: entryPath,
+      });
+    }
+
+    seenSkillIds.add(skillId);
+  });
+
+  const totalCost = getDivinitySkillLoadoutCost(
+    params.skillIds,
+    params.skillsById,
+  );
+
+  if (totalCost > params.maxNodes) {
+    params.errors.push({
+      code: "divinitySkills.nodeBudgetExceeded",
+      message: `Навыки божественности ${params.label} превышают бюджет: ${totalCost}/${params.maxNodes}.`,
+      path: params.path,
+    });
+  }
 }

@@ -22,6 +22,12 @@ describe("divinity catalogs", () => {
     });
   });
 
+  test("skill node costs match their tiers", () => {
+    divinitySkills.forEach((skill) => {
+      expect(skill.nodeCost).toBe(skill.tier);
+    });
+  });
+
   test("template references supported columns and node types", () => {
     const supportedColumns = new Set(["left", "center", "right"]);
     const supportedNodeTypes = new Set(["minorStat", "majorSkill"]);

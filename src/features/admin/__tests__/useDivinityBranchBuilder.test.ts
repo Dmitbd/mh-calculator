@@ -65,6 +65,13 @@ const filledBuild = () => {
 
     result.current.addArtifact("excalibur");
     result.current.addRune("fire");
+    result.current.setDivinitySkill("base", 0, "asterial-gemini");
+    result.current.setDivinitySkill("base", 1, "asterial-annihilation");
+    result.current.setDivinitySkill("base", 2, "asterial-supernova");
+    result.current.showAwakenedDivinitySkills();
+    result.current.setDivinitySkill("awakened", 0, "devoid-animus");
+    result.current.setDivinitySkill("awakened", 1, "devoid-broken-mirror");
+    result.current.setDivinitySkill("awakened", 2, "devoid-chaotic-power");
   });
 
   return result;
@@ -87,6 +94,11 @@ describe("useDivinityBranchBuilder", () => {
     });
     expect(result.current.selectedMajorSkills).toEqual({});
     expect(result.current.weaponAwakeningSelections).toEqual({});
+    expect(result.current.selectedDivinitySkills).toEqual({
+      base: [],
+      awakened: [],
+      awakenedEnabled: false,
+    });
     expect(result.current.selectedArtifactIds).toEqual([]);
     expect(result.current.selectedRuneIds).toEqual([]);
     expect(result.current.buildExport("2026-05-30T00:00:00.000Z")).toBeNull();
@@ -142,6 +154,18 @@ describe("useDivinityBranchBuilder", () => {
       columns: selectedBranches,
       weaponAwakening: filledWeaponAwakening,
       equipment: { artifactIds: ["excalibur"], runeIds: ["fire"] },
+      divinitySkills: {
+        base: [
+          "asterial-gemini",
+          "asterial-annihilation",
+          "asterial-supernova",
+        ],
+        awakened: [
+          "devoid-animus",
+          "devoid-broken-mirror",
+          "devoid-chaotic-power",
+        ],
+      },
       majorNodes: [
         {
           level: 1,
@@ -243,6 +267,11 @@ describe("useDivinityBranchBuilder", () => {
     });
     expect(result.current.selectedMajorSkills).toEqual({});
     expect(result.current.weaponAwakeningSelections).toEqual({});
+    expect(result.current.selectedDivinitySkills).toEqual({
+      base: [],
+      awakened: [],
+      awakenedEnabled: false,
+    });
     expect(result.current.selectedArtifactIds).toEqual([]);
     expect(result.current.selectedRuneIds).toEqual([]);
     expect(result.current.progressLevels).toEqual({});
@@ -254,6 +283,19 @@ describe("useDivinityBranchBuilder", () => {
     expect(result.current.selectedBranches).toEqual(selectedBranches);
     expect(result.current.selectedMajorSkills).toEqual(selectedSkills);
     expect(result.current.weaponAwakeningSelections[1]).toBe("red");
+    expect(result.current.selectedDivinitySkills).toEqual({
+      base: [
+        "asterial-gemini",
+        "asterial-annihilation",
+        "asterial-supernova",
+      ],
+      awakened: [
+        "devoid-animus",
+        "devoid-broken-mirror",
+        "devoid-chaotic-power",
+      ],
+      awakenedEnabled: true,
+    });
     expect(result.current.selectedArtifactIds).toEqual(["excalibur"]);
     expect(result.current.selectedRuneIds).toEqual(["fire"]);
   });
@@ -279,6 +321,11 @@ describe("useDivinityBranchBuilder", () => {
     expect(result.current.selectedArtifactIds).toEqual(["excalibur"]);
     expect(result.current.selectedRuneIds).toEqual(["fire"]);
     expect(result.current.selectedBranches).toEqual(selectedBranches);
+    expect(result.current.selectedDivinitySkills.base).toEqual([
+      "asterial-gemini",
+      "asterial-annihilation",
+      "asterial-supernova",
+    ]);
   });
 
   it("does not overwrite existing saved tabs after the first saved build", () => {
@@ -422,6 +469,30 @@ describe("useDivinityBranchBuilder", () => {
     expect(result.current.buildExport("2026-05-30T00:00:00.000Z")?.equipment).toEqual({
       artifactIds: ["excalibur"],
       runeIds: ["fire", "air"],
+    });
+  });
+
+  it("can clear a divinity skill slot before export", () => {
+    const result = filledBuild();
+
+    act(() => {
+      result.current.setDivinitySkill("base", 1, null);
+    });
+
+    expect(result.current.selectedDivinitySkills.base).toEqual([
+      "asterial-gemini",
+      null,
+      "asterial-supernova",
+    ]);
+    expect(
+      result.current.buildExport("2026-05-30T00:00:00.000Z")?.divinitySkills,
+    ).toEqual({
+      base: ["asterial-gemini", "asterial-supernova"],
+      awakened: [
+        "devoid-animus",
+        "devoid-broken-mirror",
+        "devoid-chaotic-power",
+      ],
     });
   });
 });

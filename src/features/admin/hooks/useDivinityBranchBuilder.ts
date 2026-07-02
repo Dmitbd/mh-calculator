@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { getHeroById } from "@/features/game-data/heroes";
+import { compactDivinitySkillIds } from "@/features/game-data/divinity";
 
 import { branchBuilderTemplate as template } from "../data/branchBuilderCatalogs";
 import {
@@ -24,6 +25,9 @@ import type {
   DivinityBranchBuildMajorNode,
   DivinityBranchBuildValidationDraft,
   DivinityBranchId,
+  DivinitySkillLoadout,
+  DivinitySkillLoadoutDraft,
+  DivinitySkillLoadoutRowId,
   DraftBranchColumns,
   EquipmentVariantSelection,
   HeroBuildTargetTabPath,
@@ -46,6 +50,7 @@ type WeaponAwakeningSelections = Partial<Record<number, WeaponAwakeningColorId>>
 type EditableBuildDraft = {
   selectedBranches: DraftBranchColumns;
   selectedMajorSkills: MajorSkillSelections;
+  selectedDivinitySkills: DivinitySkillLoadoutDraft;
   weaponAwakeningSelections: WeaponAwakeningSelections;
   selectedArtifactIds: string[];
   selectedRuneIds: string[];
@@ -58,9 +63,15 @@ const emptySelectedBranches: DraftBranchColumns = {
   center: null,
   right: null,
 };
+const emptySelectedDivinitySkills: DivinitySkillLoadoutDraft = {
+  base: [],
+  awakened: [],
+  awakenedEnabled: false,
+};
 const emptyDraft: EditableBuildDraft = {
   selectedBranches: emptySelectedBranches,
   selectedMajorSkills: {},
+  selectedDivinitySkills: emptySelectedDivinitySkills,
   weaponAwakeningSelections: {},
   selectedArtifactIds: [],
   selectedRuneIds: [],
@@ -120,6 +131,7 @@ export function useDivinityBranchBuilder(
     progressLevels,
     selectedArtifactIds,
     selectedBranches,
+    selectedDivinitySkills,
     selectedMajorSkills,
     selectedRuneIds,
     weaponAwakeningSelections,
@@ -249,6 +261,37 @@ export function useDivinityBranchBuilder(
     [selectedMajorSkills],
   );
 
+  const setDivinitySkill = useCallback(
+    (
+      rowId: DivinitySkillLoadoutRowId,
+      slotIndex: number,
+      skillId: string | null,
+    ) => {
+      updateCurrentDraft((current) => ({
+        ...current,
+        selectedDivinitySkills: {
+          ...current.selectedDivinitySkills,
+          [rowId]: setArraySlot(
+            current.selectedDivinitySkills[rowId],
+            slotIndex,
+            skillId,
+          ),
+        },
+      }));
+    },
+    [updateCurrentDraft],
+  );
+
+  const showAwakenedDivinitySkills = useCallback(() => {
+    updateCurrentDraft((current) => ({
+      ...current,
+      selectedDivinitySkills: {
+        ...current.selectedDivinitySkills,
+        awakenedEnabled: true,
+      },
+    }));
+  }, [updateCurrentDraft]);
+
   const cycleWeaponAwakeningSlot = useCallback(
     (slot: number) => {
       updateCurrentDraft((current) => ({
@@ -325,6 +368,20 @@ export function useDivinityBranchBuilder(
     [selectedArtifactIds, selectedRuneIds],
   );
 
+  const buildDivinitySkills = useCallback(
+    (): DivinitySkillLoadout => {
+      const base = compactDivinitySkillIds(selectedDivinitySkills.base);
+      const awakened = selectedDivinitySkills.awakenedEnabled
+        ? compactDivinitySkillIds(selectedDivinitySkills.awakened)
+        : [];
+
+      return awakened.length > 0
+        ? { base, awakened }
+        : { base };
+    },
+    [selectedDivinitySkills],
+  );
+
   // Установить прогресс столбца точно до уровня (null — снять)
   const setColumnProgress = useCallback(
     (columnId: BranchColumnId, level: number | null) => {
@@ -389,12 +446,14 @@ export function useDivinityBranchBuilder(
         heroName,
         columns: selectedBranches,
         majorNodes: buildMajorNodes(selectedBranches, selectedMajorSkills),
+        divinitySkills: buildDivinitySkills(),
         weaponAwakening: buildWeaponAwakening(),
         equipment: buildEquipment(),
         progress: progressLevels,
       };
     }, [
       buildEquipment,
+      buildDivinitySkills,
       buildWeaponAwakening,
       gameMode,
       heroName,
@@ -447,6 +506,7 @@ export function useDivinityBranchBuilder(
         targetTabPath,
         columns: selectedBranches,
         majorNodes,
+        divinitySkills: buildDivinitySkills(),
         weaponAwakening,
         equipment,
         progress: progressLevels,
@@ -459,6 +519,7 @@ export function useDivinityBranchBuilder(
     },
     [
       buildEquipment,
+      buildDivinitySkills,
       buildWeaponAwakening,
       selectedBranches,
       selectedMajorSkills,
@@ -520,6 +581,7 @@ export function useDivinityBranchBuilder(
       heroName,
       selectedBranches,
       selectedMajorSkills,
+      selectedDivinitySkills,
       weaponAwakeningSelections,
       selectedArtifactIds,
       selectedRuneIds,
@@ -538,6 +600,8 @@ export function useDivinityBranchBuilder(
       setColumnBranch,
       setMajorSkill,
       getMajorSkill,
+      setDivinitySkill,
+      showAwakenedDivinitySkills,
       setColumnProgress,
       toggleColumnProgress,
       rollbackColumnProgress,
@@ -560,6 +624,7 @@ export function useDivinityBranchBuilder(
       selectedHero,
       selectedHeroId,
       selectedBranches,
+      selectedDivinitySkills,
       selectedMajorSkills,
       targetTabPath,
       weaponAwakeningSelections,
@@ -571,6 +636,8 @@ export function useDivinityBranchBuilder(
       setTargetTopTab,
       setTargetChildTab,
       setMajorSkill,
+      setDivinitySkill,
+      showAwakenedDivinitySkills,
       toggleColumnProgress,
       saveCurrentTargetBuild,
       validateFullExport,
@@ -621,6 +688,9 @@ function exportToEditableDraft(
         node.skillId,
       ]),
     ),
+    selectedDivinitySkills: exportDivinitySkillsToEditableDraft(
+      exported.divinitySkills,
+    ),
     weaponAwakeningSelections: Object.fromEntries(
       exported.weaponAwakening.map((entry) => [entry.slot, entry.colorId]),
     ),
@@ -634,6 +704,11 @@ function cloneDraft(draft: EditableBuildDraft): EditableBuildDraft {
   return {
     selectedBranches: { ...draft.selectedBranches },
     selectedMajorSkills: { ...draft.selectedMajorSkills },
+    selectedDivinitySkills: {
+      base: [...draft.selectedDivinitySkills.base],
+      awakened: [...draft.selectedDivinitySkills.awakened],
+      awakenedEnabled: draft.selectedDivinitySkills.awakenedEnabled,
+    },
     weaponAwakeningSelections: { ...draft.weaponAwakeningSelections },
     selectedArtifactIds: [...draft.selectedArtifactIds],
     selectedRuneIds: [...draft.selectedRuneIds],
@@ -645,6 +720,9 @@ function isEmptyDraft(draft: EditableBuildDraft): boolean {
   return (
     columnIds.every((columnId) => draft.selectedBranches[columnId] === null) &&
     Object.keys(draft.selectedMajorSkills).length === 0 &&
+    draft.selectedDivinitySkills.base.length === 0 &&
+    draft.selectedDivinitySkills.awakened.length === 0 &&
+    !draft.selectedDivinitySkills.awakenedEnabled &&
     Object.keys(draft.weaponAwakeningSelections).length === 0 &&
     draft.selectedArtifactIds.length === 0 &&
     draft.selectedRuneIds.length === 0 &&
@@ -654,6 +732,27 @@ function isEmptyDraft(draft: EditableBuildDraft): boolean {
 
 function getMajorSkillKey(columnId: BranchColumnId, level: number): string {
   return `${columnId}:${level}`;
+}
+
+function setArraySlot<T>(
+  values: readonly T[],
+  index: number,
+  value: T,
+): T[] {
+  const nextValues = [...values];
+  nextValues[index] = value;
+
+  return nextValues;
+}
+
+function exportDivinitySkillsToEditableDraft(
+  divinitySkills: DivinitySkillLoadout | undefined,
+): DivinitySkillLoadoutDraft {
+  return {
+    base: [...(divinitySkills?.base ?? [])],
+    awakened: [...(divinitySkills?.awakened ?? [])],
+    awakenedEnabled: Boolean(divinitySkills?.awakened),
+  };
 }
 
 // Все активные ноды: в каждом столбце — все ноды с уровнем не выше прогресса

@@ -55,6 +55,18 @@ function createValidDraft(): DivinityBranchBuildValidationDraft {
     columns,
     weaponAwakening: filledWeaponAwakening,
     equipment: { artifactIds: ["excalibur"], runeIds: ["fire"] },
+    divinitySkills: {
+      base: [
+        "asterial-gemini",
+        "asterial-annihilation",
+        "asterial-supernova",
+      ],
+      awakened: [
+        "devoid-animus",
+        "devoid-broken-mirror",
+        "devoid-chaotic-power",
+      ],
+    },
     majorNodes: template
       .filter((node) => node.nodeType === "majorSkill")
       .map((node) => {
@@ -386,5 +398,90 @@ describe("validateBranchBuild", () => {
     );
 
     expect(result.isValid).toBe(true);
+  });
+
+  it("rejects base divinity skills above the 6 node budget", () => {
+    const result = validateBranchBuild(
+      {
+        ...createValidDraft(),
+        divinitySkills: {
+          base: [
+            "asterial-supernova",
+            "devoid-chaotic-power",
+            "psyche-phantasmal",
+          ],
+        },
+      },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "divinitySkills.nodeBudgetExceeded",
+      message: "Навыки божественности для 6 узлов превышают бюджет: 9/6.",
+      path: "divinitySkills.base",
+    });
+  });
+
+  it("rejects awakened divinity skills above the 7 node budget", () => {
+    const result = validateBranchBuild(
+      {
+        ...createValidDraft(),
+        divinitySkills: {
+          base: ["asterial-gemini"],
+          awakened: [
+            "asterial-supernova",
+            "devoid-chaotic-power",
+            "asterial-annihilation",
+          ],
+        },
+      },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "divinitySkills.nodeBudgetExceeded",
+      message: "Навыки божественности для 7 узлов превышают бюджет: 8/7.",
+      path: "divinitySkills.awakened",
+    });
+  });
+
+  it("rejects duplicate divinity skills in the same row", () => {
+    const result = validateBranchBuild(
+      {
+        ...createValidDraft(),
+        divinitySkills: {
+          base: ["asterial-gemini", "asterial-gemini"],
+        },
+      },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "divinitySkills.duplicate",
+      message: "Навык божественности уже выбран в этой полосе.",
+      path: "divinitySkills.base.1",
+    });
+  });
+
+  it("rejects unknown divinity skill ids", () => {
+    const result = validateBranchBuild(
+      {
+        ...createValidDraft(),
+        divinitySkills: {
+          base: ["unknown-skill"],
+        },
+      },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "divinitySkills.skillUnknown",
+      message: "Выбран неизвестный навык божественности.",
+      path: "divinitySkills.base.0",
+    });
   });
 });

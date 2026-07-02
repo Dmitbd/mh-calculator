@@ -6,6 +6,11 @@ import {
   weaponAwakeningCombos,
   resolveWeaponAwakeningBonuses,
 } from "@/features/game-data/weapon-awakening";
+import { DivinitySkillLoadoutSection } from "@/features/builds";
+import {
+  divinityBranches,
+  divinitySkills,
+} from "@/features/game-data/divinity";
 import {
   getHeroById,
   getHeroBuildSet,
@@ -154,6 +159,17 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
               <HeroBuildWeaponAwakeningSection
                 bonuses={weaponAwakeningBonuses}
                 selections={view.weaponAwakeningSelections}
+              />
+            </View>
+
+            <View style={styles.section}>
+              <DivinitySkillLoadoutSection
+                awakenedEnabled={Boolean(view.divinitySkills.awakened)}
+                awakenedSkillIds={view.divinitySkills.awakened ?? []}
+                baseSkillIds={view.divinitySkills.base}
+                branches={divinityBranches}
+                readOnly
+                skills={divinitySkills}
               />
             </View>
 

@@ -8,6 +8,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
+import { DivinitySkillLoadoutSection } from "@/features/builds";
 import { resolveWeaponAwakeningBonuses } from "@/features/game-data/weapon-awakening";
 import {
   branchBuilderArtifacts,
@@ -30,6 +31,7 @@ import { DownloadSection } from "../components/branch-builder/DownloadSection";
 import { EquipmentBuilderSection } from "../components/branch-builder/EquipmentBuilderSection";
 import { HeroBuilderSection } from "../components/branch-builder/HeroBuilderSection";
 import { WeaponAwakeningSection } from "../components/branch-builder/WeaponAwakeningSection";
+import { ValidationErrorMessages } from "../components/ValidationErrorMessages";
 import { useDivinityBranchBuilder } from "../hooks/useDivinityBranchBuilder";
 import { getBranchBuilderTargetTabs } from "../model/branchBuilderTabs";
 import type {
@@ -67,6 +69,7 @@ export function DivinityBranchBuilderScreen() {
     selectHero,
     selectedArtifactIds,
     selectedBranches,
+    selectedDivinitySkills,
     selectedHero,
     selectedHeroId,
     selectedMajorSkills,
@@ -74,9 +77,11 @@ export function DivinityBranchBuilderScreen() {
     setColumnBranch,
     setColumnProgress,
     setHeroQuery,
+    setDivinitySkill,
     setMajorSkill,
     setTargetChildTab,
     setTargetTopTab,
+    showAwakenedDivinitySkills,
     targetTabPath,
     toggleColumnProgress,
     validateFullExport,
@@ -116,6 +121,9 @@ export function DivinityBranchBuilderScreen() {
   );
   const weaponAwakeningErrors = getErrorMessages(validationErrors, (path) =>
     path.startsWith("weaponAwakening."),
+  );
+  const divinitySkillErrors = getErrorMessages(validationErrors, (path) =>
+    path.startsWith("divinitySkills."),
   );
   const branchGridErrors = getErrorMessages(validationErrors, (path) =>
     path.startsWith("columns.") ||
@@ -255,6 +263,18 @@ export function DivinityBranchBuilderScreen() {
     clearValidationErrors((path) => path === `weaponAwakening.${slot}`);
   };
 
+  const handleSetDivinitySkill = (
+    rowId: "base" | "awakened",
+    slotIndex: number,
+    skillId: string | null,
+  ) => {
+    setDivinitySkill(rowId, slotIndex, skillId);
+    clearValidationErrors((path) =>
+      path === `divinitySkills.${rowId}` ||
+      path.startsWith(`divinitySkills.${rowId}.`),
+    );
+  };
+
   const handleSetColumnBranch = (
     columnId: BranchColumnId,
     branchId: Parameters<typeof setColumnBranch>[1],
@@ -347,6 +367,19 @@ export function DivinityBranchBuilderScreen() {
           selections={weaponAwakeningSelections}
           slots={branchBuilderWeaponAwakeningSlots}
         />
+      </View>
+
+      <View style={styles.section}>
+        <DivinitySkillLoadoutSection
+          awakenedEnabled={selectedDivinitySkills.awakenedEnabled}
+          awakenedSkillIds={selectedDivinitySkills.awakened}
+          baseSkillIds={selectedDivinitySkills.base}
+          branches={branchBuilderBranches}
+          onSelectSkill={handleSetDivinitySkill}
+          onShowAwakened={showAwakenedDivinitySkills}
+          skills={branchBuilderSkills}
+        />
+        <ValidationErrorMessages messages={divinitySkillErrors} />
       </View>
 
       <View style={styles.section}>

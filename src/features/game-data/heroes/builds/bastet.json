@@ -113,6 +113,9 @@
             "air"
           ]
         },
+        "divinitySkills": {
+          "base": []
+        },
         "progress": {
           "center": 30,
           "right": 28,
@@ -536,6 +539,9 @@
                 "fire"
               ]
             },
+            "divinitySkills": {
+              "base": []
+            },
             "progress": {
               "center": 30,
               "right": 28,
@@ -909,6 +915,9 @@
               "runeIds": [
                 "air"
               ]
+            },
+            "divinitySkills": {
+              "base": []
             },
             "progress": {
               "center": 30,

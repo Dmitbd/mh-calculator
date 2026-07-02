@@ -10,6 +10,9 @@ export type BranchColumnId = "left" | "center" | "right";
 /** Tier мажорного скилла — соответствует слоту в tree-template */
 export type DivinitySkillTier = 1 | 2 | 3;
 
+/** Стоимость большого навыка в узлах божественной энергии */
+export type DivinitySkillNodeCost = 1 | 2 | 3;
+
 /** Уровень прокачки скилла в игре (1–4) */
 export type DivinitySkillUpgradeLevel = 1 | 2 | 3 | 4;
 
@@ -29,6 +32,8 @@ export type DivinityMajorSkill = {
   branchId: DivinityBranchId;
   /** Tier слота дерева (1, 2 или 3) */
   tier: DivinitySkillTier;
+  /** Стоимость установки навыка в узлах божественной энергии */
+  nodeCost: DivinitySkillNodeCost;
   /** Название для UI */
   name: string;
   /** Путь к иконке */

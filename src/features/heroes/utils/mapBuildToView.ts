@@ -3,6 +3,7 @@ import type {
   DraftBranchColumns,
 } from "@/features/game-data/divinity/types";
 import type { DivinityBranchBuildExport } from "@/features/game-data/builds/types";
+import type { DivinitySkillLoadout } from "@/features/game-data/builds/types";
 import type { WeaponAwakeningColorId } from "@/features/game-data/weapon-awakening/types";
 
 /** Пропсы сетки и экипировки, восстановленные из экспортированного билда */
@@ -19,6 +20,8 @@ export type BranchBuildViewModel = {
   artifactIds: string[];
   /** Список id подходящих рун */
   runeIds: string[];
+  /** Выбранные активные навыки божественности */
+  divinitySkills: DivinitySkillLoadout;
 };
 
 /** Ключ мажорной ноды — совпадает с форматом BranchBuilderGrid */
@@ -53,5 +56,6 @@ export function mapBuildToView(
     weaponAwakeningSelections,
     artifactIds: build.equipment.artifactIds,
     runeIds: build.equipment.runeIds,
+    divinitySkills: build.divinitySkills ?? { base: [] },
   };
 }

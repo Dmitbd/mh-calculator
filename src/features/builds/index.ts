@@ -1,6 +1,7 @@
 export {
   BranchBuilderGrid,
   BuildFolderTabs,
+  DivinitySkillLoadoutSection,
   EquipmentVariantTabs,
   WeaponAwakeningBonusList,
   WeaponAwakeningPicker,
