@@ -90,6 +90,26 @@ function createEmptyDivinitySkillDraft(): DivinitySkillLoadoutDraft {
   };
 }
 
+function clearMajorSkillsForColumn(
+  selectedMajorSkills: MajorSkillSelections,
+  columnId: BranchColumnId,
+): MajorSkillSelections {
+  return Object.fromEntries(
+    Object.entries(selectedMajorSkills).filter(
+      ([key]) => !key.startsWith(`${columnId}:`),
+    ),
+  );
+}
+
+function clearProgressForColumn(
+  progressLevels: BranchProgressLevels,
+  columnId: BranchColumnId,
+): BranchProgressLevels {
+  const { [columnId]: _removedProgress, ...remainingProgress } = progressLevels;
+
+  return remainingProgress;
+}
+
 /** Путь целевой вкладки по умолчанию — первая вкладка в buildTargetTabs */
 const defaultTargetTabPath: HeroBuildTargetTabPath = defaultBuildTargetTabPath;
 
@@ -238,16 +258,24 @@ export function useDivinityBranchBuilder(
           return current;
         }
 
+        const branchChanged = current.selectedBranches[columnId] !== branchId;
+
         return {
           ...current,
           selectedBranches: {
             ...current.selectedBranches,
             [columnId]: branchId,
           },
+          selectedMajorSkills: branchChanged
+            ? clearMajorSkillsForColumn(current.selectedMajorSkills, columnId)
+            : current.selectedMajorSkills,
           selectedDivinitySkills:
-            current.selectedBranches[columnId] !== branchId
+            branchChanged
               ? createEmptyDivinitySkillDraft()
               : current.selectedDivinitySkills,
+          progressLevels: branchChanged
+            ? clearProgressForColumn(current.progressLevels, columnId)
+            : current.progressLevels,
         };
       });
     },

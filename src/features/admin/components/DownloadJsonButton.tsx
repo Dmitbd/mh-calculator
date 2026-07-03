@@ -24,9 +24,7 @@ type DownloadJsonButtonProps = {
 
 export function DownloadJsonButton({
   backendStatus,
-  errors,
   isPublishPending = false,
-  onErrorsLayout,
   onDeleteFull,
   onDownloadFull,
   onLoadFull,
@@ -99,15 +97,6 @@ export function DownloadJsonButton({
       {backendStatus ? (
         <Text style={styles.backendStatus}>{backendStatus}</Text>
       ) : null}
-      {errors.length > 0 ? (
-        <View onLayout={onErrorsLayout} style={styles.errors}>
-          {errors.map((error) => (
-            <Text key={`${error.code}:${error.path ?? error.message}`} style={styles.errorText}>
-              {error.message}
-            </Text>
-          ))}
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -150,19 +139,6 @@ const styles = StyleSheet.create({
   },
   backendStatus: {
     color: "#e8d7b5",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  errors: {
-    gap: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#79403a",
-    backgroundColor: "#261311",
-    padding: 12,
-  },
-  errorText: {
-    color: "#ffb8a8",
     fontSize: 13,
     fontWeight: "700",
   },

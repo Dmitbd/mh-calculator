@@ -4,15 +4,18 @@ jest.mock("@/shared/lib/resolveAssetUri", () => ({
 }));
 
 import { render, screen } from "@testing-library/react-native";
+import { StyleSheet } from "react-native";
 
 import { IconPreview } from "../IconPreview";
 
 test("renders resolved image when source is present", () => {
   render(<IconPreview label="Hero" source="/img/heroes/bastet.png" />);
+  const icon = screen.getByLabelText("Hero icon");
 
-  expect(screen.getByLabelText("Hero icon").props.source).toEqual({
+  expect(icon.props.source).toEqual({
     uri: "resolved:/img/heroes/bastet.png",
   });
+  expect(StyleSheet.flatten(icon.props.style).borderRadius).toBe(17);
 });
 
 test("renders placeholder when source is missing", () => {

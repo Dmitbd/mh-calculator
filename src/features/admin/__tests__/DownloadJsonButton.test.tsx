@@ -85,6 +85,30 @@ describe("DownloadJsonButton", () => {
     expect(screen.getByText("Билд опубликован.")).toBeTruthy();
   });
 
+  it("does not render form validation errors under the footer actions", () => {
+    render(
+      <DownloadJsonButton
+        errors={[
+          {
+            code: "hero.required",
+            message: "Выберите героя из списка.",
+            path: "heroId",
+          },
+        ]}
+        onDeleteFull={jest.fn()}
+        onDownloadFull={jest.fn()}
+        onLoadFull={jest.fn()}
+        onPublishFull={jest.fn()}
+        onSaveCurrent={jest.fn()}
+        onSaveDraft={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Сохранить вкладку")).toBeTruthy();
+    expect(screen.getByText("Опубликовать")).toBeTruthy();
+    expect(screen.queryByText("Выберите героя из списка.")).toBeNull();
+  });
+
   it("shows a loader label and blocks duplicate publish clicks while publishing", () => {
     const onPublishFull = jest.fn();
 

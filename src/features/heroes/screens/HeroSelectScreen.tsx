@@ -90,9 +90,7 @@ export function HeroSelectScreen() {
           <View style={styles.loadingCard}>
             <Text style={styles.loadingText}>Загружаем билды...</Text>
           </View>
-        ) : null}
-
-        {zoneGroups.length > 0 ? (
+        ) : zoneGroups.length > 0 ? (
           zoneGroups.map((group) => (
             <View key={group.zoneId} style={styles.zone}>
               <Text style={styles.zoneTitle}>{group.title}</Text>

@@ -12,6 +12,7 @@ import type {
   DivinityBranch,
   DivinityMajorSkill,
 } from "@/features/game-data/divinity";
+import { builderTheme } from "@/shared/ui/builderTheme";
 import { IconPreview } from "@/shared/ui/IconPreview";
 
 type LoadoutRowId = "base" | "awakened";
@@ -19,6 +20,11 @@ type LoadoutRowId = "base" | "awakened";
 type ActiveSlot = {
   rowId: LoadoutRowId;
   index: number;
+} | null;
+
+type PickerNotice = {
+  rowId: LoadoutRowId;
+  message: string;
 } | null;
 
 type DivinitySkillLoadoutSectionProps = {
@@ -42,21 +48,16 @@ export function DivinitySkillLoadoutSection({
   awakenedSkillIds = [],
   availableSkillIds,
   baseSkillIds,
-  branches,
   onSelectSkill,
   onShowAwakened,
   readOnly = false,
   skills,
 }: DivinitySkillLoadoutSectionProps) {
   const [activeSlot, setActiveSlot] = useState<ActiveSlot>(null);
-  const [emptyPickerRow, setEmptyPickerRow] = useState<LoadoutRowId | null>(null);
+  const [pickerNotice, setPickerNotice] = useState<PickerNotice>(null);
   const skillsById = useMemo(
     () => new Map(skills.map((skill) => [skill.id, skill])),
     [skills],
-  );
-  const branchTitleById = useMemo(
-    () => new Map(branches.map((branch) => [branch.id, branch.title])),
-    [branches],
   );
   const sortedSkills = useMemo(
     () =>
@@ -89,15 +90,51 @@ export function DivinitySkillLoadoutSection({
   const hasNoAvailableSkills =
     !readOnly && availableSkillIds !== undefined && filteredSkills.length === 0;
   const emptyPickerMessage = "Выберите хотя бы один талант в дереве ниже.";
+  const exhaustedPickerMessage = "Выберите еще таланты в дереве ниже.";
+  const getBudgetMessage = (maxNodes: number) =>
+    `Навык не помещается в лимит ${maxNodes} узлов.`;
+
+  const getMaxNodesForRow = (rowId: LoadoutRowId) =>
+    rowId === "base"
+      ? DIVINITY_SKILL_BASE_NODE_BUDGET
+      : DIVINITY_SKILL_AWAKENED_NODE_BUDGET;
+
+  const getSkillIdsForRow = (rowId: LoadoutRowId) =>
+    rowId === "base" ? baseSkillIds : awakenedSkillIds;
+
+  const getAvailableSkillsForRow = (
+    selectedSkillIds: readonly (string | null)[],
+  ) => {
+    const selectedInRow = new Set(
+      selectedSkillIds.filter((skillId): skillId is string => Boolean(skillId)),
+    );
+
+    return filteredSkills.filter((skill) => !selectedInRow.has(skill.id));
+  };
 
   const openSkillSlot = (slot: ActiveSlot) => {
-    if (slot && hasNoAvailableSkills) {
+    if (!slot) {
       setActiveSlot(null);
-      setEmptyPickerRow(slot.rowId);
+      setPickerNotice(null);
       return;
     }
 
-    setEmptyPickerRow(null);
+    if (hasNoAvailableSkills) {
+      setActiveSlot(null);
+      setPickerNotice({ rowId: slot.rowId, message: emptyPickerMessage });
+      return;
+    }
+
+    const rowSkillIds =
+      slot.rowId === "base" ? baseSkillIds : awakenedSkillIds;
+
+    if (getAvailableSkillsForRow(rowSkillIds).length === 0) {
+      setActiveSlot(null);
+      setPickerNotice({ rowId: slot.rowId, message: exhaustedPickerMessage });
+      return;
+    }
+
+    setPickerNotice(null);
     setActiveSlot(slot);
   };
 
@@ -106,8 +143,26 @@ export function DivinitySkillLoadoutSection({
     index: number,
     skillId: string | null,
   ) => {
+    if (skillId) {
+      const nextSkillIds = [...getSkillIdsForRow(rowId)];
+      const maxNodes = getMaxNodesForRow(rowId);
+
+      nextSkillIds[index] = skillId;
+
+      const nextCost = getDivinitySkillLoadoutCost(
+        nextSkillIds.filter((id): id is string => Boolean(id)),
+        skillsById,
+      );
+
+      if (nextCost > maxNodes) {
+        setPickerNotice({ rowId, message: getBudgetMessage(maxNodes) });
+        setActiveSlot(null);
+        return;
+      }
+    }
+
     onSelectSkill?.(rowId, index, skillId);
-    setEmptyPickerRow(null);
+    setPickerNotice(null);
     setActiveSlot(null);
   };
 
@@ -122,24 +177,22 @@ export function DivinitySkillLoadoutSection({
 
       <LoadoutRow
         activeSlot={activeSlot}
-        branchTitleById={branchTitleById}
         maxNodes={DIVINITY_SKILL_BASE_NODE_BUDGET}
         readOnly={readOnly}
         rowId="base"
         rowLabel="6 узлов"
         selectedSkillIds={baseSkillIds}
+        onClearSkill={(index) => selectSkill("base", index, null)}
         setActiveSlot={openSkillSlot}
         skillsById={skillsById}
       />
       {!readOnly ? (
-        hasNoAvailableSkills && emptyPickerRow === "base" ? (
-          <Text style={styles.pickerError}>{emptyPickerMessage}</Text>
+        pickerNotice?.rowId === "base" ? (
+          <Text style={styles.pickerError}>{pickerNotice.message}</Text>
         ) : activeSlot?.rowId === "base" ? (
           <SkillPicker
-            branchTitleById={branchTitleById}
-            onClear={() => selectSkill("base", activeSlot.index, null)}
             onSelect={(skillId) => selectSkill("base", activeSlot.index, skillId)}
-            skills={filteredSkills}
+            skills={getAvailableSkillsForRow(baseSkillIds)}
           />
         ) : (
           null
@@ -150,26 +203,24 @@ export function DivinitySkillLoadoutSection({
         <>
           <LoadoutRow
             activeSlot={activeSlot}
-            branchTitleById={branchTitleById}
             maxNodes={DIVINITY_SKILL_AWAKENED_NODE_BUDGET}
             readOnly={readOnly}
             rowId="awakened"
             rowLabel="7 узлов"
             selectedSkillIds={awakenedSkillIds}
+            onClearSkill={(index) => selectSkill("awakened", index, null)}
             setActiveSlot={openSkillSlot}
             skillsById={skillsById}
           />
           {!readOnly ? (
-            hasNoAvailableSkills && emptyPickerRow === "awakened" ? (
-              <Text style={styles.pickerError}>{emptyPickerMessage}</Text>
+            pickerNotice?.rowId === "awakened" ? (
+              <Text style={styles.pickerError}>{pickerNotice.message}</Text>
             ) : activeSlot?.rowId === "awakened" ? (
               <SkillPicker
-                branchTitleById={branchTitleById}
-                onClear={() => selectSkill("awakened", activeSlot.index, null)}
                 onSelect={(skillId) =>
                   selectSkill("awakened", activeSlot.index, skillId)
                 }
-                skills={filteredSkills}
+                skills={getAvailableSkillsForRow(awakenedSkillIds)}
               />
             ) : (
               null
@@ -177,16 +228,22 @@ export function DivinitySkillLoadoutSection({
           ) : null}
         </>
       ) : !readOnly ? (
-        <Pressable
-          accessibilityLabel="Добавить навыки для 7 божественных узлов"
-          accessibilityRole="button"
-          onPress={onShowAwakened}
-          style={styles.addAwakenedButton}
-        >
-          <Text style={styles.addAwakenedText}>
-            Добавить навыки для 7 божественных узлов
-          </Text>
-        </Pressable>
+        <View style={styles.addAwakenedBlock}>
+          <Text style={styles.rowLabel}>7 узлов</Text>
+          <Pressable
+            accessibilityLabel="Добавить навыки для 7 божественных узлов"
+            accessibilityRole="button"
+            onPress={onShowAwakened}
+            style={styles.addAwakenedButton}
+          >
+            <View style={styles.addAwakenedButtonInner}>
+              <View style={styles.addAwakenedIcon}>
+                <View style={styles.addAwakenedIconHorizontal} />
+                <View style={styles.addAwakenedIconVertical} />
+              </View>
+            </View>
+          </Pressable>
+        </View>
       ) : null}
     </View>
   );
@@ -194,24 +251,24 @@ export function DivinitySkillLoadoutSection({
 
 type LoadoutRowProps = {
   activeSlot: ActiveSlot;
-  branchTitleById: ReadonlyMap<string, string>;
   maxNodes: number;
   readOnly: boolean;
   rowId: LoadoutRowId;
   rowLabel: string;
   selectedSkillIds: readonly (string | null)[];
+  onClearSkill: (index: number) => void;
   setActiveSlot: (slot: ActiveSlot) => void;
   skillsById: ReadonlyMap<string, DivinityMajorSkill>;
 };
 
 function LoadoutRow({
   activeSlot,
-  branchTitleById,
   maxNodes,
   readOnly,
   rowId,
   rowLabel,
   selectedSkillIds,
+  onClearSkill,
   setActiveSlot,
   skillsById,
 }: LoadoutRowProps) {
@@ -236,9 +293,6 @@ function LoadoutRow({
           const skill = skillId ? skillsById.get(skillId) ?? null : null;
           const selected =
             activeSlot?.rowId === rowId && activeSlot.index === index;
-          const branchTitle = skill
-            ? branchTitleById.get(skill.branchId) ?? skill.branchId
-            : "";
           const content = (
             <>
               <IconPreview
@@ -246,14 +300,15 @@ function LoadoutRow({
                 source={skill?.icon ?? null}
                 size={30}
               />
-              <View style={styles.slotTextBlock}>
-                <Text style={styles.slotTitle}>{skill?.name ?? "—"}</Text>
-                {skill ? (
-                  <Text style={styles.slotMeta}>
-                    {branchTitle} · {getDivinitySkillNodeCost(skill)} уз.
-                  </Text>
-                ) : null}
-              </View>
+              {skill ? (
+                <View style={styles.slotTextBlock}>
+                  <Text style={styles.slotTitle}>{skill.name}</Text>
+                  <SkillCostIndicator
+                    cost={getDivinitySkillNodeCost(skill)}
+                    skillName={skill.name}
+                  />
+                </View>
+              ) : null}
             </>
           );
 
@@ -266,17 +321,31 @@ function LoadoutRow({
           }
 
           return (
-            <Pressable
-              accessibilityLabel={`Выбрать навык божественности ${rowLabel}, слот ${index + 1}`}
-              accessibilityRole="button"
+            <View
               key={`${rowId}:${index}`}
-              onPress={() =>
-                setActiveSlot(selected ? null : { rowId, index })
-              }
               style={[styles.slot, selected && styles.slotSelected]}
             >
-              {content}
-            </Pressable>
+              <Pressable
+                accessibilityLabel={`Выбрать навык божественности ${rowLabel}, слот ${index + 1}`}
+                accessibilityRole="button"
+                onPress={() =>
+                  setActiveSlot(selected ? null : { rowId, index })
+                }
+                style={styles.slotButtonArea}
+              >
+                {content}
+              </Pressable>
+              {skill ? (
+                <Pressable
+                  accessibilityLabel={`Очистить навык божественности ${rowLabel}, слот ${index + 1}`}
+                  accessibilityRole="button"
+                  onPress={() => onClearSkill(index)}
+                  style={styles.slotClearButton}
+                >
+                  <Text style={styles.slotClearButtonText}>×</Text>
+                </Pressable>
+              ) : null}
+            </View>
           );
         })}
       </View>
@@ -315,28 +384,16 @@ function NodeBudgetIndicator({
 }
 
 type SkillPickerProps = {
-  branchTitleById: ReadonlyMap<string, string>;
-  onClear: () => void;
   onSelect: (skillId: string) => void;
   skills: readonly DivinityMajorSkill[];
 };
 
 function SkillPicker({
-  branchTitleById,
-  onClear,
   onSelect,
   skills,
 }: SkillPickerProps) {
   return (
     <View style={styles.picker}>
-      <Pressable
-        accessibilityLabel="Очистить навык божественности"
-        accessibilityRole="button"
-        onPress={onClear}
-        style={[styles.pickerOption, styles.clearOption]}
-      >
-        <Text style={styles.clearOptionText}>Очистить</Text>
-      </Pressable>
       {skills.map((skill) => (
         <Pressable
           accessibilityLabel={`Выбрать навык божественности ${skill.name}`}
@@ -348,12 +405,31 @@ function SkillPicker({
           <IconPreview label={skill.name} source={skill.icon} size={24} />
           <View style={styles.pickerTextBlock}>
             <Text style={styles.pickerTitle}>{skill.name}</Text>
-            <Text style={styles.pickerMeta}>
-              {branchTitleById.get(skill.branchId) ?? skill.branchId} ·{" "}
-              {getDivinitySkillNodeCost(skill)} уз.
-            </Text>
+            <SkillCostIndicator
+              cost={getDivinitySkillNodeCost(skill)}
+              skillName={skill.name}
+            />
           </View>
         </Pressable>
+      ))}
+    </View>
+  );
+}
+
+type SkillCostIndicatorProps = {
+  cost: number;
+  skillName: string;
+};
+
+function SkillCostIndicator({ cost, skillName }: SkillCostIndicatorProps) {
+  return (
+    <View style={styles.skillCost}>
+      {Array.from({ length: cost }, (_, index) => (
+        <View
+          accessibilityLabel={`${skillName}: узел стоимости ${index + 1}`}
+          key={`${skillName}:cost:${index}`}
+          style={[styles.costDiamond, styles.nodeDiamondFilled]}
+        />
       ))}
     </View>
   );
@@ -362,51 +438,45 @@ function SkillPicker({
 const styles = StyleSheet.create({
   wrapper: {
     width: "100%",
-    gap: 12,
+    gap: builderTheme.spacing.sectionContentGap,
   },
   header: {
-    gap: 4,
+    gap: builderTheme.spacing.titleDescriptionGap,
   },
   title: {
-    color: "#fff4d7",
-    fontSize: 18,
-    fontWeight: "900",
+    ...builderTheme.text.sectionTitle,
   },
   description: {
-    color: "#bea17b",
-    fontSize: 12,
-    fontWeight: "700",
+    ...builderTheme.text.sectionDescription,
   },
   rowBlock: {
     gap: 8,
   },
   rowHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 6,
   },
   rowLabel: {
-    color: "#d9bb87",
-    fontSize: 13,
-    fontWeight: "800",
+    ...builderTheme.text.fieldLabel,
   },
   nodeBudget: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
+    gap: 12,
+    marginTop: 4,
     paddingHorizontal: 2,
   },
   nodeDiamond: {
-    width: 10,
-    height: 10,
+    width: 14,
+    height: 14,
     borderWidth: 1,
     borderColor: "#5d4937",
     backgroundColor: "#3a3029",
     transform: [{ rotate: "45deg" }],
   },
   nodeDiamondFilled: {
-    borderColor: "#f0c36a",
-    backgroundColor: "#f0c36a",
+    borderColor: builderTheme.colors.accent,
+    backgroundColor: builderTheme.colors.accent,
   },
   slotRow: {
     flexDirection: "row",
@@ -415,24 +485,47 @@ const styles = StyleSheet.create({
   slot: {
     minHeight: 94,
     flex: 1,
+    position: "relative",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#533b29",
     backgroundColor: "#241610",
+    overflow: "hidden",
+  },
+  slotButtonArea: {
+    ...StyleSheet.absoluteFill,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
     paddingHorizontal: 6,
     paddingVertical: 8,
   },
   slotSelected: {
-    borderColor: "#f0c36a",
+    borderColor: builderTheme.colors.accent,
     backgroundColor: "#3a2810",
+  },
+  slotClearButton: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 26,
+    height: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+  },
+  slotClearButtonText: {
+    color: "#f3d9b3",
+    fontSize: 20,
+    fontWeight: "900",
+    lineHeight: 22,
   },
   slotTextBlock: {
     minHeight: 34,
     justifyContent: "center",
-    gap: 2,
+    gap: 8,
     width: "100%",
   },
   slotTitle: {
@@ -441,31 +534,43 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textAlign: "center",
   },
-  slotMeta: {
-    color: "#bea17b",
-    fontSize: 10,
-    fontWeight: "700",
-    textAlign: "center",
+  addAwakenedBlock: {
+    gap: 8,
   },
   addAwakenedButton: {
-    minHeight: 40,
-    alignItems: "center",
-    justifyContent: "center",
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#6d4f2d",
-    backgroundColor: "#2b1b11",
-    paddingHorizontal: 12,
+    backgroundColor: "#1a100c",
+    alignSelf: "flex-start",
   },
-  addAwakenedText: {
-    color: "#f0c36a",
-    fontSize: 13,
-    fontWeight: "900",
-    textAlign: "center",
+  addAwakenedButtonInner: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addAwakenedIcon: {
+    width: 14,
+    height: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addAwakenedIconHorizontal: {
+    position: "absolute",
+    width: 14,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: builderTheme.colors.accent,
+  },
+  addAwakenedIconVertical: {
+    position: "absolute",
+    width: 2,
+    height: 14,
+    borderRadius: 1,
+    backgroundColor: builderTheme.colors.accent,
   },
   picker: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     gap: 8,
     borderRadius: 8,
     borderWidth: 1,
@@ -484,37 +589,37 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   pickerOption: {
-    width: 136,
+    width: "100%",
     minHeight: 58,
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     borderRadius: 6,
     backgroundColor: "#281a12",
     padding: 6,
   },
-  clearOption: {
-    justifyContent: "center",
-  },
-  clearOptionText: {
-    color: "#f3d9b3",
-    fontSize: 12,
-    fontWeight: "900",
-    textAlign: "center",
-    width: "100%",
-  },
   pickerTextBlock: {
-    flex: 1,
-    gap: 2,
+    alignItems: "center",
+    gap: 6,
+    width: "100%",
   },
   pickerTitle: {
     color: "#f7dfac",
     fontSize: 12,
     fontWeight: "800",
+    textAlign: "center",
   },
-  pickerMeta: {
-    color: "#b9956d",
-    fontSize: 10,
-    fontWeight: "700",
+  skillCost: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "center",
+    gap: 6,
+  },
+  costDiamond: {
+    width: 9,
+    height: 9,
+    borderWidth: 1,
+    transform: [{ rotate: "45deg" }],
   },
 });

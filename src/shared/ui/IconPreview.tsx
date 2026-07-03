@@ -25,15 +25,15 @@ export function IconPreview({ source, label, size = 34 }: IconPreviewProps) {
     <Image
       accessibilityLabel={`${label} icon`}
       source={{ uri: resolveAssetUri(source) }}
-      style={[styles.image, { width: size, height: size }]}
+      style={[styles.image, { width: size, height: size, borderRadius: size / 2 }]}
     />
   );
 }
 
 const styles = StyleSheet.create({
   image: {
-    borderRadius: 6,
     backgroundColor: "#271610",
+    overflow: "hidden",
   },
   placeholder: {
     borderWidth: 1,

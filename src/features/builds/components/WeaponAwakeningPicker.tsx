@@ -6,6 +6,7 @@ import type {
   WeaponAwakeningSlot,
 } from "@/features/game-data/weapon-awakening/types";
 import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
+import { builderTheme } from "@/shared/ui/builderTheme";
 
 type WeaponAwakeningPickerProps = {
   colors: readonly WeaponAwakeningColor[];
@@ -30,10 +31,12 @@ export function WeaponAwakeningPicker({
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>Пробуждение оружия</Text>
-      {description ? (
-        <Text style={styles.description}>{description}</Text>
-      ) : null}
+      <View style={styles.header}>
+        <Text style={styles.title}>Пробуждение оружия</Text>
+        {description ? (
+          <Text style={styles.description}>{description}</Text>
+        ) : null}
+      </View>
       <View style={styles.row}>
         {slots.map((slot) => {
           const colorId = selections[slot.slot] ?? null;
@@ -89,19 +92,16 @@ export function WeaponAwakeningPicker({
 
 const styles = StyleSheet.create({
   wrapper: {
-    gap: 8,
+    gap: builderTheme.spacing.sectionContentGap,
   },
-  label: {
-    color: "#d6c2a4",
-    fontSize: 13,
-    fontWeight: "800",
-    textTransform: "uppercase",
+  header: {
+    gap: builderTheme.spacing.titleDescriptionGap,
+  },
+  title: {
+    ...builderTheme.text.sectionTitle,
   },
   description: {
-    color: "#917968",
-    fontSize: 13,
-    fontWeight: "600",
-    lineHeight: 18,
+    ...builderTheme.text.sectionDescription,
   },
   row: {
     flexDirection: "row",

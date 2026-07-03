@@ -99,10 +99,52 @@ export function BranchBuilderGrid({
     return ranges;
   }, [columns, template]);
 
+  const columnNodeLevels = useMemo(() => {
+    const levelsByColumn = {} as Record<BranchColumnId, number[]>;
+
+    columns.forEach((column) => {
+      levelsByColumn[column.id] = template
+        .filter((node) => node.columnId === column.id)
+        .map((node) => node.level)
+        .sort((first, second) => first - second);
+    });
+
+    return levelsByColumn;
+  }, [columns, template]);
+
+  // Ключи всех нод вида "уровень:колонка" — для быстрой проверки соседей
+  const nodeKeys = useMemo(() => {
+    const keys = new Set<string>();
+    template.forEach((node) => keys.add(`${node.level}:${node.columnId}`));
+    return keys;
+  }, [template]);
+
   // Нода активна, если уровень не выше прогресса своего столбца
   const isNodeActive = (columnId: BranchColumnId, level: number) => {
     const progress = progressLevels[columnId];
     return progress !== undefined && level <= progress;
+  };
+
+  const getNextNodeLevel = (columnId: BranchColumnId, level: number) =>
+    columnNodeLevels[columnId]?.find((nodeLevel) => nodeLevel > level) ?? null;
+
+  const isLowerBranchSegmentActive = (
+    columnId: BranchColumnId,
+    level: number,
+  ) => {
+    if (!isNodeActive(columnId, level)) {
+      return false;
+    }
+
+    const hasNodeAtLevel = nodeKeys.has(`${level}:${columnId}`);
+
+    if (!hasNodeAtLevel) {
+      return true;
+    }
+
+    const nextNodeLevel = getNextNodeLevel(columnId, level);
+
+    return nextNodeLevel !== null && isNodeActive(columnId, nextNodeLevel);
   };
 
   // Линия-«ветка» для ячейки: null до первой и после последней ноды,
@@ -115,23 +157,31 @@ export function BranchBuilderGrid({
     }
 
     return (
-      <View
-        style={[
-          styles.branchLine,
-          level === range.first && styles.branchLineStart,
-          level === range.last && styles.branchLineEnd,
-          isNodeActive(columnId, level) && styles.branchLineActive,
-        ]}
-      />
+      <>
+        {level !== range.first ? (
+          <View
+            accessibilityLabel={`${columnId} level ${level} upper branch connector`}
+            style={[
+              styles.branchLineSegment,
+              styles.branchLineUpperSegment,
+              isNodeActive(columnId, level) && styles.branchLineActive,
+            ]}
+          />
+        ) : null}
+        {level !== range.last ? (
+          <View
+            accessibilityLabel={`${columnId} level ${level} lower branch connector`}
+            style={[
+              styles.branchLineSegment,
+              styles.branchLineLowerSegment,
+              isLowerBranchSegmentActive(columnId, level) &&
+                styles.branchLineActive,
+            ]}
+          />
+        ) : null}
+      </>
     );
   };
-
-  // Ключи всех нод вида "уровень:колонка" — для быстрой проверки соседей
-  const nodeKeys = useMemo(() => {
-    const keys = new Set<string>();
-    template.forEach((node) => keys.add(`${node.level}:${node.columnId}`));
-    return keys;
-  }, [template]);
 
   // Уровни, где у основной (центральной) колонки стоит мажорная нода —
   // только на них ствол ветвится горизонтально в боковые колонки
@@ -628,13 +678,18 @@ const styles = StyleSheet.create({
   },
   levelHeader: {
     flex: 0,
+    flexBasis: LEVEL_COLUMN_WIDTH,
     width: LEVEL_COLUMN_WIDTH,
+    minWidth: LEVEL_COLUMN_WIDTH,
+    maxWidth: LEVEL_COLUMN_WIDTH,
     height: BRANCH_HEADER_HEIGHT,
     lineHeight: BRANCH_HEADER_HEIGHT,
     textAlignVertical: "center",
   },
   headerBranchCell: {
     flex: 1,
+    flexBasis: 0,
+    minWidth: 0,
     gap: 8,
     height: BRANCH_HEADER_HEIGHT,
   },
@@ -701,7 +756,10 @@ const styles = StyleSheet.create({
   },
   levelCell: {
     flex: 0,
+    flexBasis: LEVEL_COLUMN_WIDTH,
     width: LEVEL_COLUMN_WIDTH,
+    minWidth: LEVEL_COLUMN_WIDTH,
+    maxWidth: LEVEL_COLUMN_WIDTH,
     minHeight: 70,
     borderRadius: 8,
     backgroundColor: "#1b110d",
@@ -713,38 +771,43 @@ const styles = StyleSheet.create({
   },
   nodeCell: {
     flex: 1,
+    flexBasis: 0,
+    minWidth: 0,
     justifyContent: "center",
+    position: "relative",
   },
   nodeCellContent: {
     position: "relative",
-    zIndex: 1,
+    zIndex: 2,
+    width: "100%",
   },
   emptyCell: {
     flex: 1,
+    flexBasis: 0,
+    minWidth: 0,
     minHeight: 70,
     justifyContent: "center",
     alignItems: "center",
+    position: "relative",
   },
   // Вертикальная линия-«ветка»: за карточкой, выходит в отступы сверху и снизу,
   // поэтому соседние ячейки столбца визуально соединяются в непрерывную линию
-  branchLine: {
+  branchLineSegment: {
     position: "absolute",
-    top: -ROW_GAP,
-    bottom: -ROW_GAP,
     left: "50%",
     width: 2,
-    marginLeft: -1,
     backgroundColor: BRANCH_LINE_COLOR,
     zIndex: 0,
     pointerEvents: "none",
+    transform: [{ translateX: "-50%" }],
   },
-  // Первая нода столбца — линия начинается от её центра и идёт вниз
-  branchLineStart: {
-    top: "50%",
-  },
-  // Последняя нода столбца — линия заканчивается у её центра
-  branchLineEnd: {
+  branchLineUpperSegment: {
+    top: -ROW_GAP,
     bottom: "50%",
+  },
+  branchLineLowerSegment: {
+    top: "50%",
+    bottom: -ROW_GAP,
   },
   // Горизонтальный соединитель: идёт из центра ноды (за карточкой) к соседней колонке
   branchLineH: {

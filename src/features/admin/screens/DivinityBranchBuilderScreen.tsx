@@ -65,7 +65,19 @@ import {
 } from "../api/adminAuthRepository";
 
 const SCREEN_PADDING = 20;
-type PendingScrollTarget = "errors" | "top";
+const MAX_VALIDATION_TOAST_ERRORS = 5;
+const SCROLL_TARGET_TOP_GAP = 14;
+const MISSING_PREVIOUS_BRANCH_SKILL_MESSAGE =
+  "Сначала выберите навык выше в этой ветке.";
+type ValidationScrollSection =
+  | "targetTabs"
+  | "hero"
+  | "equipment"
+  | "weaponAwakening"
+  | "divinitySkills"
+  | "branchGrid"
+  | "download";
+type PendingScrollTarget = "top" | ValidationScrollSection;
 type BuilderMode = "create" | "edit";
 type StatusToastState = {
   kind: "success" | "error";
@@ -85,8 +97,9 @@ export function DivinityBranchBuilderScreen({
 }: DivinityBranchBuilderScreenProps = {}) {
   const { top, bottom } = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
-  const downloadSectionY = useRef(0);
-  const errorsBlockY = useRef(0);
+  const sectionYByKey = useRef<Partial<Record<ValidationScrollSection, number>>>(
+    {},
+  );
   const pendingScrollTarget = useRef<PendingScrollTarget | null>(null);
   const loadedEditHeroId = useRef<string | null>(null);
   const {
@@ -138,6 +151,7 @@ export function DivinityBranchBuilderScreen({
   const [isAuthChecked, setIsAuthChecked] = useState(
     initialAdminSession !== undefined,
   );
+  const [isAuthPending, setIsAuthPending] = useState(false);
   const [isEditBuildLoading, setIsEditBuildLoading] = useState(false);
   const [isPublishPending, setIsPublishPending] = useState(false);
   const [toast, setToast] = useState<StatusToastState>(null);
@@ -274,6 +288,17 @@ export function DivinityBranchBuilderScreen({
     setToast({ kind, message });
   }
 
+  function showValidationErrorToast(
+    errors: readonly BranchBuildValidationError[],
+    fallbackMessage: string,
+  ) {
+    setBackendStatus(null);
+    setToast({
+      kind: "error",
+      message: formatValidationToastMessage(errors, fallbackMessage),
+    });
+  }
+
   const weaponAwakeningBonuses = resolveWeaponAwakeningBonuses({
     hero: selectedHero,
     selections: weaponAwakeningSelections,
@@ -325,25 +350,33 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
+    if (target === "top") {
+      pendingScrollTarget.current = null;
+      scrollRef.current?.scrollTo({ animated: true, y: 0 });
+      return;
+    }
+
+    const sectionY = sectionYByKey.current[target];
+
+    if (typeof sectionY !== "number") {
+      return;
+    }
+
     pendingScrollTarget.current = null;
     scrollRef.current?.scrollTo({
       animated: true,
-      y:
-        target === "top"
-          ? 0
-          : Math.max(0, downloadSectionY.current + errorsBlockY.current - 12),
+      y: Math.max(
+        0,
+        sectionY - SCREEN_HEADER_HEIGHT - top - SCROLL_TARGET_TOP_GAP,
+      ),
     });
   };
 
-  const handleDownloadSectionLayout = (event: LayoutChangeEvent) => {
-    downloadSectionY.current = event.nativeEvent.layout.y;
-    scrollToPendingTarget();
-  };
-
-  const handleErrorsLayout = (event: LayoutChangeEvent) => {
-    errorsBlockY.current = event.nativeEvent.layout.y;
-    scrollToPendingTarget();
-  };
+  const handleSectionLayout =
+    (section: ValidationScrollSection) => (event: LayoutChangeEvent) => {
+      sectionYByKey.current[section] = event.nativeEvent.layout.y;
+      scrollToPendingTarget();
+    };
 
   const showValidationErrors = (
     errors: readonly BranchBuildValidationError[],
@@ -351,13 +384,15 @@ export function DivinityBranchBuilderScreen({
     setValidationErrors([...errors]);
 
     if (errors.length > 0) {
-      const target = hasTargetTabErrors(errors) ? "top" : "errors";
+      const target = getValidationScrollTarget(errors);
       pendingScrollTarget.current = target;
 
-      if (target === "top" || validationErrors.length > 0) {
-        requestAnimationFrame(() => {
-          scrollToPendingTarget();
-        });
+      if (
+        target === "top" ||
+        sectionYByKey.current[target] !== undefined ||
+        validationErrors.length > 0
+      ) {
+        scrollToPendingTarget();
       }
     }
   };
@@ -393,7 +428,7 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
-    showBackendMessage("error", "Сначала исправьте ошибки вкладки.");
+    showValidationErrorToast(result.errors, "Сначала исправьте ошибки вкладки.");
   };
 
   const handleDownloadFullJson = () => {
@@ -423,7 +458,10 @@ export function DivinityBranchBuilderScreen({
     showValidationErrors(result.errors);
 
     if (!result.isValid) {
-      showBackendMessage("error", "Сначала исправьте ошибки полного экспорта.");
+      showValidationErrorToast(
+        result.errors,
+        "Сначала исправьте ошибки полного экспорта.",
+      );
       return;
     }
 
@@ -565,44 +603,61 @@ export function DivinityBranchBuilderScreen({
     email: string;
     password: string;
   }) => {
+    setIsAuthPending(true);
+    setToast(null);
+
     const client = getSupabaseClient();
 
     if (!client) {
-      setBackendStatus("Supabase не настроен.");
+      setToast({ kind: "error", message: "Supabase не настроен." });
+      setIsAuthPending(false);
       return;
     }
 
     try {
       const session = await signInAdmin(client, credentials);
       setAdminSession(session);
-      setBackendStatus("Админ вошёл.");
+      setToast({ kind: "success", message: "Вход выполнен." });
     } catch (error) {
-      setBackendStatus(
-        error instanceof Error
-          ? `Ошибка входа: ${error.message}`
-          : "Ошибка входа.",
-      );
+      setToast({
+        kind: "error",
+        message:
+          error instanceof Error
+            ? `Ошибка входа: ${error.message}`
+            : "Ошибка входа.",
+      });
+    } finally {
+      setIsAuthPending(false);
     }
   };
 
   const handleAdminSignOut = async () => {
+    setIsAuthPending(true);
+    setToast(null);
+
     const client = getSupabaseClient();
 
     if (!client) {
       setAdminSession(null);
+      setToast({ kind: "success", message: "Выход выполнен." });
+      setIsAuthPending(false);
       return;
     }
 
     try {
       await signOutAdmin(client);
       setAdminSession(null);
-      setBackendStatus("Админ вышел.");
+      setToast({ kind: "success", message: "Выход выполнен." });
     } catch (error) {
-      setBackendStatus(
-        error instanceof Error
-          ? `Ошибка выхода: ${error.message}`
-          : "Ошибка выхода.",
-      );
+      setToast({
+        kind: "error",
+        message:
+          error instanceof Error
+            ? `Ошибка выхода: ${error.message}`
+            : "Ошибка выхода.",
+      });
+    } finally {
+      setIsAuthPending(false);
     }
   };
 
@@ -692,7 +747,50 @@ export function DivinityBranchBuilderScreen({
     setActiveMajorSlot(null);
   };
 
+  const getMissingPreviousMajorSkillLevel = (
+    columnId: BranchColumnId,
+    level: number,
+  ) =>
+    branchBuilderTemplate
+      .filter(
+        (node) =>
+          node.columnId === columnId &&
+          node.nodeType === "majorSkill" &&
+          node.level < level,
+      )
+      .map((node) => node.level)
+      .sort((firstLevel, secondLevel) => firstLevel - secondLevel)
+      .find(
+        (previousLevel) =>
+          !selectedMajorSkills[getMajorSkillSelectionKey(columnId, previousLevel)],
+      ) ?? null;
+
+  const canUseBranchLevel = (columnId: BranchColumnId, level: number) => {
+    if (getMissingPreviousMajorSkillLevel(columnId, level) === null) {
+      return true;
+    }
+
+    setActiveMajorSlot(null);
+    setToast({
+      kind: "error",
+      message: MISSING_PREVIOUS_BRANCH_SKILL_MESSAGE,
+    });
+    return false;
+  };
+
+  const handleOpenMajorSlot = (columnId: BranchColumnId, level: number) => {
+    if (!canUseBranchLevel(columnId, level)) {
+      return;
+    }
+
+    setActiveMajorSlot({ columnId, level });
+  };
+
   const handleToggleProgress = (columnId: BranchColumnId, level: number) => {
+    if (!canUseBranchLevel(columnId, level)) {
+      return;
+    }
+
     toggleColumnProgress(columnId, level);
 
     if (level >= MIN_BRANCH_PROGRESS_LEVEL) {
@@ -716,6 +814,7 @@ export function DivinityBranchBuilderScreen({
       <View style={styles.section}>
         <AdminAuthPanel
           adminEmail={adminSession?.email}
+          isPending={isAuthPending}
           onSignIn={(credentials) => {
             void handleAdminSignIn(credentials);
           }}
@@ -739,7 +838,11 @@ export function DivinityBranchBuilderScreen({
 
       {isAuthChecked && adminSession ? (
         <>
-      <View style={styles.section}>
+      <View
+        onLayout={handleSectionLayout("targetTabs")}
+        style={styles.section}
+        testID="branch-builder-target-tabs-section"
+      >
         <BuildTargetSection
           childTabs={buildTargetChildTabs}
           errors={targetTabErrors}
@@ -751,7 +854,11 @@ export function DivinityBranchBuilderScreen({
         />
       </View>
 
-      <View style={styles.section}>
+      <View
+        onLayout={handleSectionLayout("hero")}
+        style={styles.section}
+        testID="branch-builder-hero-section"
+      >
         <HeroBuilderSection
           errors={heroErrors}
           heroQuery={heroQuery}
@@ -763,7 +870,11 @@ export function DivinityBranchBuilderScreen({
         />
       </View>
 
-      <View style={styles.section}>
+      <View
+        onLayout={handleSectionLayout("equipment")}
+        style={styles.section}
+        testID="branch-builder-equipment-section"
+      >
         <EquipmentBuilderSection
           artifactErrors={artifactErrors}
           artifacts={branchBuilderArtifacts}
@@ -778,7 +889,11 @@ export function DivinityBranchBuilderScreen({
         />
       </View>
 
-      <View style={styles.section}>
+      <View
+        onLayout={handleSectionLayout("weaponAwakening")}
+        style={styles.section}
+        testID="branch-builder-weapon-awakening-section"
+      >
         <WeaponAwakeningSection
           bonuses={weaponAwakeningBonuses}
           colors={branchBuilderWeaponAwakeningColors}
@@ -790,7 +905,11 @@ export function DivinityBranchBuilderScreen({
         />
       </View>
 
-      <View style={styles.section}>
+      <View
+        onLayout={handleSectionLayout("divinitySkills")}
+        style={styles.section}
+        testID="branch-builder-divinity-skills-section"
+      >
         <DivinitySkillLoadoutSection
           awakenedEnabled={selectedDivinitySkills.awakenedEnabled}
           awakenedSkillIds={selectedDivinitySkills.awakened}
@@ -801,10 +920,19 @@ export function DivinityBranchBuilderScreen({
           onShowAwakened={showAwakenedDivinitySkills}
           skills={branchBuilderSkills}
         />
-        <ValidationErrorMessages messages={divinitySkillErrors} />
+        <View
+          style={styles.divinitySkillErrors}
+          testID="branch-builder-divinity-skill-errors"
+        >
+          <ValidationErrorMessages messages={divinitySkillErrors} />
+        </View>
       </View>
 
-      <View style={styles.section}>
+      <View
+        onLayout={handleSectionLayout("branchGrid")}
+        style={styles.section}
+        testID="branch-builder-branch-grid-section"
+      >
         <BranchGridSection
           activeMajorSlot={activeMajorSlot}
           branches={branchBuilderBranches}
@@ -815,9 +943,7 @@ export function DivinityBranchBuilderScreen({
             rollbackColumnProgress(columnId, level);
             setActiveMajorSlot(null);
           }}
-          onOpenMajorSlot={(columnId, level) =>
-            setActiveMajorSlot({ columnId, level })
-          }
+          onOpenMajorSlot={handleOpenMajorSlot}
           onSelectMajorSkill={(columnId, level, skillId) => {
             handleSetMajorSkill(columnId, level, skillId);
           }}
@@ -831,12 +957,12 @@ export function DivinityBranchBuilderScreen({
         />
       </View>
 
-      <View style={styles.section}>
+      <View style={styles.section} testID="branch-builder-download-section">
         <DownloadSection
           backendStatus={backendStatus}
           errors={validationErrors}
           isPublishPending={isPublishPending}
-          onErrorsLayout={handleErrorsLayout}
+          onErrorsLayout={handleSectionLayout("download")}
           onDeleteFull={() => {
             void handleDeleteFullBuildSet();
           }}
@@ -844,7 +970,7 @@ export function DivinityBranchBuilderScreen({
           onLoadFull={() => {
             void handleLoadFullBuildSet();
           }}
-          onLayout={handleDownloadSectionLayout}
+          onLayout={handleSectionLayout("download")}
           onPublishFull={() => {
             void saveFullBuildSetToBackend("published");
           }}
@@ -900,6 +1026,10 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textAlign: "center",
   },
+  divinitySkillErrors: {
+    width: "100%",
+    marginTop: 8,
+  },
 });
 
 function getErrorMessages(
@@ -909,6 +1039,66 @@ function getErrorMessages(
   return errors
     .filter((error) => error.path && matches(error.path, error))
     .map((error) => error.message);
+}
+
+function getValidationScrollTarget(
+  errors: readonly BranchBuildValidationError[],
+): PendingScrollTarget {
+  if (hasTargetTabErrors(errors)) {
+    return "top";
+  }
+
+  const firstError = errors[0];
+  const path = firstError?.path;
+
+  if (!path) {
+    return "top";
+  }
+
+  if (path === "heroId" || path === "heroName") {
+    return "hero";
+  }
+
+  if (path.startsWith("equipment.")) {
+    return "equipment";
+  }
+
+  if (path.startsWith("weaponAwakening.")) {
+    return "weaponAwakening";
+  }
+
+  if (path.startsWith("divinitySkills.")) {
+    return "divinitySkills";
+  }
+
+  if (
+    path.startsWith("columns.") ||
+    path.startsWith("progress.") ||
+    path.startsWith("majorNodes.")
+  ) {
+    return "branchGrid";
+  }
+
+  return "top";
+}
+
+function formatValidationToastMessage(
+  errors: readonly BranchBuildValidationError[],
+  fallbackMessage: string,
+): string {
+  const messages = [...new Set(errors.map((error) => error.message).filter(Boolean))];
+
+  if (messages.length === 0) {
+    return fallbackMessage;
+  }
+
+  const visibleMessages = messages.slice(0, MAX_VALIDATION_TOAST_ERRORS);
+  const hiddenCount = messages.length - visibleMessages.length;
+
+  return [
+    ...visibleMessages,
+    ...(hiddenCount > 0 ? [`И ещё ${hiddenCount} ошибок.`] : []),
+  ].join("\n");
 }
 
 function isTargetTabErrorPath(path: string): boolean {
@@ -954,4 +1144,11 @@ function hasDivinitySkillSelection(divinitySkills: {
 
 function getMajorNodePath(columnId: BranchColumnId, level: number): string {
   return `majorNodes.${columnId}.${level}`;
+}
+
+function getMajorSkillSelectionKey(
+  columnId: BranchColumnId,
+  level: number,
+): string {
+  return `${columnId}:${level}`;
 }

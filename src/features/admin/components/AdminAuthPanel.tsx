@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
@@ -9,12 +10,14 @@ import {
 
 type AdminAuthPanelProps = {
   adminEmail?: string | null;
+  isPending?: boolean;
   onSignIn: (credentials: { email: string; password: string }) => void;
   onSignOut: () => void;
 };
 
 export function AdminAuthPanel({
   adminEmail,
+  isPending = false,
   onSignIn,
   onSignOut,
 }: AdminAuthPanelProps) {
@@ -30,12 +33,26 @@ export function AdminAuthPanel({
         </View>
         <Pressable
           accessibilityRole="button"
-          onPress={onSignOut}
-          style={[styles.button, styles.secondaryButton]}
+          disabled={isPending}
+          onPress={isPending ? undefined : onSignOut}
+          style={[
+            styles.button,
+            styles.secondaryButton,
+            isPending && styles.buttonDisabled,
+          ]}
         >
-          <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-            Выйти
-          </Text>
+          <View style={styles.buttonContent}>
+            {isPending ? (
+              <ActivityIndicator
+                accessibilityLabel="Загрузка авторизации"
+                color="#f6d59a"
+                size="small"
+              />
+            ) : null}
+            <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+              {isPending ? "Выходим..." : "Выйти"}
+            </Text>
+          </View>
         </Pressable>
       </View>
     );
@@ -50,6 +67,7 @@ export function AdminAuthPanel({
         onChangeText={setEmail}
         placeholder="Email"
         placeholderTextColor="#8e7758"
+        editable={!isPending}
         style={styles.input}
         value={email}
       />
@@ -58,17 +76,30 @@ export function AdminAuthPanel({
         placeholder="Пароль"
         placeholderTextColor="#8e7758"
         secureTextEntry
+        editable={!isPending}
         style={styles.input}
         value={password}
       />
       <Pressable
         accessibilityRole="button"
-        onPress={() => {
+        disabled={isPending}
+        onPress={isPending ? undefined : () => {
           onSignIn({ email, password });
         }}
-        style={styles.button}
+        style={[styles.button, isPending && styles.buttonDisabled]}
       >
-        <Text style={styles.buttonText}>Войти</Text>
+        <View style={styles.buttonContent}>
+          {isPending ? (
+            <ActivityIndicator
+              accessibilityLabel="Загрузка авторизации"
+              color="#fff8e8"
+              size="small"
+            />
+          ) : null}
+          <Text style={styles.buttonText}>
+            {isPending ? "Входим..." : "Войти"}
+          </Text>
+        </View>
       </Pressable>
     </View>
   );
@@ -111,6 +142,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#795125",
     paddingHorizontal: 18,
+  },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  buttonDisabled: {
+    opacity: 0.65,
   },
   secondaryButton: {
     borderWidth: 1,

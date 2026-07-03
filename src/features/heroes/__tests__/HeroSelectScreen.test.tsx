@@ -8,6 +8,8 @@ const mockUseSafeAreaInsets = jest.fn(() => ({
 const mockRouter = {
   push: jest.fn(),
 };
+const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
+const mockFetchPublishedHeroIds = jest.fn<Promise<string[]>, [unknown]>();
 
 jest.mock("react-native-safe-area-context", () => ({
   __esModule: true,
@@ -19,7 +21,15 @@ jest.mock("expo-router", () => ({
   router: mockRouter,
 }));
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
+jest.mock("@/shared/lib/supabaseClient", () => ({
+  getSupabaseClient: () => mockGetSupabaseClient(),
+}));
+
+jest.mock("@/features/builds", () => ({
+  fetchPublishedHeroIds: (...args: [unknown]) => mockFetchPublishedHeroIds(...args),
+}));
+
+import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
 import { heroes, heroesWithBuilds } from "@/features/game-data/heroes/heroBuilds";
 import { HeroSelectScreen } from "@/features/heroes/screens/HeroSelectScreen";
@@ -27,6 +37,10 @@ import { HeroSelectScreen } from "@/features/heroes/screens/HeroSelectScreen";
 describe("HeroSelectScreen", () => {
   beforeEach(() => {
     mockRouter.push.mockClear();
+    mockGetSupabaseClient.mockReset();
+    mockGetSupabaseClient.mockReturnValue(null);
+    mockFetchPublishedHeroIds.mockReset();
+    mockFetchPublishedHeroIds.mockResolvedValue([]);
   });
 
   test("shows Bastet when she has a build", () => {
@@ -63,5 +77,28 @@ describe("HeroSelectScreen", () => {
     expect(
       screen.getByText("Нет героев с готовыми билдами по выбранным фильтрам."),
     ).toBeTruthy();
+  });
+
+  test("keeps the screen controls visible and replaces the hero list with a loader while builds load", async () => {
+    let resolveHeroIds!: (heroIds: string[]) => void;
+    const loadingHeroIds = new Promise<string[]>((resolve) => {
+      resolveHeroIds = resolve;
+    });
+    mockGetSupabaseClient.mockReturnValue({});
+    mockFetchPublishedHeroIds.mockReturnValue(loadingHeroIds);
+
+    render(<HeroSelectScreen />);
+
+    expect(screen.getByLabelText("Поиск героя")).toBeTruthy();
+    expect(screen.getByText("Роль")).toBeTruthy();
+    expect(screen.getByText("Загружаем билды...")).toBeTruthy();
+    expect(screen.queryByText("Бастет")).toBeNull();
+
+    resolveHeroIds([]);
+
+    await waitFor(() => {
+      expect(screen.queryByText("Загружаем билды...")).toBeNull();
+    });
+    expect(screen.getByText("Бастет")).toBeTruthy();
   });
 });
