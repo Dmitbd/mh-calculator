@@ -34,11 +34,9 @@ export function WeaponAwakeningSection({
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.hint}>
-        Кликайте по кружку, чтобы менять его цвет.
-      </Text>
       <WeaponAwakeningPicker
         colors={colors}
+        description="Кликайте по кружку, чтобы менять его цвет."
         onCycleSlot={onCycleSlot}
         selections={selections}
         slots={slots}

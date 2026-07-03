@@ -49,6 +49,7 @@ export function DivinitySkillLoadoutSection({
   skills,
 }: DivinitySkillLoadoutSectionProps) {
   const [activeSlot, setActiveSlot] = useState<ActiveSlot>(null);
+  const [emptyPickerRow, setEmptyPickerRow] = useState<LoadoutRowId | null>(null);
   const skillsById = useMemo(
     () => new Map(skills.map((skill) => [skill.id, skill])),
     [skills],
@@ -85,13 +86,20 @@ export function DivinitySkillLoadoutSection({
       .map((skillId) => skillsById.get(skillId))
       .filter((skill): skill is DivinityMajorSkill => Boolean(skill));
   }, [availableSkillIds, selectedAvailableSkillIds, skillsById, sortedSkills]);
-  const emptyPickerMessage =
-    !readOnly &&
-    activeSlot &&
-    availableSkillIds !== undefined &&
-    filteredSkills.length === 0
-      ? "Выберите хотя бы один талант в дереве ниже."
-      : null;
+  const hasNoAvailableSkills =
+    !readOnly && availableSkillIds !== undefined && filteredSkills.length === 0;
+  const emptyPickerMessage = "Выберите хотя бы один талант в дереве ниже.";
+
+  const openSkillSlot = (slot: ActiveSlot) => {
+    if (slot && hasNoAvailableSkills) {
+      setActiveSlot(null);
+      setEmptyPickerRow(slot.rowId);
+      return;
+    }
+
+    setEmptyPickerRow(null);
+    setActiveSlot(slot);
+  };
 
   const selectSkill = (
     rowId: LoadoutRowId,
@@ -99,6 +107,7 @@ export function DivinitySkillLoadoutSection({
     skillId: string | null,
   ) => {
     onSelectSkill?.(rowId, index, skillId);
+    setEmptyPickerRow(null);
     setActiveSlot(null);
   };
 
@@ -119,19 +128,21 @@ export function DivinitySkillLoadoutSection({
         rowId="base"
         rowLabel="6 узлов"
         selectedSkillIds={baseSkillIds}
-        setActiveSlot={setActiveSlot}
+        setActiveSlot={openSkillSlot}
         skillsById={skillsById}
       />
-      {!readOnly && activeSlot?.rowId === "base" ? (
-        emptyPickerMessage ? (
+      {!readOnly ? (
+        hasNoAvailableSkills && emptyPickerRow === "base" ? (
           <Text style={styles.pickerError}>{emptyPickerMessage}</Text>
-        ) : (
+        ) : activeSlot?.rowId === "base" ? (
           <SkillPicker
             branchTitleById={branchTitleById}
             onClear={() => selectSkill("base", activeSlot.index, null)}
             onSelect={(skillId) => selectSkill("base", activeSlot.index, skillId)}
             skills={filteredSkills}
           />
+        ) : (
+          null
         )
       ) : null}
 
@@ -145,13 +156,13 @@ export function DivinitySkillLoadoutSection({
             rowId="awakened"
             rowLabel="7 узлов"
             selectedSkillIds={awakenedSkillIds}
-            setActiveSlot={setActiveSlot}
+            setActiveSlot={openSkillSlot}
             skillsById={skillsById}
           />
-          {!readOnly && activeSlot?.rowId === "awakened" ? (
-            emptyPickerMessage ? (
+          {!readOnly ? (
+            hasNoAvailableSkills && emptyPickerRow === "awakened" ? (
               <Text style={styles.pickerError}>{emptyPickerMessage}</Text>
-            ) : (
+            ) : activeSlot?.rowId === "awakened" ? (
               <SkillPicker
                 branchTitleById={branchTitleById}
                 onClear={() => selectSkill("awakened", activeSlot.index, null)}
@@ -160,6 +171,8 @@ export function DivinitySkillLoadoutSection({
                 }
                 skills={filteredSkills}
               />
+            ) : (
+              null
             )
           ) : null}
         </>
@@ -211,14 +224,11 @@ function LoadoutRow({
     <View style={styles.rowBlock}>
       <View style={styles.rowHeader}>
         <Text style={styles.rowLabel}>{rowLabel}</Text>
-        <Text
-          style={[
-            styles.rowBudget,
-            totalCost > maxNodes && styles.rowBudgetExceeded,
-          ]}
-        >
-          {totalCost}/{maxNodes}
-        </Text>
+        <NodeBudgetIndicator
+          filledNodes={Math.min(totalCost, maxNodes)}
+          label={rowLabel}
+          maxNodes={maxNodes}
+        />
       </View>
       <View style={styles.slotRow}>
         {Array.from({ length: DIVINITY_SKILL_LOADOUT_MAX_SLOTS }, (_, index) => {
@@ -270,6 +280,36 @@ function LoadoutRow({
           );
         })}
       </View>
+    </View>
+  );
+}
+
+type NodeBudgetIndicatorProps = {
+  filledNodes: number;
+  label: string;
+  maxNodes: number;
+};
+
+function NodeBudgetIndicator({
+  filledNodes,
+  label,
+  maxNodes,
+}: NodeBudgetIndicatorProps) {
+  return (
+    <View style={styles.nodeBudget}>
+      {Array.from({ length: maxNodes }, (_, index) => {
+        const filled = index < filledNodes;
+
+        return (
+          <View
+            accessibilityLabel={`${label}: узел ${index + 1} ${
+              filled ? "заполнен" : "пустой"
+            }`}
+            key={`${label}:${index}`}
+            style={[styles.nodeDiamond, filled && styles.nodeDiamondFilled]}
+          />
+        );
+      })}
     </View>
   );
 }
@@ -350,13 +390,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "800",
   },
-  rowBudget: {
-    color: "#f0c36a",
-    fontSize: 13,
-    fontWeight: "900",
+  nodeBudget: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 2,
   },
-  rowBudgetExceeded: {
-    color: "#ff8f70",
+  nodeDiamond: {
+    width: 10,
+    height: 10,
+    borderWidth: 1,
+    borderColor: "#5d4937",
+    backgroundColor: "#3a3029",
+    transform: [{ rotate: "45deg" }],
+  },
+  nodeDiamondFilled: {
+    borderColor: "#f0c36a",
+    backgroundColor: "#f0c36a",
   },
   slotRow: {
     flexDirection: "row",

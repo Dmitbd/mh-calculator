@@ -9,6 +9,7 @@ import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
 
 type WeaponAwakeningPickerProps = {
   colors: readonly WeaponAwakeningColor[];
+  description?: string;
   slots: readonly WeaponAwakeningSlot[];
   selections: Partial<Record<number, WeaponAwakeningColorId>>;
   onCycleSlot?: (slot: number) => void;
@@ -19,6 +20,7 @@ type WeaponAwakeningPickerProps = {
 /** Пробуждение оружия: 8 кружков с выбором цвета по клику */
 export function WeaponAwakeningPicker({
   colors,
+  description,
   slots,
   selections,
   onCycleSlot,
@@ -29,6 +31,9 @@ export function WeaponAwakeningPicker({
   return (
     <View style={styles.wrapper}>
       <Text style={styles.label}>Пробуждение оружия</Text>
+      {description ? (
+        <Text style={styles.description}>{description}</Text>
+      ) : null}
       <View style={styles.row}>
         {slots.map((slot) => {
           const colorId = selections[slot.slot] ?? null;
@@ -91,6 +96,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "800",
     textTransform: "uppercase",
+  },
+  description: {
+    color: "#917968",
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 18,
   },
   row: {
     flexDirection: "row",

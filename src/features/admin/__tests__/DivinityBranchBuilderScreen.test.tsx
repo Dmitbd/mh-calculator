@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
-import { Platform, ScrollView } from "react-native";
+import { Platform, ScrollView, StyleSheet, Text } from "react-native";
 
 import { DivinityBranchBuilderScreen } from "../screens/DivinityBranchBuilderScreen";
 
@@ -26,7 +26,7 @@ describe("DivinityBranchBuilderScreen", () => {
   }
 
   it("renders builder controls and validates an incomplete form", () => {
-    renderAdminBuilder();
+    const view = renderAdminBuilder();
 
     expect(screen.getByText("Builder")).toBeTruthy();
     expect(screen.getByLabelText("Select PvP build tab")).toBeTruthy();
@@ -38,6 +38,18 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(
       screen.getByText("Кликайте по кружку, чтобы менять его цвет."),
     ).toBeTruthy();
+    const textNodes = view.UNSAFE_getAllByType(Text);
+    const weaponAwakeningTitleIndex = textNodes.findIndex(
+      (node) => node.props.children === "Пробуждение оружия",
+    );
+    const weaponAwakeningDescriptionIndex = textNodes.findIndex(
+      (node) =>
+        node.props.children === "Кликайте по кружку, чтобы менять его цвет.",
+    );
+
+    expect(weaponAwakeningTitleIndex).toBeLessThan(
+      weaponAwakeningDescriptionIndex,
+    );
     expect(screen.getByText("Навыки божественности")).toBeTruthy();
     expect(
       screen.getByText("Таланты берутся из выбранных в дереве ниже."),
@@ -45,6 +57,13 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(
       screen.getByText("Добавить навыки для 7 божественных узлов"),
     ).toBeTruthy();
+    expect(
+      screen.getByLabelText("6 узлов: узел 1 пустой"),
+    ).toBeTruthy();
+    expect(
+      screen.getByLabelText("6 узлов: узел 6 пустой"),
+    ).toBeTruthy();
+    expect(screen.queryByLabelText("7 узлов: узел 1 пустой")).toBeNull();
     expect(screen.getByLabelText("Weapon awakening slot 1, empty")).toBeTruthy();
     expect(screen.getAllByLabelText("Choose branch for левая")).toHaveLength(1);
     expect(screen.getAllByLabelText("Choose branch for центр")).toHaveLength(1);
@@ -215,13 +234,16 @@ describe("DivinityBranchBuilderScreen", () => {
   it("asks to select tree talents before opening divinity skill options", () => {
     renderAdminBuilder();
 
-    fireEvent.press(
-      screen.getByLabelText("Выбрать навык божественности 6 узлов, слот 1"),
+    const slot = screen.getByLabelText(
+      "Выбрать навык божественности 6 узлов, слот 1",
     );
+
+    fireEvent.press(slot);
 
     expect(
       screen.getByText("Выберите хотя бы один талант в дереве ниже."),
     ).toBeTruthy();
+    expect(StyleSheet.flatten(slot.props.style).borderColor).not.toBe("#f0c36a");
     expect(screen.queryByText("Aurora")).toBeNull();
   });
 
@@ -278,6 +300,31 @@ describe("DivinityBranchBuilderScreen", () => {
     ).toBeTruthy();
     expect(screen.queryByText("Aurora")).toBeNull();
     expect(screen.queryByText("Animus")).toBeNull();
+  });
+
+  it("fills divinity node diamonds as skills are selected", () => {
+    renderAdminBuilder();
+
+    fireEvent.press(screen.getByLabelText("Choose branch for левая"));
+    fireEvent.press(screen.getByLabelText("Select Asterial Skills for левая"));
+    fireEvent.press(screen.getByLabelText("Choose skill for left level 3"));
+    fireEvent.press(screen.getByLabelText("Select Gemini for left level 3"));
+    fireEvent.press(
+      screen.getByLabelText("Выбрать навык божественности 6 узлов, слот 1"),
+    );
+    fireEvent.press(
+      screen.getByLabelText("Выбрать навык божественности Gemini"),
+    );
+
+    expect(screen.getByLabelText("6 узлов: узел 1 заполнен")).toBeTruthy();
+    expect(screen.getByLabelText("6 узлов: узел 2 пустой")).toBeTruthy();
+
+    fireEvent.press(
+      screen.getByLabelText("Добавить навыки для 7 божественных узлов"),
+    );
+
+    expect(screen.getByLabelText("7 узлов: узел 1 пустой")).toBeTruthy();
+    expect(screen.getByLabelText("7 узлов: узел 7 пустой")).toBeTruthy();
   });
 
   it("shows a toast when changing a branch clears divinity skills", () => {
