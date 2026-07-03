@@ -35,7 +35,13 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByLabelText("Добавить оружие")).toBeTruthy();
     expect(screen.getByLabelText("Добавить руну")).toBeTruthy();
     expect(screen.getByText("Пробуждение оружия")).toBeTruthy();
+    expect(
+      screen.getByText("Кликайте по кружку, чтобы менять его цвет."),
+    ).toBeTruthy();
     expect(screen.getByText("Навыки божественности")).toBeTruthy();
+    expect(
+      screen.getByText("Таланты берутся из выбранных в дереве ниже."),
+    ).toBeTruthy();
     expect(
       screen.getByText("Добавить навыки для 7 божественных узлов"),
     ).toBeTruthy();
@@ -206,50 +212,71 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.queryByText("Gemini")).toBeNull();
   });
 
-  it("asks to select tree branches before opening divinity skill options", () => {
+  it("asks to select tree talents before opening divinity skill options", () => {
     renderAdminBuilder();
 
-    fireEvent.press(
-      screen.getByLabelText("Выбрать навык божественности 6 узлов, слот 1"),
-    );
-
-    expect(screen.getByText("Сначала выберите ветки дерева.")).toBeTruthy();
-    expect(screen.queryByText("Aurora")).toBeNull();
-  });
-
-  it("asks to finish selecting tree branches before opening divinity skill options", () => {
-    renderAdminBuilder();
-
-    fireEvent.press(screen.getByLabelText("Choose branch for левая"));
-    fireEvent.press(screen.getByLabelText("Select Asterial Skills for левая"));
     fireEvent.press(
       screen.getByLabelText("Выбрать навык божественности 6 узлов, слот 1"),
     );
 
     expect(
-      screen.getByText(
-        "Выберите все 3 ветки дерева, чтобы открыть список навыков божественности.",
-      ),
+      screen.getByText("Выберите хотя бы один талант в дереве ниже."),
     ).toBeTruthy();
     expect(screen.queryByText("Aurora")).toBeNull();
   });
 
-  it("shows only divinity skills from selected tree branches", () => {
+  it("shows only selected tree talents in divinity skill options", () => {
     renderAdminBuilder();
 
     fireEvent.press(screen.getByLabelText("Choose branch for левая"));
     fireEvent.press(screen.getByLabelText("Select Asterial Skills for левая"));
-    fireEvent.press(screen.getByLabelText("Choose branch for центр"));
-    fireEvent.press(screen.getByLabelText("Select Psyche Skills for центр"));
-    fireEvent.press(screen.getByLabelText("Choose branch for правая"));
-    fireEvent.press(screen.getByLabelText("Select Immortality Skills for правая"));
+    fireEvent.press(screen.getByLabelText("Choose skill for left level 3"));
+    fireEvent.press(screen.getByLabelText("Select Gemini for left level 3"));
     fireEvent.press(
       screen.getByLabelText("Выбрать навык божественности 6 узлов, слот 1"),
     );
 
-    expect(screen.getByText("Aurora")).toBeTruthy();
-    expect(screen.getByText("Energy Bubble")).toBeTruthy();
-    expect(screen.getByText("Eterna")).toBeTruthy();
+    expect(
+      screen.getByLabelText("Выбрать навык божественности Gemini"),
+    ).toBeTruthy();
+    expect(screen.queryByText("Aurora")).toBeNull();
+    expect(screen.queryByText("Energy Bubble")).toBeNull();
+    expect(
+      screen.queryByText(
+        "Выберите все 3 ветки дерева, чтобы открыть список навыков божественности.",
+      ),
+    ).toBeNull();
+  });
+
+  it("adds each selected tree talent to divinity skill options", () => {
+    renderAdminBuilder();
+
+    fireEvent.press(screen.getByLabelText("Choose branch for левая"));
+    fireEvent.press(screen.getByLabelText("Select Asterial Skills for левая"));
+    fireEvent.press(screen.getByLabelText("Choose skill for left level 3"));
+    fireEvent.press(screen.getByLabelText("Select Gemini for left level 3"));
+    fireEvent.press(screen.getByLabelText("Choose branch for центр"));
+    fireEvent.press(screen.getByLabelText("Select Psyche Skills for центр"));
+    fireEvent.press(screen.getByLabelText("Choose skill for center level 1"));
+    fireEvent.press(screen.getByLabelText("Select Energy Bubble for center level 1"));
+    fireEvent.press(screen.getByLabelText("Choose branch for правая"));
+    fireEvent.press(screen.getByLabelText("Select Immortality Skills for правая"));
+    fireEvent.press(screen.getByLabelText("Choose skill for right level 3"));
+    fireEvent.press(screen.getByLabelText("Select Eterna for right level 3"));
+    fireEvent.press(
+      screen.getByLabelText("Выбрать навык божественности 6 узлов, слот 1"),
+    );
+
+    expect(
+      screen.getByLabelText("Выбрать навык божественности Gemini"),
+    ).toBeTruthy();
+    expect(
+      screen.getByLabelText("Выбрать навык божественности Energy Bubble"),
+    ).toBeTruthy();
+    expect(
+      screen.getByLabelText("Выбрать навык божественности Eterna"),
+    ).toBeTruthy();
+    expect(screen.queryByText("Aurora")).toBeNull();
     expect(screen.queryByText("Animus")).toBeNull();
   });
 
@@ -258,6 +285,8 @@ describe("DivinityBranchBuilderScreen", () => {
 
     fireEvent.press(screen.getByLabelText("Choose branch for левая"));
     fireEvent.press(screen.getByLabelText("Select Asterial Skills for левая"));
+    fireEvent.press(screen.getByLabelText("Choose skill for left level 3"));
+    fireEvent.press(screen.getByLabelText("Select Gemini for left level 3"));
     fireEvent.press(screen.getByLabelText("Choose branch for центр"));
     fireEvent.press(screen.getByLabelText("Select Psyche Skills for центр"));
     fireEvent.press(screen.getByLabelText("Choose branch for правая"));
@@ -266,10 +295,8 @@ describe("DivinityBranchBuilderScreen", () => {
       screen.getByLabelText("Выбрать навык божественности 6 узлов, слот 1"),
     );
     fireEvent.press(
-      screen.getByLabelText("Выбрать навык божественности Aurora"),
+      screen.getByLabelText("Выбрать навык божественности Gemini"),
     );
-
-    expect(screen.getByText("Aurora")).toBeTruthy();
 
     fireEvent.press(screen.getByLabelText("Choose branch for левая"));
     fireEvent.press(screen.getByLabelText("Select Devoid Skills for левая"));
@@ -277,7 +304,6 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(
       screen.getAllByText("\"Навыки божественности\" были сброшены").length,
     ).toBeTruthy();
-    expect(screen.queryByText("Aurora")).toBeNull();
   });
 
   it("shows hero error if text was typed but no dropdown option was selected", () => {

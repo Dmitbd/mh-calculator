@@ -133,6 +133,26 @@ describe("validateBranchBuild", () => {
     });
   });
 
+  it("asks to select a tree talent when 6-node divinity skills are empty and no major talent is selected", () => {
+    const result = validateBranchBuild(
+      {
+        ...createValidDraft(),
+        divinitySkills: {
+          base: [],
+        },
+        majorNodes: [],
+      },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "divinitySkills.required",
+      message: "Выберите хотя бы один талант в дереве.",
+      path: "divinitySkills.base",
+    });
+  });
+
   it("allows missing divinity skills for 7 nodes", () => {
     const result = validateBranchBuild(
       {

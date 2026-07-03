@@ -309,12 +309,13 @@ export function DivinityBranchBuilderScreen({
     path.startsWith("progress.") ||
     path.startsWith("majorNodes."),
   );
-  const selectedSkillBranchIds = useMemo(
+  const selectedTreeSkillIds = useMemo(
     () =>
-      Object.values(selectedBranches).filter(
-        (branchId): branchId is DivinityBranchId => branchId !== null,
-      ),
-    [selectedBranches],
+      branchBuilderTemplate
+        .filter((node) => node.nodeType === "majorSkill")
+        .map((node) => selectedMajorSkills[`${node.columnId}:${node.level}`])
+        .filter((skillId): skillId is string => Boolean(skillId)),
+    [selectedMajorSkills],
   );
 
   const scrollToPendingTarget = () => {
@@ -793,7 +794,7 @@ export function DivinityBranchBuilderScreen({
         <DivinitySkillLoadoutSection
           awakenedEnabled={selectedDivinitySkills.awakenedEnabled}
           awakenedSkillIds={selectedDivinitySkills.awakened}
-          availableSkillBranchIds={selectedSkillBranchIds}
+          availableSkillIds={selectedTreeSkillIds}
           baseSkillIds={selectedDivinitySkills.base}
           branches={branchBuilderBranches}
           onSelectSkill={handleSetDivinitySkill}

@@ -24,7 +24,7 @@ type ActiveSlot = {
 type DivinitySkillLoadoutSectionProps = {
   branches: readonly DivinityBranch[];
   skills: readonly DivinityMajorSkill[];
-  availableSkillBranchIds?: readonly string[];
+  availableSkillIds?: readonly string[];
   baseSkillIds: readonly (string | null)[];
   awakenedSkillIds?: readonly (string | null)[];
   awakenedEnabled?: boolean;
@@ -35,19 +35,17 @@ type DivinitySkillLoadoutSectionProps = {
   ) => void;
   onShowAwakened?: () => void;
   readOnly?: boolean;
-  requiredSkillBranchCount?: number;
 };
 
 export function DivinitySkillLoadoutSection({
   awakenedEnabled = false,
   awakenedSkillIds = [],
-  availableSkillBranchIds,
+  availableSkillIds,
   baseSkillIds,
   branches,
   onSelectSkill,
   onShowAwakened,
   readOnly = false,
-  requiredSkillBranchCount = 3,
   skills,
 }: DivinitySkillLoadoutSectionProps) {
   const [activeSlot, setActiveSlot] = useState<ActiveSlot>(null);
@@ -74,25 +72,25 @@ export function DivinitySkillLoadoutSection({
       }),
     [skills],
   );
-  const selectedSkillBranchIds = useMemo(
-    () => [...new Set((availableSkillBranchIds ?? []).filter(Boolean))],
-    [availableSkillBranchIds],
+  const selectedAvailableSkillIds = useMemo(
+    () => [...new Set((availableSkillIds ?? []).filter(Boolean))],
+    [availableSkillIds],
   );
   const filteredSkills = useMemo(() => {
-    if (availableSkillBranchIds === undefined) {
+    if (availableSkillIds === undefined) {
       return sortedSkills;
     }
 
-    const branchIds = new Set(selectedSkillBranchIds);
-
-    return sortedSkills.filter((skill) => branchIds.has(skill.branchId));
-  }, [availableSkillBranchIds, selectedSkillBranchIds, sortedSkills]);
-  const branchSelectionMessage =
-    !readOnly && activeSlot && availableSkillBranchIds !== undefined
-      ? getBranchSelectionMessage(
-          selectedSkillBranchIds.length,
-          requiredSkillBranchCount,
-        )
+    return selectedAvailableSkillIds
+      .map((skillId) => skillsById.get(skillId))
+      .filter((skill): skill is DivinityMajorSkill => Boolean(skill));
+  }, [availableSkillIds, selectedAvailableSkillIds, skillsById, sortedSkills]);
+  const emptyPickerMessage =
+    !readOnly &&
+    activeSlot &&
+    availableSkillIds !== undefined &&
+    filteredSkills.length === 0
+      ? "Выберите хотя бы один талант в дереве ниже."
       : null;
 
   const selectSkill = (
@@ -108,6 +106,9 @@ export function DivinitySkillLoadoutSection({
     <View style={styles.wrapper}>
       <View style={styles.header}>
         <Text style={styles.title}>Навыки божественности</Text>
+        <Text style={styles.description}>
+          Таланты берутся из выбранных в дереве ниже.
+        </Text>
       </View>
 
       <LoadoutRow
@@ -122,8 +123,8 @@ export function DivinitySkillLoadoutSection({
         skillsById={skillsById}
       />
       {!readOnly && activeSlot?.rowId === "base" ? (
-        branchSelectionMessage ? (
-          <Text style={styles.pickerError}>{branchSelectionMessage}</Text>
+        emptyPickerMessage ? (
+          <Text style={styles.pickerError}>{emptyPickerMessage}</Text>
         ) : (
           <SkillPicker
             branchTitleById={branchTitleById}
@@ -148,8 +149,8 @@ export function DivinitySkillLoadoutSection({
             skillsById={skillsById}
           />
           {!readOnly && activeSlot?.rowId === "awakened" ? (
-            branchSelectionMessage ? (
-              <Text style={styles.pickerError}>{branchSelectionMessage}</Text>
+            emptyPickerMessage ? (
+              <Text style={styles.pickerError}>{emptyPickerMessage}</Text>
             ) : (
               <SkillPicker
                 branchTitleById={branchTitleById}
@@ -176,21 +177,6 @@ export function DivinitySkillLoadoutSection({
       ) : null}
     </View>
   );
-}
-
-function getBranchSelectionMessage(
-  selectedBranchCount: number,
-  requiredBranchCount: number,
-): string | null {
-  if (selectedBranchCount === 0) {
-    return "Сначала выберите ветки дерева.";
-  }
-
-  if (selectedBranchCount < requiredBranchCount) {
-    return `Выберите все ${requiredBranchCount} ветки дерева, чтобы открыть список навыков божественности.`;
-  }
-
-  return null;
 }
 
 type LoadoutRowProps = {
@@ -339,14 +325,17 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    gap: 4,
   },
   title: {
     color: "#fff4d7",
     fontSize: 18,
     fontWeight: "900",
+  },
+  description: {
+    color: "#bea17b",
+    fontSize: 12,
+    fontWeight: "700",
   },
   rowBlock: {
     gap: 8,
