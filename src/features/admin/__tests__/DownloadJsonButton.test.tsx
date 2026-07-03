@@ -84,4 +84,26 @@ describe("DownloadJsonButton", () => {
 
     expect(screen.getByText("Билд опубликован.")).toBeTruthy();
   });
+
+  it("shows a loader label and blocks duplicate publish clicks while publishing", () => {
+    const onPublishFull = jest.fn();
+
+    render(
+      <DownloadJsonButton
+        errors={[]}
+        isPublishPending
+        onDeleteFull={jest.fn()}
+        onDownloadFull={jest.fn()}
+        onLoadFull={jest.fn()}
+        onPublishFull={onPublishFull}
+        onSaveCurrent={jest.fn()}
+        onSaveDraft={jest.fn()}
+      />,
+    );
+
+    fireEvent.press(screen.getByText("Публикуем..."));
+
+    expect(screen.queryByText("Опубликовать")).toBeNull();
+    expect(onPublishFull).not.toHaveBeenCalled();
+  });
 });

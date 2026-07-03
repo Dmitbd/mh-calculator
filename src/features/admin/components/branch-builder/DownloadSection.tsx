@@ -6,6 +6,7 @@ import type { BranchBuildValidationError } from "../../types/admin.types";
 type DownloadSectionProps = {
   backendStatus?: string | null;
   errors: readonly BranchBuildValidationError[];
+  isPublishPending?: boolean;
   onErrorsLayout: (event: LayoutChangeEvent) => void;
   onDeleteFull: () => void;
   onDownloadFull: () => void;
@@ -19,6 +20,7 @@ type DownloadSectionProps = {
 export function DownloadSection({
   backendStatus,
   errors,
+  isPublishPending = false,
   onErrorsLayout,
   onDeleteFull,
   onDownloadFull,
@@ -33,6 +35,7 @@ export function DownloadSection({
       <DownloadJsonButton
         backendStatus={backendStatus}
         errors={errors}
+        isPublishPending={isPublishPending}
         onErrorsLayout={onErrorsLayout}
         onDeleteFull={onDeleteFull}
         onDownloadFull={onDownloadFull}

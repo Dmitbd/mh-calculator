@@ -11,6 +11,7 @@ import type { BranchBuildValidationError } from "../types/admin.types";
 type DownloadJsonButtonProps = {
   backendStatus?: string | null;
   errors: readonly BranchBuildValidationError[];
+  isPublishPending?: boolean;
   onErrorsLayout?: (event: LayoutChangeEvent) => void;
   onDeleteFull: () => void;
   onDownloadFull: () => void;
@@ -24,6 +25,7 @@ type DownloadJsonButtonProps = {
 export function DownloadJsonButton({
   backendStatus,
   errors,
+  isPublishPending = false,
   onErrorsLayout,
   onDeleteFull,
   onDownloadFull,
@@ -76,10 +78,13 @@ export function DownloadJsonButton({
         ) : null}
         <Pressable
           accessibilityRole="button"
-          onPress={onPublishFull}
-          style={styles.button}
+          disabled={isPublishPending}
+          onPress={isPublishPending ? undefined : onPublishFull}
+          style={[styles.button, isPublishPending && styles.buttonDisabled]}
         >
-          <Text style={styles.buttonText}>Опубликовать</Text>
+          <Text style={styles.buttonText}>
+            {isPublishPending ? "Публикуем..." : "Опубликовать"}
+          </Text>
         </Pressable>
         {showAdvancedActions ? (
           <Pressable
@@ -121,6 +126,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#795125",
     paddingHorizontal: 18,
+  },
+  buttonDisabled: {
+    opacity: 0.72,
   },
   secondaryButton: {
     borderWidth: 1,

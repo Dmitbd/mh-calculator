@@ -138,6 +138,7 @@ export function DivinityBranchBuilderScreen({
     initialAdminSession !== undefined,
   );
   const [isEditBuildLoading, setIsEditBuildLoading] = useState(false);
+  const [isPublishPending, setIsPublishPending] = useState(false);
   const [toast, setToast] = useState<StatusToastState>(null);
 
   useEffect(() => {
@@ -439,6 +440,8 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
+    setIsPublishPending(status === "published");
+
     try {
       if (status === "published" && initialMode !== "edit") {
         const remoteBuildSet = await fetchPublishedHeroBuildSet(
@@ -472,6 +475,10 @@ export function DivinityBranchBuilderScreen({
           ? `Ошибка Supabase: ${error.message}`
           : "Ошибка Supabase.",
       );
+    } finally {
+      if (status === "published") {
+        setIsPublishPending(false);
+      }
     }
   };
 
@@ -806,6 +813,7 @@ export function DivinityBranchBuilderScreen({
         <DownloadSection
           backendStatus={backendStatus}
           errors={validationErrors}
+          isPublishPending={isPublishPending}
           onErrorsLayout={handleErrorsLayout}
           onDeleteFull={() => {
             void handleDeleteFullBuildSet();
