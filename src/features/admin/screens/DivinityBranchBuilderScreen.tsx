@@ -50,6 +50,7 @@ import { getBranchBuilderTargetTabs } from "../model/branchBuilderTabs";
 import type {
   BranchBuildValidationError,
   BranchColumnId,
+  DivinityBranchId,
 } from "../types/admin.types";
 import { downloadJson } from "../utils/downloadJson";
 import {
@@ -307,6 +308,13 @@ export function DivinityBranchBuilderScreen({
     path.startsWith("columns.") ||
     path.startsWith("progress.") ||
     path.startsWith("majorNodes."),
+  );
+  const selectedSkillBranchIds = useMemo(
+    () =>
+      Object.values(selectedBranches).filter(
+        (branchId): branchId is DivinityBranchId => branchId !== null,
+      ),
+    [selectedBranches],
   );
 
   const scrollToPendingTarget = () => {
@@ -653,8 +661,20 @@ export function DivinityBranchBuilderScreen({
     columnId: BranchColumnId,
     branchId: Parameters<typeof setColumnBranch>[1],
   ) => {
+    const shouldNotifyDivinityReset =
+      selectedBranches[columnId] !== branchId &&
+      hasDivinitySkillSelection(selectedDivinitySkills);
+
     setColumnBranch(columnId, branchId);
     clearValidationErrors((path) => path === `columns.${columnId}`);
+
+    if (shouldNotifyDivinityReset) {
+      clearValidationErrors((path) => path.startsWith("divinitySkills."));
+      showBackendMessage(
+        "success",
+        "\"Навыки божественности\" были сброшены",
+      );
+    }
   };
 
   const handleSetMajorSkill = (
@@ -773,6 +793,7 @@ export function DivinityBranchBuilderScreen({
         <DivinitySkillLoadoutSection
           awakenedEnabled={selectedDivinitySkills.awakenedEnabled}
           awakenedSkillIds={selectedDivinitySkills.awakened}
+          availableSkillBranchIds={selectedSkillBranchIds}
           baseSkillIds={selectedDivinitySkills.base}
           branches={branchBuilderBranches}
           onSelectSkill={handleSetDivinitySkill}
@@ -916,6 +937,18 @@ function isArtifactErrorPath(path: string): boolean {
 
 function isRuneErrorPath(path: string): boolean {
   return path.startsWith("equipment.runeIds");
+}
+
+function hasDivinitySkillSelection(divinitySkills: {
+  base: readonly (string | null)[];
+  awakened: readonly (string | null)[];
+  awakenedEnabled: boolean;
+}): boolean {
+  return (
+    divinitySkills.awakenedEnabled ||
+    divinitySkills.base.some(Boolean) ||
+    divinitySkills.awakened.some(Boolean)
+  );
 }
 
 function getMajorNodePath(columnId: BranchColumnId, level: number): string {

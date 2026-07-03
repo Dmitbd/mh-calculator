@@ -499,6 +499,34 @@ describe("useDivinityBranchBuilder", () => {
     });
   });
 
+  it("clears base and awakened divinity skills when a selected branch changes", () => {
+    const result = filledBuild();
+
+    expect(result.current.selectedDivinitySkills).toEqual({
+      base: [
+        "asterial-gemini",
+        "asterial-annihilation",
+        "asterial-supernova",
+      ],
+      awakened: [
+        "devoid-animus",
+        "devoid-broken-mirror",
+        "devoid-chaotic-power",
+      ],
+      awakenedEnabled: true,
+    });
+
+    act(() => {
+      result.current.setColumnBranch("left", "devoid");
+    });
+
+    expect(result.current.selectedDivinitySkills).toEqual({
+      base: [],
+      awakened: [],
+      awakenedEnabled: false,
+    });
+  });
+
   it("loads an existing build set into editable drafts", () => {
     const completeBuildSet = getHeroBuildSet("bastet");
 

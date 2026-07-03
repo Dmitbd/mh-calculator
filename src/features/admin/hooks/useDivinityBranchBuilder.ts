@@ -82,6 +82,14 @@ const emptyDraft: EditableBuildDraft = {
 
 const columnIds: BranchColumnId[] = ["left", "center", "right"];
 
+function createEmptyDivinitySkillDraft(): DivinitySkillLoadoutDraft {
+  return {
+    base: [],
+    awakened: [],
+    awakenedEnabled: false,
+  };
+}
+
 /** Путь целевой вкладки по умолчанию — первая вкладка в buildTargetTabs */
 const defaultTargetTabPath: HeroBuildTargetTabPath = defaultBuildTargetTabPath;
 
@@ -225,6 +233,10 @@ export function useDivinityBranchBuilder(
           ...current.selectedBranches,
           [columnId]: branchId,
         },
+        selectedDivinitySkills:
+          current.selectedBranches[columnId] !== branchId
+            ? createEmptyDivinitySkillDraft()
+            : current.selectedDivinitySkills,
       }));
     },
     [updateCurrentDraft],

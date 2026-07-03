@@ -206,6 +206,80 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.queryByText("Gemini")).toBeNull();
   });
 
+  it("asks to select tree branches before opening divinity skill options", () => {
+    renderAdminBuilder();
+
+    fireEvent.press(
+      screen.getByLabelText("Выбрать навык божественности 6 узлов, слот 1"),
+    );
+
+    expect(screen.getByText("Сначала выберите ветки дерева.")).toBeTruthy();
+    expect(screen.queryByText("Aurora")).toBeNull();
+  });
+
+  it("asks to finish selecting tree branches before opening divinity skill options", () => {
+    renderAdminBuilder();
+
+    fireEvent.press(screen.getByLabelText("Choose branch for левая"));
+    fireEvent.press(screen.getByLabelText("Select Asterial Skills for левая"));
+    fireEvent.press(
+      screen.getByLabelText("Выбрать навык божественности 6 узлов, слот 1"),
+    );
+
+    expect(
+      screen.getByText(
+        "Выберите все 3 ветки дерева, чтобы открыть список навыков божественности.",
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText("Aurora")).toBeNull();
+  });
+
+  it("shows only divinity skills from selected tree branches", () => {
+    renderAdminBuilder();
+
+    fireEvent.press(screen.getByLabelText("Choose branch for левая"));
+    fireEvent.press(screen.getByLabelText("Select Asterial Skills for левая"));
+    fireEvent.press(screen.getByLabelText("Choose branch for центр"));
+    fireEvent.press(screen.getByLabelText("Select Psyche Skills for центр"));
+    fireEvent.press(screen.getByLabelText("Choose branch for правая"));
+    fireEvent.press(screen.getByLabelText("Select Immortality Skills for правая"));
+    fireEvent.press(
+      screen.getByLabelText("Выбрать навык божественности 6 узлов, слот 1"),
+    );
+
+    expect(screen.getByText("Aurora")).toBeTruthy();
+    expect(screen.getByText("Energy Bubble")).toBeTruthy();
+    expect(screen.getByText("Eterna")).toBeTruthy();
+    expect(screen.queryByText("Animus")).toBeNull();
+  });
+
+  it("shows a toast when changing a branch clears divinity skills", () => {
+    renderAdminBuilder();
+
+    fireEvent.press(screen.getByLabelText("Choose branch for левая"));
+    fireEvent.press(screen.getByLabelText("Select Asterial Skills for левая"));
+    fireEvent.press(screen.getByLabelText("Choose branch for центр"));
+    fireEvent.press(screen.getByLabelText("Select Psyche Skills for центр"));
+    fireEvent.press(screen.getByLabelText("Choose branch for правая"));
+    fireEvent.press(screen.getByLabelText("Select Immortality Skills for правая"));
+    fireEvent.press(
+      screen.getByLabelText("Выбрать навык божественности 6 узлов, слот 1"),
+    );
+    fireEvent.press(
+      screen.getByLabelText("Выбрать навык божественности Aurora"),
+    );
+
+    expect(screen.getByText("Aurora")).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText("Choose branch for левая"));
+    fireEvent.press(screen.getByLabelText("Select Devoid Skills for левая"));
+
+    expect(
+      screen.getAllByText("\"Навыки божественности\" были сброшены").length,
+    ).toBeTruthy();
+    expect(screen.queryByText("Aurora")).toBeNull();
+  });
+
   it("shows hero error if text was typed but no dropdown option was selected", () => {
     renderAdminBuilder();
 
