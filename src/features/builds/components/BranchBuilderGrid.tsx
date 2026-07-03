@@ -204,6 +204,11 @@ export function BranchBuilderGrid({
           const selectedBranch =
             branches.find((branch) => branch.id === selectedBranches[column.id]) ??
             null;
+          const availableBranches = getAvailableBranchesForColumn(
+            branches,
+            selectedBranches,
+            column.id,
+          );
           const selectBranch = (branchId: DivinityBranchId) => {
             onSelectBranch?.(column.id, branchId);
             setActiveBranchColumn(null);
@@ -238,7 +243,7 @@ export function BranchBuilderGrid({
           if (Platform.OS === "web") {
             return (
               <WebBranchHeaderPicker
-                branches={branches}
+                branches={availableBranches}
                 column={column}
                 key={column.id}
                 onSelectBranch={selectBranch}
@@ -280,7 +285,7 @@ export function BranchBuilderGrid({
               </Pressable>
               {menuOpen ? (
                 <View style={styles.branchMenu}>
-                  {branches.map((branch) => (
+                  {availableBranches.map((branch) => (
                     <Pressable
                       accessibilityLabel={`Select ${branch.title} for ${column.label}`}
                       accessibilityRole="button"
@@ -475,6 +480,21 @@ function WebBranchHeaderPicker({
 
 function getMajorSkillKey(columnId: BranchColumnId, level: number): string {
   return `${columnId}:${level}`;
+}
+
+function getAvailableBranchesForColumn(
+  branches: readonly DivinityBranch[],
+  selectedBranches: DraftBranchColumns,
+  columnId: BranchColumnId,
+): DivinityBranch[] {
+  const selectedInOtherColumns = new Set(
+    Object.entries(selectedBranches)
+      .filter(([selectedColumnId]) => selectedColumnId !== columnId)
+      .map(([, branchId]) => branchId)
+      .filter((branchId): branchId is DivinityBranchId => branchId !== null),
+  );
+
+  return branches.filter((branch) => !selectedInOtherColumns.has(branch.id));
 }
 
 const webStyles = {

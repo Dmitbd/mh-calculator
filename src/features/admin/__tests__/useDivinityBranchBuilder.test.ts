@@ -119,6 +119,21 @@ describe("useDivinityBranchBuilder", () => {
     expect(result.current.buildExport("2026-05-30T00:00:00.000Z")).toBeNull();
   });
 
+  it("ignores branch selections that are already used in another column", () => {
+    const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
+
+    act(() => {
+      result.current.setColumnBranch("left", "asterial");
+      result.current.setColumnBranch("center", "asterial");
+    });
+
+    expect(result.current.selectedBranches).toEqual({
+      left: "asterial",
+      center: null,
+      right: null,
+    });
+  });
+
   it("selecting a hero sets selectedHeroId and Russian heroName", () => {
     const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
     const hero = getHeroById("bastet");

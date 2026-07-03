@@ -227,17 +227,29 @@ export function useDivinityBranchBuilder(
 
   const setColumnBranch = useCallback(
     (columnId: BranchColumnId, branchId: DivinityBranchId | null) => {
-      updateCurrentDraft((current) => ({
-        ...current,
-        selectedBranches: {
-          ...current.selectedBranches,
-          [columnId]: branchId,
-        },
-        selectedDivinitySkills:
-          current.selectedBranches[columnId] !== branchId
-            ? createEmptyDivinitySkillDraft()
-            : current.selectedDivinitySkills,
-      }));
+      updateCurrentDraft((current) => {
+        if (
+          isBranchSelectedInAnotherColumn(
+            current.selectedBranches,
+            columnId,
+            branchId,
+          )
+        ) {
+          return current;
+        }
+
+        return {
+          ...current,
+          selectedBranches: {
+            ...current.selectedBranches,
+            [columnId]: branchId,
+          },
+          selectedDivinitySkills:
+            current.selectedBranches[columnId] !== branchId
+              ? createEmptyDivinitySkillDraft()
+              : current.selectedDivinitySkills,
+        };
+      });
     },
     [updateCurrentDraft],
   );
@@ -850,6 +862,21 @@ function hasSelectedAllBranches(
   selectedBranches: DraftBranchColumns,
 ): selectedBranches is Record<BranchColumnId, DivinityBranchId> {
   return columnIds.every((columnId) => selectedBranches[columnId] !== null);
+}
+
+function isBranchSelectedInAnotherColumn(
+  selectedBranches: DraftBranchColumns,
+  columnId: BranchColumnId,
+  branchId: DivinityBranchId | null,
+): boolean {
+  if (!branchId) {
+    return false;
+  }
+
+  return columnIds.some(
+    (otherColumnId) =>
+      otherColumnId !== columnId && selectedBranches[otherColumnId] === branchId,
+  );
 }
 
 function buildMajorNodes(
