@@ -83,6 +83,7 @@ export function HeroBuildScreen({
     initialAdminSession !== undefined,
   );
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeletePending, setIsDeletePending] = useState(false);
   const [toast, setToast] = useState<StatusToastState>(null);
 
   useEffect(() => {
@@ -231,6 +232,10 @@ export function HeroBuildScreen({
   };
 
   const handleConfirmDelete = async () => {
+    if (isDeletePending) {
+      return;
+    }
+
     const client = getSupabaseClient();
 
     if (!client) {
@@ -238,6 +243,8 @@ export function HeroBuildScreen({
       setToast({ kind: "error", message: "Supabase не настроен." });
       return;
     }
+
+    setIsDeletePending(true);
 
     try {
       await deleteHeroBuildSet(
@@ -247,6 +254,7 @@ export function HeroBuildScreen({
       setBuildSet(null);
       setIsDeleteConfirmOpen(false);
       setToast({ kind: "success", message: "Билд удалён." });
+      router.replace("/heroes");
     } catch (error) {
       setIsDeleteConfirmOpen(false);
       setToast({
@@ -256,6 +264,8 @@ export function HeroBuildScreen({
             ? `Ошибка Supabase: ${error.message}`
             : "Ошибка Supabase.",
       });
+    } finally {
+      setIsDeletePending(false);
     }
   };
 
@@ -377,7 +387,11 @@ export function HeroBuildScreen({
       </ScrollView>
       <Modal
         animationType="fade"
-        onRequestClose={() => setIsDeleteConfirmOpen(false)}
+        onRequestClose={() => {
+          if (!isDeletePending) {
+            setIsDeleteConfirmOpen(false);
+          }
+        }}
         transparent
         visible={isDeleteConfirmOpen}
       >
@@ -390,8 +404,17 @@ export function HeroBuildScreen({
             <View style={styles.modalActions}>
               <Pressable
                 accessibilityRole="button"
-                onPress={() => setIsDeleteConfirmOpen(false)}
-                style={[styles.modalButton, styles.secondaryAdminButton]}
+                disabled={isDeletePending}
+                onPress={() => {
+                  if (!isDeletePending) {
+                    setIsDeleteConfirmOpen(false);
+                  }
+                }}
+                style={[
+                  styles.modalButton,
+                  styles.secondaryAdminButton,
+                  isDeletePending && styles.modalButtonDisabled,
+                ]}
               >
                 <Text
                   style={[
@@ -404,12 +427,19 @@ export function HeroBuildScreen({
               </Pressable>
               <Pressable
                 accessibilityRole="button"
+                disabled={isDeletePending}
                 onPress={() => {
                   void handleConfirmDelete();
                 }}
-                style={[styles.modalButton, styles.dangerButton]}
+                style={[
+                  styles.modalButton,
+                  styles.dangerButton,
+                  isDeletePending && styles.modalButtonDisabled,
+                ]}
               >
-                <Text style={styles.adminButtonText}>Да</Text>
+                <Text style={styles.adminButtonText}>
+                  {isDeletePending ? "Удаляем..." : "Да"}
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -548,5 +578,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     paddingHorizontal: 14,
+  },
+  modalButtonDisabled: {
+    opacity: 0.72,
   },
 });
