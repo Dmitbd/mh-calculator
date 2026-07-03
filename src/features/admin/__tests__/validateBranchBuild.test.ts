@@ -109,6 +109,48 @@ describe("validateBranchBuild", () => {
     expect(result.errors).toEqual([]);
   });
 
+  it("requires divinity skills for 6 nodes", () => {
+    const result = validateBranchBuild(
+      {
+        ...createValidDraft(),
+        divinitySkills: {
+          base: [],
+          awakened: [
+            "devoid-animus",
+            "devoid-broken-mirror",
+            "devoid-chaotic-power",
+          ],
+        },
+      },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContainEqual({
+      code: "divinitySkills.required",
+      message: "Выберите навыки божественности для 6 узлов.",
+      path: "divinitySkills.base",
+    });
+  });
+
+  it("allows missing divinity skills for 7 nodes", () => {
+    const result = validateBranchBuild(
+      {
+        ...createValidDraft(),
+        divinitySkills: {
+          base: [
+            "asterial-gemini",
+            "asterial-annihilation",
+            "asterial-supernova",
+          ],
+        },
+      },
+      validationSources,
+    );
+
+    expect(result.isValid).toBe(true);
+  });
+
   it("rejects a missing hero id", () => {
     const result = validateBranchBuild(
       { ...createValidDraft(), heroId: null, heroName: "   " },

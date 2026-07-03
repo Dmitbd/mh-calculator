@@ -91,13 +91,15 @@ describe("DivinityBranchBuilderScreen", () => {
     ).toHaveLength(2);
   });
 
-  it("shows save tab and full json download actions", () => {
+  it("shows only save tab and publish actions in the builder footer", () => {
     renderAdminBuilder();
 
     expect(screen.getByText("Сохранить вкладку")).toBeTruthy();
-    expect(screen.getByText("Скачать полный JSON")).toBeTruthy();
-    expect(screen.getByText("Загрузить билд")).toBeTruthy();
-    expect(screen.getByText("Удалить билд")).toBeTruthy();
+    expect(screen.getByText("Опубликовать")).toBeTruthy();
+    expect(screen.queryByText("Скачать полный JSON")).toBeNull();
+    expect(screen.queryByText("Загрузить билд")).toBeNull();
+    expect(screen.queryByText("Сохранить черновик")).toBeNull();
+    expect(screen.queryByText("Удалить билд")).toBeNull();
   });
 
   it("hides builder controls until admin signs in", () => {
@@ -129,7 +131,7 @@ describe("DivinityBranchBuilderScreen", () => {
   it("blocks full json download when target tabs are missing", () => {
     renderAdminBuilder();
 
-    fireEvent.press(screen.getByText("Скачать полный JSON"));
+    fireEvent.press(screen.getByText("Опубликовать"));
 
     expect(
       screen.getAllByText("PvP: Сохраните билд для этой вкладки.").length,
@@ -145,7 +147,7 @@ describe("DivinityBranchBuilderScreen", () => {
   it("shows full export target tab errors above the target tabs", () => {
     renderAdminBuilder();
 
-    fireEvent.press(screen.getByText("Скачать полный JSON"));
+    fireEvent.press(screen.getByText("Опубликовать"));
 
     expect(
       screen.getAllByText("PvP: Сохраните билд для этой вкладки."),
@@ -163,7 +165,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     renderAdminBuilder();
 
-    fireEvent.press(screen.getByText("Скачать полный JSON"));
+    fireEvent.press(screen.getByText("Опубликовать"));
 
     expect(scrollToSpy).toHaveBeenCalledWith({ animated: true, y: 0 });
 

@@ -5,17 +5,45 @@ const mockUseSafeAreaInsets = jest.fn(() => ({
   left: 0,
 }));
 
+const mockRouter = {
+  back: jest.fn(),
+  canGoBack: jest.fn(() => false),
+  push: jest.fn(),
+  replace: jest.fn(),
+};
+const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
+
 jest.mock("react-native-safe-area-context", () => ({
   __esModule: true,
   useSafeAreaInsets: () => mockUseSafeAreaInsets(),
 }));
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
+jest.mock("expo-router", () => ({
+  __esModule: true,
+  router: mockRouter,
+  useRouter: () => mockRouter,
+}));
+
+jest.mock("@/shared/lib/supabaseClient", () => ({
+  __esModule: true,
+  getSupabaseClient: () => mockGetSupabaseClient(),
+}));
+
+import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
 import { getHeroBuildSet } from "@/features/game-data/heroes/heroBuilds";
 import { HeroBuildScreen } from "@/features/heroes/screens/HeroBuildScreen";
 
 describe("HeroBuildScreen", () => {
+  beforeEach(() => {
+    jest.useRealTimers();
+    mockRouter.back.mockClear();
+    mockRouter.canGoBack.mockClear();
+    mockRouter.push.mockClear();
+    mockRouter.replace.mockClear();
+    mockGetSupabaseClient.mockReturnValue(null);
+  });
+
   test("renders only tabs with ready builds for bastet", () => {
     render(<HeroBuildScreen heroId="bastet" />);
 
@@ -92,6 +120,99 @@ describe("HeroBuildScreen", () => {
     render(<HeroBuildScreen heroId="bastet" />);
 
     expect(screen.queryByText("Активные бонусы цветов")).toBeNull();
+
+    spy.mockRestore();
+  });
+
+  test("hides admin actions for anonymous users", () => {
+    render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
+
+    expect(screen.queryByText("Редактировать")).toBeNull();
+    expect(screen.queryByText("Удалить")).toBeNull();
+  });
+
+  test("opens builder edit mode from the hero screen for admins", () => {
+    render(
+      <HeroBuildScreen
+        heroId="bastet"
+        initialAdminSession={{ email: "admin@example.com" }}
+      />,
+    );
+
+    fireEvent.press(screen.getByText("Редактировать"));
+
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: "/admin/branch-builder",
+      params: { heroId: "bastet", mode: "edit" },
+    });
+  });
+
+  test("asks for confirmation before admin deletes a build", async () => {
+    const deleteEq = jest.fn(() => Promise.resolve({ data: null, error: null }));
+    const deleteMock = jest.fn(() => ({ eq: deleteEq }));
+    const fromMock = jest.fn(() => ({ delete: deleteMock }));
+
+    mockGetSupabaseClient.mockReturnValue({ from: fromMock });
+
+    render(
+      <HeroBuildScreen
+        heroId="bastet"
+        initialAdminSession={{ email: "admin@example.com" }}
+      />,
+    );
+
+    fireEvent.press(screen.getByText("Удалить"));
+
+    expect(screen.getByText("Удалить билд?")).toBeTruthy();
+    expect(deleteEq).not.toHaveBeenCalled();
+
+    fireEvent.press(screen.getByText("Нет"));
+
+    expect(screen.queryByText("Удалить билд?")).toBeNull();
+
+    fireEvent.press(screen.getByText("Удалить"));
+    fireEvent.press(screen.getByText("Да"));
+
+    await waitFor(() => {
+      expect(deleteEq).toHaveBeenCalledWith("hero_id", "bastet");
+    });
+    expect(await screen.findByText("Билд удалён.")).toBeTruthy();
+  });
+
+  test("does not show empty 7-node divinity row in read-only builds", () => {
+    const buildSet = getHeroBuildSet("bastet");
+
+    if (!buildSet) {
+      throw new Error("Expected bastet build set.");
+    }
+
+    const patchedTabs = buildSet.tabs.map((tab) => {
+      if (!tab.build) {
+        return tab;
+      }
+
+      return {
+        ...tab,
+        build: {
+          ...tab.build,
+          divinitySkills: {
+            base: tab.build.divinitySkills?.base ?? [],
+          },
+        },
+      };
+    });
+
+    const spy = jest
+      .spyOn(require("@/features/game-data/heroes/heroBuilds"), "getHeroBuildSet")
+      .mockReturnValue({
+        ...buildSet,
+        tabs: patchedTabs,
+      });
+
+    render(<HeroBuildScreen heroId="bastet" />);
+
+    expect(screen.getByText("6 узлов")).toBeTruthy();
+    expect(screen.queryByText("7 узлов")).toBeNull();
 
     spy.mockRestore();
   });

@@ -106,7 +106,7 @@ export function DivinitySkillLoadoutSection({
         />
       ) : null}
 
-      {awakenedEnabled || readOnly ? (
+      {awakenedEnabled ? (
         <>
           <LoadoutRow
             activeSlot={activeSlot}
@@ -130,7 +130,7 @@ export function DivinitySkillLoadoutSection({
             />
           ) : null}
         </>
-      ) : (
+      ) : !readOnly ? (
         <Pressable
           accessibilityLabel="Добавить навыки для 7 божественных узлов"
           accessibilityRole="button"
@@ -141,7 +141,7 @@ export function DivinitySkillLoadoutSection({
             Добавить навыки для 7 божественных узлов
           </Text>
         </Pressable>
-      )}
+      ) : null}
     </View>
   );
 }

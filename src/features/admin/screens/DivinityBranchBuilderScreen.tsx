@@ -10,9 +10,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { getSupabaseClient } from "@/shared/lib/supabaseClient";
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
+import { StatusToast } from "@/shared/ui/StatusToast";
 import {
   deleteHeroBuildSet,
   DivinitySkillLoadoutSection,
+  fetchPublishedHeroBuildSet,
   loadPublishedHeroBuildSet,
   saveHeroBuildSet,
   type HeroBuildSetStatus,
@@ -63,19 +65,29 @@ import {
 
 const SCREEN_PADDING = 20;
 type PendingScrollTarget = "errors" | "top";
+type BuilderMode = "create" | "edit";
+type StatusToastState = {
+  kind: "success" | "error";
+  message: string;
+} | null;
 
 type DivinityBranchBuilderScreenProps = {
   initialAdminSession?: AdminSession | null;
+  initialHeroId?: string | null;
+  initialMode?: BuilderMode;
 };
 
 export function DivinityBranchBuilderScreen({
   initialAdminSession,
+  initialHeroId = null,
+  initialMode = "create",
 }: DivinityBranchBuilderScreenProps = {}) {
   const { top, bottom } = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const downloadSectionY = useRef(0);
   const errorsBlockY = useRef(0);
   const pendingScrollTarget = useRef<PendingScrollTarget | null>(null);
+  const loadedEditHeroId = useRef<string | null>(null);
   const {
     addArtifact,
     addRune,
@@ -125,6 +137,8 @@ export function DivinityBranchBuilderScreen({
   const [isAuthChecked, setIsAuthChecked] = useState(
     initialAdminSession !== undefined,
   );
+  const [isEditBuildLoading, setIsEditBuildLoading] = useState(false);
+  const [toast, setToast] = useState<StatusToastState>(null);
 
   useEffect(() => {
     if (initialAdminSession !== undefined) {
@@ -162,6 +176,101 @@ export function DivinityBranchBuilderScreen({
       isMounted = false;
     };
   }, [initialAdminSession]);
+
+  useEffect(() => {
+    if (toast?.kind !== "success") {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setToast(null);
+    }, 3000);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [toast]);
+
+  useEffect(() => {
+    if (
+      initialMode !== "edit" ||
+      !initialHeroId ||
+      !isAuthChecked ||
+      !adminSession ||
+      loadedEditHeroId.current === initialHeroId
+    ) {
+      return;
+    }
+
+    const client = getSupabaseClient();
+    let isMounted = true;
+
+    loadedEditHeroId.current = initialHeroId;
+    setIsEditBuildLoading(true);
+
+    const fallbackBuildSet = getHeroBuildSet(initialHeroId);
+
+    if (!client) {
+      if (fallbackBuildSet && loadBuildSetForEditing(fallbackBuildSet)) {
+        showBackendMessage("success", "Локальный билд загружен для редактирования.");
+      } else {
+        showBackendMessage("error", "Supabase не настроен.");
+      }
+
+      setIsEditBuildLoading(false);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    void loadPublishedHeroBuildSet({
+      client: client as unknown as HeroBuildSetSupabaseClient,
+      fallbackBuildSet,
+      heroId: initialHeroId,
+    })
+      .then((buildSet) => {
+        if (!isMounted) {
+          return;
+        }
+
+        if (!buildSet || !loadBuildSetForEditing(buildSet)) {
+          showBackendMessage("error", "Билд для редактирования не найден.");
+          return;
+        }
+
+        showBackendMessage("success", "Билд загружен для редактирования.");
+      })
+      .catch((error) => {
+        if (isMounted) {
+          showBackendMessage(
+            "error",
+            error instanceof Error
+              ? `Ошибка Supabase: ${error.message}`
+              : "Ошибка Supabase.",
+          );
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsEditBuildLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    adminSession,
+    initialHeroId,
+    initialMode,
+    isAuthChecked,
+    loadBuildSetForEditing,
+  ]);
+
+  function showBackendMessage(kind: "success" | "error", message: string) {
+    setBackendStatus(message);
+    setToast({ kind, message });
+  }
 
   const weaponAwakeningBonuses = resolveWeaponAwakeningBonuses({
     hero: selectedHero,
@@ -266,8 +375,15 @@ export function DivinityBranchBuilderScreen({
     showValidationErrors(result.errors);
 
     if (result.isValid) {
-      saveCurrentTargetBuild();
+      const saved = saveCurrentTargetBuild();
+      showBackendMessage(
+        saved ? "success" : "error",
+        saved ? "Вкладка сохранена." : "Не удалось сохранить вкладку.",
+      );
+      return;
     }
+
+    showBackendMessage("error", "Сначала исправьте ошибки вкладки.");
   };
 
   const handleDownloadFullJson = () => {
@@ -297,21 +413,21 @@ export function DivinityBranchBuilderScreen({
     showValidationErrors(result.errors);
 
     if (!result.isValid) {
-      setBackendStatus("Сначала исправьте ошибки полного экспорта.");
+      showBackendMessage("error", "Сначала исправьте ошибки полного экспорта.");
       return;
     }
 
     const client = getSupabaseClient();
 
     if (!client) {
-      setBackendStatus("Supabase не настроен.");
+      showBackendMessage("error", "Supabase не настроен.");
       return;
     }
 
     const buildSet = buildFullExport();
 
     if (!buildSet) {
-      setBackendStatus("Не удалось собрать полный билд.");
+      showBackendMessage("error", "Не удалось собрать полный билд.");
       return;
     }
 
@@ -319,21 +435,39 @@ export function DivinityBranchBuilderScreen({
     const heroId = firstBuildTab?.build?.heroId ?? selectedHeroId;
 
     if (!heroId) {
-      setBackendStatus("Не удалось определить героя для сохранения.");
+      showBackendMessage("error", "Не удалось определить героя для сохранения.");
       return;
     }
 
     try {
+      if (status === "published" && initialMode !== "edit") {
+        const remoteBuildSet = await fetchPublishedHeroBuildSet(
+          client as unknown as HeroBuildSetSupabaseClient,
+          heroId,
+        );
+        const localBuildSet = getHeroBuildSet(heroId);
+
+        if (remoteBuildSet || localBuildSet) {
+          showBackendMessage(
+            "error",
+            "У героя уже есть билд. Откройте экран героя и нажмите «Редактировать».",
+          );
+          return;
+        }
+      }
+
       await saveHeroBuildSet(client as unknown as HeroBuildSetSupabaseClient, {
         buildSet,
         heroId,
         status,
       });
-      setBackendStatus(
+      showBackendMessage(
+        "success",
         status === "published" ? "Билд опубликован." : "Черновик сохранён.",
       );
     } catch (error) {
-      setBackendStatus(
+      showBackendMessage(
+        "error",
         error instanceof Error
           ? `Ошибка Supabase: ${error.message}`
           : "Ошибка Supabase.",
@@ -569,6 +703,12 @@ export function DivinityBranchBuilderScreen({
         </View>
       ) : null}
 
+      {isEditBuildLoading ? (
+        <View style={styles.loadingCard}>
+          <Text style={styles.loadingText}>Загружаем билд...</Text>
+        </View>
+      ) : null}
+
       {isAuthChecked && adminSession ? (
         <>
       <View style={styles.section}>
@@ -687,6 +827,13 @@ export function DivinityBranchBuilderScreen({
         </>
       ) : null}
       </ScrollView>
+      {toast ? (
+        <StatusToast
+          kind={toast.kind}
+          message={toast.message}
+          onDismiss={() => setToast(null)}
+        />
+      ) : null}
     </View>
   );
 }
@@ -709,6 +856,19 @@ const styles = StyleSheet.create({
     color: "#e8d7b5",
     fontSize: 13,
     fontWeight: "700",
+  },
+  loadingCard: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#5a412b",
+    backgroundColor: "#1d130f",
+    padding: 12,
+  },
+  loadingText: {
+    color: "#f6d59a",
+    fontSize: 14,
+    fontWeight: "800",
+    textAlign: "center",
   },
 });
 

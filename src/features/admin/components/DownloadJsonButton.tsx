@@ -18,6 +18,7 @@ type DownloadJsonButtonProps = {
   onPublishFull: () => void;
   onSaveCurrent: () => void;
   onSaveDraft: () => void;
+  showAdvancedActions?: boolean;
 };
 
 export function DownloadJsonButton({
@@ -30,6 +31,7 @@ export function DownloadJsonButton({
   onPublishFull,
   onSaveCurrent,
   onSaveDraft,
+  showAdvancedActions = false,
 }: DownloadJsonButtonProps) {
   return (
     <View style={styles.wrapper}>
@@ -43,31 +45,35 @@ export function DownloadJsonButton({
             Сохранить вкладку
           </Text>
         </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          onPress={onDownloadFull}
-          style={styles.button}
-        >
-          <Text style={styles.buttonText}>Скачать полный JSON</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          onPress={onLoadFull}
-          style={[styles.button, styles.secondaryButton]}
-        >
-          <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-            Загрузить билд
-          </Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          onPress={onSaveDraft}
-          style={[styles.button, styles.secondaryButton]}
-        >
-          <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-            Сохранить черновик
-          </Text>
-        </Pressable>
+        {showAdvancedActions ? (
+          <>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onDownloadFull}
+              style={styles.button}
+            >
+              <Text style={styles.buttonText}>Скачать полный JSON</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onLoadFull}
+              style={[styles.button, styles.secondaryButton]}
+            >
+              <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+                Загрузить билд
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onSaveDraft}
+              style={[styles.button, styles.secondaryButton]}
+            >
+              <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+                Сохранить черновик
+              </Text>
+            </Pressable>
+          </>
+        ) : null}
         <Pressable
           accessibilityRole="button"
           onPress={onPublishFull}
@@ -75,13 +81,15 @@ export function DownloadJsonButton({
         >
           <Text style={styles.buttonText}>Опубликовать</Text>
         </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          onPress={onDeleteFull}
-          style={[styles.button, styles.dangerButton]}
-        >
-          <Text style={styles.buttonText}>Удалить билд</Text>
-        </Pressable>
+        {showAdvancedActions ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={onDeleteFull}
+            style={[styles.button, styles.dangerButton]}
+          >
+            <Text style={styles.buttonText}>Удалить билд</Text>
+          </Pressable>
+        ) : null}
       </View>
       {backendStatus ? (
         <Text style={styles.backendStatus}>{backendStatus}</Text>

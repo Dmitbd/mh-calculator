@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import { DownloadJsonButton } from "../components/DownloadJsonButton";
 
 describe("DownloadJsonButton", () => {
-  it("renders local export and backend save actions", () => {
+  it("renders only current tab save and publish actions by default", () => {
     const onDownloadFull = jest.fn();
     const onDeleteFull = jest.fn();
     const onLoadFull = jest.fn();
@@ -24,17 +24,47 @@ describe("DownloadJsonButton", () => {
     );
 
     fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByText("Опубликовать"));
+
+    expect(onSaveCurrent).toHaveBeenCalledTimes(1);
+    expect(onPublishFull).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Скачать полный JSON")).toBeNull();
+    expect(screen.queryByText("Загрузить билд")).toBeNull();
+    expect(screen.queryByText("Сохранить черновик")).toBeNull();
+    expect(screen.queryByText("Удалить билд")).toBeNull();
+    expect(onDownloadFull).not.toHaveBeenCalled();
+    expect(onLoadFull).not.toHaveBeenCalled();
+    expect(onSaveDraft).not.toHaveBeenCalled();
+    expect(onDeleteFull).not.toHaveBeenCalled();
+  });
+
+  it("keeps advanced actions available behind an explicit flag", () => {
+    const onDownloadFull = jest.fn();
+    const onDeleteFull = jest.fn();
+    const onLoadFull = jest.fn();
+    const onSaveDraft = jest.fn();
+
+    render(
+      <DownloadJsonButton
+        errors={[]}
+        onDeleteFull={onDeleteFull}
+        onDownloadFull={onDownloadFull}
+        onLoadFull={onLoadFull}
+        onPublishFull={jest.fn()}
+        onSaveCurrent={jest.fn()}
+        onSaveDraft={onSaveDraft}
+        showAdvancedActions
+      />,
+    );
+
     fireEvent.press(screen.getByText("Скачать полный JSON"));
     fireEvent.press(screen.getByText("Загрузить билд"));
     fireEvent.press(screen.getByText("Сохранить черновик"));
-    fireEvent.press(screen.getByText("Опубликовать"));
     fireEvent.press(screen.getByText("Удалить билд"));
 
-    expect(onSaveCurrent).toHaveBeenCalledTimes(1);
     expect(onDownloadFull).toHaveBeenCalledTimes(1);
     expect(onLoadFull).toHaveBeenCalledTimes(1);
     expect(onSaveDraft).toHaveBeenCalledTimes(1);
-    expect(onPublishFull).toHaveBeenCalledTimes(1);
     expect(onDeleteFull).toHaveBeenCalledTimes(1);
   });
 

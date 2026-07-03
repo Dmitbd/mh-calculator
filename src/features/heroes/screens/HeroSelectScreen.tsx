@@ -26,23 +26,32 @@ export function HeroSelectScreen() {
   const { top, bottom } = useSafeAreaInsets();
   const [filters, setFilters] = useState(EMPTY_HERO_LIST_FILTERS);
   const [remoteHeroIds, setRemoteHeroIds] = useState<string[]>([]);
+  const [isRemoteBuildsLoading, setIsRemoteBuildsLoading] = useState(false);
 
   useEffect(() => {
     const client = getSupabaseClient();
 
     if (!client) {
+      setIsRemoteBuildsLoading(false);
       return;
     }
 
     let isMounted = true;
 
+    setIsRemoteBuildsLoading(true);
     void fetchPublishedHeroIds(
       client as unknown as HeroBuildSetSupabaseClient,
-    ).then((heroIds) => {
-      if (isMounted) {
-        setRemoteHeroIds(heroIds);
-      }
-    });
+    )
+      .then((heroIds) => {
+        if (isMounted) {
+          setRemoteHeroIds(heroIds);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsRemoteBuildsLoading(false);
+        }
+      });
 
     return () => {
       isMounted = false;
@@ -76,6 +85,12 @@ export function HeroSelectScreen() {
         ]}
       >
         <HeroListFiltersPanel filters={filters} onChange={setFilters} />
+
+        {isRemoteBuildsLoading ? (
+          <View style={styles.loadingCard}>
+            <Text style={styles.loadingText}>Загружаем билды...</Text>
+          </View>
+        ) : null}
 
         {zoneGroups.length > 0 ? (
           zoneGroups.map((group) => (
@@ -134,6 +149,19 @@ const styles = StyleSheet.create({
     color: "#d7c19a",
     fontSize: 15,
     fontWeight: "600",
+    textAlign: "center",
+  },
+  loadingCard: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#5a412b",
+    backgroundColor: "#1d130f",
+    padding: 12,
+  },
+  loadingText: {
+    color: "#f6d59a",
+    fontSize: 14,
+    fontWeight: "800",
     textAlign: "center",
   },
 });

@@ -184,6 +184,7 @@ export function validateBranchBuild(
     label: "для 6 узлов",
     maxNodes: DIVINITY_SKILL_BASE_NODE_BUDGET,
     path: "divinitySkills.base",
+    required: true,
   });
 
   validateDivinitySkillLoadoutRow({
@@ -374,8 +375,17 @@ function validateDivinitySkillLoadoutRow(params: {
   label: string;
   maxNodes: number;
   path: string;
+  required?: boolean;
 }) {
   const seenSkillIds = new Set<string>();
+
+  if (params.required && params.skillIds.length === 0) {
+    params.errors.push({
+      code: "divinitySkills.required",
+      message: `Выберите навыки божественности ${params.label}.`,
+      path: params.path,
+    });
+  }
 
   if (params.skillIds.length > DIVINITY_SKILL_LOADOUT_MAX_SLOTS) {
     params.errors.push({

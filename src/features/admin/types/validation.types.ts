@@ -14,6 +14,7 @@ export type BranchBuildValidationErrorCode =
   | "majorNode.skillTierMismatch"
   | "divinitySkills.duplicate"
   | "divinitySkills.nodeBudgetExceeded"
+  | "divinitySkills.required"
   | "divinitySkills.slotLimitExceeded"
   | "divinitySkills.skillUnknown"
   | "weaponAwakening.slotRequired"

@@ -1,11 +1,24 @@
+import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
+  deleteHeroBuildSet,
   loadPublishedHeroBuildSet,
   type HeroBuildSetSupabaseClient,
 } from "@/features/builds";
+import {
+  getCurrentAdminSession,
+  type AdminSession,
+} from "@/shared/lib/adminAuth";
 import { getSupabaseClient } from "@/shared/lib/supabaseClient";
 import {
   weaponAwakeningCombos,
@@ -28,6 +41,7 @@ import {
 import type { HeroBuildTabPath } from "@/features/game-data/heroes/types";
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
+import { StatusToast } from "@/shared/ui/StatusToast";
 
 import { HeroMetadataRow } from "../components/HeroMetadataRow";
 import { HeroBuildBranchSection } from "../components/hero-build/HeroBuildBranchSection";
@@ -42,15 +56,34 @@ const SCREEN_PADDING = 20;
 type HeroBuildScreenProps = {
   /** Id героя из роута */
   heroId: string;
+  initialAdminSession?: AdminSession | null;
 };
 
+type StatusToastState = {
+  kind: "success" | "error";
+  message: string;
+} | null;
+
 /** Read-only экран билда героя: вёрстка branch-builder без редактирования */
-export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
+export function HeroBuildScreen({
+  heroId,
+  initialAdminSession,
+}: HeroBuildScreenProps) {
   const { top, bottom } = useSafeAreaInsets();
+  const router = useRouter();
 
   const hero = getHeroById(heroId);
   const fallbackBuildSet = getHeroBuildSet(heroId);
   const [buildSet, setBuildSet] = useState(fallbackBuildSet);
+  const [isBuildLoading, setIsBuildLoading] = useState(false);
+  const [adminSession, setAdminSession] = useState<AdminSession | null>(
+    initialAdminSession ?? null,
+  );
+  const [isAuthChecked, setIsAuthChecked] = useState(
+    initialAdminSession !== undefined,
+  );
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [toast, setToast] = useState<StatusToastState>(null);
 
   useEffect(() => {
     const client = getSupabaseClient();
@@ -59,18 +92,21 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
     setBuildSet(fallbackBuildSet);
 
     if (!client) {
+      setIsBuildLoading(false);
       return () => {
         isMounted = false;
       };
     }
 
+    setIsBuildLoading(true);
     void loadPublishedHeroBuildSet({
       client: client as unknown as HeroBuildSetSupabaseClient,
       fallbackBuildSet,
       heroId,
     }).then((loadedBuildSet) => {
-      if (isMounted && loadedBuildSet !== fallbackBuildSet) {
+      if (isMounted) {
         setBuildSet(loadedBuildSet);
+        setIsBuildLoading(false);
       }
     });
 
@@ -78,6 +114,53 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
       isMounted = false;
     };
   }, [fallbackBuildSet, heroId]);
+
+  useEffect(() => {
+    if (initialAdminSession !== undefined) {
+      return;
+    }
+
+    const client = getSupabaseClient();
+
+    if (!client) {
+      setIsAuthChecked(true);
+      return;
+    }
+
+    let isMounted = true;
+
+    void getCurrentAdminSession(client)
+      .then((session) => {
+        if (isMounted) {
+          setAdminSession(session);
+          setIsAuthChecked(true);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setAdminSession(null);
+          setIsAuthChecked(true);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initialAdminSession]);
+
+  useEffect(() => {
+    if (toast?.kind !== "success") {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setToast(null);
+    }, 3000);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [toast]);
   const sortedTabs = useMemo(
     () => (buildSet ? filterTabsWithReadyBuilds(buildSet.tabs) : []),
     [buildSet],
@@ -140,6 +223,42 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
     setActivePath([activeTopId, tabId]);
   };
 
+  const handleEditBuild = () => {
+    router.push({
+      pathname: "/admin/branch-builder",
+      params: { heroId, mode: "edit" },
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    const client = getSupabaseClient();
+
+    if (!client) {
+      setIsDeleteConfirmOpen(false);
+      setToast({ kind: "error", message: "Supabase не настроен." });
+      return;
+    }
+
+    try {
+      await deleteHeroBuildSet(
+        client as unknown as HeroBuildSetSupabaseClient,
+        heroId,
+      );
+      setBuildSet(null);
+      setIsDeleteConfirmOpen(false);
+      setToast({ kind: "success", message: "Билд удалён." });
+    } catch (error) {
+      setIsDeleteConfirmOpen(false);
+      setToast({
+        kind: "error",
+        message:
+          error instanceof Error
+            ? `Ошибка Supabase: ${error.message}`
+            : "Ошибка Supabase.",
+      });
+    }
+  };
+
   const contentPadding = {
     paddingTop: SCREEN_HEADER_HEIGHT + top + 10,
     paddingBottom: SCREEN_PADDING + bottom,
@@ -165,6 +284,38 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
         <View style={styles.section}>
           <HeroMetadataRow hero={hero} />
         </View>
+
+        {isAuthChecked && adminSession ? (
+          <View style={[styles.section, styles.adminActions]}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={handleEditBuild}
+              style={[styles.adminButton, styles.secondaryAdminButton]}
+            >
+              <Text
+                style={[
+                  styles.adminButtonText,
+                  styles.secondaryAdminButtonText,
+                ]}
+              >
+                Редактировать
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setIsDeleteConfirmOpen(true)}
+              style={[styles.adminButton, styles.dangerButton]}
+            >
+              <Text style={styles.adminButtonText}>Удалить</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {isBuildLoading ? (
+          <View style={styles.loadingCard}>
+            <Text style={styles.loadingText}>Загружаем билд...</Text>
+          </View>
+        ) : null}
 
         {sortedTabs.length > 0 ? (
           <View style={styles.section}>
@@ -197,8 +348,14 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
 
             <View style={styles.section}>
               <DivinitySkillLoadoutSection
-                awakenedEnabled={Boolean(view.divinitySkills.awakened)}
-                awakenedSkillIds={view.divinitySkills.awakened ?? []}
+                awakenedEnabled={hasVisibleAwakenedSkills(
+                  view.divinitySkills.awakened,
+                )}
+                awakenedSkillIds={
+                  hasVisibleAwakenedSkills(view.divinitySkills.awakened)
+                    ? view.divinitySkills.awakened
+                    : []
+                }
                 baseSkillIds={view.divinitySkills.base}
                 branches={divinityBranches}
                 readOnly
@@ -218,8 +375,61 @@ export function HeroBuildScreen({ heroId }: HeroBuildScreenProps) {
           </View>
         )}
       </ScrollView>
+      <Modal
+        animationType="fade"
+        onRequestClose={() => setIsDeleteConfirmOpen(false)}
+        transparent
+        visible={isDeleteConfirmOpen}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Удалить билд?</Text>
+            <Text style={styles.modalText}>
+              После удаления опубликованный билд героя пропадёт с экрана.
+            </Text>
+            <View style={styles.modalActions}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setIsDeleteConfirmOpen(false)}
+                style={[styles.modalButton, styles.secondaryAdminButton]}
+              >
+                <Text
+                  style={[
+                    styles.adminButtonText,
+                    styles.secondaryAdminButtonText,
+                  ]}
+                >
+                  Нет
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  void handleConfirmDelete();
+                }}
+                style={[styles.modalButton, styles.dangerButton]}
+              >
+                <Text style={styles.adminButtonText}>Да</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      {toast ? (
+        <StatusToast
+          kind={toast.kind}
+          message={toast.message}
+          onDismiss={() => setToast(null)}
+        />
+      ) : null}
     </View>
   );
+}
+
+function hasVisibleAwakenedSkills(
+  skillIds: readonly (string | null)[] | undefined,
+): skillIds is readonly string[] {
+  return Boolean(skillIds?.some((skillId) => Boolean(skillId)));
 }
 
 const styles = StyleSheet.create({
@@ -234,6 +444,49 @@ const styles = StyleSheet.create({
   },
   section: {
     width: "100%",
+  },
+  adminActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  adminButton: {
+    minHeight: 44,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+  },
+  adminButtonText: {
+    color: "#fff8e8",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  secondaryAdminButton: {
+    borderWidth: 1,
+    borderColor: "#8a6a44",
+    backgroundColor: "#2c2118",
+  },
+  secondaryAdminButtonText: {
+    color: "#f6d59a",
+  },
+  dangerButton: {
+    borderWidth: 1,
+    borderColor: "#9c5144",
+    backgroundColor: "#55231c",
+  },
+  loadingCard: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#5a412b",
+    backgroundColor: "#1d130f",
+    padding: 12,
+  },
+  loadingText: {
+    color: "#f6d59a",
+    fontSize: 14,
+    fontWeight: "800",
+    textAlign: "center",
   },
   placeholderWrapper: {
     flexGrow: 1,
@@ -254,5 +507,46 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     textAlign: "center",
+  },
+  modalBackdrop: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.64)",
+    padding: 20,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 360,
+    gap: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#5a412b",
+    backgroundColor: "#1d130f",
+    padding: 18,
+  },
+  modalTitle: {
+    color: "#f6d59a",
+    fontSize: 19,
+    fontWeight: "900",
+    textAlign: "center",
+  },
+  modalText: {
+    color: "#d7c19a",
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  modalButton: {
+    minHeight: 44,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    paddingHorizontal: 14,
   },
 });
