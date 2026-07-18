@@ -34,6 +34,56 @@ values (
       'Sun WuKong',
       'Yi Sun-Shin'
     ),
-    'description', 'Камазотль внутри описания'
+    'description', 'Камазотль внутри описания',
+    'metadata', jsonb_build_object(
+      'legacyHeroId', 'nephyths',
+      'legacyLocalizedName', 'Камазотль',
+      'note', 'nephyths внутри служебной заметки'
+    )
+  )
+), (
+  'nephyths',
+  'published',
+  jsonb_build_object(
+    'heroId', 'nephyths',
+    'heroName', 'Нефтида',
+    'names', jsonb_build_array(
+      'Камазотль',
+      'Цирцея',
+      'Дацзи',
+      'Дуллахан',
+      'Гавриил',
+      'Ганьцзян и Мо Е',
+      'Хаттори Ханзо',
+      'Хела',
+      'Исет',
+      'Ло Шэнь',
+      'Нува',
+      'Тамамо-но-Маэ',
+      'Западная царица',
+      'И Сун-син',
+      'Nephyths',
+      'Sun WuKong',
+      'Yi Sun-Shin'
+    ),
+    'description', 'Камазотль внутри опубликованного описания',
+    'metadata', jsonb_build_object(
+      'legacyHeroId', 'nephyths',
+      'legacyLocalizedName', 'Камазотль',
+      'note', 'nephyths внутри опубликованной заметки'
+    )
+  )
+), (
+  'bastet',
+  'published',
+  jsonb_build_object(
+    'heroId', 'bastet',
+    'names', jsonb_build_array('Камазотль', 'Nephyths', 'Sun WuKong'),
+    'description', 'Камазотль внутри описания Бастет',
+    'metadata', jsonb_build_object(
+      'legacyHeroId', 'nephyths',
+      'legacyLocalizedName', 'Камазотль',
+      'note', 'nephyths внутри заметки Бастет'
+    )
   )
 );
