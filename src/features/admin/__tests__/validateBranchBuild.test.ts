@@ -51,7 +51,7 @@ function createValidDraft(): DivinityBranchBuildValidationDraft {
   return {
     gameMode: "pve",
     heroId: "western-queen",
-    heroName: "Западная царица",
+    heroName: "Королева запада",
     columns,
     weaponAwakening: filledWeaponAwakening,
     equipment: { artifactIds: ["excalibur"], runeIds: ["fire"] },

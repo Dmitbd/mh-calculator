@@ -15,7 +15,7 @@ import { HeroGuideSelector } from "../components/HeroGuideSelector";
 const heroes = heroesData as Hero[];
 const urHero = heroes.find((hero) => hero.rarity === "ur")!;
 const ssrHero = heroes.find((hero) => hero.rarity === "ssr")!;
-const multiwordHero = heroes.find((hero) => hero.name.ru === "Ганьцзян и Мо Е")!;
+const multiwordHero = heroes.find((hero) => hero.name.ru === "Ганьцзян и Мое")!;
 const options = [ssrHero, urHero];
 
 const props = {
@@ -171,8 +171,8 @@ it("wraps a multiword hero name between complete word groups", () => {
   render(<HeroGuideSelector {...props} heroes={[multiwordHero]} />);
   fireEvent.press(screen.getByLabelText("Выбрать героя"));
 
-  expect(screen.getByText("Ганьцзян и Мо Е").props.children).toBe(
-    "Ганьцзян и\nМо Е",
+  expect(screen.getByText("Ганьцзян и Мое").props.children).toBe(
+    "Ганьцзян\nи Мое",
   );
 });
 

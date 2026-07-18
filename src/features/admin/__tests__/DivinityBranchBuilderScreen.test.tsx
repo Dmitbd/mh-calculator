@@ -1163,7 +1163,7 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByText("Активные бонусы цветов")).toBeTruthy();
 
     fireEvent.press(
-      screen.getByLabelText("Выбрать героя Западная царица"),
+      screen.getByLabelText("Выбрать героя Королева запада"),
     );
 
     expect(

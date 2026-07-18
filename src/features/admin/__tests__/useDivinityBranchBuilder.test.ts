@@ -142,7 +142,7 @@ describe("useDivinityBranchBuilder", () => {
       gameMode: "pvp",
       targetTabPath: ["pvp"],
       heroId: "western-queen",
-      heroName: "Западная царица",
+      heroName: "Королева запада",
       columns: selectedBranches,
       weaponAwakening: filledWeaponAwakening,
       equipment: { artifactIds: ["excalibur"], runeIds: ["fire"] },

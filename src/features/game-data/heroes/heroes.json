@@ -213,7 +213,7 @@
     "id": "camazotz",
     "name": {
       "en": "Camazotz",
-      "ru": "Камазотль"
+      "ru": "Камасоц"
     },
     "icon": "/img/heroes/camazotz.png",
     "rarity": "ssr",
@@ -293,7 +293,7 @@
     "id": "circe",
     "name": {
       "en": "Circe",
-      "ru": "Цирцея"
+      "ru": "Кирка"
     },
     "icon": "/img/heroes/circe.png",
     "rarity": "ssr",
@@ -341,7 +341,7 @@
     "id": "daji",
     "name": {
       "en": "Daji",
-      "ru": "Дацзи"
+      "ru": "Даджи"
     },
     "icon": "/img/heroes/daji.png",
     "rarity": "ssr",
@@ -390,7 +390,7 @@
     "id": "dullahan",
     "name": {
       "en": "Dullahan",
-      "ru": "Дуллахан"
+      "ru": "Дюллахан"
     },
     "icon": "/img/heroes/dullahan.png",
     "rarity": "ssr",
@@ -486,7 +486,7 @@
     "id": "gabriel",
     "name": {
       "en": "Gabriel",
-      "ru": "Гавриил"
+      "ru": "Габриэлла"
     },
     "icon": "/img/heroes/gabriel.png",
     "rarity": "ssr",
@@ -518,7 +518,7 @@
     "id": "ganjiang-moye",
     "name": {
       "en": "Ganjiang & Moye",
-      "ru": "Ганьцзян и Мо Е"
+      "ru": "Ганьцзян и Мое"
     },
     "icon": "/img/heroes/ganjiang-moye.png",
     "rarity": "ssr",
@@ -567,7 +567,7 @@
     "id": "hattori-hanzo",
     "name": {
       "en": "Hattori Hanzo",
-      "ru": "Хаттори Ханзо"
+      "ru": "Хаттори Хандзо"
     },
     "icon": "/img/heroes/hattori-hanzo.png",
     "rarity": "ssr",
@@ -583,7 +583,7 @@
     "id": "hela",
     "name": {
       "en": "Hela",
-      "ru": "Хела"
+      "ru": "Хель"
     },
     "icon": "/img/heroes/hela.png",
     "rarity": "ssr",
@@ -679,7 +679,7 @@
     "id": "iset",
     "name": {
       "en": "Iset",
-      "ru": "Исет"
+      "ru": "Исида"
     },
     "icon": "/img/heroes/iset.png",
     "rarity": "ur",
@@ -858,7 +858,7 @@
     "id": "luoshen",
     "name": {
       "en": "Luoshen",
-      "ru": "Ло Шэнь"
+      "ru": "Луошэнь"
     },
     "icon": "/img/heroes/luoshen.png",
     "rarity": "ssr",
@@ -968,12 +968,12 @@
     "releaseDate": null
   },
   {
-    "id": "nephyths",
+    "id": "nephthys",
     "name": {
-      "en": "Nephyths",
+      "en": "Nephthys",
       "ru": "Нефтида"
     },
-    "icon": "/img/heroes/nephyths.png",
+    "icon": "/img/heroes/nephthys.png",
     "rarity": "ssr",
     "role": "mage",
     "damageType": "magical",
@@ -1004,7 +1004,7 @@
     "id": "nuwa",
     "name": {
       "en": "Nuwa",
-      "ru": "Нува"
+      "ru": "Нюйва"
     },
     "icon": "/img/heroes/nuwa.png",
     "rarity": "ur",
@@ -1152,7 +1152,7 @@
   {
     "id": "sun-wukong",
     "name": {
-      "en": "Sun WuKong",
+      "en": "Sun Wukong",
       "ru": "Сунь Укун"
     },
     "icon": "/img/heroes/sun-wukong.png",
@@ -1186,7 +1186,7 @@
     "id": "tamamo-no-mae",
     "name": {
       "en": "Tamamo no Mae",
-      "ru": "Тамамо-но-Маэ"
+      "ru": "Тамамо-но маэ"
     },
     "icon": "/img/heroes/tamamo-no-mae.png",
     "rarity": "ssr",
@@ -1251,7 +1251,7 @@
     "id": "western-queen",
     "name": {
       "en": "Western Queen",
-      "ru": "Западная царица"
+      "ru": "Королева запада"
     },
     "icon": "/img/heroes/western-queen.png",
     "rarity": "ssr",
@@ -1266,8 +1266,8 @@
   {
     "id": "yi-sun-shin",
     "name": {
-      "en": "Yi Sun-Shin",
-      "ru": "И Сун-син"
+      "en": "Yi Sun-shin",
+      "ru": "Ли Сунсин"
     },
     "icon": "/img/heroes/yi-sun-shin.png",
     "rarity": "ssr",

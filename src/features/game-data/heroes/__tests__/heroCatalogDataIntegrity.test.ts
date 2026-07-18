@@ -35,7 +35,41 @@ function collectBuilds(tabs: readonly HeroBuildTab[]): DivinityBranchBuildExport
   });
 }
 
+const correctedHeroNames = {
+  camazotz: { en: "Camazotz", ru: "Камасоц" },
+  circe: { en: "Circe", ru: "Кирка" },
+  daji: { en: "Daji", ru: "Даджи" },
+  dullahan: { en: "Dullahan", ru: "Дюллахан" },
+  gabriel: { en: "Gabriel", ru: "Габриэлла" },
+  "ganjiang-moye": { en: "Ganjiang & Moye", ru: "Ганьцзян и Мое" },
+  "hattori-hanzo": { en: "Hattori Hanzo", ru: "Хаттори Хандзо" },
+  hela: { en: "Hela", ru: "Хель" },
+  iset: { en: "Iset", ru: "Исида" },
+  luoshen: { en: "Luoshen", ru: "Луошэнь" },
+  nephthys: { en: "Nephthys", ru: "Нефтида" },
+  nuwa: { en: "Nuwa", ru: "Нюйва" },
+  "sun-wukong": { en: "Sun Wukong", ru: "Сунь Укун" },
+  "tamamo-no-mae": { en: "Tamamo no Mae", ru: "Тамамо-но маэ" },
+  "western-queen": { en: "Western Queen", ru: "Королева запада" },
+  "yi-sun-shin": { en: "Yi Sun-shin", ru: "Ли Сунсин" },
+} as const;
+
 describe("master hero catalog", () => {
+  test.each(Object.entries(correctedHeroNames))(
+    "%s uses the current game localization",
+    (heroId, expectedName) => {
+      expect(heroes.find((hero) => hero.id === heroId)?.name).toEqual(expectedName);
+    },
+  );
+
+  test("the obsolete Nephyths id and icon path are absent", () => {
+    expect(heroes.some((hero) => hero.id === "nephyths")).toBe(false);
+    expect(heroes.some((hero) => hero.icon.includes("nephyths"))).toBe(false);
+    expect(heroes.find((hero) => hero.id === "nephthys")?.icon).toBe(
+      "/img/heroes/nephthys.png",
+    );
+  });
+
   test("every hero has required fields", () => {
     for (const hero of heroes) {
       expect(hero.id).toBeTruthy();

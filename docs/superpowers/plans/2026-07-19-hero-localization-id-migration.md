@@ -167,7 +167,7 @@ Apply these exact test-only replacements:
 ```text
 src/features/admin/__tests__/HeroGuideSelector.test.tsx
   Ганьцзян и Мо Е -> Ганьцзян и Мое
-  "Ганьцзян и\nМо Е" -> "Ганьцзян и\nМое"
+  "Ганьцзян и\nМо Е" -> "Ганьцзян\nи Мое"
 
 src/features/admin/__tests__/DivinityBranchBuilderScreen.test.tsx
   Выбрать героя Западная царица -> Выбрать героя Королева запада
