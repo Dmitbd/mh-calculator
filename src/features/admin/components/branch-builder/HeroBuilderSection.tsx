@@ -2,35 +2,35 @@ import { StyleSheet, View } from "react-native";
 
 import type { Hero } from "@/features/game-data/heroes/types";
 
-import { HeroSelectInput } from "../HeroSelectInput";
+import { HeroGuideSelector } from "../HeroGuideSelector";
 import { ValidationErrorMessages } from "../ValidationErrorMessages";
 
 type HeroBuilderSectionProps = {
   errors: readonly string[];
-  heroQuery: string;
+  heroListError: string | null;
   heroes: readonly Hero[];
-  onClearHero: () => void;
-  onQueryChange: (value: string) => void;
+  isHeroListLoading: boolean;
+  onRetryHeroList: () => void;
   onSelectHero: (heroId: string) => void;
   selectedHeroId: string | null;
 };
 
 export function HeroBuilderSection({
   errors,
-  heroQuery,
+  heroListError,
   heroes,
-  onClearHero,
-  onQueryChange,
+  isHeroListLoading,
+  onRetryHeroList,
   onSelectHero,
   selectedHeroId,
 }: HeroBuilderSectionProps) {
   return (
     <View style={styles.wrapper}>
-      <HeroSelectInput
-        heroQuery={heroQuery}
+      <HeroGuideSelector
+        error={heroListError}
         heroes={heroes}
-        onClearHero={onClearHero}
-        onQueryChange={onQueryChange}
+        isLoading={isHeroListLoading}
+        onRetry={onRetryHeroList}
         onSelectHero={onSelectHero}
         selectedHeroId={selectedHeroId}
       />
