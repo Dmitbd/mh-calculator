@@ -169,6 +169,85 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
   });
 
+  it("gates a new session after signing out from a completed hero list", async () => {
+    let resolveSecondRequest!: (ids: string[]) => void;
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchPublishedHeroIds
+      .mockResolvedValueOnce([])
+      .mockImplementationOnce(
+        () =>
+          new Promise<string[]>((resolve) => {
+            resolveSecondRequest = resolve;
+          }),
+      );
+    mockSignOutAdmin.mockResolvedValue(undefined);
+    mockSignInAdmin.mockResolvedValue({ email: "admin@example.com" });
+
+    renderAdminBuilder();
+
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    expect(screen.getByLabelText("Выбрать героя Бастет")).toBeTruthy();
+    fireEvent.press(screen.getByText("Выйти"));
+    await screen.findByPlaceholderText("Email");
+
+    mockHeroBuilderSectionProps.mockClear();
+    fireEvent.changeText(screen.getByPlaceholderText("Email"), "admin@example.com");
+    fireEvent.changeText(screen.getByPlaceholderText("Пароль"), "secret");
+    fireEvent.press(screen.getByText("Войти"));
+
+    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(2));
+    expect(mockHeroBuilderSectionProps.mock.calls[0][0]).toMatchObject({
+      isHeroListLoading: true,
+    });
+    expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
+
+    await act(async () => {
+      resolveSecondRequest([]);
+    });
+  });
+
+  it("ignores an initial hero-list response that resolves after sign-out", async () => {
+    let resolveInitialRequest!: (ids: string[]) => void;
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchPublishedHeroIds
+      .mockImplementationOnce(
+        () =>
+          new Promise<string[]>((resolve) => {
+            resolveInitialRequest = resolve;
+          }),
+      )
+      .mockReturnValueOnce(new Promise(() => undefined));
+    mockSignOutAdmin.mockResolvedValue(undefined);
+    mockSignInAdmin.mockResolvedValue({ email: "admin@example.com" });
+
+    renderAdminBuilder();
+
+    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1));
+    fireEvent.press(screen.getByText("Выйти"));
+    await screen.findByPlaceholderText("Email");
+    await act(async () => {
+      resolveInitialRequest(["bastet"]);
+    });
+
+    mockHeroBuilderSectionProps.mockClear();
+    fireEvent.changeText(screen.getByPlaceholderText("Email"), "admin@example.com");
+    fireEvent.changeText(screen.getByPlaceholderText("Пароль"), "secret");
+    fireEvent.press(screen.getByText("Войти"));
+
+    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(2));
+    const firstAuthenticatedProps = mockHeroBuilderSectionProps.mock.calls[0][0];
+    const firstAuthenticatedHeroes = firstAuthenticatedProps.heroes as Array<{
+      id: string;
+    }>;
+
+    expect(firstAuthenticatedProps).toMatchObject({ isHeroListLoading: true });
+    expect(firstAuthenticatedHeroes.some((hero) => hero.id === "bastet")).toBe(
+      true,
+    );
+  });
+
   it("renders builder controls and validates an incomplete form", async () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
     const view = renderAdminBuilder();

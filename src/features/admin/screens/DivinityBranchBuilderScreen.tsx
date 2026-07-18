@@ -162,6 +162,13 @@ export function DivinityBranchBuilderScreen({
   const [isHeroListLoading, setIsHeroListLoading] = useState(true);
   const [heroListError, setHeroListError] = useState<string | null>(null);
 
+  const resetPublishedHeroList = useCallback(() => {
+    heroListRequestId.current += 1;
+    setPublishedHeroIds([]);
+    setHeroListError(null);
+    setIsHeroListLoading(true);
+  }, []);
+
   const loadPublishedHeroIds = useCallback(async () => {
     const requestId = heroListRequestId.current + 1;
     heroListRequestId.current = requestId;
@@ -204,10 +211,22 @@ export function DivinityBranchBuilderScreen({
   }, []);
 
   useEffect(() => {
-    if (isAuthChecked && adminSession) {
-      void loadPublishedHeroIds();
+    if (!isAuthChecked) {
+      return;
     }
-  }, [adminSession, isAuthChecked, loadPublishedHeroIds]);
+
+    if (!adminSession) {
+      resetPublishedHeroList();
+      return;
+    }
+
+    void loadPublishedHeroIds();
+  }, [
+    adminSession,
+    isAuthChecked,
+    loadPublishedHeroIds,
+    resetPublishedHeroList,
+  ]);
 
   useEffect(() => {
     if (initialAdminSession !== undefined) {
@@ -701,6 +720,7 @@ export function DivinityBranchBuilderScreen({
     const client = getSupabaseClient();
 
     if (!client) {
+      resetPublishedHeroList();
       setAdminSession(null);
       setToast({ kind: "success", message: "Выход выполнен." });
       setIsAuthPending(false);
@@ -709,6 +729,7 @@ export function DivinityBranchBuilderScreen({
 
     try {
       await signOutAdmin(client);
+      resetPublishedHeroList();
       setAdminSession(null);
       setToast({ kind: "success", message: "Выход выполнен." });
     } catch (error) {
