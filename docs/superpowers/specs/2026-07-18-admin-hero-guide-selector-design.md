@@ -67,6 +67,17 @@ The existing search input is replaced by an expandable control inside the hero s
 
 ## Layout
 
+When expanded, the toggle and hero catalog read as one continuous panel:
+
+- the toggle is the panel header and keeps the existing selector background and border;
+- the catalog uses the same background and border color as the toggle;
+- the header loses its bottom corner rounding and the catalog loses its top corner rounding;
+- a single thin divider separates the header from the catalog;
+- the catalog has 16px inner padding so section labels and cards do not touch the border;
+- the closed state remains the current standalone rounded toggle.
+
+This shared panel treatment applies to the complete catalog, not separately to the UR and SSR sections. It must not add nested section borders or change card dimensions.
+
 The expanded content renders sections in this order:
 
 1. `UR`: one adaptive grid containing every available UR hero.
@@ -150,6 +161,7 @@ Screen tests cover:
 
 - The admin builder has no hero text search.
 - The selector opens inline from `Выбрать героя`.
+- The expanded toggle and full hero catalog form one bordered panel with a shared background.
 - Only heroes without a published Supabase guide are offered in create mode.
 - UR heroes appear first in one grid.
 - SSR heroes appear below and are grouped by faction.
