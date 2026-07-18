@@ -1,5 +1,12 @@
 import { useMemo, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import { heroFactions } from "@/features/game-data/heroes/heroDictionaries";
 import type { Hero } from "@/features/game-data/heroes/types";
@@ -39,10 +46,12 @@ export function HeroGuideSelector({
 
   return (
     <View style={styles.wrapper}>
-      {!isLoading && !error ? (
+      {!error ? (
         <Pressable
           accessibilityLabel={
-            selectedHero
+            isLoading
+              ? "Загрузка героев"
+              : selectedHero
               ? `Изменить героя: ${selectedHero.name.ru}`
               : "Выбрать героя"
           }
@@ -51,7 +60,16 @@ export function HeroGuideSelector({
           onPress={() => setIsExpanded((current) => !current)}
           style={[styles.toggle, isExpanded ? styles.toggleExpanded : null]}
         >
-          {selectedHero ? (
+          {isLoading ? (
+            <View style={styles.loadingHeader}>
+              <ActivityIndicator
+                accessibilityLabel="Загрузка героев"
+                color="#d6c2a4"
+                size="small"
+              />
+              <Text style={styles.toggleText}>Загрузка героев</Text>
+            </View>
+          ) : selectedHero ? (
             <View style={styles.toggleHero}>
               <Image
                 accessibilityLabel={`${selectedHero.name.ru} selected hero`}
@@ -77,7 +95,7 @@ export function HeroGuideSelector({
         </Pressable>
       ) : null}
 
-      {selectedHero && (isLoading || error) ? (
+      {selectedHero && error ? (
         <View style={styles.grid}>
           <HeroOption
             hero={selectedHero}
@@ -87,11 +105,7 @@ export function HeroGuideSelector({
         </View>
       ) : null}
 
-      {isLoading ? (
-        <Text accessibilityLiveRegion="polite" style={styles.stateText}>
-          Загружаем доступных героев...
-        </Text>
-      ) : error ? (
+      {error ? (
         <View style={styles.stateCard}>
           <Text accessibilityLiveRegion="polite" style={styles.stateText}>
             Не удалось загрузить список опубликованных гайдов
@@ -106,7 +120,15 @@ export function HeroGuideSelector({
         </View>
       ) : isExpanded ? (
         <View style={styles.expandedContent} testID="hero-selector-content">
-          {heroes.length === 0 ? (
+          {isLoading ? (
+            <View style={styles.loadingPanel}>
+              <ActivityIndicator
+                accessibilityLabel="Загрузка списка героев"
+                color="#d6c2a4"
+                size="small"
+              />
+            </View>
+          ) : heroes.length === 0 ? (
             <Text accessibilityLiveRegion="polite" style={styles.stateText}>
               Все герои уже имеют опубликованные гайды
             </Text>
@@ -294,6 +316,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     minWidth: 0,
   },
+  loadingHeader: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: 8,
+  },
   toggleHeroPortrait: {
     backgroundColor: "#271610",
     borderRadius: 4,
@@ -326,6 +354,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: -9,
     padding: 16,
+  },
+  loadingPanel: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 72,
   },
   section: {
     gap: 8,

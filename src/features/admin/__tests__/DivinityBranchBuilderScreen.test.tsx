@@ -193,8 +193,8 @@ describe("DivinityBranchBuilderScreen", () => {
 
     await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(2));
-    expect(screen.getByText("Загружаем доступных героев...")).toBeTruthy();
-    expect(screen.getByLabelText("Герой Бастет выбран")).toBeTruthy();
+    expect(screen.getByText("Загрузка героев")).toBeTruthy();
+    expect(screen.queryByLabelText("Герой Бастет выбран")).toBeNull();
 
     await act(async () => {
       resolveRefresh(["bastet"]);

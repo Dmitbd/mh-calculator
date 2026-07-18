@@ -222,10 +222,7 @@ it("treats a second press on the selected hero as a no-op", () => {
 
 it("shows loading, retryable error, and empty states", () => {
   const { rerender } = render(<HeroGuideSelector {...props} isLoading />);
-  expect(
-    screen.getByText("Загружаем доступных героев...").props
-      .accessibilityLiveRegion,
-  ).toBe("polite");
+  expect(screen.getByText("Загрузка героев")).toBeTruthy();
 
   rerender(<HeroGuideSelector {...props} error="failed" />);
   expect(
@@ -240,7 +237,25 @@ it("shows loading, retryable error, and empty states", () => {
   expect(screen.getByText("Все герои уже имеют опубликованные гайды")).toBeTruthy();
 });
 
-it("keeps only the selected hero visible while availability is loading", () => {
+it("keeps an interactive loading header and restores an open catalog", () => {
+  const view = render(<HeroGuideSelector {...props} isLoading />);
+
+  expect(screen.getByText("Загрузка героев")).toBeTruthy();
+  expect(screen.getByTestId("hero-selector-chevron")).toBeTruthy();
+
+  fireEvent.press(
+    screen.getByRole("button", { name: "Загрузка героев" }),
+  );
+
+  expect(screen.getByTestId("hero-selector-content")).toBeTruthy();
+  expect(screen.getByLabelText("Загрузка списка героев")).toBeTruthy();
+  expect(screen.queryByText("UR")).toBeNull();
+
+  view.rerender(<HeroGuideSelector {...props} />);
+  expect(screen.getByText("UR")).toBeTruthy();
+});
+
+it("does not expose hero options while availability is loading", () => {
   render(
     <HeroGuideSelector
       {...props}
@@ -249,8 +264,10 @@ it("keeps only the selected hero visible while availability is loading", () => {
     />,
   );
 
-  expect(screen.getByText("Загружаем доступных героев...")).toBeTruthy();
-  expect(screen.getByLabelText(`Герой ${ssrHero.name.ru} выбран`)).toBeTruthy();
+  expect(screen.getByText("Загрузка героев")).toBeTruthy();
+  expect(
+    screen.queryByLabelText(`Герой ${ssrHero.name.ru} выбран`),
+  ).toBeNull();
   expect(screen.queryByLabelText(`Выбрать героя ${urHero.name.ru}`)).toBeNull();
 });
 
