@@ -41,14 +41,39 @@ export function HeroGuideSelector({
     <View style={styles.wrapper}>
       {!isLoading && !error ? (
         <Pressable
-          accessibilityLabel="Выбрать героя"
+          accessibilityLabel={
+            selectedHero
+              ? `Изменить героя: ${selectedHero.name.ru}`
+              : "Выбрать героя"
+          }
           accessibilityRole="button"
           accessibilityState={{ expanded: isExpanded }}
           onPress={() => setIsExpanded((current) => !current)}
-          style={styles.toggle}
+          style={[styles.toggle, isExpanded ? styles.toggleExpanded : null]}
         >
-          <Text style={styles.toggleText}>Выбрать героя</Text>
-          <Text style={styles.chevron}>{isExpanded ? "⌃" : "⌄"}</Text>
+          {selectedHero ? (
+            <View style={styles.toggleHero}>
+              <Image
+                accessibilityLabel={`${selectedHero.name.ru} selected hero`}
+                source={{ uri: resolveAssetUri(selectedHero.icon) }}
+                style={styles.toggleHeroPortrait}
+              />
+              <Text
+                ellipsizeMode="tail"
+                numberOfLines={1}
+                style={styles.toggleHeroName}
+              >
+                {selectedHero.name.ru}
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.toggleText}>Выбрать героя</Text>
+          )}
+          <View style={styles.chevronBox} testID="hero-selector-chevron-box">
+            <Text style={styles.chevron} testID="hero-selector-chevron">
+              {isExpanded ? "▴" : "▾"}
+            </Text>
+          </View>
         </Pressable>
       ) : null}
 
@@ -80,35 +105,37 @@ export function HeroGuideSelector({
           </Pressable>
         </View>
       ) : isExpanded ? (
-        heroes.length === 0 ? (
-          <Text accessibilityLiveRegion="polite" style={styles.stateText}>
-            Все герои уже имеют опубликованные гайды
-          </Text>
-        ) : (
-          <View style={styles.content}>
-            {sections.urHeroes.length > 0 ? (
-              <HeroGrid
-                heroes={sections.urHeroes}
-                onSelectHero={onSelectHero}
-                selectedHeroId={selectedHeroId}
-                title="UR"
-              />
-            ) : null}
-            {sections.ssrGroups.length > 0 ? (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>SSR</Text>
-                {sections.ssrGroups.map((group) => (
-                  <FactionHeroGrid
-                    group={group}
-                    key={group.faction.id}
-                    onSelectHero={onSelectHero}
-                    selectedHeroId={selectedHeroId}
-                  />
-                ))}
-              </View>
-            ) : null}
-          </View>
-        )
+        <View style={styles.expandedContent} testID="hero-selector-content">
+          {heroes.length === 0 ? (
+            <Text accessibilityLiveRegion="polite" style={styles.stateText}>
+              Все герои уже имеют опубликованные гайды
+            </Text>
+          ) : (
+            <View style={styles.content}>
+              {sections.urHeroes.length > 0 ? (
+                <HeroGrid
+                  heroes={sections.urHeroes}
+                  onSelectHero={onSelectHero}
+                  selectedHeroId={selectedHeroId}
+                  title="UR"
+                />
+              ) : null}
+              {sections.ssrGroups.length > 0 ? (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>SSR</Text>
+                  {sections.ssrGroups.map((group) => (
+                    <FactionHeroGrid
+                      group={group}
+                      key={group.faction.id}
+                      onSelectHero={onSelectHero}
+                      selectedHeroId={selectedHeroId}
+                    />
+                  ))}
+                </View>
+              ) : null}
+            </View>
+          )}
+        </View>
       ) : null}
     </View>
   );
@@ -212,11 +239,21 @@ function HeroOption({ hero, onSelectHero, selectedHeroId }: HeroOptionProps) {
           </View>
         ) : null}
       </View>
-      <Text numberOfLines={1} style={styles.optionName}>
-        {hero.name.ru}
+      <Text numberOfLines={2} style={styles.optionName}>
+        {getWrappedHeroName(hero.name.ru)}
       </Text>
     </Pressable>
   );
+}
+
+function getWrappedHeroName(name: string) {
+  const words = name.trim().split(/\s+/);
+
+  if (words.length < 3) {
+    return name;
+  }
+
+  return `${words.slice(0, -2).join(" ")}\n${words.slice(-2).join(" ")}`;
 }
 
 const styles = StyleSheet.create({
@@ -234,18 +271,61 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  toggleExpanded: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
   toggleText: {
-    color: "#fff8ed",
+    color: "#d6c2a4",
     fontSize: 16,
     fontWeight: "700",
+  },
+  toggleHero: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: 8,
+    minWidth: 0,
+  },
+  toggleHeroName: {
+    color: "#d6c2a4",
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "700",
+    minWidth: 0,
+  },
+  toggleHeroPortrait: {
+    backgroundColor: "#271610",
+    borderRadius: 4,
+    height: 32,
+    width: 32,
   },
   chevron: {
     color: "#f3d9b3",
     fontSize: 18,
     fontWeight: "800",
+    lineHeight: 18,
+  },
+  chevronBox: {
+    alignItems: "center",
+    flexShrink: 0,
+    height: 24,
+    justifyContent: "center",
+    width: 24,
   },
   content: {
     gap: 12,
+  },
+  expandedContent: {
+    backgroundColor: "#241610",
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    borderColor: "#644932",
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderWidth: 1,
+    marginTop: -9,
+    padding: 16,
   },
   section: {
     gap: 8,
@@ -279,9 +359,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     gap: 4,
-    padding: 4,
+    height: 112,
+    padding: 8,
     position: "relative",
-    width: 72,
+    width: 104,
   },
   optionSelected: {
     borderColor: "#caa877",
@@ -290,6 +371,8 @@ const styles = StyleSheet.create({
     color: "#f7dfac",
     fontSize: 11,
     fontWeight: "700",
+    lineHeight: 14,
+    textAlign: "center",
     width: "100%",
   },
   portrait: {

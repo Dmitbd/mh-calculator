@@ -15,6 +15,7 @@ import { HeroGuideSelector } from "../components/HeroGuideSelector";
 const heroes = heroesData as Hero[];
 const urHero = heroes.find((hero) => hero.rarity === "ur")!;
 const ssrHero = heroes.find((hero) => hero.rarity === "ssr")!;
+const multiwordHero = heroes.find((hero) => hero.name.ru === "Ганьцзян и Мо Е")!;
 const options = [ssrHero, urHero];
 
 const props = {
@@ -37,6 +38,86 @@ it("renders UR before SSR after expanding", () => {
   expect(values.indexOf("UR")).toBeLessThan(values.indexOf("SSR"));
 });
 
+it("uses the project chevron pair without transforming its layout box", () => {
+  render(<HeroGuideSelector {...props} />);
+
+  const closedChevron = screen.getByTestId("hero-selector-chevron");
+  const closedChevronBox = screen.getByTestId("hero-selector-chevron-box");
+  expect(closedChevron.props.children).toBe("▾");
+  expect(StyleSheet.flatten(closedChevronBox.props.style)).toMatchObject({
+    alignItems: "center",
+    height: 24,
+    justifyContent: "center",
+    width: 24,
+  });
+  expect(StyleSheet.flatten(closedChevronBox.props.style).transform).toBeUndefined();
+
+  fireEvent.press(screen.getByLabelText("Выбрать героя"));
+
+  const openChevron = screen.getByTestId("hero-selector-chevron");
+  const openChevronBox = screen.getByTestId("hero-selector-chevron-box");
+  expect(openChevron.props.children).toBe("▴");
+  expect(StyleSheet.flatten(openChevronBox.props.style).transform).toBeUndefined();
+});
+
+it("shows the selected hero portrait and an ellipsized name in the toggle", () => {
+  render(<HeroGuideSelector {...props} selectedHeroId={urHero.id} />);
+
+  expect(
+    screen.getByLabelText(`Изменить героя: ${urHero.name.ru}`),
+  ).toBeTruthy();
+  expect(
+    screen.getByLabelText(`${urHero.name.ru} selected hero`),
+  ).toBeTruthy();
+  const selectedName = screen.getByText(urHero.name.ru);
+  expect(selectedName.props.ellipsizeMode).toBe("tail");
+  expect(selectedName.props.numberOfLines).toBe(1);
+  expect(screen.queryByText("Выбрать героя")).toBeNull();
+});
+
+it("uses the screen label color for the empty and selected toggle text", () => {
+  const view = render(<HeroGuideSelector {...props} />);
+
+  expect(
+    StyleSheet.flatten(screen.getByText("Выбрать героя").props.style).color,
+  ).toBe("#d6c2a4");
+
+  view.rerender(<HeroGuideSelector {...props} selectedHeroId={urHero.id} />);
+
+  expect(
+    StyleSheet.flatten(screen.getByText(urHero.name.ru).props.style).color,
+  ).toBe("#d6c2a4");
+});
+
+it("joins the expanded toggle and catalog into one bordered panel", () => {
+  render(<HeroGuideSelector {...props} />);
+
+  const toggle = screen.getByLabelText("Выбрать героя");
+  expect(StyleSheet.flatten(toggle.props.style)).not.toMatchObject({
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  });
+
+  fireEvent.press(toggle);
+
+  expect(
+    StyleSheet.flatten(screen.getByLabelText("Выбрать героя").props.style),
+  ).toMatchObject({
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  });
+  expect(
+    StyleSheet.flatten(screen.getByTestId("hero-selector-content").props.style),
+  ).toMatchObject({
+    backgroundColor: "#241610",
+    borderColor: "#644932",
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderWidth: 1,
+    padding: 16,
+  });
+});
+
 it("renders each SSR faction header with its catalog icon and Russian label", () => {
   render(<HeroGuideSelector {...props} />);
   fireEvent.press(screen.getByLabelText("Выбрать героя"));
@@ -51,7 +132,9 @@ it("renders each SSR faction header with its catalog icon and Russian label", ()
 
 it("renders a compact square portrait and keeps the check inside it", () => {
   render(<HeroGuideSelector {...props} selectedHeroId={urHero.id} />);
-  fireEvent.press(screen.getByLabelText("Выбрать героя"));
+  fireEvent.press(
+    screen.getByLabelText(`Изменить героя: ${urHero.name.ru}`),
+  );
 
   const portrait = screen.getByTestId(`hero-portrait-${urHero.id}`);
   const portraitStyle = StyleSheet.flatten(portrait.props.style);
@@ -70,6 +153,27 @@ it("renders a compact square portrait and keeps the check inside it", () => {
     width: 56,
   });
   expect(within(portrait).getByText("✓")).toBeTruthy();
+});
+
+it("uses a 104 by 112 card and allows the hero name to wrap to two lines", () => {
+  render(<HeroGuideSelector {...props} />);
+  fireEvent.press(screen.getByLabelText("Выбрать героя"));
+
+  const option = screen.getByLabelText(`Выбрать героя ${urHero.name.ru}`);
+  const optionStyle = StyleSheet.flatten(option.props.style);
+  const name = screen.getByText(urHero.name.ru);
+
+  expect(optionStyle).toMatchObject({ height: 112, width: 104 });
+  expect(name.props.numberOfLines).toBe(2);
+});
+
+it("wraps a multiword hero name between complete word groups", () => {
+  render(<HeroGuideSelector {...props} heroes={[multiwordHero]} />);
+  fireEvent.press(screen.getByLabelText("Выбрать героя"));
+
+  expect(screen.getByText("Ганьцзян и Мо Е").props.children).toBe(
+    "Ганьцзян и\nМо Е",
+  );
 });
 
 it("renders a controlled square placeholder when the portrait asset is missing", () => {
@@ -106,7 +210,9 @@ it("collapses the expanded selector on an explicit second toggle press", () => {
 
 it("treats a second press on the selected hero as a no-op", () => {
   render(<HeroGuideSelector {...props} selectedHeroId={urHero.id} />);
-  fireEvent.press(screen.getByLabelText("Выбрать героя"));
+  fireEvent.press(
+    screen.getByLabelText(`Изменить героя: ${urHero.name.ru}`),
+  );
 
   fireEvent.press(screen.getByLabelText(`Герой ${urHero.name.ru} выбран`));
 

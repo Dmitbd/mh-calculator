@@ -186,7 +186,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     await screen.findAllByText("Билд загружен для редактирования.");
     await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1));
-    fireEvent.press(screen.getByLabelText("Выбрать героя"));
+    fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
     expect(screen.getByLabelText("Герой Бастет выбран")).toBeTruthy();
 
     fireEvent.press(screen.getByText("Опубликовать"));
