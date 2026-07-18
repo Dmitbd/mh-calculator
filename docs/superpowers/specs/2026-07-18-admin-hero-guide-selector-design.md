@@ -97,7 +97,11 @@ The grid reduces its column count on narrow screens while preserving consistent 
 
 ## Loading, Error, And Empty States
 
-While the initial published-id request is pending, the hero section shows a compact loading state instead of an unfiltered catalog.
+While a published-id request is pending, the selector header remains visible and interactive. Its portrait/name content is replaced by a small activity indicator and the text `Загрузка героев`. The expansion arrow remains visible and reflects the current expanded state.
+
+The administrator may expand or collapse the selector while loading. If expanded, the shared catalog panel remains visible but replaces all hero cards and section headings with one centered activity indicator. Completing the request restores the normal selected hero and catalog without resetting the expanded state.
+
+The loading state never exposes an unfiltered catalog. It uses the existing React Native `ActivityIndicator` so the animation and accessibility behavior match other admin loading controls.
 
 If loading fails, the section shows:
 
@@ -146,6 +150,10 @@ Component tests cover:
 - showing the selected border and check mark;
 - treating a second press on the selected hero as a no-op;
 - loading, retryable error, and empty states.
+- loading header copy and activity indicator while preserving the arrow;
+- expanding and collapsing during loading;
+- showing only a centered activity indicator in the open loading panel;
+- restoring content without resetting expansion after loading completes.
 
 Screen tests cover:
 
@@ -169,4 +177,5 @@ Screen tests cover:
 - Selection keeps the panel open and adds a visible check mark to the portrait.
 - The published-id list refreshes after successful publication.
 - Loading, retryable error, and empty states prevent accidental duplicate-guide creation.
+- Loading replaces the header content with `Загрузка героев`, keeps the arrow usable, and shows only a loader inside an expanded catalog panel.
 - Edit mode keeps its current published hero available.
