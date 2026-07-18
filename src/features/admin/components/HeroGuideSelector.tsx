@@ -1,14 +1,15 @@
 import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { heroFactions } from "@/features/game-data/heroes/heroDictionaries";
 import type { Hero } from "@/features/game-data/heroes/types";
+import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
+import { IconPreview } from "@/shared/ui/IconPreview";
 
 import {
   getHeroGuideSelectorSections,
   type HeroGuideSelectorGroup,
 } from "../model/heroGuideSelector";
-import { IconPreview } from "@/shared/ui/IconPreview";
 
 type HeroGuideSelectorProps = {
   error: string | null;
@@ -62,10 +63,12 @@ export function HeroGuideSelector({
       ) : null}
 
       {isLoading ? (
-        <Text style={styles.stateText}>Загружаем доступных героев...</Text>
+        <Text accessibilityLiveRegion="polite" style={styles.stateText}>
+          Загружаем доступных героев...
+        </Text>
       ) : error ? (
         <View style={styles.stateCard}>
-          <Text style={styles.stateText}>
+          <Text accessibilityLiveRegion="polite" style={styles.stateText}>
             Не удалось загрузить список опубликованных гайдов
           </Text>
           <Pressable
@@ -78,7 +81,9 @@ export function HeroGuideSelector({
         </View>
       ) : isExpanded ? (
         heroes.length === 0 ? (
-          <Text style={styles.stateText}>Все герои уже имеют опубликованные гайды</Text>
+          <Text accessibilityLiveRegion="polite" style={styles.stateText}>
+            Все герои уже имеют опубликованные гайды
+          </Text>
         ) : (
           <View style={styles.content}>
             {sections.urHeroes.length > 0 ? (
@@ -143,7 +148,14 @@ type FactionHeroGridProps = {
 function FactionHeroGrid({ group, onSelectHero, selectedHeroId }: FactionHeroGridProps) {
   return (
     <View style={styles.factionSection}>
-      <Text style={styles.factionTitle}>{group.faction.name.ru}</Text>
+      <View style={styles.factionHeader}>
+        <IconPreview
+          label={group.faction.name.ru}
+          size={20}
+          source={group.faction.icon}
+        />
+        <Text style={styles.factionTitle}>{group.faction.name.ru}</Text>
+      </View>
       <View style={styles.grid}>
         {group.heroes.map((hero) => (
           <HeroOption
@@ -181,15 +193,28 @@ function HeroOption({ hero, onSelectHero, selectedHeroId }: HeroOptionProps) {
       }}
       style={[styles.option, isSelected ? styles.optionSelected : null]}
     >
-      <IconPreview label={hero.name.ru} size={56} source={hero.icon} />
+      <View style={styles.portrait} testID={`hero-portrait-${hero.id}`}>
+        {hero.icon ? (
+          <Image
+            accessibilityLabel={`${hero.name.ru} portrait`}
+            source={{ uri: resolveAssetUri(hero.icon) }}
+            style={styles.portraitImage}
+          />
+        ) : (
+          <View
+            accessibilityLabel={`${hero.name.ru} portrait placeholder`}
+            style={styles.portraitPlaceholder}
+          />
+        )}
+        {isSelected ? (
+          <View style={styles.selectedBadge}>
+            <Text style={styles.selectedBadgeText}>✓</Text>
+          </View>
+        ) : null}
+      </View>
       <Text numberOfLines={1} style={styles.optionName}>
         {hero.name.ru}
       </Text>
-      {isSelected ? (
-        <View style={styles.selectedBadge}>
-          <Text style={styles.selectedBadgeText}>✓</Text>
-        </View>
-      ) : null}
     </Pressable>
   );
 }
@@ -233,6 +258,11 @@ const styles = StyleSheet.create({
   factionSection: {
     gap: 6,
   },
+  factionHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
+  },
   factionTitle: {
     color: "#a89274",
     fontSize: 12,
@@ -261,6 +291,27 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     width: "100%",
+  },
+  portrait: {
+    borderRadius: 6,
+    height: 56,
+    position: "relative",
+    width: 56,
+  },
+  portraitImage: {
+    backgroundColor: "#271610",
+    borderRadius: 6,
+    height: 56,
+    width: 56,
+  },
+  portraitPlaceholder: {
+    backgroundColor: "transparent",
+    borderColor: "#6b5645",
+    borderRadius: 6,
+    borderStyle: "dashed",
+    borderWidth: 1,
+    height: 56,
+    width: 56,
   },
   selectedBadge: {
     alignItems: "center",

@@ -8,13 +8,43 @@ import {
 } from "@testing-library/react-native";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 
+import { getHeroBuildSet } from "@/features/game-data/heroes";
+import type { HeroBuildSet } from "@/features/game-data/heroes";
+
 import { DivinityBranchBuilderScreen } from "../screens/DivinityBranchBuilderScreen";
 
 const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
 const mockFetchPublishedHeroIds = jest.fn<Promise<string[]>, []>();
+const mockLoadPublishedHeroBuildSet = jest.fn();
+const mockSaveHeroBuildSet = jest.fn();
 const mockHeroBuilderSectionProps = jest.fn<void, [Record<string, unknown>]>();
 const mockSignInAdmin = jest.fn();
 const mockSignOutAdmin = jest.fn();
+
+function getValidBastetBuildSet(): HeroBuildSet {
+  const buildSet = JSON.parse(
+    JSON.stringify(getHeroBuildSet("bastet")),
+  ) as HeroBuildSet;
+
+  const addRequiredDivinitySkill = (tabs: HeroBuildSet["tabs"]) => {
+    tabs.forEach((tab) => {
+      if (tab.build) {
+        tab.build.divinitySkills = {
+          ...tab.build.divinitySkills,
+          base: ["asterial-brighten"],
+        };
+      }
+
+      if (tab.children) {
+        addRequiredDivinitySkill(tab.children);
+      }
+    });
+  };
+
+  addRequiredDivinitySkill(buildSet.tabs);
+
+  return buildSet;
+}
 
 jest.mock("@/features/builds", () => {
   const actual = jest.requireActual("@/features/builds");
@@ -22,6 +52,9 @@ jest.mock("@/features/builds", () => {
   return {
     ...actual,
     fetchPublishedHeroIds: () => mockFetchPublishedHeroIds(),
+    loadPublishedHeroBuildSet: (...args: unknown[]) =>
+      mockLoadPublishedHeroBuildSet(...args),
+    saveHeroBuildSet: (...args: unknown[]) => mockSaveHeroBuildSet(...args),
   };
 });
 
@@ -62,6 +95,10 @@ describe("DivinityBranchBuilderScreen", () => {
     mockGetSupabaseClient.mockReturnValue(null);
     mockFetchPublishedHeroIds.mockReset();
     mockFetchPublishedHeroIds.mockResolvedValue([]);
+    mockLoadPublishedHeroBuildSet.mockReset();
+    mockLoadPublishedHeroBuildSet.mockResolvedValue(getValidBastetBuildSet());
+    mockSaveHeroBuildSet.mockReset();
+    mockSaveHeroBuildSet.mockResolvedValue(undefined);
     mockHeroBuilderSectionProps.mockReset();
     mockSignInAdmin.mockReset();
     mockSignOutAdmin.mockReset();
@@ -123,6 +160,76 @@ describe("DivinityBranchBuilderScreen", () => {
 
     await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(2));
     expect(screen.getByLabelText("Выбрать героя")).toBeTruthy();
+  });
+
+  it("refreshes after publication, keeps the selected hero visible, and excludes it in fresh create", async () => {
+    let resolveRefresh!: (ids: string[]) => void;
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchPublishedHeroIds
+      .mockResolvedValueOnce([])
+      .mockImplementationOnce(
+        () =>
+          new Promise<string[]>((resolve) => {
+            resolveRefresh = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(["bastet"]);
+
+    const view = render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1));
+    fireEvent.press(screen.getByLabelText("Выбрать героя"));
+    expect(screen.getByLabelText("Герой Бастет выбран")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Опубликовать"));
+
+    await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(2));
+    expect(screen.getByText("Загружаем доступных героев...")).toBeTruthy();
+    expect(screen.getByLabelText("Герой Бастет выбран")).toBeTruthy();
+
+    await act(async () => {
+      resolveRefresh(["bastet"]);
+    });
+    expect(await screen.findAllByText("Билд опубликован.")).not.toHaveLength(0);
+    expect(screen.getByLabelText("Герой Бастет выбран")).toBeTruthy();
+
+    view.unmount();
+    renderAdminBuilder();
+
+    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(3));
+    fireEvent.press(screen.getByLabelText("Выбрать героя"));
+    expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
+  });
+
+  it("does not refresh published ids after publication fails", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockSaveHeroBuildSet.mockRejectedValue(new Error("publication failed"));
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1));
+    fireEvent.press(screen.getByText("Опубликовать"));
+
+    expect(
+      await screen.findAllByText("Ошибка Supabase: publication failed"),
+    ).not.toHaveLength(0);
+    expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1);
   });
 
   it("ignores an older published-id response after a newer refresh", async () => {
