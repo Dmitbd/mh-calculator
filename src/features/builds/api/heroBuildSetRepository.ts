@@ -65,7 +65,7 @@ export async function fetchPublishedHeroIds(
   >);
 
   if (error) {
-    return [];
+    throw new Error(error.message);
   }
 
   return data?.map((row) => row.hero_id) ?? [];

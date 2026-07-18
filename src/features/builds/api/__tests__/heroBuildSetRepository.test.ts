@@ -80,14 +80,14 @@ describe("heroBuildSetRepository", () => {
     expect(query.eq).toHaveBeenCalledWith("status", "published");
   });
 
-  it("returns an empty published hero id list when fetching fails", async () => {
+  it("throws when published hero ids cannot be loaded", async () => {
     const query = createQueryResult({
       data: null,
       error: { message: "network down" },
     });
     const client = { from: jest.fn(() => query) };
 
-    await expect(fetchPublishedHeroIds(client)).resolves.toEqual([]);
+    await expect(fetchPublishedHeroIds(client)).rejects.toThrow("network down");
   });
 
 
