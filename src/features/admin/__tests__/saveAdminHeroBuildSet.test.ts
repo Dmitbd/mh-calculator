@@ -1,7 +1,11 @@
 import type { HeroBuildSet } from "@/features/game-data/heroes/types";
+import { getHeroBuildSet } from "@/features/game-data/heroes";
 
 import { saveHeroBuildSet } from "@/features/builds";
-import { saveAdminHeroBuildSet } from "../api/saveAdminHeroBuildSet";
+import {
+  hasCreatePublicationConflict,
+  saveAdminHeroBuildSet,
+} from "../api/saveAdminHeroBuildSet";
 
 jest.mock("@/features/builds", () => ({
   saveHeroBuildSet: jest.fn(),
@@ -59,4 +63,9 @@ it("does not refresh after saving a draft", async () => {
   });
 
   expect(refreshPublishedHeroIds).not.toHaveBeenCalled();
+});
+
+it("does not treat a local-only build as a create publication conflict", () => {
+  expect(getHeroBuildSet("bastet")).not.toBeNull();
+  expect(hasCreatePublicationConflict(null)).toBe(false);
 });

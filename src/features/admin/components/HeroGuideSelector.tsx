@@ -32,38 +32,51 @@ export function HeroGuideSelector({
     () => getHeroGuideSelectorSections(heroes, heroFactions),
     [heroes],
   );
-
-  if (isLoading) {
-    return <Text style={styles.stateText}>Загружаем доступных героев...</Text>;
-  }
-
-  if (error) {
-    return (
-      <View style={styles.stateCard}>
-        <Text style={styles.stateText}>
-          Не удалось загрузить список опубликованных гайдов
-        </Text>
-        <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retryButton}>
-          <Text style={styles.retryText}>Повторить</Text>
-        </Pressable>
-      </View>
-    );
-  }
+  const selectedHero = selectedHeroId
+    ? heroes.find((hero) => hero.id === selectedHeroId) ?? null
+    : null;
 
   return (
     <View style={styles.wrapper}>
-      <Pressable
-        accessibilityLabel="Выбрать героя"
-        accessibilityRole="button"
-        accessibilityState={{ expanded: isExpanded }}
-        onPress={() => setIsExpanded((current) => !current)}
-        style={styles.toggle}
-      >
-        <Text style={styles.toggleText}>Выбрать героя</Text>
-        <Text style={styles.chevron}>{isExpanded ? "⌃" : "⌄"}</Text>
-      </Pressable>
+      {!isLoading && !error ? (
+        <Pressable
+          accessibilityLabel="Выбрать героя"
+          accessibilityRole="button"
+          accessibilityState={{ expanded: isExpanded }}
+          onPress={() => setIsExpanded((current) => !current)}
+          style={styles.toggle}
+        >
+          <Text style={styles.toggleText}>Выбрать героя</Text>
+          <Text style={styles.chevron}>{isExpanded ? "⌃" : "⌄"}</Text>
+        </Pressable>
+      ) : null}
 
-      {isExpanded ? (
+      {selectedHero && (isLoading || error) ? (
+        <View style={styles.grid}>
+          <HeroOption
+            hero={selectedHero}
+            onSelectHero={onSelectHero}
+            selectedHeroId={selectedHeroId}
+          />
+        </View>
+      ) : null}
+
+      {isLoading ? (
+        <Text style={styles.stateText}>Загружаем доступных героев...</Text>
+      ) : error ? (
+        <View style={styles.stateCard}>
+          <Text style={styles.stateText}>
+            Не удалось загрузить список опубликованных гайдов
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onRetry}
+            style={styles.retryButton}
+          >
+            <Text style={styles.retryText}>Повторить</Text>
+          </Pressable>
+        </View>
+      ) : isExpanded ? (
         heroes.length === 0 ? (
           <Text style={styles.stateText}>Все герои уже имеют опубликованные гайды</Text>
         ) : (

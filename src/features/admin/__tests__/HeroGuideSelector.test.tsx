@@ -54,3 +54,33 @@ it("shows loading, retryable error, and empty states", () => {
   fireEvent.press(screen.getByLabelText("Выбрать героя"));
   expect(screen.getByText("Все герои уже имеют опубликованные гайды")).toBeTruthy();
 });
+
+it("keeps only the selected hero visible while availability is loading", () => {
+  render(
+    <HeroGuideSelector
+      {...props}
+      isLoading
+      selectedHeroId={ssrHero.id}
+    />,
+  );
+
+  expect(screen.getByText("Загружаем доступных героев...")).toBeTruthy();
+  expect(screen.getByLabelText(`Герой ${ssrHero.name.ru} выбран`)).toBeTruthy();
+  expect(screen.queryByLabelText(`Выбрать героя ${urHero.name.ru}`)).toBeNull();
+});
+
+it("keeps only the selected hero visible when availability loading fails", () => {
+  render(
+    <HeroGuideSelector
+      {...props}
+      error="failed"
+      selectedHeroId={ssrHero.id}
+    />,
+  );
+
+  expect(
+    screen.getByText("Не удалось загрузить список опубликованных гайдов"),
+  ).toBeTruthy();
+  expect(screen.getByLabelText(`Герой ${ssrHero.name.ru} выбран`)).toBeTruthy();
+  expect(screen.queryByLabelText(`Выбрать героя ${urHero.name.ru}`)).toBeNull();
+});

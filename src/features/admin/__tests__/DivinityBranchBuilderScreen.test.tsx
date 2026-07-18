@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -11,6 +12,7 @@ import { DivinityBranchBuilderScreen } from "../screens/DivinityBranchBuilderScr
 
 const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
 const mockFetchPublishedHeroIds = jest.fn<Promise<string[]>, []>();
+const mockHeroBuilderSectionProps = jest.fn<void, [Record<string, unknown>]>();
 const mockSignInAdmin = jest.fn();
 const mockSignOutAdmin = jest.fn();
 
@@ -27,6 +29,20 @@ jest.mock("react-native-safe-area-context", () => ({
   __esModule: true,
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
+
+jest.mock("../components/branch-builder/HeroBuilderSection", () => {
+  const actual = jest.requireActual(
+    "../components/branch-builder/HeroBuilderSection",
+  );
+
+  return {
+    ...actual,
+    HeroBuilderSection: (props: Record<string, unknown>) => {
+      mockHeroBuilderSectionProps(props);
+      return actual.HeroBuilderSection(props as never);
+    },
+  };
+});
 
 jest.mock("@/shared/lib/supabaseClient", () => ({
   getSupabaseClient: () => mockGetSupabaseClient(),
@@ -46,6 +62,7 @@ describe("DivinityBranchBuilderScreen", () => {
     mockGetSupabaseClient.mockReturnValue(null);
     mockFetchPublishedHeroIds.mockReset();
     mockFetchPublishedHeroIds.mockResolvedValue([]);
+    mockHeroBuilderSectionProps.mockReset();
     mockSignInAdmin.mockReset();
     mockSignOutAdmin.mockReset();
   });
@@ -62,6 +79,18 @@ describe("DivinityBranchBuilderScreen", () => {
       />,
     );
   }
+
+  it("gates the first authenticated hero catalog render behind loading", () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchPublishedHeroIds.mockReturnValue(new Promise(() => undefined));
+
+    renderAdminBuilder();
+
+    expect(mockHeroBuilderSectionProps.mock.calls[0][0]).toMatchObject({
+      isHeroListLoading: true,
+    });
+    expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
+  });
 
   it("loads published ids after authentication and excludes those heroes", async () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
@@ -94,6 +123,50 @@ describe("DivinityBranchBuilderScreen", () => {
 
     await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(2));
     expect(screen.getByLabelText("Выбрать героя")).toBeTruthy();
+  });
+
+  it("ignores an older published-id response after a newer refresh", async () => {
+    let resolveFirstRequest!: (ids: string[]) => void;
+    let resolveSecondRequest!: (ids: string[]) => void;
+    const client = { from: jest.fn() };
+
+    mockGetSupabaseClient.mockReturnValue(client);
+    mockFetchPublishedHeroIds
+      .mockImplementationOnce(
+        () =>
+          new Promise<string[]>((resolve) => {
+            resolveFirstRequest = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<string[]>((resolve) => {
+            resolveSecondRequest = resolve;
+          }),
+      );
+    mockSignOutAdmin.mockResolvedValue(undefined);
+    mockSignInAdmin.mockResolvedValue({ email: "admin@example.com" });
+
+    renderAdminBuilder();
+
+    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1));
+    fireEvent.press(screen.getByText("Выйти"));
+    await screen.findByPlaceholderText("Email");
+    fireEvent.changeText(screen.getByPlaceholderText("Email"), "admin@example.com");
+    fireEvent.changeText(screen.getByPlaceholderText("Пароль"), "secret");
+    fireEvent.press(screen.getByText("Войти"));
+    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(2));
+
+    await act(async () => {
+      resolveSecondRequest(["bastet"]);
+    });
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
+
+    await act(async () => {
+      resolveFirstRequest([]);
+    });
+    expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
   });
 
   it("renders builder controls and validates an incomplete form", async () => {

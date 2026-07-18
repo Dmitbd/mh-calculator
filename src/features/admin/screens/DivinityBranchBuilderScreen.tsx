@@ -64,7 +64,10 @@ import {
   signOutAdmin,
   type AdminSession,
 } from "../api/adminAuthRepository";
-import { saveAdminHeroBuildSet } from "../api/saveAdminHeroBuildSet";
+import {
+  hasCreatePublicationConflict,
+  saveAdminHeroBuildSet,
+} from "../api/saveAdminHeroBuildSet";
 
 const SCREEN_PADDING = 20;
 const MAX_VALIDATION_TOAST_ERRORS = 5;
@@ -104,6 +107,7 @@ export function DivinityBranchBuilderScreen({
   );
   const pendingScrollTarget = useRef<PendingScrollTarget | null>(null);
   const loadedEditHeroId = useRef<string | null>(null);
+  const heroListRequestId = useRef(0);
   const {
     addArtifact,
     addRune,
@@ -155,10 +159,12 @@ export function DivinityBranchBuilderScreen({
   const [isPublishPending, setIsPublishPending] = useState(false);
   const [toast, setToast] = useState<StatusToastState>(null);
   const [publishedHeroIds, setPublishedHeroIds] = useState<string[]>([]);
-  const [isHeroListLoading, setIsHeroListLoading] = useState(false);
+  const [isHeroListLoading, setIsHeroListLoading] = useState(true);
   const [heroListError, setHeroListError] = useState<string | null>(null);
 
   const loadPublishedHeroIds = useCallback(async () => {
+    const requestId = heroListRequestId.current + 1;
+    heroListRequestId.current = requestId;
     const client = getSupabaseClient();
 
     if (!client) {
@@ -175,14 +181,25 @@ export function DivinityBranchBuilderScreen({
       const ids = await fetchPublishedHeroIds(
         client as unknown as HeroBuildSetSupabaseClient,
       );
+
+      if (requestId !== heroListRequestId.current) {
+        return;
+      }
+
       setPublishedHeroIds(ids);
     } catch (error) {
+      if (requestId !== heroListRequestId.current) {
+        return;
+      }
+
       setPublishedHeroIds([]);
       setHeroListError(
         error instanceof Error ? error.message : "Неизвестная ошибка Supabase.",
       );
     } finally {
-      setIsHeroListLoading(false);
+      if (requestId === heroListRequestId.current) {
+        setIsHeroListLoading(false);
+      }
     }
   }, []);
 
@@ -540,9 +557,8 @@ export function DivinityBranchBuilderScreen({
           client as unknown as HeroBuildSetSupabaseClient,
           heroId,
         );
-        const localBuildSet = getHeroBuildSet(heroId);
 
-        if (remoteBuildSet || localBuildSet) {
+        if (hasCreatePublicationConflict(remoteBuildSet)) {
           showBackendMessage(
             "error",
             "У героя уже есть билд. Откройте экран героя и нажмите «Редактировать».",
