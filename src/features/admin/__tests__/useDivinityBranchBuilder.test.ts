@@ -86,7 +86,6 @@ describe("useDivinityBranchBuilder", () => {
 
     expect(result.current.gameMode).toBe("pvp");
     expect(result.current.targetTabPath).toEqual(["pvp"]);
-    expect(result.current.heroQuery).toBe("");
     expect(result.current.selectedHeroId).toBeNull();
     expect(result.current.selectedHero).toBeNull();
     expect(result.current.heroName).toBe("");
@@ -104,18 +103,6 @@ describe("useDivinityBranchBuilder", () => {
     });
     expect(result.current.selectedArtifactIds).toEqual([]);
     expect(result.current.selectedRuneIds).toEqual([]);
-    expect(result.current.buildExport("2026-05-30T00:00:00.000Z")).toBeNull();
-  });
-
-  it("typing search query does not create a valid hero selection", () => {
-    const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
-
-    act(() => {
-      result.current.setHeroQuery("бас");
-    });
-
-    expect(result.current.selectedHeroId).toBeNull();
-    expect(result.current.heroQuery).toBe("бас");
     expect(result.current.buildExport("2026-05-30T00:00:00.000Z")).toBeNull();
   });
 
@@ -143,21 +130,8 @@ describe("useDivinityBranchBuilder", () => {
     });
 
     expect(result.current.selectedHeroId).toBe("bastet");
-    expect(result.current.heroQuery).toBe(hero?.name.ru);
     expect(result.current.heroName).toBe(hero?.name.ru);
     expect(result.current.selectedHero?.id).toBe("bastet");
-  });
-
-  it("editing text after selecting a hero clears selectedHeroId", () => {
-    const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
-
-    act(() => {
-      result.current.selectHero("bastet");
-      result.current.setHeroQuery("баст");
-    });
-
-    expect(result.current.selectedHeroId).toBeNull();
-    expect(result.current.heroQuery).toBe("баст");
   });
 
   it("stores user selections and builds the export json payload", () => {
@@ -558,7 +532,6 @@ describe("useDivinityBranchBuilder", () => {
     });
 
     expect(result.current.selectedHeroId).toBe("bastet");
-    expect(result.current.heroQuery).toBe("Бастет");
     expect(result.current.savedBuildsByPath.pvp).toBeTruthy();
     expect(result.current.savedBuildsByPath["pve/bosses"]).toBeTruthy();
     expect(result.current.savedBuildsByPath["pve/campaign"]).toBeTruthy();

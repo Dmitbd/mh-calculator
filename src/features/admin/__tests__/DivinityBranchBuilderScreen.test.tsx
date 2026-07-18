@@ -10,8 +10,18 @@ import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { DivinityBranchBuilderScreen } from "../screens/DivinityBranchBuilderScreen";
 
 const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
+const mockFetchPublishedHeroIds = jest.fn<Promise<string[]>, []>();
 const mockSignInAdmin = jest.fn();
 const mockSignOutAdmin = jest.fn();
+
+jest.mock("@/features/builds", () => {
+  const actual = jest.requireActual("@/features/builds");
+
+  return {
+    ...actual,
+    fetchPublishedHeroIds: () => mockFetchPublishedHeroIds(),
+  };
+});
 
 jest.mock("react-native-safe-area-context", () => ({
   __esModule: true,
@@ -34,6 +44,8 @@ describe("DivinityBranchBuilderScreen", () => {
 
   beforeEach(() => {
     mockGetSupabaseClient.mockReturnValue(null);
+    mockFetchPublishedHeroIds.mockReset();
+    mockFetchPublishedHeroIds.mockResolvedValue([]);
     mockSignInAdmin.mockReset();
     mockSignOutAdmin.mockReset();
   });
@@ -51,13 +63,47 @@ describe("DivinityBranchBuilderScreen", () => {
     );
   }
 
-  it("renders builder controls and validates an incomplete form", () => {
+  it("loads published ids after authentication and excludes those heroes", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchPublishedHeroIds.mockResolvedValue(["bastet"]);
+
+    renderAdminBuilder();
+
+    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1));
+    fireEvent.press(screen.getByLabelText("Выбрать героя"));
+
+    expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
+  });
+
+  it("shows a retry action instead of the unfiltered catalog after load failure", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchPublishedHeroIds
+      .mockRejectedValueOnce(new Error("network down"))
+      .mockResolvedValueOnce([]);
+
+    renderAdminBuilder();
+
+    expect(
+      await screen.findByText(
+        "Не удалось загрузить список опубликованных гайдов",
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
+
+    fireEvent.press(screen.getByText("Повторить"));
+
+    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(2));
+    expect(screen.getByLabelText("Выбрать героя")).toBeTruthy();
+  });
+
+  it("renders builder controls and validates an incomplete form", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
     const view = renderAdminBuilder();
 
     expect(screen.getByText("Builder")).toBeTruthy();
     expect(screen.getByLabelText("Select PvP build tab")).toBeTruthy();
     expect(screen.getByLabelText("Select PvE build tab")).toBeTruthy();
-    expect(screen.getByPlaceholderText("Начните вводить имя героя")).toBeTruthy();
+    expect(await screen.findByLabelText("Выбрать героя")).toBeTruthy();
     expect(screen.getByLabelText("Добавить оружие")).toBeTruthy();
     expect(screen.getByLabelText("Добавить руну")).toBeTruthy();
     expect(screen.getByText("Пробуждение оружия")).toBeTruthy();
@@ -328,24 +374,26 @@ describe("DivinityBranchBuilderScreen", () => {
     scrollToSpy.mockRestore();
   });
 
-  it("clears fixed field errors while the form is being filled", () => {
+  it("clears fixed field errors while the form is being filled", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
     renderAdminBuilder();
 
     fireEvent.press(screen.getByText("Сохранить вкладку"));
 
     expect(screen.getAllByText("Выберите героя из списка.")).toHaveLength(1);
 
-    fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "bastet");
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
     fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
 
     expect(screen.queryByText("Выберите героя из списка.")).toBeNull();
     expect(screen.getAllByText("Выберите оружие.")).toHaveLength(1);
   });
 
-  it("selects branch types from the grid column headers", () => {
+  it("selects branch types from the grid column headers", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
     renderAdminBuilder();
 
-    fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "bastet");
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
     fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
 
     fireEvent.press(screen.getByLabelText("Choose branch for центр"));
@@ -805,15 +853,6 @@ describe("DivinityBranchBuilderScreen", () => {
     ).toBeTruthy();
   });
 
-  it("shows hero error if text was typed but no dropdown option was selected", () => {
-    renderAdminBuilder();
-
-    fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "бастет без выбора");
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
-
-    expect(screen.getAllByText("Выберите героя из списка.").length).toBeTruthy();
-  });
-
   it("prefixes web branch header image paths with the configured base URL", () => {
     Object.defineProperty(Platform, "OS", { value: "web" });
     process.env.NODE_ENV = "production";
@@ -825,10 +864,11 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(images[0].props.src).toBe("/mh-calculator/img/branches/asterial.png");
   });
 
-  it("shows active weapon bonus when hero is selected and two nodes share a color", () => {
+  it("shows active weapon bonus when hero is selected and two nodes share a color", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
     renderAdminBuilder();
 
-    fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "bastet");
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
     fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
 
     fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, empty"));
@@ -842,30 +882,40 @@ describe("DivinityBranchBuilderScreen", () => {
     ).toBeTruthy();
   });
 
-  it("does not show weapon bonus when only one node of a color is selected", () => {
+  it("does not show weapon bonus when only one node of a color is selected", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
     renderAdminBuilder();
 
-    fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "bastet");
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
     fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
     fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, empty"));
 
     expect(screen.queryByText("Активные бонусы цветов")).toBeNull();
   });
 
-  it("hides weapon bonus when hero query changes without catalog selection", () => {
+  it("updates weapon bonuses when another hero is selected from the grid", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
     renderAdminBuilder();
 
-    fireEvent.changeText(screen.getByPlaceholderText("Начните вводить имя героя"), "bastet");
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
     fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
     fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, empty"));
     fireEvent.press(screen.getByLabelText("Weapon awakening slot 2, empty"));
     expect(screen.getByText("Активные бонусы цветов")).toBeTruthy();
 
-    fireEvent.changeText(
-      screen.getByPlaceholderText("Начните вводить имя героя"),
-      "бастет без выбора",
+    fireEvent.press(
+      screen.getByLabelText("Выбрать героя Западная царица"),
     );
 
-    expect(screen.queryByText("Активные бонусы цветов")).toBeNull();
+    expect(
+      screen.queryByText(
+        "Whenever this Hero's Health is below 50%, their Lifesteal increases by 4.5%.",
+      ),
+    ).toBeNull();
+    expect(
+      screen.getByText(
+        "When healing an ally unit with Health lower than 50%, increases this Hero's Health Bestowal by 3%.",
+      ),
+    ).toBeTruthy();
   });
 });

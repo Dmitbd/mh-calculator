@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   type LayoutChangeEvent,
   ScrollView,
@@ -15,8 +15,8 @@ import {
   deleteHeroBuildSet,
   DivinitySkillLoadoutSection,
   fetchPublishedHeroBuildSet,
+  fetchPublishedHeroIds,
   loadPublishedHeroBuildSet,
-  saveHeroBuildSet,
   type HeroBuildSetStatus,
   type HeroBuildSetSupabaseClient,
 } from "@/features/builds";
@@ -47,6 +47,7 @@ import { WeaponAwakeningSection } from "../components/branch-builder/WeaponAwake
 import { ValidationErrorMessages } from "../components/ValidationErrorMessages";
 import { useDivinityBranchBuilder } from "../hooks/useDivinityBranchBuilder";
 import { getBranchBuilderTargetTabs } from "../model/branchBuilderTabs";
+import { getSelectableBuilderHeroes } from "../model/heroGuideSelector";
 import type {
   BranchBuildValidationError,
   BranchColumnId,
@@ -63,6 +64,7 @@ import {
   signOutAdmin,
   type AdminSession,
 } from "../api/adminAuthRepository";
+import { saveAdminHeroBuildSet } from "../api/saveAdminHeroBuildSet";
 
 const SCREEN_PADDING = 20;
 const MAX_VALIDATION_TOAST_ERRORS = 5;
@@ -107,9 +109,7 @@ export function DivinityBranchBuilderScreen({
     addRune,
     buildValidationDraft,
     buildFullExport,
-    clearSelectedHero,
     cycleWeaponAwakeningSlot,
-    heroQuery,
     loadBuildSetForEditing,
     progressLevels,
     removeArtifact,
@@ -126,7 +126,6 @@ export function DivinityBranchBuilderScreen({
     selectedRuneIds,
     setColumnBranch,
     setColumnProgress,
-    setHeroQuery,
     setDivinitySkill,
     setMajorSkill,
     setTargetChildTab,
@@ -155,6 +154,43 @@ export function DivinityBranchBuilderScreen({
   const [isEditBuildLoading, setIsEditBuildLoading] = useState(false);
   const [isPublishPending, setIsPublishPending] = useState(false);
   const [toast, setToast] = useState<StatusToastState>(null);
+  const [publishedHeroIds, setPublishedHeroIds] = useState<string[]>([]);
+  const [isHeroListLoading, setIsHeroListLoading] = useState(false);
+  const [heroListError, setHeroListError] = useState<string | null>(null);
+
+  const loadPublishedHeroIds = useCallback(async () => {
+    const client = getSupabaseClient();
+
+    if (!client) {
+      setPublishedHeroIds([]);
+      setHeroListError("Supabase не настроен.");
+      setIsHeroListLoading(false);
+      return;
+    }
+
+    setIsHeroListLoading(true);
+    setHeroListError(null);
+
+    try {
+      const ids = await fetchPublishedHeroIds(
+        client as unknown as HeroBuildSetSupabaseClient,
+      );
+      setPublishedHeroIds(ids);
+    } catch (error) {
+      setPublishedHeroIds([]);
+      setHeroListError(
+        error instanceof Error ? error.message : "Неизвестная ошибка Supabase.",
+      );
+    } finally {
+      setIsHeroListLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthChecked && adminSession) {
+      void loadPublishedHeroIds();
+    }
+  }, [adminSession, isAuthChecked, loadPublishedHeroIds]);
 
   useEffect(() => {
     if (initialAdminSession !== undefined) {
@@ -304,6 +340,15 @@ export function DivinityBranchBuilderScreen({
     selections: weaponAwakeningSelections,
     combosData: branchBuilderWeaponAwakeningCombos,
   });
+  const selectableHeroes = useMemo(
+    () =>
+      getSelectableBuilderHeroes({
+        heroes: branchBuilderHeroes,
+        publishedHeroIds,
+        selectedHeroId,
+      }),
+    [publishedHeroIds, selectedHeroId],
+  );
 
   const {
     childTabs: buildTargetChildTabs,
@@ -506,9 +551,11 @@ export function DivinityBranchBuilderScreen({
         }
       }
 
-      await saveHeroBuildSet(client as unknown as HeroBuildSetSupabaseClient, {
+      await saveAdminHeroBuildSet({
         buildSet,
+        client: client as unknown as HeroBuildSetSupabaseClient,
         heroId,
+        refreshPublishedHeroIds: loadPublishedHeroIds,
         status,
       });
       showBackendMessage(
@@ -861,10 +908,10 @@ export function DivinityBranchBuilderScreen({
       >
         <HeroBuilderSection
           errors={heroErrors}
-          heroQuery={heroQuery}
-          heroes={branchBuilderHeroes}
-          onClearHero={clearSelectedHero}
-          onQueryChange={setHeroQuery}
+          heroListError={heroListError}
+          heroes={selectableHeroes}
+          isHeroListLoading={isHeroListLoading}
+          onRetryHeroList={() => void loadPublishedHeroIds()}
           onSelectHero={handleSelectHero}
           selectedHeroId={selectedHeroId}
         />
