@@ -100,3 +100,29 @@ export type ActiveBranchNode = {
   columnId: BranchColumnId;
   level: number;
 };
+
+export type DivinityGemLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+export type DivinityGemResourceId =
+  | 700361
+  | 700362
+  | 700363
+  | 700364
+  | 700365
+  | 700366
+  | 700367;
+
+export type DivinityGemChestId = "600001" | "600076";
+
+export type DivinityGemChestContent = {
+  resourceId: DivinityGemResourceId;
+  gemLevel: DivinityGemLevel;
+  amount: number;
+};
+
+export type DivinityGemChest = {
+  id: DivinityGemChestId;
+  name: string;
+  icon: string;
+  contents: DivinityGemChestContent[];
+};

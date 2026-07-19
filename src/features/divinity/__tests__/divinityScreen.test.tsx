@@ -209,7 +209,7 @@ test("autofill completes the selected range and disables manual circle progress"
   fireEvent.press(screen.getByLabelText("Переключить автозаполнение"));
 
   await waitFor(() => {
-    expect(screen.getByText("3")).toBeTruthy();
+    expect(screen.getByText("5")).toBeTruthy();
     expect(screen.getAllByText("2")[0]).toBeTruthy();
     expect(screen.getByLabelText("Понизить божественность").props.accessibilityState.disabled).toBe(true);
     expect(screen.getByLabelText("Повысить божественность").props.accessibilityState.disabled).toBe(true);
@@ -218,7 +218,7 @@ test("autofill completes the selected range and disables manual circle progress"
   fireEvent.press(screen.getByLabelText("Повысить божественность"));
 
   await waitFor(() => {
-    expect(screen.getByText("3")).toBeTruthy();
+    expect(screen.getByText("5")).toBeTruthy();
     expect(screen.getAllByText("2")[0]).toBeTruthy();
   });
 });
@@ -266,7 +266,7 @@ test("changing range during autofill resets manual progress when autofill is tur
   fireEvent.press(screen.getByLabelText("Переключить автозаполнение"));
 
   await waitFor(() => {
-    expect(screen.getByText("3")).toBeTruthy();
+    expect(screen.getByText("5")).toBeTruthy();
     expect(screen.getAllByText("2")[0]).toBeTruthy();
   });
 

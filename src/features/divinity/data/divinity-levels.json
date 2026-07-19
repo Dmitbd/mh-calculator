@@ -3,13 +3,13 @@
     "level": 1,
     "segmentCount": 3,
     "segmentCost": { "stone1": 1, "stone2": 0, "stone3": 0, "stone4": 0, "stone5": 0, "stone6": 0, "stone7": 0 },
-    "transitionCost": { "stone1": 0, "stone2": 2, "stone3": 0, "stone4": 0, "stone5": 0, "stone6": 0, "stone7": 0 }
+    "transitionCost": { "stone1": 2, "stone2": 0, "stone3": 0, "stone4": 0, "stone5": 0, "stone6": 0, "stone7": 0 }
   },
   {
     "level": 2,
     "segmentCount": 3,
     "segmentCost": { "stone1": 2, "stone2": 0, "stone3": 0, "stone4": 0, "stone5": 0, "stone6": 0, "stone7": 0 },
-    "transitionCost": { "stone1": 0, "stone2": 4, "stone3": 0, "stone4": 0, "stone5": 0, "stone6": 0, "stone7": 0 }
+    "transitionCost": { "stone1": 4, "stone2": 0, "stone3": 0, "stone4": 0, "stone5": 0, "stone6": 0, "stone7": 0 }
   },
   {
     "level": 3,
@@ -176,8 +176,8 @@
   },
   {
     "level": 30,
-    "segmentCount": 0,
-    "segmentCost": { "stone1": 0, "stone2": 0, "stone3": 0, "stone4": 0, "stone5": 0, "stone6": 0, "stone7": 0 },
+    "segmentCount": 6,
+    "segmentCost": { "stone1": 0, "stone2": 0, "stone3": 0, "stone4": 0, "stone5": 0, "stone6": 0, "stone7": 14 },
     "transitionCost": { "stone1": 0, "stone2": 0, "stone3": 0, "stone4": 0, "stone5": 0, "stone6": 0, "stone7": 0 }
   }
 ]

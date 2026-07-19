@@ -2,12 +2,12 @@ import levels from "../data/divinity-levels.json";
 import { calculateDivinityTotals } from "../model/calculateDivinityTotals";
 import { getCurrentDivinityStep } from "../model/getCurrentDivinityStep";
 
-test("divinity levels expose segment counts and stone costs", () => {
+test("divinity levels expose APK transition costs for levels 1 and 2", () => {
   expect(levels[0]).toMatchObject({
     level: 1,
     segmentCount: 3,
-    segmentCost: {
-      stone1: 1,
+    transitionCost: {
+      stone1: 2,
       stone2: 0,
       stone3: 0,
       stone4: 0,
@@ -15,9 +15,13 @@ test("divinity levels expose segment counts and stone costs", () => {
       stone6: 0,
       stone7: 0,
     },
+  });
+  expect(levels[1]).toMatchObject({
+    level: 2,
+    segmentCount: 3,
     transitionCost: {
-      stone1: 0,
-      stone2: 2,
+      stone1: 4,
+      stone2: 0,
       stone3: 0,
       stone4: 0,
       stone5: 0,
@@ -41,8 +45,8 @@ test("calculates cumulative costs for fully completed levels", () => {
     currentLevel: 3,
     filledSegments: 0,
     totalCost: {
-      stone1: 9,
-      stone2: 6,
+      stone1: 15,
+      stone2: 0,
       stone3: 0,
       stone4: 0,
       stone5: 0,
@@ -66,8 +70,8 @@ test("calculates partial costs inside the current level", () => {
     currentLevel: 2,
     filledSegments: 2,
     totalCost: {
-      stone1: 7,
-      stone2: 2,
+      stone1: 9,
+      stone2: 0,
       stone3: 0,
       stone4: 0,
       stone5: 0,
@@ -154,10 +158,38 @@ test("limits totals to the selected range", () => {
   });
 });
 
-test("includes level 30 as the maximum divinity level", () => {
+test("includes six APK segments at divinity level 30", () => {
   expect(levels[levels.length - 1]).toMatchObject({
     level: 30,
-    segmentCount: 0,
+    segmentCount: 6,
+    segmentCost: {
+      stone1: 0,
+      stone2: 0,
+      stone3: 0,
+      stone4: 0,
+      stone5: 0,
+      stone6: 0,
+      stone7: 14,
+    },
+  });
+});
+
+test("calculates APK totals from level 1 through fully filled level 30", () => {
+  expect(
+    calculateDivinityTotals(levels, {
+      startLevel: 1,
+      endLevel: 30,
+      currentLevel: 30,
+      filledSegments: 6,
+    }).totalCost,
+  ).toEqual({
+    stone1: 82,
+    stone2: 96,
+    stone3: 102,
+    stone4: 114,
+    stone5: 562,
+    stone6: 398,
+    stone7: 422,
   });
 });
 

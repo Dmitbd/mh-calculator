@@ -1,4 +1,9 @@
-export { divinityBranches, divinitySkills, divinityTreeTemplate } from "./catalog";
+export {
+  divinityBranches,
+  divinityGemChests,
+  divinitySkills,
+  divinityTreeTemplate,
+} from "./catalog";
 export { deriveSkillLevel } from "./deriveSkillLevel";
 export {
   DIVINITY_SKILL_AWAKENED_NODE_BUDGET,
