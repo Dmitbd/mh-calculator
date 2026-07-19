@@ -1,6 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { createEmptyDivinityOwnedResources } from "../model/divinityOwnedResources";
+import {
+  createEmptyDivinityOwnedResources,
+  normalizeDivinityOwnedResources,
+} from "../model/divinityOwnedResources";
 import type { DivinityOwnedResources } from "../model/types";
 
 const STORAGE_KEY = "divinity-resources";
@@ -24,17 +27,13 @@ export async function loadDivinityResources(): Promise<DivinityResourcesRecord> 
   }
 
   const parsed = JSON.parse(storedValue) as Partial<DivinityResourcesRecord>;
-  const defaults = createEmptyDivinityOwnedResources();
+  const normalized = normalizeDivinityOwnedResources({
+    chestCounts: parsed.chestCounts,
+    gemCounts: parsed.gemCounts,
+  });
 
   return {
-    chestCounts: {
-      ...defaults.chestCounts,
-      ...parsed.chestCounts,
-    },
-    gemCounts: {
-      ...defaults.gemCounts,
-      ...parsed.gemCounts,
-    },
+    ...normalized,
     updatedAt: parsed.updatedAt ?? new Date(0).toISOString(),
   };
 }
@@ -43,8 +42,7 @@ export async function saveDivinityResources(
   resources: DivinityOwnedResources,
 ): Promise<DivinityResourcesRecord> {
   const record: DivinityResourcesRecord = {
-    chestCounts: { ...resources.chestCounts },
-    gemCounts: { ...resources.gemCounts },
+    ...normalizeDivinityOwnedResources(resources),
     updatedAt: new Date().toISOString(),
   };
 

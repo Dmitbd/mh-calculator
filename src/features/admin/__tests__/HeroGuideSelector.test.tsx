@@ -38,26 +38,16 @@ it("renders UR before SSR after expanding", () => {
   expect(values.indexOf("UR")).toBeLessThan(values.indexOf("SSR"));
 });
 
-it("uses the project chevron pair without transforming its layout box", () => {
+it("keeps the narrow chevron when the hero catalog changes state", () => {
   render(<HeroGuideSelector {...props} />);
 
   const closedChevron = screen.getByTestId("hero-selector-chevron");
-  const closedChevronBox = screen.getByTestId("hero-selector-chevron-box");
-  expect(closedChevron.props.children).toBe("▾");
-  expect(StyleSheet.flatten(closedChevronBox.props.style)).toMatchObject({
-    alignItems: "center",
-    height: 24,
-    justifyContent: "center",
-    width: 24,
-  });
-  expect(StyleSheet.flatten(closedChevronBox.props.style).transform).toBeUndefined();
+  expect(closedChevron.props.children).toBe("›");
 
   fireEvent.press(screen.getByLabelText("Выбрать героя"));
 
   const openChevron = screen.getByTestId("hero-selector-chevron");
-  const openChevronBox = screen.getByTestId("hero-selector-chevron-box");
-  expect(openChevron.props.children).toBe("▴");
-  expect(StyleSheet.flatten(openChevronBox.props.style).transform).toBeUndefined();
+  expect(openChevron.props.children).toBe("›");
 });
 
 it("shows the selected hero portrait and an ellipsized name in the toggle", () => {

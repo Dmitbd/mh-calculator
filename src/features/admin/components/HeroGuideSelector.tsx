@@ -87,9 +87,15 @@ export function HeroGuideSelector({
           ) : (
             <Text style={styles.toggleText}>Выбрать героя</Text>
           )}
-          <View style={styles.chevronBox} testID="hero-selector-chevron-box">
+          <View
+            style={[
+              styles.chevronBox,
+              isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
+            ]}
+            testID="hero-selector-chevron-box"
+          >
             <Text style={styles.chevron} testID="hero-selector-chevron">
-              {isExpanded ? "▴" : "▾"}
+              ›
             </Text>
           </View>
         </Pressable>
@@ -340,6 +346,12 @@ const styles = StyleSheet.create({
     height: 24,
     justifyContent: "center",
     width: 24,
+  },
+  chevronCollapsed: {
+    transform: [{ rotate: "90deg" }],
+  },
+  chevronExpanded: {
+    transform: [{ rotate: "-90deg" }],
   },
   content: {
     gap: 12,

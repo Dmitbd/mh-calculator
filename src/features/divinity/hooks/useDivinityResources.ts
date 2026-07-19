@@ -5,7 +5,10 @@ import type {
   DivinityGemLevel,
 } from "@/features/game-data/divinity";
 
-import { createEmptyDivinityOwnedResources } from "../model/divinityOwnedResources";
+import {
+  createEmptyDivinityOwnedResources,
+  normalizeDivinityResourceCount,
+} from "../model/divinityOwnedResources";
 import type { DivinityOwnedResources } from "../model/types";
 import {
   loadDivinityResources,
@@ -50,42 +53,25 @@ export function useDivinityResources() {
     await saveDivinityResources(nextResources);
   };
 
-  const incrementChest = async (chestId: DivinityGemChestId) => {
+  const setChestCount = async (
+    chestId: DivinityGemChestId,
+    count: number,
+  ) => {
     await updateResources((current) => ({
       ...current,
       chestCounts: {
         ...current.chestCounts,
-        [chestId]: current.chestCounts[chestId] + 1,
+        [chestId]: normalizeDivinityResourceCount(count),
       },
     }));
   };
 
-  const decrementChest = async (chestId: DivinityGemChestId) => {
-    await updateResources((current) => ({
-      ...current,
-      chestCounts: {
-        ...current.chestCounts,
-        [chestId]: Math.max(0, current.chestCounts[chestId] - 1),
-      },
-    }));
-  };
-
-  const incrementGem = async (level: DivinityGemLevel) => {
+  const setGemCount = async (level: DivinityGemLevel, count: number) => {
     await updateResources((current) => ({
       ...current,
       gemCounts: {
         ...current.gemCounts,
-        [level]: current.gemCounts[level] + 1,
-      },
-    }));
-  };
-
-  const decrementGem = async (level: DivinityGemLevel) => {
-    await updateResources((current) => ({
-      ...current,
-      gemCounts: {
-        ...current.gemCounts,
-        [level]: Math.max(0, current.gemCounts[level] - 1),
+        [level]: normalizeDivinityResourceCount(count),
       },
     }));
   };
@@ -97,10 +83,8 @@ export function useDivinityResources() {
   return {
     resources,
     isLoaded,
-    incrementChest,
-    decrementChest,
-    incrementGem,
-    decrementGem,
+    setChestCount,
+    setGemCount,
     resetResources,
   };
 }

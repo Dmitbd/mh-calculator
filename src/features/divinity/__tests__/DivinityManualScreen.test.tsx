@@ -45,6 +45,21 @@ test("renders the manual sections and returns through navigation history", () =>
   ).toBeTruthy();
   expect(screen.getByText("Мои ресурсы")).toBeTruthy();
   expect(screen.getByText("Сброс прогресса")).toBeTruthy();
+  expect(
+    screen.getByText(
+      "Введите количество ресурса от 0 до 999 в поле рядом с его иконкой.",
+    ),
+  ).toBeTruthy();
+  expect(
+    screen.getByText(
+      "Новое значение попадёт в расчёт только после нажатия на галочку.",
+    ),
+  ).toBeTruthy();
+  expect(
+    screen.getByText(
+      "Чтобы очистить сохранённое значение, нажмите кнопку с урной.",
+    ),
+  ).toBeTruthy();
 
   fireEvent.press(screen.getByLabelText("Назад"));
 

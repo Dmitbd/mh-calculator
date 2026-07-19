@@ -44,3 +44,18 @@ test("resets only divinity resources", async () => {
   });
   expect(mockStorage.get("divinity-progress")).toBe("progress-sentinel");
 });
+
+test("normalizes legacy stored counts into the supported range", async () => {
+  mockStorage.set(
+    "divinity-resources",
+    JSON.stringify({
+      chestCounts: { "600001": 1_400, "600076": -2 },
+      gemCounts: { 1: 12.8, 7: "broken" },
+    }),
+  );
+
+  await expect(loadDivinityResources()).resolves.toMatchObject({
+    chestCounts: { "600001": 999, "600076": 0 },
+    gemCounts: { 1: 12, 7: 0 },
+  });
+});

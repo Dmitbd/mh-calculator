@@ -74,10 +74,8 @@ export default function DivinityScreen() {
   const {
     resources,
     isLoaded: areResourcesLoaded,
-    incrementChest,
-    decrementChest,
-    incrementGem,
-    decrementGem,
+    setChestCount,
+    setGemCount,
     resetResources,
   } = useDivinityResources();
   const autofillLevel =
@@ -178,17 +176,11 @@ export default function DivinityScreen() {
           />
           <DivinityResourcesPanel
             resources={resources}
-            onIncrementChest={(chestId) => {
-              void incrementChest(chestId);
+            onSetChest={(chestId, count) => {
+              void setChestCount(chestId, count);
             }}
-            onDecrementChest={(chestId) => {
-              void decrementChest(chestId);
-            }}
-            onIncrementGem={(level) => {
-              void incrementGem(level);
-            }}
-            onDecrementGem={(level) => {
-              void decrementGem(level);
+            onSetGem={(level, count) => {
+              void setGemCount(level, count);
             }}
             onReset={() => {
               void resetResources();

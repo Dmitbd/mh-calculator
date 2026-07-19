@@ -493,10 +493,10 @@ function WebBranchHeaderPicker({
               "aria-hidden": true,
               style: {
                 ...webStyles.chevron,
-                transform: open ? "rotate(180deg)" : "rotate(0deg)",
+                transform: open ? "rotate(-90deg)" : "rotate(90deg)",
               },
             },
-            "▾",
+            "›",
           )
         : null,
     ),

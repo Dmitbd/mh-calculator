@@ -39,38 +39,22 @@ function blockNextStorageWrite() {
   return () => releaseWrite();
 }
 
-test("updates and persists chest and gem counts", async () => {
+test("sets and persists normalized chest and gem counts", async () => {
   const { result } = renderHook(() => useDivinityResources());
 
   await waitFor(() => expect(result.current.isLoaded).toBe(true));
 
   await act(async () => {
-    await result.current.incrementChest("600001");
-    await result.current.incrementGem(7);
+    await result.current.setChestCount("600001", 1_200);
+    await result.current.setGemCount(7, -4);
   });
 
-  expect(result.current.resources.chestCounts["600001"]).toBe(1);
-  expect(result.current.resources.gemCounts[7]).toBe(1);
+  expect(result.current.resources.chestCounts["600001"]).toBe(999);
+  expect(result.current.resources.gemCounts[7]).toBe(0);
 
   const persisted = JSON.parse(mockStorage.get("divinity-resources") ?? "{}");
-  expect(persisted.chestCounts["600001"]).toBe(1);
-  expect(persisted.gemCounts[7]).toBe(1);
-});
-
-test("keeps zero counts nonnegative and retains rapid increments", async () => {
-  const { result } = renderHook(() => useDivinityResources());
-
-  await waitFor(() => expect(result.current.isLoaded).toBe(true));
-
-  await act(async () => {
-    await result.current.decrementChest("600076");
-    const firstIncrement = result.current.incrementGem(1);
-    const secondIncrement = result.current.incrementGem(1);
-    await Promise.all([firstIncrement, secondIncrement]);
-  });
-
-  expect(result.current.resources.chestCounts["600076"]).toBe(0);
-  expect(result.current.resources.gemCounts[1]).toBe(2);
+  expect(persisted.chestCounts["600001"]).toBe(999);
+  expect(persisted.gemCounts[7]).toBe(0);
 });
 
 test("resets owned resources", async () => {
@@ -79,8 +63,8 @@ test("resets owned resources", async () => {
   await waitFor(() => expect(result.current.isLoaded).toBe(true));
 
   await act(async () => {
-    await result.current.incrementChest("600076");
-    await result.current.incrementGem(6);
+    await result.current.setChestCount("600076", 1);
+    await result.current.setGemCount(6, 1);
     await result.current.resetResources();
   });
 
@@ -90,23 +74,23 @@ test("resets owned resources", async () => {
   });
 });
 
-test("an immediate increment after reset wins in state and storage", async () => {
+test("an immediate set after reset wins in state and storage", async () => {
   const { result } = renderHook(() => useDivinityResources());
 
   await waitFor(() => expect(result.current.isLoaded).toBe(true));
 
   await act(async () => {
-    await result.current.incrementChest("600001");
+    await result.current.setChestCount("600001", 1);
   });
 
   const releaseResetWrite = blockNextStorageWrite();
 
   await act(async () => {
     const resetPromise = result.current.resetResources();
-    const incrementPromise = result.current.incrementChest("600001");
+    const setCountPromise = result.current.setChestCount("600001", 1);
 
     releaseResetWrite();
-    await Promise.all([resetPromise, incrementPromise]);
+    await Promise.all([resetPromise, setCountPromise]);
   });
 
   const persisted = JSON.parse(mockStorage.get("divinity-resources") ?? "{}");

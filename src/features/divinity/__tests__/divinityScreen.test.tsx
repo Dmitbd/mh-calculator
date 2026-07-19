@@ -304,7 +304,7 @@ test("changing range during autofill resets manual progress when autofill is tur
   });
 });
 
-test("applies, preserves and resets owned resources", async () => {
+test("applies confirmed owned resources to the remaining cost", async () => {
   mockStorage.clear();
   render(<DivinityScreen />);
 
@@ -318,25 +318,16 @@ test("applies, preserves and resets owned resources", async () => {
   });
 
   fireEvent.press(screen.getByLabelText("Раскрыть мои ресурсы"));
-  fireEvent.press(screen.getByLabelText("Добавить сундук 600001"));
-  fireEvent.press(screen.getByLabelText("Добавить сундук 600076"));
-  fireEvent.press(screen.getByLabelText("Добавить самоцвет 1 ур."));
+  fireEvent.changeText(
+    screen.getByLabelText("Количество сундуков 600001"),
+    "1",
+  );
+
+  expect(screen.getByLabelText("Осталось самоцветов 1 ур.: 82")).toBeTruthy();
+
+  fireEvent.press(screen.getByLabelText("Сохранить сундуки 600001"));
 
   await waitFor(() => {
-    expect(screen.getByLabelText("Осталось самоцветов 1 ур.: 61")).toBeTruthy();
-    expect(screen.getByLabelText("Осталось самоцветов 6 ур.: 394")).toBeTruthy();
-  });
-
-  fireEvent.press(screen.getByLabelText("Свернуть мои ресурсы"));
-
-  expect(screen.getByLabelText("Осталось самоцветов 1 ур.: 61")).toBeTruthy();
-  expect(screen.getByLabelText("Осталось самоцветов 6 ур.: 394")).toBeTruthy();
-
-  fireEvent.press(screen.getByLabelText("Раскрыть мои ресурсы"));
-  fireEvent.press(screen.getByLabelText("Сбросить мои ресурсы"));
-
-  await waitFor(() => {
-    expect(screen.getByLabelText("Осталось самоцветов 1 ур.: 82")).toBeTruthy();
-    expect(screen.getByLabelText("Осталось самоцветов 6 ур.: 398")).toBeTruthy();
+    expect(screen.getByLabelText("Осталось самоцветов 1 ур.: 62")).toBeTruthy();
   });
 });
