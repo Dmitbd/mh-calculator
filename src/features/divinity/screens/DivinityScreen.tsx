@@ -4,10 +4,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { divinityLevels } from "@/features/divinity/data/divinityLevels";
 import { useDivinityProgress } from "@/features/divinity/hooks/useDivinityProgress";
+import { useDivinityResources } from "@/features/divinity/hooks/useDivinityResources";
 import { calculateDivinityTotals } from "@/features/divinity/model/calculateDivinityTotals";
+import { calculateRemainingDivinityCosts } from "@/features/divinity/model/calculateRemainingDivinityCosts";
 import { getCurrentDivinityStep } from "@/features/divinity/model/getCurrentDivinityStep";
 import { DivinityRing } from "@/features/divinity/ui/DivinityRing";
 import { DivinityRangeSelector } from "@/features/divinity/ui/DivinityRangeSelector";
+import { DivinityResourcesPanel } from "@/features/divinity/ui/DivinityResourcesPanel";
 import { DivinitySummary } from "@/features/divinity/ui/DivinitySummary";
 
 const SCREEN_PADDING = 24;
@@ -68,6 +71,15 @@ export default function DivinityScreen() {
     resetLevel,
     toggleAutofill,
   } = useDivinityProgress(divinityLevels);
+  const {
+    resources,
+    isLoaded: areResourcesLoaded,
+    incrementChest,
+    decrementChest,
+    incrementGem,
+    decrementGem,
+    resetResources,
+  } = useDivinityResources();
   const autofillLevel =
     divinityLevels.find((level) => level.level === endLevel) ?? null;
   const effectiveProgress = autofillEnabled
@@ -84,6 +96,10 @@ export default function DivinityScreen() {
         filledSegments,
       };
   const totalCost = calculateDivinityTotals(divinityLevels, effectiveProgress);
+  const remainingCost = calculateRemainingDivinityCosts(
+    totalCost.totalCost,
+    resources,
+  );
   const nextStep = autofillEnabled
     ? null
     : getCurrentDivinityStep(divinityLevels, {
@@ -93,7 +109,7 @@ export default function DivinityScreen() {
         filledSegments,
       });
 
-  if (!isLoaded) {
+  if (!isLoaded || !areResourcesLoaded) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.loadingText}>Загрузка прогресса...</Text>
@@ -114,6 +130,17 @@ export default function DivinityScreen() {
         ]}
       >
         <View style={styles.contentSection}>
+          <Pressable
+            accessibilityLabel="Открыть инструкцию"
+            accessibilityRole="button"
+            onPress={() => router.push("/divinity/manual")}
+            style={styles.instructionButton}
+          >
+            <View style={styles.instructionIcon}>
+              <Text style={styles.instructionIconText}>?</Text>
+            </View>
+            <Text style={styles.instructionButtonText}>Инструкция</Text>
+          </Pressable>
           <DivinityRangeSelector
             startLevel={startLevel}
             endLevel={endLevel}
@@ -149,7 +176,25 @@ export default function DivinityScreen() {
               void incrementLevel();
             }}
           />
-          <DivinitySummary totalCost={totalCost.totalCost} />
+          <DivinityResourcesPanel
+            resources={resources}
+            onIncrementChest={(chestId) => {
+              void incrementChest(chestId);
+            }}
+            onDecrementChest={(chestId) => {
+              void decrementChest(chestId);
+            }}
+            onIncrementGem={(level) => {
+              void incrementGem(level);
+            }}
+            onDecrementGem={(level) => {
+              void decrementGem(level);
+            }}
+            onReset={() => {
+              void resetResources();
+            }}
+          />
+          <DivinitySummary totalCost={remainingCost} />
           <Pressable
             accessibilityRole="button"
             onPress={() => {
@@ -210,6 +255,35 @@ const styles = StyleSheet.create({
   contentSection: {
     gap: 16,
     marginTop: 10,
+  },
+  instructionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderColor: "#734227",
+    borderRadius: 18,
+    backgroundColor: "#2a160e",
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+  },
+  instructionIcon: {
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 14,
+    backgroundColor: "#5a321c",
+  },
+  instructionIconText: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: "#fff3d1",
+  },
+  instructionButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#ffd8b0",
   },
   headerTitle: {
     flex: 1,

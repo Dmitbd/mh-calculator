@@ -1,3 +1,8 @@
+import type {
+  DivinityGemChestId,
+  DivinityGemLevel,
+} from "@/features/game-data/divinity";
+
 export type StoneCosts = {
   stone1: number;
   stone2: number;
@@ -21,4 +26,13 @@ export type DivinityProgress = {
   endLevel: number;
   currentLevel: number;
   filledSegments: number;
+};
+
+export type DivinityChestCounts = Record<DivinityGemChestId, number>;
+
+export type DivinityGemCounts = Record<DivinityGemLevel, number>;
+
+export type DivinityOwnedResources = {
+  chestCounts: DivinityChestCounts;
+  gemCounts: DivinityGemCounts;
 };

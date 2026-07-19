@@ -28,7 +28,12 @@ export function DivinitySummary({ totalCost }: DivinitySummaryProps) {
                 <GemIcon level={(index + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7} />
               <Text style={styles.metricLabel}>{metric.label}</Text>
             </View>
-            <Text style={styles.value}>{metric.value}</Text>
+            <Text
+              accessibilityLabel={`Осталось самоцветов ${index + 1} ур.: ${metric.value}`}
+              style={styles.value}
+            >
+              {metric.value}
+            </Text>
           </View>
         ))}
       </View>

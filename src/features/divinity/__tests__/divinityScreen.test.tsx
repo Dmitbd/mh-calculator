@@ -9,6 +9,7 @@ const mockRouter = {
   canGoBack: jest.fn(() => false),
   back: jest.fn(),
   replace: jest.fn(),
+  push: jest.fn(),
 };
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
@@ -28,12 +29,28 @@ jest.mock("react-native-safe-area-context", () => ({
 
 jest.mock("expo-router", () => ({
   __esModule: true,
-  router: mockRouter,
+  router: {
+    canGoBack: () => mockRouter.canGoBack(),
+    back: () => mockRouter.back(),
+    replace: (href: string) => mockRouter.replace(href),
+    push: (href: string) => mockRouter.push(href),
+  },
 }));
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
 import DivinityScreen from "../screens/DivinityScreen";
+
+test("opens the divinity instruction screen", async () => {
+  mockStorage.clear();
+  mockRouter.push.mockClear();
+  render(<DivinityScreen />);
+
+  await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
+  fireEvent.press(screen.getByLabelText("Открыть инструкцию"));
+
+  expect(mockRouter.push).toHaveBeenCalledWith("/divinity/manual");
+});
 
 test("increments level and shows updated totals", async () => {
   mockStorage.clear();
@@ -284,5 +301,42 @@ test("changing range during autofill resets manual progress when autofill is tur
     expect(screen.getByText("3")).toBeTruthy();
     expect(screen.getByLabelText("Понизить божественность").props.accessibilityState.disabled).toBe(true);
     expect(screen.getByLabelText("Повысить божественность").props.accessibilityState.disabled).toBe(false);
+  });
+});
+
+test("applies, preserves and resets owned resources", async () => {
+  mockStorage.clear();
+  render(<DivinityScreen />);
+
+  await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
+
+  fireEvent.press(screen.getByLabelText("Переключить автозаполнение"));
+
+  await waitFor(() => {
+    expect(screen.getByLabelText("Осталось самоцветов 1 ур.: 82")).toBeTruthy();
+    expect(screen.getByLabelText("Осталось самоцветов 6 ур.: 398")).toBeTruthy();
+  });
+
+  fireEvent.press(screen.getByLabelText("Раскрыть мои ресурсы"));
+  fireEvent.press(screen.getByLabelText("Добавить сундук 600001"));
+  fireEvent.press(screen.getByLabelText("Добавить сундук 600076"));
+  fireEvent.press(screen.getByLabelText("Добавить самоцвет 1 ур."));
+
+  await waitFor(() => {
+    expect(screen.getByLabelText("Осталось самоцветов 1 ур.: 61")).toBeTruthy();
+    expect(screen.getByLabelText("Осталось самоцветов 6 ур.: 394")).toBeTruthy();
+  });
+
+  fireEvent.press(screen.getByLabelText("Свернуть мои ресурсы"));
+
+  expect(screen.getByLabelText("Осталось самоцветов 1 ур.: 61")).toBeTruthy();
+  expect(screen.getByLabelText("Осталось самоцветов 6 ур.: 394")).toBeTruthy();
+
+  fireEvent.press(screen.getByLabelText("Раскрыть мои ресурсы"));
+  fireEvent.press(screen.getByLabelText("Сбросить мои ресурсы"));
+
+  await waitFor(() => {
+    expect(screen.getByLabelText("Осталось самоцветов 1 ур.: 82")).toBeTruthy();
+    expect(screen.getByLabelText("Осталось самоцветов 6 ур.: 398")).toBeTruthy();
   });
 });
