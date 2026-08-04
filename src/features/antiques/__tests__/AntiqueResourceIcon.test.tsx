@@ -5,46 +5,47 @@ jest.mock("@/shared/lib/resolveAssetUri", () => ({
 
 import { render, screen } from "@testing-library/react-native";
 
-import type { AntiqueResourceMetadata } from "@/features/game-data/antiques";
+import {
+  antiqueResourceCatalog,
+  type VerifiedAntiqueResourceMetadata,
+} from "@/features/game-data/antiques";
 import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
 
 import { AntiqueResourceIcon } from "../components/AntiqueResourceIcon";
 
-const confirmedIconResource: AntiqueResourceMetadata = {
-  kind: "tombMap",
-  label: "Карта гробницы",
-  fallbackLabel: "КГ",
-  resourceId: 700042,
-  spriteName: "700042",
-  icon: "/img/antiques/tomb-map-700042.png",
+const syntheticIconResource: VerifiedAntiqueResourceMetadata = {
+  kind: "researchCoins",
+  verification: "verified",
+  label: "Синтетический ресурс",
+  fallbackLabel: "СР",
+  resourceId: 1,
+  spriteName: "synthetic-sprite",
+  icon: "https://example.test/synthetic-icon.png",
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
 });
 
-test("resolves and renders a confirmed icon path", () => {
-  render(<AntiqueResourceIcon resource={confirmedIconResource} />);
+test("resolves the image branch for explicitly synthetic metadata", () => {
+  render(<AntiqueResourceIcon resource={syntheticIconResource} />);
 
-  expect(resolveAssetUri).toHaveBeenCalledWith(confirmedIconResource.icon);
-  expect(screen.getByLabelText("Карта гробницы").props.source).toEqual({
-    uri: "resolved:/img/antiques/tomb-map-700042.png",
+  expect(resolveAssetUri).toHaveBeenCalledWith(syntheticIconResource.icon);
+  expect(screen.getByLabelText("Синтетический ресурс").props.source).toEqual({
+    uri: "resolved:https://example.test/synthetic-icon.png",
   });
 });
 
-test("renders a controlled label without producing a broken image URI", () => {
-  const unresolvedResource: AntiqueResourceMetadata = {
-    kind: "researchCoins",
-    label: "Монеты исследования",
-    fallbackLabel: "МИ",
-  };
+test.each(Object.values(antiqueResourceCatalog))(
+  "renders the real $kind catalog entry through its controlled fallback",
+  (resource) => {
+    render(<AntiqueResourceIcon resource={resource} />);
 
-  render(<AntiqueResourceIcon resource={unresolvedResource} />);
-
-  expect(screen.getByText("МИ")).toBeTruthy();
-  expect(
-    screen.getByLabelText("Монеты исследования: иконка недоступна"),
-  ).toBeTruthy();
-  expect(resolveAssetUri).not.toHaveBeenCalled();
-  expect(screen.queryByRole("image")).toBeNull();
-});
+    expect(screen.getByText(resource.fallbackLabel)).toBeTruthy();
+    expect(
+      screen.getByLabelText(`${resource.label}: иконка недоступна`),
+    ).toBeTruthy();
+    expect(resolveAssetUri).not.toHaveBeenCalled();
+    expect(screen.queryByRole("image")).toBeNull();
+  },
+);
