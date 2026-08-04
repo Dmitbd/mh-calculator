@@ -12,20 +12,47 @@ test("defines every cumulative rivalry reward node", () => {
   expect(antiqueRivalryRewards.map((row) => row.score)).toEqual(
     Array.from({ length: 17 }, (_, index) => index * 750),
   );
-  expect(antiqueRivalryRewards.find((row) => row.score === 11_250)).toEqual({
-    score: 11_250,
-    tombMaps: 60,
-    templeMaps: 15,
-    legendaryChestFragments: 600,
-    mythicChestFragments: 150,
-  });
-  expect(antiqueRivalryRewards.at(-1)).toEqual({
-    score: 12_000,
-    tombMaps: 60,
-    templeMaps: 20,
-    legendaryChestFragments: 600,
-    mythicChestFragments: 200,
-  });
+  expect(
+    antiqueRivalryRewards.filter((row) =>
+      [3_000, 6_000, 9_000, 11_250, 12_000].includes(row.score),
+    ),
+  ).toEqual([
+    {
+      score: 3_000,
+      tombMaps: 15,
+      templeMaps: 5,
+      legendaryChestFragments: 150,
+      mythicChestFragments: 50,
+    },
+    {
+      score: 6_000,
+      tombMaps: 30,
+      templeMaps: 10,
+      legendaryChestFragments: 300,
+      mythicChestFragments: 100,
+    },
+    {
+      score: 9_000,
+      tombMaps: 45,
+      templeMaps: 15,
+      legendaryChestFragments: 450,
+      mythicChestFragments: 150,
+    },
+    {
+      score: 11_250,
+      tombMaps: 60,
+      templeMaps: 15,
+      legendaryChestFragments: 600,
+      mythicChestFragments: 150,
+    },
+    {
+      score: 12_000,
+      tombMaps: 60,
+      templeMaps: 20,
+      legendaryChestFragments: 600,
+      mythicChestFragments: 200,
+    },
+  ]);
 });
 
 test("keeps cumulative rewards monotonic", () => {

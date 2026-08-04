@@ -54,6 +54,7 @@ export default function AntiqueScreen() {
   const {
     input,
     isLoaded,
+    storageError,
     setCoins,
     setOwnedTombMaps,
     setOwnedTempleMaps,
@@ -84,6 +85,11 @@ export default function AntiqueScreen() {
         ]}
       >
         <View style={styles.contentSection}>
+          {storageError ? (
+            <View accessibilityRole="alert" style={styles.storageWarning}>
+              <Text style={styles.storageWarningText}>{storageError}</Text>
+            </View>
+          ) : null}
           <AntiqueSummary result={result} />
           <AntiqueCoinAllocation
             allocation={result.allocation}
@@ -183,6 +189,20 @@ const styles = StyleSheet.create({
   contentSection: {
     gap: 16,
     marginTop: 10,
+  },
+  storageWarning: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#9b642f",
+    backgroundColor: "#3a2114",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  storageWarningText: {
+    color: "#ffd8b0",
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "700",
   },
   loadingContainer: {
     flex: 1,
