@@ -21,7 +21,7 @@ jest.mock("expo-router", () => ({
   }) => require("react").cloneElement(children, { testID: `link-${href}` }),
 }));
 
-import { render, screen } from "@testing-library/react-native";
+import { render, screen, within } from "@testing-library/react-native";
 import type React from "react";
 
 import HomeScreen from "../screens/HomeScreen";
@@ -31,8 +31,9 @@ test("renders calculator and build entry points", () => {
 
   expect(screen.getByText("Калькуляторы")).toBeTruthy();
   expect(screen.getByText("Божественность")).toBeTruthy();
-  expect(screen.getByText("Антиквариат")).toBeTruthy();
-  expect(screen.getByTestId("link-/antiques")).toBeTruthy();
+  expect(
+    within(screen.getByTestId("link-/antiques")).getByText("Антиквариат"),
+  ).toBeTruthy();
   expect(screen.getByText("Билды")).toBeTruthy();
   expect(screen.getByText("Билды героев")).toBeTruthy();
   expect(screen.getByText("build builder")).toBeTruthy();
