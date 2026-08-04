@@ -23,6 +23,7 @@ let mockCalculatorState = {
     ownedTempleMaps: 0,
   },
   isLoaded: true,
+  storageError: null as string | null,
   setCoins: mockSetCoins,
   setOwnedTombMaps: mockSetOwnedTombMaps,
   setOwnedTempleMaps: mockSetOwnedTempleMaps,
@@ -71,6 +72,7 @@ beforeEach(() => {
       ownedTempleMaps: 0,
     },
     isLoaded: true,
+    storageError: null,
   };
 });
 
@@ -87,6 +89,24 @@ test("renders the loaded calculator sections with the initial summary first", ()
   expect(screen.getByText("Шкала наград")).toBeTruthy();
   expect(screen.getByText("Кешбэк")).toBeTruthy();
   expect(screen.getByText("Сбросить расчёт")).toBeTruthy();
+});
+
+test("shows a nonblocking persistence warning and keeps reset available", () => {
+  mockCalculatorState = {
+    ...mockCalculatorState,
+    storageError:
+      "Не удалось сохранить изменения. Калькулятор продолжает работать.",
+  };
+
+  render(<AntiqueScreen />);
+
+  expect(
+    screen.getByText(
+      "Не удалось сохранить изменения. Калькулятор продолжает работать.",
+    ),
+  ).toBeTruthy();
+  fireEvent.press(screen.getByText("Сбросить расчёт"));
+  expect(mockReset).toHaveBeenCalledTimes(1);
 });
 
 test("forwards input, conversion, and reset actions to the calculator hook", () => {

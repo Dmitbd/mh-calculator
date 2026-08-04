@@ -51,13 +51,13 @@ function defaultRecord(): AntiqueCalculatorRecord {
 }
 
 export async function loadAntiqueCalculator(): Promise<AntiqueCalculatorRecord> {
-  const storedValue = await AsyncStorage.getItem(STORAGE_KEY);
-
-  if (!storedValue) {
-    return defaultRecord();
-  }
-
   try {
+    const storedValue = await AsyncStorage.getItem(STORAGE_KEY);
+
+    if (!storedValue) {
+      return defaultRecord();
+    }
+
     const parsed = JSON.parse(storedValue) as Partial<AntiqueCalculatorRecord>;
 
     if (!parsed || typeof parsed !== "object") {

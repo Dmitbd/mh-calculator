@@ -18,30 +18,42 @@ type InputUpdater = (
   current: AntiqueCalculatorInput,
 ) => Partial<AntiqueRivalryInput>;
 
+const STORAGE_ERROR_MESSAGE =
+  "Не удалось сохранить изменения. Калькулятор продолжает работать.";
+
 export function useAntiqueCalculator() {
   const [input, setInput] = useState(createEmptyAntiqueCalculatorInput);
   const inputRef = useRef(input);
   const persistenceQueueRef = useRef<Promise<unknown>>(Promise.resolve());
   const [isLoaded, setIsLoaded] = useState(false);
+  const [storageError, setStorageError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
-    void loadAntiqueCalculator().then((record) => {
-      if (!isMounted) {
-        return;
-      }
+    void (async () => {
+      let loadedInput = createEmptyAntiqueCalculatorInput();
 
-      const loadedInput: AntiqueCalculatorInput = {
-        coins: record.coins,
-        templeMapAllocation: record.templeMapAllocation,
-        ownedTombMaps: record.ownedTombMaps,
-        ownedTempleMaps: record.ownedTempleMaps,
-      };
-      inputRef.current = loadedInput;
-      setInput(loadedInput);
-      setIsLoaded(true);
-    });
+      try {
+        const record = await loadAntiqueCalculator();
+        loadedInput = {
+          coins: record.coins,
+          templeMapAllocation: record.templeMapAllocation,
+          ownedTombMaps: record.ownedTombMaps,
+          ownedTempleMaps: record.ownedTempleMaps,
+        };
+      } catch {
+        loadedInput = createEmptyAntiqueCalculatorInput();
+      } finally {
+        if (!isMounted) {
+          return;
+        }
+
+        inputRef.current = loadedInput;
+        setInput(loadedInput);
+        setIsLoaded(true);
+      }
+    })();
 
     return () => {
       isMounted = false;
@@ -55,11 +67,20 @@ export function useAntiqueCalculator() {
     return queuedWrite;
   };
 
+  const persist = async (write: () => Promise<unknown>) => {
+    try {
+      await queuePersistence(write);
+      setStorageError(null);
+    } catch {
+      setStorageError(STORAGE_ERROR_MESSAGE);
+    }
+  };
+
   const updateInput = async (updater: InputUpdater) => {
     const nextInput = normalizeAntiqueCalculatorInput(updater(inputRef.current));
     inputRef.current = nextInput;
     setInput(nextInput);
-    await queuePersistence(() => saveAntiqueCalculator(nextInput));
+    await persist(() => saveAntiqueCalculator(nextInput));
   };
 
   const setCoins = async (coins: unknown) => {
@@ -92,12 +113,13 @@ export function useAntiqueCalculator() {
     const nextInput = createEmptyAntiqueCalculatorInput();
     inputRef.current = nextInput;
     setInput(nextInput);
-    await queuePersistence(resetAntiqueCalculator);
+    await persist(resetAntiqueCalculator);
   };
 
   return {
     input,
     isLoaded,
+    storageError,
     setCoins,
     setOwnedTombMaps,
     setOwnedTempleMaps,
