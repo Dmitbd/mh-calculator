@@ -12,6 +12,13 @@ test("defines every cumulative rivalry reward node", () => {
   expect(antiqueRivalryRewards.map((row) => row.score)).toEqual(
     Array.from({ length: 17 }, (_, index) => index * 750),
   );
+  expect(antiqueRivalryRewards.find((row) => row.score === 11_250)).toEqual({
+    score: 11_250,
+    tombMaps: 60,
+    templeMaps: 15,
+    legendaryChestFragments: 600,
+    mythicChestFragments: 150,
+  });
   expect(antiqueRivalryRewards.at(-1)).toEqual({
     score: 12_000,
     tombMaps: 60,
