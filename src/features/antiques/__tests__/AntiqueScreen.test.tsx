@@ -1,0 +1,158 @@
+const mockUseSafeAreaInsets = jest.fn(() => ({
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+}));
+const mockRouter = {
+  canGoBack: jest.fn(() => false),
+  back: jest.fn(),
+  replace: jest.fn(),
+};
+const mockSetCoins = jest.fn();
+const mockSetOwnedTombMaps = jest.fn();
+const mockSetOwnedTempleMaps = jest.fn();
+const mockConvertOneToTemple = jest.fn();
+const mockConvertOneToTombs = jest.fn();
+const mockReset = jest.fn();
+let mockCalculatorState = {
+  input: {
+    coins: 0,
+    templeMapAllocation: 0,
+    ownedTombMaps: 0,
+    ownedTempleMaps: 0,
+  },
+  isLoaded: true,
+  setCoins: mockSetCoins,
+  setOwnedTombMaps: mockSetOwnedTombMaps,
+  setOwnedTempleMaps: mockSetOwnedTempleMaps,
+  convertOneToTemple: mockConvertOneToTemple,
+  convertOneToTombs: mockConvertOneToTombs,
+  reset: mockReset,
+};
+
+jest.mock("react-native-safe-area-context", () => ({
+  __esModule: true,
+  useSafeAreaInsets: () => mockUseSafeAreaInsets(),
+}));
+
+jest.mock("expo-router", () => ({
+  __esModule: true,
+  router: {
+    canGoBack: () => mockRouter.canGoBack(),
+    back: () => mockRouter.back(),
+    replace: (href: string) => mockRouter.replace(href),
+  },
+}));
+
+jest.mock("../hooks/useAntiqueCalculator", () => ({
+  __esModule: true,
+  useAntiqueCalculator: () => mockCalculatorState,
+}));
+
+import { fireEvent, render, screen } from "@testing-library/react-native";
+
+import AntiqueScreen from "../screens/AntiqueScreen";
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockUseSafeAreaInsets.mockReturnValue({
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  });
+  mockCalculatorState = {
+    ...mockCalculatorState,
+    input: {
+      coins: 0,
+      templeMapAllocation: 0,
+      ownedTombMaps: 0,
+      ownedTempleMaps: 0,
+    },
+    isLoaded: true,
+  };
+});
+
+test("renders the loaded calculator sections with the initial summary first", () => {
+  render(<AntiqueScreen />);
+
+  expect(screen.getByText("Антиквариат").props.numberOfLines).toBe(1);
+  expect(screen.getByLabelText("Итоговые очки: 0")).toBeTruthy();
+  expect(screen.getByLabelText("Исходные очки: 0")).toBeTruthy();
+  expect(screen.getByLabelText("Осталось очков: 12000")).toBeTruthy();
+  expect(screen.getByText("Прогресс соперничества")).toBeTruthy();
+  expect(screen.getByText("Монеты исследования")).toBeTruthy();
+  expect(screen.getByText("Мои карты")).toBeTruthy();
+  expect(screen.getByText("Шкала наград")).toBeTruthy();
+  expect(screen.getByText("Кешбэк")).toBeTruthy();
+  expect(screen.getByText("Сбросить расчёт")).toBeTruthy();
+});
+
+test("forwards input, conversion, and reset actions to the calculator hook", () => {
+  mockCalculatorState = {
+    ...mockCalculatorState,
+    input: {
+      coins: 2_000,
+      templeMapAllocation: 1,
+      ownedTombMaps: 2,
+      ownedTempleMaps: 3,
+    },
+  };
+
+  render(<AntiqueScreen />);
+
+  fireEvent.changeText(
+    screen.getByLabelText("Количество монет исследования"),
+    "2500",
+  );
+  fireEvent.changeText(
+    screen.getByLabelText("Количество своих карт гробницы"),
+    "4",
+  );
+  fireEvent.changeText(
+    screen.getByLabelText("Количество своих карт храма"),
+    "5",
+  );
+  fireEvent.press(screen.getByLabelText("Увеличить карты храма"));
+  fireEvent.press(screen.getByLabelText("Увеличить карты гробницы"));
+  fireEvent.press(screen.getByText("Сбросить расчёт"));
+
+  expect(mockSetCoins).toHaveBeenCalledWith("2500");
+  expect(mockSetOwnedTombMaps).toHaveBeenCalledWith("4");
+  expect(mockSetOwnedTempleMaps).toHaveBeenCalledWith("5");
+  expect(mockConvertOneToTemple).toHaveBeenCalledTimes(1);
+  expect(mockConvertOneToTombs).toHaveBeenCalledTimes(1);
+  expect(mockReset).toHaveBeenCalledTimes(1);
+});
+
+test("falls back to the home route when there is no navigation history", () => {
+  render(<AntiqueScreen />);
+
+  fireEvent.press(screen.getByLabelText("Назад"));
+
+  expect(mockRouter.canGoBack).toHaveBeenCalledTimes(1);
+  expect(mockRouter.back).not.toHaveBeenCalled();
+  expect(mockRouter.replace).toHaveBeenCalledWith("/");
+});
+
+test("keeps the fixed header and bottom content clear of safe areas", () => {
+  mockUseSafeAreaInsets.mockReturnValue({
+    top: 12,
+    right: 0,
+    bottom: 34,
+    left: 0,
+  });
+
+  render(<AntiqueScreen />);
+
+  const scrollView = screen.UNSAFE_getByType("RCTScrollView" as never);
+  expect(scrollView.props.contentContainerStyle).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        paddingTop: 88,
+        paddingBottom: 58,
+      }),
+    ]),
+  );
+});

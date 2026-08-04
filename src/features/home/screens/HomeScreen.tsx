@@ -17,11 +17,18 @@ export default function HomeScreen() {
     >
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Калькуляторы</Text>
-        <Link href="/divinity" asChild>
-          <Pressable style={styles.button}>
-            <Text style={styles.buttonText}>Божественность</Text>
-          </Pressable>
-        </Link>
+        <View style={styles.calculatorList}>
+          <Link href="/divinity" asChild>
+            <Pressable style={styles.button}>
+              <Text style={styles.buttonText}>Божественность</Text>
+            </Pressable>
+          </Link>
+          <Link href="/antiques" asChild>
+            <Pressable style={styles.button}>
+              <Text style={styles.buttonText}>Антиквариат</Text>
+            </Pressable>
+          </Link>
+        </View>
       </View>
 
       <View style={styles.section}>
@@ -67,6 +74,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: "#4f5b66",
+  },
+  calculatorList: {
+    gap: 12,
   },
   divider: {
     width: 220,
