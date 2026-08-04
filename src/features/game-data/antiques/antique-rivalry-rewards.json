@@ -1,0 +1,19 @@
+[
+  {"score":0,"tombMaps":0,"templeMaps":0,"legendaryChestFragments":0,"mythicChestFragments":0},
+  {"score":750,"tombMaps":5,"templeMaps":0,"legendaryChestFragments":50,"mythicChestFragments":0},
+  {"score":1500,"tombMaps":10,"templeMaps":0,"legendaryChestFragments":100,"mythicChestFragments":0},
+  {"score":2250,"tombMaps":15,"templeMaps":0,"legendaryChestFragments":150,"mythicChestFragments":0},
+  {"score":3000,"tombMaps":15,"templeMaps":5,"legendaryChestFragments":150,"mythicChestFragments":50},
+  {"score":3750,"tombMaps":20,"templeMaps":5,"legendaryChestFragments":200,"mythicChestFragments":50},
+  {"score":4500,"tombMaps":25,"templeMaps":5,"legendaryChestFragments":250,"mythicChestFragments":50},
+  {"score":5250,"tombMaps":30,"templeMaps":5,"legendaryChestFragments":300,"mythicChestFragments":50},
+  {"score":6000,"tombMaps":30,"templeMaps":10,"legendaryChestFragments":300,"mythicChestFragments":100},
+  {"score":6750,"tombMaps":35,"templeMaps":10,"legendaryChestFragments":350,"mythicChestFragments":100},
+  {"score":7500,"tombMaps":40,"templeMaps":10,"legendaryChestFragments":400,"mythicChestFragments":100},
+  {"score":8250,"tombMaps":45,"templeMaps":10,"legendaryChestFragments":450,"mythicChestFragments":100},
+  {"score":9000,"tombMaps":45,"templeMaps":15,"legendaryChestFragments":450,"mythicChestFragments":150},
+  {"score":9750,"tombMaps":50,"templeMaps":15,"legendaryChestFragments":500,"mythicChestFragments":150},
+  {"score":10500,"tombMaps":55,"templeMaps":15,"legendaryChestFragments":550,"mythicChestFragments":150},
+  {"score":11250,"tombMaps":55,"templeMaps":15,"legendaryChestFragments":550,"mythicChestFragments":150},
+  {"score":12000,"tombMaps":60,"templeMaps":20,"legendaryChestFragments":600,"mythicChestFragments":200}
+]
