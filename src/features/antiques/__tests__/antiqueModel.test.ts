@@ -15,6 +15,13 @@ test("normalizes antique values to non-negative integers", () => {
 });
 
 test("allocates spendable coins to tomb maps by default", () => {
+  expect(getCoinAllocation(499, 0)).toEqual({
+    spendableCoins: 0,
+    unusedCoins: 499,
+    tombMaps: 0,
+    templeMaps: 0,
+    templeMapAllocation: 0,
+  });
   expect(getCoinAllocation(10_000, 0)).toEqual({
     spendableCoins: 10_000,
     unusedCoins: 0,
@@ -79,6 +86,25 @@ test("normalizes calculator inputs and adds owned maps to spent maps", () => {
   expect(result.totalScore).toBe(90);
   expect(result.spentMaps).toEqual({ tombMaps: 1, templeMaps: 1 });
   expect(result.scoreRemaining).toBe(11_910);
+});
+
+test("does not open a reward node just below its threshold", () => {
+  const result = calculateAntiqueRivalry({
+    coins: 0,
+    templeMapAllocation: 0,
+    ownedTombMaps: 24,
+    ownedTempleMaps: 0,
+  });
+
+  expect(result.baseScore).toBe(720);
+  expect(result.totalScore).toBe(720);
+  expect(result.openedNodes).toBe(0);
+  expect(result.cashback).toEqual({
+    tombMaps: 0,
+    templeMaps: 0,
+    legendaryChestFragments: 0,
+    mythicChestFragments: 0,
+  });
 });
 
 test("applies a reached node cashback once", () => {

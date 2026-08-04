@@ -74,9 +74,7 @@ test("forwards raw coin input and linked conversion actions", () => {
 
   const addTomb = screen.getByLabelText("Увеличить карты гробницы");
   const removeTemple = screen.getByLabelText("Уменьшить карты храма");
-  expect(addTomb.props.disabled).toBe(true);
   expect(addTomb.props.accessibilityState).toEqual({ disabled: true });
-  expect(removeTemple.props.disabled).toBe(true);
   expect(removeTemple.props.accessibilityState).toEqual({ disabled: true });
   expect(StyleSheet.flatten(addTomb.props.style).opacity).toBeLessThan(1);
   expect(StyleSheet.flatten(removeTemple.props.style).opacity).toBeLessThan(1);
@@ -84,6 +82,10 @@ test("forwards raw coin input and linked conversion actions", () => {
     height: 44,
     width: 44,
   });
+
+  fireEvent.press(addTomb);
+  fireEvent.press(removeTemple);
+  expect(onConvertToTombs).not.toHaveBeenCalled();
 
   fireEvent.press(screen.getByLabelText("Уменьшить карты гробницы"));
   fireEvent.press(screen.getByLabelText("Увеличить карты храма"));
