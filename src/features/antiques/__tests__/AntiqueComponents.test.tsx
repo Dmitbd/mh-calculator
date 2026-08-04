@@ -80,6 +80,10 @@ test("forwards raw coin input and linked conversion actions", () => {
   expect(removeTemple.props.accessibilityState).toEqual({ disabled: true });
   expect(StyleSheet.flatten(addTomb.props.style).opacity).toBeLessThan(1);
   expect(StyleSheet.flatten(removeTemple.props.style).opacity).toBeLessThan(1);
+  expect(StyleSheet.flatten(addTomb.props.style)).toMatchObject({
+    height: 44,
+    width: 44,
+  });
 
   fireEvent.press(screen.getByLabelText("Уменьшить карты гробницы"));
   fireEvent.press(screen.getByLabelText("Увеличить карты храма"));
@@ -137,19 +141,38 @@ test("forwards raw owned-card inputs", () => {
 test("renders all 16 accessible reward nodes and four major markers", () => {
   render(<AntiqueRewardTrack openedNodes={result.openedNodes} />);
 
-  expect(screen.getAllByLabelText(/^Узел награды /)).toHaveLength(16);
-  expect(screen.getAllByLabelText(/крупный сундук$/)).toHaveLength(4);
-  expect(
-    screen.getByLabelText("Узел награды 4: 3000 очков, открыт, крупный сундук"),
-  ).toBeTruthy();
-  expect(
-    screen.getByLabelText("Узел награды 16: 12000 очков, закрыт, крупный сундук"),
-  ).toBeTruthy();
-  expect(
-    screen.queryByLabelText(
-      "Узел награды 15: 11250 очков, закрыт, крупный сундук",
-    ),
-  ).toBeNull();
+  const expectedNodeLabels = [
+    "Узел награды 1: 750 очков, открыт",
+    "Узел награды 2: 1500 очков, открыт",
+    "Узел награды 3: 2250 очков, открыт",
+    "Узел награды 4: 3000 очков, открыт, крупный сундук",
+    "Узел награды 5: 3750 очков, закрыт",
+    "Узел награды 6: 4500 очков, закрыт",
+    "Узел награды 7: 5250 очков, закрыт",
+    "Узел награды 8: 6000 очков, закрыт, крупный сундук",
+    "Узел награды 9: 6750 очков, закрыт",
+    "Узел награды 10: 7500 очков, закрыт",
+    "Узел награды 11: 8250 очков, закрыт",
+    "Узел награды 12: 9000 очков, закрыт, крупный сундук",
+    "Узел награды 13: 9750 очков, закрыт",
+    "Узел награды 14: 10500 очков, закрыт",
+    "Узел награды 15: 11250 очков, закрыт",
+    "Узел награды 16: 12000 очков, закрыт, крупный сундук",
+  ];
+  const expectedMajorLabels = [
+    "Узел награды 4: 3000 очков, открыт, крупный сундук",
+    "Узел награды 8: 6000 очков, закрыт, крупный сундук",
+    "Узел награды 12: 9000 очков, закрыт, крупный сундук",
+    "Узел награды 16: 12000 очков, закрыт, крупный сундук",
+  ];
+  const nodeLabels = screen
+    .getAllByLabelText(/^Узел награды /)
+    .map((node) => node.props.accessibilityLabel);
+
+  expect(nodeLabels).toEqual(expectedNodeLabels);
+  expect(nodeLabels.filter((label) => label.endsWith("крупный сундук"))).toEqual(
+    expectedMajorLabels,
+  );
 });
 
 test("shows all four cashback resources and values", () => {

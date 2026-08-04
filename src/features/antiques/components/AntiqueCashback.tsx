@@ -33,6 +33,7 @@ export function AntiqueCashback({ cashback }: AntiqueCashbackProps) {
         {resources.map(({ resource, value }) => (
           <View
             key={resource.kind}
+            accessible
             accessibilityLabel={`Кешбэк — ${resource.label}: ${value}`}
             style={styles.resource}
           >

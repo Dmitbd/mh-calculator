@@ -43,6 +43,7 @@ export function AntiqueSummary({ result }: AntiqueSummaryProps) {
         {metrics.map((metric) => (
           <View
             key={metric.label}
+            accessible
             accessibilityLabel={metric.accessibilityLabel}
             style={[styles.metric, metric.featured && styles.featuredMetric]}
           >
