@@ -29,23 +29,18 @@ type SupabaseQuery = {
   eq: (column: string, value: string) => SupabaseQuery;
   maybeSingle: () => Promise<QueryResult<HeroBuildSetRow>>;
   select: (columns: string) => SupabaseQuery;
-  single: () => Promise<QueryResult<unknown>>;
   then: Promise<QueryResult<unknown>>["then"];
-  update: (row: { payload: HeroBuildSet }) => SupabaseQuery;
-  upsert: (
-    row: {
-      hero_id: string;
-      payload: HeroBuildSet;
-      status: HeroBuildSetStatus;
-    },
-    options: { onConflict: string },
-  ) => SupabaseQuery;
 };
+
+type HeroBuildSetWriteRpc =
+  | "create_or_update_draft_hero_build_set"
+  | "publish_hero_build_set"
+  | "update_published_hero_build_set";
 
 export type HeroBuildSetSupabaseClient = {
   from: (table: "hero_build_sets") => SupabaseQuery;
   rpc: (
-    functionName: "publish_hero_build_set",
+    functionName: HeroBuildSetWriteRpc,
     params: { p_hero_id: string; p_payload: HeroBuildSet },
   ) => Promise<QueryResult<unknown>>;
 };
@@ -134,18 +129,13 @@ export async function createOrUpdateDraftHeroBuildSet(
   },
 ): Promise<void> {
   const { buildSet, heroId } = params;
-  const { error } = await client
-    .from("hero_build_sets")
-    .upsert(
-      {
-        hero_id: heroId,
-        payload: buildSet,
-        status: "draft",
-      },
-      { onConflict: "hero_id" },
-    )
-    .select("hero_id")
-    .single();
+  const { error } = await client.rpc(
+    "create_or_update_draft_hero_build_set",
+    {
+      p_hero_id: heroId,
+      p_payload: buildSet,
+    },
+  );
 
   if (error) {
     throw new Error(error.message);
@@ -172,13 +162,10 @@ export async function updatePublishedHeroBuildSet(
   params: { buildSet: HeroBuildSet; heroId: string },
 ): Promise<void> {
   const { buildSet, heroId } = params;
-  const { error } = await client
-    .from("hero_build_sets")
-    .update({ payload: buildSet })
-    .eq("hero_id", heroId)
-    .eq("status", "published")
-    .select("hero_id")
-    .single();
+  const { error } = await client.rpc("update_published_hero_build_set", {
+    p_hero_id: heroId,
+    p_payload: buildSet,
+  });
 
   if (error) {
     throw new Error(error.message);

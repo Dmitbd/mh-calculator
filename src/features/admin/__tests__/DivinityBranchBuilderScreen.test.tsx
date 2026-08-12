@@ -20,8 +20,11 @@ const mockFetchHeroBuildSetStatusIds = jest.fn<
   []
 >();
 const mockFetchDraftHeroBuildSet = jest.fn();
+const mockFetchPublishedHeroBuildSet = jest.fn();
 const mockLoadPublishedHeroBuildSet = jest.fn();
-const mockSaveHeroBuildSet = jest.fn();
+const mockCreateOrUpdateDraftHeroBuildSet = jest.fn();
+const mockPublishDraftHeroBuildSet = jest.fn();
+const mockUpdatePublishedHeroBuildSet = jest.fn();
 const mockHeroBuilderSectionProps = jest.fn<void, [Record<string, unknown>]>();
 const mockSignInAdmin = jest.fn();
 const mockSignOutAdmin = jest.fn();
@@ -102,14 +105,18 @@ jest.mock("@/features/builds", () => {
   return {
     ...actual,
     createOrUpdateDraftHeroBuildSet: (...args: unknown[]) =>
-      mockSaveHeroBuildSet(...args),
+      mockCreateOrUpdateDraftHeroBuildSet(...args),
     fetchDraftHeroBuildSet: (...args: unknown[]) =>
       mockFetchDraftHeroBuildSet(...args),
     fetchHeroBuildSetStatusIds: () => mockFetchHeroBuildSetStatusIds(),
+    fetchPublishedHeroBuildSet: (...args: unknown[]) =>
+      mockFetchPublishedHeroBuildSet(...args),
     loadPublishedHeroBuildSet: (...args: unknown[]) =>
       mockLoadPublishedHeroBuildSet(...args),
     publishDraftHeroBuildSet: (...args: unknown[]) =>
-      mockSaveHeroBuildSet(...args),
+      mockPublishDraftHeroBuildSet(...args),
+    updatePublishedHeroBuildSet: (...args: unknown[]) =>
+      mockUpdatePublishedHeroBuildSet(...args),
   };
 });
 
@@ -155,10 +162,16 @@ describe("DivinityBranchBuilderScreen", () => {
     });
     mockFetchDraftHeroBuildSet.mockReset();
     mockFetchDraftHeroBuildSet.mockResolvedValue(null);
+    mockFetchPublishedHeroBuildSet.mockReset();
+    mockFetchPublishedHeroBuildSet.mockResolvedValue(null);
     mockLoadPublishedHeroBuildSet.mockReset();
     mockLoadPublishedHeroBuildSet.mockResolvedValue(getValidBastetBuildSet());
-    mockSaveHeroBuildSet.mockReset();
-    mockSaveHeroBuildSet.mockResolvedValue(undefined);
+    mockCreateOrUpdateDraftHeroBuildSet.mockReset();
+    mockCreateOrUpdateDraftHeroBuildSet.mockResolvedValue(undefined);
+    mockPublishDraftHeroBuildSet.mockReset();
+    mockPublishDraftHeroBuildSet.mockResolvedValue(undefined);
+    mockUpdatePublishedHeroBuildSet.mockReset();
+    mockUpdatePublishedHeroBuildSet.mockResolvedValue(undefined);
     mockHeroBuilderSectionProps.mockReset();
     mockSignInAdmin.mockReset();
     mockSignOutAdmin.mockReset();
@@ -231,24 +244,14 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByLabelText("Выбрать героя")).toBeTruthy();
   });
 
-  it("refreshes after publication, keeps the selected hero visible, and excludes it in fresh create", async () => {
-    let resolveRefresh!: (ids: HeroBuildSetStatusIds) => void;
-
+  it("keeps both edit actions on the published update path", async () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockFetchHeroBuildSetStatusIds
-      .mockResolvedValueOnce({ draftHeroIds: [], publishedHeroIds: [] })
-      .mockImplementationOnce(
-        () =>
-          new Promise<HeroBuildSetStatusIds>((resolve) => {
-            resolveRefresh = resolve;
-          }),
-      )
-      .mockResolvedValueOnce({
-        draftHeroIds: [],
-        publishedHeroIds: ["bastet"],
-      });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: [],
+      publishedHeroIds: ["bastet"],
+    });
 
-    const view = render(
+    render(
       <DivinityBranchBuilderScreen
         initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
@@ -260,44 +263,66 @@ describe("DivinityBranchBuilderScreen", () => {
     await waitFor(() =>
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
     );
-    fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
-    expect(screen.getByLabelText("Герой Бастет выбран")).toBeTruthy();
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+
+    await waitFor(() =>
+      expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
+    expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        buildSet: expect.anything(),
+        heroId: "bastet",
+      },
+    );
+    expect(mockCreateOrUpdateDraftHeroBuildSet).not.toHaveBeenCalled();
+    expect(mockPublishDraftHeroBuildSet).not.toHaveBeenCalled();
+    expect(await screen.findAllByText("Билд обновлён.")).not.toHaveLength(0);
 
     fireEvent.press(screen.getByText("Опубликовать"));
-
-    await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1));
-    expect(mockSaveHeroBuildSet).toHaveBeenCalledWith(expect.anything(), {
-      buildSet: expect.anything(),
-      heroId: "bastet",
-    });
     await waitFor(() =>
-      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
+      expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(2),
     );
+    expect(mockCreateOrUpdateDraftHeroBuildSet).not.toHaveBeenCalled();
+    expect(mockPublishDraftHeroBuildSet).not.toHaveBeenCalled();
     expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
-    expect(screen.getByLabelText("Бастет selected hero")).toBeTruthy();
-    expect(screen.getByLabelText("Загрузка списка героев")).toBeTruthy();
-    expect(screen.queryByText("Загрузка героев")).toBeNull();
-    expect(screen.queryByLabelText("Герой Бастет выбран")).toBeNull();
+    expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(3);
+  });
 
-    await act(async () => {
-      resolveRefresh({ draftHeroIds: [], publishedHeroIds: ["bastet"] });
+  it("keeps create draft and publish operations separate", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: ["bastet"],
+      publishedHeroIds: [],
     });
-    expect(await screen.findAllByText("Билд опубликован.")).not.toHaveLength(0);
-    expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+    mockFetchDraftHeroBuildSet.mockResolvedValue(getValidBastetBuildSet());
 
-    view.unmount();
     renderAdminBuilder();
 
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
+    await screen.findAllByText("Черновик загружен.");
+
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
     await waitFor(() =>
-      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(3),
+      expect(mockCreateOrUpdateDraftHeroBuildSet).toHaveBeenCalledTimes(1),
     );
-    fireEvent.press(screen.getByLabelText("Выбрать героя"));
-    expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
+    await screen.findAllByText("Вкладка сохранена.");
+    expect(mockPublishDraftHeroBuildSet).not.toHaveBeenCalled();
+    expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
+
+    fireEvent.press(screen.getByText("Опубликовать"));
+    await waitFor(() =>
+      expect(mockPublishDraftHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
+    expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
   });
 
   it("does not refresh published ids after publication fails", async () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockSaveHeroBuildSet.mockRejectedValue(new Error("publication failed"));
+    mockUpdatePublishedHeroBuildSet.mockRejectedValue(
+      new Error("publication failed"),
+    );
 
     render(
       <DivinityBranchBuilderScreen
@@ -338,7 +363,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     expect(
       await screen.findAllByText(
-        "Билд опубликован, но список героев обновить не удалось.",
+        "Билд обновлён, но список героев обновить не удалось.",
       ),
     ).not.toHaveLength(0);
     expect(
@@ -360,7 +385,7 @@ describe("DivinityBranchBuilderScreen", () => {
     let resolvePublish!: () => void;
 
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockSaveHeroBuildSet.mockReturnValue(
+    mockUpdatePublishedHeroBuildSet.mockReturnValue(
       new Promise<void>((resolve) => {
         resolvePublish = resolve;
       }),
@@ -382,8 +407,8 @@ describe("DivinityBranchBuilderScreen", () => {
       fireEvent.press(screen.getByText("Сохранить вкладку"));
     });
 
-    expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1);
-    expect(mockSaveHeroBuildSet).toHaveBeenCalledWith(
+    expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1);
+    expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ heroId: "bastet" }),
     );
@@ -397,7 +422,7 @@ describe("DivinityBranchBuilderScreen", () => {
     let resolveSave!: () => void;
 
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockSaveHeroBuildSet.mockReturnValue(
+    mockUpdatePublishedHeroBuildSet.mockReturnValue(
       new Promise<void>((resolve) => {
         resolveSave = resolve;
       }),
@@ -416,7 +441,9 @@ describe("DivinityBranchBuilderScreen", () => {
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
     );
     fireEvent.press(screen.getByText("Опубликовать"));
-    await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
 
     const consoleError = jest
       .spyOn(console, "error")
@@ -701,7 +728,7 @@ describe("DivinityBranchBuilderScreen", () => {
       fireEvent.press(removeRune);
     });
 
-    expect(mockSaveHeroBuildSet).not.toHaveBeenCalled();
+    expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
     expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
     expect(screen.queryByLabelText("Select PvE build tab")).toBeNull();
     expect(screen.queryByText("Сохранить вкладку")).toBeNull();
@@ -767,7 +794,7 @@ describe("DivinityBranchBuilderScreen", () => {
       fireEvent.press(publish);
     });
 
-    expect(mockSaveHeroBuildSet).not.toHaveBeenCalled();
+    expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
 
     await act(async () => {
       routeLoad.reject(new Error("route failed"));
@@ -1025,7 +1052,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     fireEvent.press(screen.getByText("Опубликовать"));
 
-    expect(mockSaveHeroBuildSet).not.toHaveBeenCalled();
+    expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
     expect(
       screen.getAllByText("PvE -> Боссы: Сохраните билд для этой вкладки.")
         .length,
@@ -1292,7 +1319,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     fireEvent.press(screen.getByText("Сохранить вкладку"));
 
-    expect(mockSaveHeroBuildSet).not.toHaveBeenCalled();
+    expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
   });
 
   it("saves the newly prepared tab as a partial draft before marking it saved", async () => {
@@ -1310,7 +1337,7 @@ describe("DivinityBranchBuilderScreen", () => {
     fireEvent.press(screen.getByText("Сохранить вкладку"));
 
     await waitFor(() => {
-      expect(mockSaveHeroBuildSet).toHaveBeenCalledWith(
+      expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
           heroId: "bastet",
@@ -1354,14 +1381,14 @@ describe("DivinityBranchBuilderScreen", () => {
       refresh.resolve({ draftHeroIds: ["bastet"], publishedHeroIds: [] });
     });
 
-    expect(await screen.findAllByText("Вкладка сохранена.")).not.toHaveLength(0);
+    expect(await screen.findAllByText("Билд обновлён.")).not.toHaveLength(0);
   });
 
   it("blocks duplicate save and publication while a tab save is pending", async () => {
     let resolveSave!: () => void;
 
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockSaveHeroBuildSet.mockImplementation(
+    mockUpdatePublishedHeroBuildSet.mockImplementation(
       () =>
         new Promise<void>((resolve) => {
           resolveSave = resolve;
@@ -1382,7 +1409,7 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByText("Сохраняем...")).toBeTruthy();
     fireEvent.press(screen.getByText("Сохраняем..."));
     fireEvent.press(screen.getByText("Опубликовать"));
-    expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1);
+    expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       resolveSave();
@@ -1391,7 +1418,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
   it("keeps the editable form when server tab saving fails", async () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockSaveHeroBuildSet.mockRejectedValue(new Error("save failed"));
+    mockUpdatePublishedHeroBuildSet.mockRejectedValue(new Error("save failed"));
 
     render(
       <DivinityBranchBuilderScreen
@@ -1418,7 +1445,7 @@ describe("DivinityBranchBuilderScreen", () => {
     let resolveSave!: () => void;
 
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockSaveHeroBuildSet.mockImplementation(
+    mockUpdatePublishedHeroBuildSet.mockImplementation(
       () =>
         new Promise<void>((resolve) => {
           resolveSave = resolve;
@@ -1444,7 +1471,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     expect(
       await screen.findAllByText(
-        "Вкладка сохранена на сервере, но форма уже изменилась.",
+        "Билд обновлён на сервере, но форма уже изменилась.",
       ),
     ).not.toHaveLength(0);
     expect(screen.queryByText("Вкладка сохранена.")).toBeNull();
@@ -1452,9 +1479,9 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2);
 
     fireEvent.press(screen.getByText("Опубликовать"));
-    expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1);
+    expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1);
     expect(
-      screen.getAllByText("PvP: Сохраните билд для этой вкладки."),
+      screen.getAllByText("Выберите руну."),
     ).not.toHaveLength(0);
   });
 
@@ -1463,7 +1490,7 @@ describe("DivinityBranchBuilderScreen", () => {
     let resolveRefresh!: (ids: HeroBuildSetStatusIds) => void;
 
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockSaveHeroBuildSet.mockImplementation(
+    mockUpdatePublishedHeroBuildSet.mockImplementation(
       () =>
         new Promise<void>((resolve) => {
           resolveSave = resolve;
@@ -1491,7 +1518,9 @@ describe("DivinityBranchBuilderScreen", () => {
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
     );
     fireEvent.press(screen.getByText("Сохранить вкладку"));
-    await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
 
     act(() => {
       resolveSave();
@@ -1510,7 +1539,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     expect(
       await screen.findAllByText(
-        "Вкладка сохранена на сервере, но форма уже изменилась.",
+        "Билд обновлён на сервере, но форма уже изменилась.",
       ),
     ).not.toHaveLength(0);
     expect(screen.queryByText("Вкладка сохранена.")).toBeNull();
@@ -1552,7 +1581,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     expect(
       await screen.findAllByText(
-        "Вкладка сохранена на сервере, но форма уже изменилась.",
+        "Билд обновлён на сервере, но форма уже изменилась.",
       ),
     ).not.toHaveLength(0);
     expect(screen.queryByText("Вкладка сохранена.")).toBeNull();
@@ -1566,7 +1595,7 @@ describe("DivinityBranchBuilderScreen", () => {
     let resolveSave!: () => void;
 
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockSaveHeroBuildSet.mockImplementation(
+    mockUpdatePublishedHeroBuildSet.mockImplementation(
       () =>
         new Promise<void>((resolve) => {
           resolveSave = resolve;
@@ -1615,7 +1644,7 @@ describe("DivinityBranchBuilderScreen", () => {
       },
     });
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockSaveHeroBuildSet.mockReturnValue(
+    mockUpdatePublishedHeroBuildSet.mockReturnValue(
       new Promise<void>((_resolve, reject) => {
         rejectSave = reject;
       }),
@@ -1631,7 +1660,9 @@ describe("DivinityBranchBuilderScreen", () => {
 
     await screen.findAllByText("Билд загружен для редактирования.");
     fireEvent.press(screen.getByText("Сохранить вкладку"));
-    await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
     view.unmount();
 
     try {
@@ -1669,7 +1700,7 @@ describe("DivinityBranchBuilderScreen", () => {
     fireEvent.press(screen.getByText("Сохранить вкладку"));
 
     expect(
-      await screen.findAllByText("Вкладка сохранена."),
+      await screen.findAllByText("Билд обновлён."),
     ).not.toHaveLength(0);
     expect(
       await screen.findByText(
@@ -1682,7 +1713,9 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     fireEvent.press(screen.getByText("Опубликовать"));
-    await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(2),
+    );
   });
 
   it("renders builder controls and validates an incomplete form", async () => {
@@ -1910,7 +1943,7 @@ describe("DivinityBranchBuilderScreen", () => {
       fireEvent.press(publish);
     });
 
-    expect(mockSaveHeroBuildSet).not.toHaveBeenCalled();
+    expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
     expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
     expect(screen.queryByText("Сохранить вкладку")).toBeNull();
 
@@ -1930,7 +1963,7 @@ describe("DivinityBranchBuilderScreen", () => {
       draftHeroIds: [],
       publishedHeroIds: ["bastet"],
     });
-    mockSaveHeroBuildSet
+    mockUpdatePublishedHeroBuildSet
       .mockReturnValueOnce(firstSave.promise)
       .mockResolvedValueOnce(undefined);
     mockSignOutAdmin.mockReturnValue(signOut.promise);
@@ -1950,7 +1983,7 @@ describe("DivinityBranchBuilderScreen", () => {
     const pveTab = screen.getByLabelText("Select PvE build tab");
     const publish = screen.getByText("Опубликовать");
     fireEvent.press(screen.getByText("Сохранить вкладку"));
-    await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1));
 
     fireEvent.press(screen.getByText("Выйти"));
     expect(screen.getByText("Выходим...")).toBeTruthy();
@@ -1965,7 +1998,7 @@ describe("DivinityBranchBuilderScreen", () => {
       firstSave.resolve(undefined);
     });
 
-    expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1);
+    expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1);
     expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("Вкладка сохранена.")).toBeNull();
 
@@ -1983,7 +2016,7 @@ describe("DivinityBranchBuilderScreen", () => {
     ).toEqual(expect.objectContaining({ selected: true }));
 
     fireEvent.press(screen.getByText("Сохранить вкладку"));
-    await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(2));
   });
 
   it("restarts an interrupted initial edit load after logout rejection", async () => {

@@ -331,7 +331,7 @@ type DivinityBranchBuilderExport = {
 
 `AdminAuthPanel` поддерживает вход и выход, состояния pending и видимые success/error toast. Если Supabase не настроен, серверное действие завершается контролируемым `Supabase не настроен.`, а не падением.
 
-Supabase RLS повторяет эту границу: чтение `draft` и любые insert/update/delete разрешены только JWT с `app_metadata.role = admin`; без admin claim доступно только чтение строк `published`. Клиентская проверка управляет UI, но не заменяет RLS.
+Supabase RLS повторяет границу чтения: `draft` доступен только JWT с `app_metadata.role = admin`, без admin claim можно читать только строки `published`. Прямые `insert/update/delete` для `anon` и `authenticated` отозваны; даже admin-клиент выполняет lifecycle-запись только через узкие `SECURITY DEFINER` RPC. Каждая RPC независимо проверяет точный `app_metadata.role === "admin"`, ожидаемое исходное состояние строки и число затронутых строк. Клиентская проверка управляет UI, но не заменяет server boundary; RLS остаётся дополнительной защитой чтения.
 
 ## Hero States And Selector
 
@@ -383,7 +383,9 @@ Base и awakened slots редактируются отдельно. Awakened-н�
 - `Опубликовать` вызывает один RPC, который атомарно обновляет payload существующего draft и переводит ту же строку в status `published`.
 - Если draft отсутствует, RPC завершает публикацию ошибкой и не создаёт отдельную published-строку.
 - После успешной публикации status-каталог обновляется: герой удаляется из draft IDs и добавляется в published IDs.
-- Опубликованный payload обновляется только отдельной repository-операцией, которая не меняет status; соответствующий edit UI оформляется отдельно.
+- В `mode=edit` действия `Сохранить вкладку` и `Опубликовать` передают полный валидный комплект отдельной операции обновления опубликованного payload; они не создают draft и не вызывают переход публикации.
+- Опубликованный payload обновляется только отдельной repository-операцией, которая требует исходный status `published` и не меняет его.
+- Все три lifecycle-операции repository вызывают отдельные RPC: create/update draft, draft-to-published и update published. Прямой table DML недоступен `anon` и `authenticated`.
 - Публичный repository API не содержит операций удаления. Database trigger запрещает удалить published-строку, вернуть её в draft или изменить её `hero_id`.
 
 ## Validation And Feedback

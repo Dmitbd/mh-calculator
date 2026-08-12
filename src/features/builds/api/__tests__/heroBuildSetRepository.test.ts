@@ -172,25 +172,18 @@ describe("heroBuildSetRepository", () => {
   });
 
   it("creates or updates only a draft row by hero identity", async () => {
-    const query = createQueryResult({ data: { hero_id: "bastet" }, error: null });
-    const client = createClient(query);
+    const rpc = jest.fn(async () => ({ data: null, error: null }));
+    const client = { from: jest.fn(), rpc };
 
     await createOrUpdateDraftHeroBuildSet(client, {
       buildSet,
       heroId: "bastet",
     });
 
-    expect(client.from).toHaveBeenCalledWith("hero_build_sets");
-    expect(query.upsert).toHaveBeenCalledWith(
-      {
-        hero_id: "bastet",
-        payload: buildSet,
-        status: "draft",
-      },
-      { onConflict: "hero_id" },
-    );
-    expect(query.select).toHaveBeenCalledWith("hero_id");
-    expect(query.single).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith("create_or_update_draft_hero_build_set", {
+      p_hero_id: "bastet",
+      p_payload: buildSet,
+    });
   });
 
   it("publishes a draft through the atomic database transition", async () => {
@@ -223,19 +216,18 @@ describe("heroBuildSetRepository", () => {
   });
 
   it("updates payload only on an existing published row", async () => {
-    const query = createQueryResult({ data: { hero_id: "bastet" }, error: null });
-    const client = { from: jest.fn(() => query), rpc: query.rpc };
+    const rpc = jest.fn(async () => ({ data: null, error: null }));
+    const client = { from: jest.fn(), rpc };
 
     await updatePublishedHeroBuildSet(client, {
       buildSet,
       heroId: "bastet",
     });
 
-    expect(query.update).toHaveBeenCalledWith({ payload: buildSet });
-    expect(query.eq).toHaveBeenCalledWith("hero_id", "bastet");
-    expect(query.eq).toHaveBeenCalledWith("status", "published");
-    expect(query.select).toHaveBeenCalledWith("hero_id");
-    expect(query.single).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith("update_published_hero_build_set", {
+      p_hero_id: "bastet",
+      p_payload: buildSet,
+    });
   });
 
   it("does not expose draft or published deletion operations", () => {

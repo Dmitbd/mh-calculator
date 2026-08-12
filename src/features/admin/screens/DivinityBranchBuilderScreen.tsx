@@ -18,6 +18,7 @@ import {
   fetchHeroBuildSetStatusIds,
   fetchPublishedHeroBuildSet,
   loadPublishedHeroBuildSet,
+  updatePublishedHeroBuildSet,
   type HeroBuildSetStatusIds,
   type HeroBuildSetSupabaseClient,
 } from "@/features/builds";
@@ -625,13 +626,23 @@ export function DivinityBranchBuilderScreen({
       isScreenMounted.current && requestId === tabSaveRequestId.current;
 
     try {
-      await createOrUpdateDraftHeroBuildSet(
-        client as unknown as HeroBuildSetSupabaseClient,
-        {
-          buildSet: prepared.buildSet,
-          heroId: selectedHeroId,
-        },
-      );
+      if (initialMode === "edit") {
+        await updatePublishedHeroBuildSet(
+          client as unknown as HeroBuildSetSupabaseClient,
+          {
+            buildSet: prepared.buildSet,
+            heroId: selectedHeroId,
+          },
+        );
+      } else {
+        await createOrUpdateDraftHeroBuildSet(
+          client as unknown as HeroBuildSetSupabaseClient,
+          {
+            buildSet: prepared.buildSet,
+            heroId: selectedHeroId,
+          },
+        );
+      }
 
       if (!isCurrentRequest()) {
         return;
@@ -649,8 +660,12 @@ export function DivinityBranchBuilderScreen({
       showBackendMessage(
         isCurrent ? "success" : "error",
         isCurrent
-          ? "Вкладка сохранена."
-          : "Вкладка сохранена на сервере, но форма уже изменилась.",
+          ? initialMode === "edit"
+            ? "Билд обновлён."
+            : "Вкладка сохранена."
+          : initialMode === "edit"
+            ? "Билд обновлён на сервере, но форма уже изменилась."
+            : "Вкладка сохранена на сервере, но форма уже изменилась.",
       );
     } catch (error) {
       if (!isCurrentRequest()) {
@@ -705,6 +720,26 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
+    const editValidationResult =
+      initialMode === "edit"
+        ? validateBranchBuild(
+            buildValidationDraft(),
+            branchBuilderValidationCatalog,
+          )
+        : null;
+
+    if (editValidationResult) {
+      showValidationErrors(editValidationResult.errors);
+
+      if (!editValidationResult.isValid) {
+        showValidationErrorToast(
+          editValidationResult.errors,
+          "Сначала исправьте ошибки вкладки.",
+        );
+        return;
+      }
+    }
+
     const result = validateFullExport();
 
     showValidationErrors(result.errors);
@@ -724,7 +759,9 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
-    const buildSet = buildFullExport();
+    const preparedEditBuild =
+      initialMode === "edit" ? prepareCurrentTargetBuild() : null;
+    const buildSet = preparedEditBuild?.buildSet ?? buildFullExport();
 
     if (!buildSet) {
       showBackendMessage("error", "Не удалось собрать полный билд.");
@@ -765,7 +802,12 @@ export function DivinityBranchBuilderScreen({
       isScreenMounted.current && requestId === publishRequestId.current;
 
     try {
-      if (initialMode !== "edit") {
+      if (initialMode === "edit") {
+        await updatePublishedHeroBuildSet(
+          client as unknown as HeroBuildSetSupabaseClient,
+          { buildSet, heroId },
+        );
+      } else {
         const remoteBuildSet = await fetchPublishedHeroBuildSet(
           client as unknown as HeroBuildSetSupabaseClient,
           heroId,
@@ -782,13 +824,12 @@ export function DivinityBranchBuilderScreen({
           );
           return;
         }
+        await publishAdminHeroBuildSet({
+          buildSet,
+          client: client as unknown as HeroBuildSetSupabaseClient,
+          heroId,
+        });
       }
-
-      await publishAdminHeroBuildSet({
-        buildSet,
-        client: client as unknown as HeroBuildSetSupabaseClient,
-        heroId,
-      });
 
       if (!isCurrentRequest()) {
         return;
@@ -812,12 +853,20 @@ export function DivinityBranchBuilderScreen({
       if (!didRefreshHeroStatusIds) {
         showBackendMessage(
           "error",
-          "Билд опубликован, но список героев обновить не удалось.",
+          initialMode === "edit"
+            ? "Билд обновлён, но список героев обновить не удалось."
+            : "Билд опубликован, но список героев обновить не удалось.",
         );
         return;
       }
 
-      showBackendMessage("success", "Билд опубликован.");
+      if (initialMode === "edit" && preparedEditBuild) {
+        commitPreparedTargetBuild(preparedEditBuild);
+      }
+      showBackendMessage(
+        "success",
+        initialMode === "edit" ? "Билд обновлён." : "Билд опубликован.",
+      );
     } catch (error) {
       if (!isCurrentRequest()) {
         return;
