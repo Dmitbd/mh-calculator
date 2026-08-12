@@ -740,6 +740,264 @@ describe("DivinityBranchBuilderScreen", () => {
     }
   });
 
+  it("does not request a draft for an invalid current tab", () => {
+    renderAdminBuilder();
+
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+
+    expect(mockSaveHeroBuildSet).not.toHaveBeenCalled();
+  });
+
+  it("saves the newly prepared tab as a partial draft before marking it saved", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+
+    await waitFor(() => {
+      expect(mockSaveHeroBuildSet).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          heroId: "bastet",
+          status: "draft",
+          buildSet: expect.objectContaining({ schemaVersion: 2 }),
+        }),
+      );
+    });
+  });
+
+  it("blocks duplicate save and publication while a tab save is pending", async () => {
+    let resolveSave!: () => void;
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockSaveHeroBuildSet.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+
+    expect(screen.getByText("Сохраняем...")).toBeTruthy();
+    fireEvent.press(screen.getByText("Сохраняем..."));
+    fireEvent.press(screen.getByText("Опубликовать"));
+    expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveSave();
+    });
+  });
+
+  it("keeps the editable form when server tab saving fails", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockSaveHeroBuildSet.mockRejectedValue(new Error("save failed"));
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    expect(screen.getByLabelText("Remove Air Rune")).toBeTruthy();
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+
+    expect(
+      await screen.findAllByText("Ошибка Supabase: save failed"),
+    ).not.toHaveLength(0);
+    expect(screen.queryByText("Вкладка сохранена.")).toBeNull();
+    expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+    expect(screen.getByLabelText("Remove Air Rune")).toBeTruthy();
+    expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a persisted stale snapshot without committing it locally", async () => {
+    let resolveSave!: () => void;
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockSaveHeroBuildSet.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByLabelText("Remove Air Rune"));
+    expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
+
+    await act(async () => {
+      resolveSave();
+    });
+
+    expect(
+      await screen.findAllByText(
+        "Вкладка сохранена на сервере, но форма уже изменилась.",
+      ),
+    ).not.toHaveLength(0);
+    expect(screen.queryByText("Вкладка сохранена.")).toBeNull();
+    expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
+    expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2);
+
+    fireEvent.press(screen.getByText("Опубликовать"));
+    expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getAllByText("PvP: Сохраните билд для этой вкладки."),
+    ).not.toHaveLength(0);
+  });
+
+  it("invalidates a pending tab save on logout", async () => {
+    let resolveSave!: () => void;
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockSaveHeroBuildSet.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    mockSignOutAdmin.mockResolvedValue(undefined);
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
+    );
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByText("Выйти"));
+    await screen.findByPlaceholderText("Email");
+
+    await act(async () => {
+      resolveSave();
+    });
+
+    expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Выход выполнен.")).toBeTruthy();
+    expect(screen.queryByText("Вкладка сохранена.")).toBeNull();
+  });
+
+  it("does not inspect a tab-save error that rejects after unmount", async () => {
+    let rejectSave!: (error: Error) => void;
+    let messageReadCount = 0;
+    const lateError = new Error();
+    const consoleError = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    Object.defineProperty(lateError, "message", {
+      configurable: true,
+      get: () => {
+        messageReadCount += 1;
+        return "late save failure";
+      },
+    });
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockSaveHeroBuildSet.mockReturnValue(
+      new Promise<void>((_resolve, reject) => {
+        rejectSave = reject;
+      }),
+    );
+
+    const view = render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1));
+    view.unmount();
+
+    try {
+      await act(async () => {
+        rejectSave(lateError);
+      });
+
+      expect(messageReadCount).toBe(0);
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("keeps the local commit and catalog retry after refresh failure", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds
+      .mockResolvedValueOnce({ draftHeroIds: [], publishedHeroIds: [] })
+      .mockRejectedValueOnce(new Error("refresh failed"))
+      .mockResolvedValue({ draftHeroIds: ["bastet"], publishedHeroIds: [] });
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Remove Air Rune"));
+    fireEvent.press(screen.getByLabelText("Добавить руну"));
+    fireEvent.press(screen.getByLabelText("Add Air Rune"));
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+
+    expect(
+      await screen.findAllByText("Вкладка сохранена."),
+    ).not.toHaveLength(0);
+    expect(
+      await screen.findByText(
+        "Не удалось загрузить список опубликованных гайдов",
+      ),
+    ).toBeTruthy();
+    fireEvent.press(screen.getByText("Повторить"));
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(3),
+    );
+
+    fireEvent.press(screen.getByText("Опубликовать"));
+    await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(2));
+  });
+
   it("renders builder controls and validates an incomplete form", async () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
     const view = renderAdminBuilder();

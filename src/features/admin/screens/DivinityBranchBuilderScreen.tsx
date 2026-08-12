@@ -18,6 +18,7 @@ import {
   fetchHeroBuildSetStatusIds,
   fetchPublishedHeroBuildSet,
   loadPublishedHeroBuildSet,
+  saveHeroBuildSet,
   type HeroBuildSetStatus,
   type HeroBuildSetStatusIds,
   type HeroBuildSetSupabaseClient,
@@ -112,19 +113,22 @@ export function DivinityBranchBuilderScreen({
   const draftLoadInFlight = useRef(false);
   const draftLoadRequestId = useRef(0);
   const heroListRequestId = useRef(0);
+  const tabSaveInFlight = useRef(false);
+  const tabSaveRequestId = useRef(0);
   const isScreenMounted = useRef(true);
   const {
     addArtifact,
     addRune,
     buildValidationDraft,
     buildFullExport,
+    commitPreparedTargetBuild,
     cycleWeaponAwakeningSlot,
     loadBuildSetForEditing,
     progressLevels,
+    prepareCurrentTargetBuild,
     removeArtifact,
     removeRune,
     rollbackColumnProgress,
-    saveCurrentTargetBuild,
     selectHero,
     selectedArtifactIds,
     selectedBranches,
@@ -162,6 +166,7 @@ export function DivinityBranchBuilderScreen({
   const [isAuthPending, setIsAuthPending] = useState(false);
   const [isEditBuildLoading, setIsEditBuildLoading] = useState(false);
   const [isPublishPending, setIsPublishPending] = useState(false);
+  const [isTabSavePending, setIsTabSavePending] = useState(false);
   const [toast, setToast] = useState<StatusToastState>(null);
   const [heroStatusIds, setHeroStatusIds] = useState<HeroBuildSetStatusIds>({
     draftHeroIds: [],
@@ -171,6 +176,12 @@ export function DivinityBranchBuilderScreen({
   const [isHeroListLoading, setIsHeroListLoading] = useState(true);
   const [heroListError, setHeroListError] = useState<string | null>(null);
 
+  const resetTabSave = useCallback(() => {
+    tabSaveRequestId.current += 1;
+    tabSaveInFlight.current = false;
+    setIsTabSavePending(false);
+  }, []);
+
   useEffect(() => {
     isScreenMounted.current = true;
 
@@ -178,6 +189,8 @@ export function DivinityBranchBuilderScreen({
       isScreenMounted.current = false;
       draftLoadRequestId.current += 1;
       draftLoadInFlight.current = false;
+      tabSaveRequestId.current += 1;
+      tabSaveInFlight.current = false;
     };
   }, []);
 
@@ -519,7 +532,11 @@ export function DivinityBranchBuilderScreen({
     );
   };
 
-  const handleSaveCurrentTargetBuild = () => {
+  const handleSaveCurrentTargetBuild = async () => {
+    if (tabSaveInFlight.current || isPublishPending) {
+      return;
+    }
+
     const result = validateBranchBuild(
       buildValidationDraft(),
       branchBuilderValidationCatalog,
@@ -527,16 +544,73 @@ export function DivinityBranchBuilderScreen({
 
     showValidationErrors(result.errors);
 
-    if (result.isValid) {
-      const saved = saveCurrentTargetBuild();
+    if (!result.isValid) {
+      showValidationErrorToast(result.errors, "Сначала исправьте ошибки вкладки.");
+      return;
+    }
+
+    const client = getSupabaseClient();
+    const prepared = prepareCurrentTargetBuild();
+
+    if (!client || !prepared || !selectedHeroId) {
       showBackendMessage(
-        saved ? "success" : "error",
-        saved ? "Вкладка сохранена." : "Не удалось сохранить вкладку.",
+        "error",
+        client ? "Не удалось собрать вкладку." : "Supabase не настроен.",
       );
       return;
     }
 
-    showValidationErrorToast(result.errors, "Сначала исправьте ошибки вкладки.");
+    tabSaveInFlight.current = true;
+    const requestId = tabSaveRequestId.current + 1;
+    tabSaveRequestId.current = requestId;
+    setIsTabSavePending(true);
+    const isCurrentRequest = () =>
+      isScreenMounted.current && requestId === tabSaveRequestId.current;
+
+    try {
+      await saveHeroBuildSet(
+        client as unknown as HeroBuildSetSupabaseClient,
+        {
+          buildSet: prepared.buildSet,
+          heroId: selectedHeroId,
+          status: "draft",
+        },
+      );
+
+      if (!isCurrentRequest()) {
+        return;
+      }
+
+      const committed = commitPreparedTargetBuild(prepared);
+      await loadHeroStatusIds();
+
+      if (!isCurrentRequest()) {
+        return;
+      }
+
+      showBackendMessage(
+        committed ? "success" : "error",
+        committed
+          ? "Вкладка сохранена."
+          : "Вкладка сохранена на сервере, но форма уже изменилась.",
+      );
+    } catch (error) {
+      if (!isCurrentRequest()) {
+        return;
+      }
+
+      showBackendMessage(
+        "error",
+        error instanceof Error
+          ? `Ошибка Supabase: ${error.message}`
+          : "Ошибка Supabase.",
+      );
+    } finally {
+      if (isCurrentRequest()) {
+        tabSaveInFlight.current = false;
+        setIsTabSavePending(false);
+      }
+    }
   };
 
   const handleDownloadFullJson = () => {
@@ -561,6 +635,10 @@ export function DivinityBranchBuilderScreen({
   };
 
   const saveFullBuildSetToBackend = async (status: HeroBuildSetStatus) => {
+    if (tabSaveInFlight.current) {
+      return;
+    }
+
     const result = validateFullExport();
 
     showValidationErrors(result.errors);
@@ -744,6 +822,7 @@ export function DivinityBranchBuilderScreen({
     setIsAuthPending(true);
     setToast(null);
     resetDraftLoad();
+    resetTabSave();
 
     const client = getSupabaseClient();
 
@@ -1135,6 +1214,7 @@ export function DivinityBranchBuilderScreen({
           backendStatus={backendStatus}
           errors={validationErrors}
           isPublishPending={isPublishPending}
+          isTabSavePending={isTabSavePending}
           onErrorsLayout={handleSectionLayout("download")}
           onDeleteFull={() => {
             void handleDeleteFullBuildSet();
@@ -1147,7 +1227,9 @@ export function DivinityBranchBuilderScreen({
           onPublishFull={() => {
             void saveFullBuildSetToBackend("published");
           }}
-          onSaveCurrent={handleSaveCurrentTargetBuild}
+          onSaveCurrent={() => {
+            void handleSaveCurrentTargetBuild();
+          }}
           onSaveDraft={() => {
             void saveFullBuildSetToBackend("draft");
           }}

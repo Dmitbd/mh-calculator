@@ -12,6 +12,7 @@ type DownloadJsonButtonProps = {
   backendStatus?: string | null;
   errors: readonly BranchBuildValidationError[];
   isPublishPending?: boolean;
+  isTabSavePending?: boolean;
   onErrorsLayout?: (event: LayoutChangeEvent) => void;
   onDeleteFull: () => void;
   onDownloadFull: () => void;
@@ -25,6 +26,7 @@ type DownloadJsonButtonProps = {
 export function DownloadJsonButton({
   backendStatus,
   isPublishPending = false,
+  isTabSavePending = false,
   onDeleteFull,
   onDownloadFull,
   onLoadFull,
@@ -38,11 +40,18 @@ export function DownloadJsonButton({
       <View style={styles.actions}>
         <Pressable
           accessibilityRole="button"
-          onPress={onSaveCurrent}
-          style={[styles.button, styles.secondaryButton]}
+          disabled={isTabSavePending || isPublishPending}
+          onPress={
+            isTabSavePending || isPublishPending ? undefined : onSaveCurrent
+          }
+          style={[
+            styles.button,
+            styles.secondaryButton,
+            (isTabSavePending || isPublishPending) && styles.buttonDisabled,
+          ]}
         >
           <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-            Сохранить вкладку
+            {isTabSavePending ? "Сохраняем..." : "Сохранить вкладку"}
           </Text>
         </Pressable>
         {showAdvancedActions ? (
@@ -76,9 +85,14 @@ export function DownloadJsonButton({
         ) : null}
         <Pressable
           accessibilityRole="button"
-          disabled={isPublishPending}
-          onPress={isPublishPending ? undefined : onPublishFull}
-          style={[styles.button, isPublishPending && styles.buttonDisabled]}
+          disabled={isTabSavePending || isPublishPending}
+          onPress={
+            isTabSavePending || isPublishPending ? undefined : onPublishFull
+          }
+          style={[
+            styles.button,
+            (isTabSavePending || isPublishPending) && styles.buttonDisabled,
+          ]}
         >
           <Text style={styles.buttonText}>
             {isPublishPending ? "Публикуем..." : "Опубликовать"}

@@ -80,6 +80,21 @@ const filledBuild = () => {
   return result;
 };
 
+const commitCurrentTargetBuild = (
+  result: ReturnType<typeof filledBuild>,
+  createdAt: string,
+) => {
+  const prepared = result.current.prepareCurrentTargetBuild(createdAt);
+
+  if (!prepared) {
+    throw new Error("Expected a prepared current target build.");
+  }
+
+  act(() => {
+    result.current.commitPreparedTargetBuild(prepared);
+  });
+};
+
 describe("useDivinityBranchBuilder", () => {
   it("starts with an empty editable draft", () => {
     const { result } = renderHook(() => useDivinityBranchBuilder(weaponAwakeningCatalog));
@@ -226,9 +241,7 @@ describe("useDivinityBranchBuilder", () => {
   it("saves the current tab build without targetTabPath", () => {
     const result = filledBuild();
 
-    act(() => {
-      result.current.saveCurrentTargetBuild("2026-05-30T00:00:00.000Z");
-    });
+    commitCurrentTargetBuild(result, "2026-05-30T00:00:00.000Z");
 
     expect(result.current.savedBuildsByPath.pvp).toBeTruthy();
     expect("targetTabPath" in result.current.savedBuildsByPath.pvp).toBe(false);
@@ -336,9 +349,7 @@ describe("useDivinityBranchBuilder", () => {
   it("full export is blocked until every target tab is saved", () => {
     const result = filledBuild();
 
-    act(() => {
-      result.current.saveCurrentTargetBuild("2026-05-30T00:00:00.000Z");
-    });
+    commitCurrentTargetBuild(result, "2026-05-30T00:00:00.000Z");
 
     expect(result.current.buildFullExport()).toBeNull();
   });
@@ -394,9 +405,7 @@ describe("useDivinityBranchBuilder", () => {
   it("seeds empty target tab drafts from the first saved build without marking them saved", () => {
     const result = filledBuild();
 
-    act(() => {
-      result.current.saveCurrentTargetBuild("2026-05-30T00:00:00.000Z");
-    });
+    commitCurrentTargetBuild(result, "2026-05-30T00:00:00.000Z");
 
     expect(result.current.savedBuildsByPath.pvp?.equipment.artifactIds).toEqual([
       "excalibur",
@@ -422,8 +431,8 @@ describe("useDivinityBranchBuilder", () => {
   it("does not overwrite existing saved tabs after the first saved build", () => {
     const result = filledBuild();
 
+    commitCurrentTargetBuild(result, "2026-05-30T00:00:00.000Z");
     act(() => {
-      result.current.saveCurrentTargetBuild("2026-05-30T00:00:00.000Z");
       result.current.setTargetTopTab("pve");
     });
 
@@ -431,9 +440,7 @@ describe("useDivinityBranchBuilder", () => {
       result.current.addArtifact("axe-of-pangu");
     });
 
-    act(() => {
-      result.current.saveCurrentTargetBuild("2026-05-31T00:00:00.000Z");
-    });
+    commitCurrentTargetBuild(result, "2026-05-31T00:00:00.000Z");
 
     expect(result.current.savedBuildsByPath.pvp?.equipment.artifactIds).toEqual([
       "excalibur",
@@ -447,9 +454,7 @@ describe("useDivinityBranchBuilder", () => {
   it("clears a saved tab when its draft changes", () => {
     const result = filledBuild();
 
-    act(() => {
-      result.current.saveCurrentTargetBuild("2026-05-30T00:00:00.000Z");
-    });
+    commitCurrentTargetBuild(result, "2026-05-30T00:00:00.000Z");
 
     expect(result.current.savedBuildsByPath.pvp).toBeTruthy();
 

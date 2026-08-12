@@ -7,6 +7,7 @@ type DownloadSectionProps = {
   backendStatus?: string | null;
   errors: readonly BranchBuildValidationError[];
   isPublishPending?: boolean;
+  isTabSavePending?: boolean;
   onErrorsLayout: (event: LayoutChangeEvent) => void;
   onDeleteFull: () => void;
   onDownloadFull: () => void;
@@ -21,6 +22,7 @@ export function DownloadSection({
   backendStatus,
   errors,
   isPublishPending = false,
+  isTabSavePending = false,
   onErrorsLayout,
   onDeleteFull,
   onDownloadFull,
@@ -36,6 +38,7 @@ export function DownloadSection({
         backendStatus={backendStatus}
         errors={errors}
         isPublishPending={isPublishPending}
+        isTabSavePending={isTabSavePending}
         onErrorsLayout={onErrorsLayout}
         onDeleteFull={onDeleteFull}
         onDownloadFull={onDownloadFull}

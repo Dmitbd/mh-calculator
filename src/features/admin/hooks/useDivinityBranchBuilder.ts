@@ -606,21 +606,6 @@ export function useDivinityBranchBuilder(
     [],
   );
 
-  const saveCurrentTargetBuild = useCallback(
-    (createdAt?: string) => {
-      const prepared = prepareCurrentTargetBuild(createdAt);
-
-      if (!prepared) {
-        return false;
-      }
-
-      commitPreparedTargetBuild(prepared);
-
-      return true;
-    },
-    [commitPreparedTargetBuild, prepareCurrentTargetBuild],
-  );
-
   const validateFullExport = useCallback(
     () =>
       validateMultiBuildExport({
@@ -706,7 +691,6 @@ export function useDivinityBranchBuilder(
       loadBuildSetForEditing,
       prepareCurrentTargetBuild,
       commitPreparedTargetBuild,
-      saveCurrentTargetBuild,
       validateFullExport,
       buildFullExport,
     }),
@@ -740,7 +724,6 @@ export function useDivinityBranchBuilder(
       loadBuildSetForEditing,
       prepareCurrentTargetBuild,
       commitPreparedTargetBuild,
-      saveCurrentTargetBuild,
       validateFullExport,
       buildFullExport,
     ],

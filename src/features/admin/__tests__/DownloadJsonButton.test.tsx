@@ -111,6 +111,7 @@ describe("DownloadJsonButton", () => {
 
   it("shows a loader label and blocks duplicate publish clicks while publishing", () => {
     const onPublishFull = jest.fn();
+    const onSaveCurrent = jest.fn();
 
     render(
       <DownloadJsonButton
@@ -120,14 +121,41 @@ describe("DownloadJsonButton", () => {
         onDownloadFull={jest.fn()}
         onLoadFull={jest.fn()}
         onPublishFull={onPublishFull}
-        onSaveCurrent={jest.fn()}
+        onSaveCurrent={onSaveCurrent}
         onSaveDraft={jest.fn()}
       />,
     );
 
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
     fireEvent.press(screen.getByText("Публикуем..."));
 
     expect(screen.queryByText("Опубликовать")).toBeNull();
+    expect(onSaveCurrent).not.toHaveBeenCalled();
+    expect(onPublishFull).not.toHaveBeenCalled();
+  });
+
+  it("shows a loader label and blocks save and publication while saving a tab", () => {
+    const onPublishFull = jest.fn();
+    const onSaveCurrent = jest.fn();
+
+    render(
+      <DownloadJsonButton
+        errors={[]}
+        isTabSavePending
+        onDeleteFull={jest.fn()}
+        onDownloadFull={jest.fn()}
+        onLoadFull={jest.fn()}
+        onPublishFull={onPublishFull}
+        onSaveCurrent={onSaveCurrent}
+        onSaveDraft={jest.fn()}
+      />,
+    );
+
+    fireEvent.press(screen.getByText("Сохраняем..."));
+    fireEvent.press(screen.getByText("Опубликовать"));
+
+    expect(screen.queryByText("Сохранить вкладку")).toBeNull();
+    expect(onSaveCurrent).not.toHaveBeenCalled();
     expect(onPublishFull).not.toHaveBeenCalled();
   });
 });
