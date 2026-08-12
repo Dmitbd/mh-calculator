@@ -4,8 +4,8 @@ import type {
 } from "@/features/game-data/heroes/types";
 
 import {
+  getBuilderHeroLists,
   getHeroGuideSelectorSections,
-  getSelectableBuilderHeroes,
 } from "../model/heroGuideSelector";
 
 const hero = (
@@ -37,22 +37,29 @@ const heroes = [
 ];
 
 describe("hero guide selector model", () => {
-  it("excludes published heroes but retains the selected published hero", () => {
-    expect(
-      getSelectableBuilderHeroes({
-        heroes,
-        publishedHeroIds: ["published"],
-        selectedHeroId: null,
-      }).map(({ id }) => id),
-    ).toEqual(["ur-open", "ssr-open", "ssr-multi"]);
+  it("separates not-created and unfinished heroes", () => {
+    const lists = getBuilderHeroLists({
+      heroes,
+      draftHeroIds: ["ssr-open"],
+      publishedHeroIds: ["published"],
+    });
 
-    expect(
-      getSelectableBuilderHeroes({
-        heroes,
-        publishedHeroIds: ["published"],
-        selectedHeroId: "published",
-      }).map(({ id }) => id),
-    ).toContain("published");
+    expect(lists.notCreatedHeroes.map(({ id }) => id)).toEqual([
+      "ur-open",
+      "ssr-multi",
+    ]);
+    expect(lists.notPublishedHeroes.map(({ id }) => id)).toEqual(["ssr-open"]);
+  });
+
+  it("lets published status dominate a stale draft", () => {
+    const lists = getBuilderHeroLists({
+      heroes,
+      draftHeroIds: ["published"],
+      publishedHeroIds: ["published"],
+    });
+
+    expect(lists.notCreatedHeroes).toEqual(heroes.filter(({ id }) => id !== "published"));
+    expect(lists.notPublishedHeroes).toEqual([]);
   });
 
   it("puts UR first and groups only SSR heroes by ordered factions", () => {

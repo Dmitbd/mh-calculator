@@ -14,6 +14,30 @@ export type HeroGuideSelectorSections = {
   ssrGroups: HeroGuideSelectorGroup[];
 };
 
+export type BuilderHeroLists = {
+  notCreatedHeroes: Hero[];
+  notPublishedHeroes: Hero[];
+};
+
+export function getBuilderHeroLists(params: {
+  heroes: readonly Hero[];
+  draftHeroIds: readonly string[];
+  publishedHeroIds: readonly string[];
+}): BuilderHeroLists {
+  const draftIds = new Set(params.draftHeroIds);
+  const publishedIds = new Set(params.publishedHeroIds);
+
+  return params.heroes.reduce<BuilderHeroLists>(
+    (lists, hero) => {
+      if (publishedIds.has(hero.id)) return lists;
+      if (draftIds.has(hero.id)) lists.notPublishedHeroes.push(hero);
+      else lists.notCreatedHeroes.push(hero);
+      return lists;
+    },
+    { notCreatedHeroes: [], notPublishedHeroes: [] },
+  );
+}
+
 export function getSelectableBuilderHeroes(params: {
   heroes: readonly Hero[];
   publishedHeroIds: readonly string[];
