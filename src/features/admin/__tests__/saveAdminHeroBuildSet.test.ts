@@ -19,35 +19,42 @@ beforeEach(() => {
   mockedPublishDraft.mockReset();
 });
 
-it("publishes the matching draft in one repository operation", async () => {
-  let resolvePublication!: () => void;
+it("publishes the matching expected draft revision in one operation", async () => {
+  let resolvePublication!: (value: { revision: number }) => void;
   mockedPublishDraft.mockReturnValue(
-    new Promise<void>((resolve) => {
+    new Promise((resolve) => {
       resolvePublication = resolve;
-    }),
+    }) as never,
   );
 
   const publication = publishAdminHeroBuildSet({
     buildSet,
     client,
+    expectedRevision: 4,
     heroId: "bastet",
   });
 
   expect(mockedPublishDraft).toHaveBeenCalledWith(client, {
     buildSet,
+    expectedRevision: 4,
     heroId: "bastet",
   });
 
-  resolvePublication();
+  resolvePublication({ revision: 5 });
 
-  await expect(publication).resolves.toBeUndefined();
+  await expect(publication).resolves.toMatchObject({ revision: 5 });
 });
 
 it("surfaces an atomic publication failure", async () => {
   mockedPublishDraft.mockRejectedValue(new Error("publish failed"));
 
   await expect(
-    publishAdminHeroBuildSet({ buildSet, client, heroId: "bastet" }),
+    publishAdminHeroBuildSet({
+      buildSet,
+      client,
+      expectedRevision: 4,
+      heroId: "bastet",
+    }),
   ).rejects.toThrow("publish failed");
 });
 

@@ -13,10 +13,12 @@ export function hasCreatePublicationConflict(
 export async function publishAdminHeroBuildSet(params: {
   buildSet: HeroBuildSet;
   client: HeroBuildSetSupabaseClient;
+  expectedRevision: number;
   heroId: string;
-}): Promise<void> {
-  await publishDraftHeroBuildSet(params.client, {
+}) {
+  return publishDraftHeroBuildSet(params.client, {
     buildSet: params.buildSet,
+    expectedRevision: params.expectedRevision,
     heroId: params.heroId,
   });
 }

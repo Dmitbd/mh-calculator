@@ -143,7 +143,7 @@ Parser остаётся ограниченным текущим `HeroBuildSet` �
 
 Рекурсивный parser сам полностью проверяет tab invariants и не запускает второй обход `validateHeroBuildTabs`. Для каждого непустого leaf он требует валидный собственный или унаследованный `gameMode`; отсутствие сообщает точный path `<leaf>.gameMode`. Любое неожиданное исключение внутри parser преобразуется в `HeroBuildSetSchemaError`, а row-level `payload` принимается только как обязательное собственное data property. Только `null`/`undefined` самой строки означает `no-data`; строка без `payload`, с унаследованным или accessor `payload` классифицируется repository как `invalid-data`, а не как сеть.
 
-Повреждённые данные приводят к `HeroBuildSetRepositoryError` с `kind: "invalid-data"`; ошибка Supabase — к тому же типу с `kind: "network"`; отсутствие строки остаётся отдельным `null`/`no-data` исходом. Невалидный remote не может попасть в Viewer или заменить корректный fallback/будущий last-known-good snapshot.
+Повреждённые данные приводят к `HeroBuildSetRepositoryError` с `kind: "invalid-data"`; ошибка Supabase — к тому же типу с `kind: "network"`; конфликт revision при административной записи имеет отдельный `kind: "conflict"`; отсутствие строки остаётся отдельным `null`/`no-data` исходом. Невалидный remote не может попасть в Viewer или заменить корректный fallback/будущий last-known-good snapshot.
 
 Порядок и подписи вкладок принадлежат данным комплекта. Компонент просмотра не должен хардкодить режимы `PvP`, `PvE` или их варианты.
 
@@ -217,7 +217,7 @@ Parser остаётся ограниченным текущим `HeroBuildSet` �
 
 Опубликованный билд нельзя удалить из пользовательского экрана или через публичный repository API. Неавторизованный пользователь не должен видеть административную кнопку редактирования.
 
-На уровне Supabase RLS все пользователи могут читать только `published`-строки, а JWT с `app_metadata.role = admin` может читать также `draft`. Прямые `insert/update/delete` для `anon` и `authenticated` отозваны: lifecycle-запись выполняют только отдельные `SECURITY DEFINER` RPC, каждая со своей точной проверкой admin claim и исходного состояния строки. Одного статуса `authenticated` недостаточно. На каждого `hero_id` хранится не более одной строки: `draft` атомарно становится `published`, а опубликованную строку нельзя удалить, перевести обратно в `draft` или перенести на другой `hero_id`. В `mode=edit` полный опубликованный payload обновляется отдельной repository-операцией без создания draft и без смены статуса.
+На уровне Supabase RLS все пользователи могут читать только `published`-строки, а JWT с `app_metadata.role = admin` может читать также `draft`. Прямые `insert/update/delete` для `anon` и `authenticated` отозваны: lifecycle-запись выполняют только отдельные `SECURITY DEFINER` RPC, каждая со своей точной проверкой admin claim, исходного состояния строки и ожидаемой revision. Одного статуса `authenticated` недостаточно. На каждого `hero_id` хранится не более одной строки: `draft` атомарно становится `published`, а опубликованную строку нельзя удалить, перевести обратно в `draft` или перенести на другой `hero_id`. В `mode=edit` полный опубликованный payload обновляется отдельной repository-операцией без создания draft и без смены статуса. Каждое успешное изменение создаёт следующую revision и immutable audit event с предыдущим и новым snapshot; администратор может восстановить опубликованный history snapshot только как ещё более новую published revision.
 
 ## Asset And Localization Rules
 

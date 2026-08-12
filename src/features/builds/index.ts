@@ -9,12 +9,16 @@ export {
 export {
   createOrUpdateDraftHeroBuildSet,
   fetchDraftHeroBuildSet,
+  fetchDraftHeroBuildSetRecord,
   fetchHeroBuildSetStatusIds,
+  fetchPublishedHeroBuildSetHistory,
   fetchPublishedHeroBuildSet,
+  fetchPublishedHeroBuildSetRecord,
   fetchPublishedHeroIds,
   HeroBuildSetRepositoryError,
   loadPublishedHeroBuildSet,
   publishDraftHeroBuildSet,
+  restorePublishedHeroBuildSet,
   updatePublishedHeroBuildSet,
 } from "./api/heroBuildSetRepository";
 export type {
@@ -22,6 +26,9 @@ export type {
   HeroBuildSetStatusIds,
   HeroBuildSetSupabaseClient,
   HeroBuildSetFallbackOutcome,
+  HeroBuildSetHistoryEvent,
+  HeroBuildSetRecord,
   HeroBuildSetRepositoryErrorKind,
+  PublishedHeroBuildSetHistoryRecord,
 } from "./api/heroBuildSetRepository";
 export type { BuildFolderTabItem } from "./types";

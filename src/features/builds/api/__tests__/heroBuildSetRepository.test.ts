@@ -6,12 +6,16 @@ import {
   createOrUpdateDraftHeroBuildSet,
   fetchHeroBuildSetStatusIds,
   fetchDraftHeroBuildSet,
+  fetchDraftHeroBuildSetRecord,
+  fetchPublishedHeroBuildSetHistory,
   fetchPublishedHeroBuildSet,
+  fetchPublishedHeroBuildSetRecord,
   fetchPublishedHeroIds,
   HeroBuildSetRepositoryError,
   type HeroBuildSetSupabaseClient,
   loadPublishedHeroBuildSet,
   publishDraftHeroBuildSet,
+  restorePublishedHeroBuildSet,
   updatePublishedHeroBuildSet,
 } from "../heroBuildSetRepository";
 
@@ -22,6 +26,7 @@ function createQueryResult(result: unknown) {
     delete: jest.Mock;
     eq: jest.Mock;
     maybeSingle: jest.Mock;
+    order: jest.Mock;
     rpc: jest.Mock;
     select: jest.Mock;
     single: jest.Mock;
@@ -33,6 +38,7 @@ function createQueryResult(result: unknown) {
   query.delete = jest.fn(() => query);
   query.eq = jest.fn(() => query);
   query.maybeSingle = jest.fn(async () => result);
+  query.order = jest.fn(() => query);
   query.rpc = jest.fn(async () => result);
   query.select = jest.fn(() => query);
   query.single = jest.fn(async () => result);
@@ -90,6 +96,32 @@ describe("heroBuildSetRepository", () => {
     expect(query.maybeSingle).toHaveBeenCalledTimes(1);
   });
 
+  it("fetches a validated draft with revision metadata", async () => {
+    const query = createQueryResult({
+      data: {
+        payload: buildSet,
+        revision: 4,
+        status: "draft",
+        updated_at: "2026-08-13T08:00:00.000Z",
+        updated_by: "admin-id",
+      },
+      error: null,
+    });
+
+    await expect(
+      fetchDraftHeroBuildSetRecord(createClient(query), "bastet"),
+    ).resolves.toEqual({
+      buildSet,
+      revision: 4,
+      status: "draft",
+      updatedAt: "2026-08-13T08:00:00.000Z",
+      updatedBy: "admin-id",
+    });
+    expect(query.select).toHaveBeenCalledWith(
+      "payload,revision,status,updated_at,updated_by",
+    );
+  });
+
   it("throws when the status catalog cannot be loaded", async () => {
     const query = createQueryResult({
       data: null,
@@ -139,6 +171,23 @@ describe("heroBuildSetRepository", () => {
     expect(query.eq).toHaveBeenCalledWith("hero_id", "bastet");
     expect(query.eq).toHaveBeenCalledWith("status", "published");
     expect(query.maybeSingle).toHaveBeenCalledTimes(1);
+  });
+
+  it("fetches a validated published build with revision metadata", async () => {
+    const query = createQueryResult({
+      data: {
+        payload: buildSet,
+        revision: 7,
+        status: "published",
+        updated_at: "2026-08-13T09:00:00.000Z",
+        updated_by: null,
+      },
+      error: null,
+    });
+
+    await expect(
+      fetchPublishedHeroBuildSetRecord(createClient(query), "bastet"),
+    ).resolves.toMatchObject({ buildSet, revision: 7, status: "published" });
   });
 
   it("returns null when Supabase has no published build set", async () => {
@@ -278,31 +327,53 @@ describe("heroBuildSetRepository", () => {
     ).rejects.toMatchObject({ kind: "invalid-data" });
   });
 
-  it("creates or updates only a draft row by hero identity", async () => {
-    const rpc = jest.fn(async () => ({ data: null, error: null }));
+  it("creates a draft with an explicit no-row expectation", async () => {
+    const rpc = jest.fn(async () => ({
+      data: {
+        payload: buildSet,
+        revision: 1,
+        status: "draft",
+        updated_at: "2026-08-13T09:00:00.000Z",
+        updated_by: "admin-id",
+      },
+      error: null,
+    }));
     const client = createRpcClient(rpc);
 
-    await createOrUpdateDraftHeroBuildSet(client, {
+    await expect(createOrUpdateDraftHeroBuildSet(client, {
       buildSet,
+      expectedRevision: null,
       heroId: "bastet",
-    });
+    })).resolves.toMatchObject({ revision: 1, updatedBy: "admin-id" });
 
     expect(rpc).toHaveBeenCalledWith("create_or_update_draft_hero_build_set", {
+      p_expected_revision: null,
       p_hero_id: "bastet",
       p_payload: buildSet,
     });
   });
 
   it("publishes a draft through the atomic database transition", async () => {
-    const rpc = jest.fn(async () => ({ data: null, error: null }));
+    const rpc = jest.fn(async () => ({
+      data: {
+        payload: buildSet,
+        revision: 3,
+        status: "published",
+        updated_at: "2026-08-13T09:00:00.000Z",
+        updated_by: "admin-id",
+      },
+      error: null,
+    }));
     const client = createRpcClient(rpc);
 
     await publishDraftHeroBuildSet(client, {
       buildSet,
+      expectedRevision: 2,
       heroId: "bastet",
     });
 
     expect(rpc).toHaveBeenCalledWith("publish_hero_build_set", {
+      p_expected_revision: 2,
       p_hero_id: "bastet",
       p_payload: buildSet,
     });
@@ -317,23 +388,108 @@ describe("heroBuildSetRepository", () => {
     await expect(
       publishDraftHeroBuildSet(createRpcClient(rpc), {
         buildSet,
+        expectedRevision: 2,
         heroId: "bastet",
       }),
     ).rejects.toThrow("draft not found");
   });
 
-  it("updates payload only on an existing published row", async () => {
-    const rpc = jest.fn(async () => ({ data: null, error: null }));
+  it("updates payload only at the expected published revision", async () => {
+    const rpc = jest.fn(async () => ({
+      data: {
+        payload: buildSet,
+        revision: 9,
+        status: "published",
+        updated_at: "2026-08-13T09:00:00.000Z",
+        updated_by: "admin-id",
+      },
+      error: null,
+    }));
     const client = createRpcClient(rpc);
 
-    await updatePublishedHeroBuildSet(client, {
+    await expect(updatePublishedHeroBuildSet(client, {
       buildSet,
+      expectedRevision: 8,
       heroId: "bastet",
-    });
+    })).resolves.toMatchObject({ revision: 9 });
 
     expect(rpc).toHaveBeenCalledWith("update_published_hero_build_set", {
+      p_expected_revision: 8,
       p_hero_id: "bastet",
       p_payload: buildSet,
+    });
+  });
+
+  it("maps revision SQLSTATE to a typed conflict", async () => {
+    const rpc = jest.fn(async () => ({
+      data: null,
+      error: { code: "P4090", message: "revision conflict" },
+    }));
+
+    await expect(
+      updatePublishedHeroBuildSet(createRpcClient(rpc), {
+        buildSet,
+        expectedRevision: 8,
+        heroId: "bastet",
+      }),
+    ).rejects.toMatchObject({ kind: "conflict", message: "revision conflict" });
+  });
+
+  it("fetches validated immutable published history", async () => {
+    const query = createQueryResult({
+      data: [
+        {
+          created_at: "2026-08-13T09:00:00.000Z",
+          event_type: "published",
+          id: 12,
+          payload: buildSet,
+          revision: 3,
+          updated_by: "admin-id",
+        },
+      ],
+      error: null,
+    });
+    const client = createClient(query);
+
+    await expect(
+      fetchPublishedHeroBuildSetHistory(client, "bastet"),
+    ).resolves.toEqual([
+      {
+        buildSet,
+        createdAt: "2026-08-13T09:00:00.000Z",
+        eventType: "published",
+        id: 12,
+        revision: 3,
+        updatedBy: "admin-id",
+      },
+    ]);
+    expect(client.from).toHaveBeenCalledWith("hero_build_set_revisions");
+    expect(query.eq).toHaveBeenCalledWith("status", "published");
+    expect(query.order).toHaveBeenCalledWith("revision", { ascending: false });
+  });
+
+  it("restores through the narrow optimistic RPC", async () => {
+    const rpc = jest.fn(async () => ({
+      data: {
+        payload: buildSet,
+        revision: 10,
+        status: "published",
+        updated_at: "2026-08-13T10:00:00.000Z",
+        updated_by: "admin-id",
+      },
+      error: null,
+    }));
+
+    await expect(
+      restorePublishedHeroBuildSet(createRpcClient(rpc), {
+        expectedRevision: 9,
+        historyId: 12,
+        heroId: "bastet",
+      }),
+    ).resolves.toMatchObject({ revision: 10 });
+    expect(rpc).toHaveBeenCalledWith("restore_published_hero_build_set", {
+      p_expected_revision: 9,
+      p_history_id: 12,
     });
   });
 

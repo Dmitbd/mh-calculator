@@ -14,10 +14,11 @@ import { StatusToast } from "@/shared/ui/StatusToast";
 import {
   createOrUpdateDraftHeroBuildSet,
   DivinitySkillLoadoutSection,
-  fetchDraftHeroBuildSet,
+  fetchDraftHeroBuildSetRecord,
   fetchHeroBuildSetStatusIds,
   fetchPublishedHeroBuildSet,
-  loadPublishedHeroBuildSet,
+  fetchPublishedHeroBuildSetRecord,
+  HeroBuildSetRepositoryError,
   updatePublishedHeroBuildSet,
   type HeroBuildSetStatusIds,
 } from "@/features/builds";
@@ -117,6 +118,7 @@ export function DivinityBranchBuilderScreen({
   const publishInFlight = useRef(false);
   const publishRequestId = useRef(0);
   const authTransitionInFlight = useRef(false);
+  const serverRevisionsByHero = useRef<Record<string, number>>({});
   const authRequestId = useRef(0);
   const isScreenMounted = useRef(true);
   const {
@@ -236,6 +238,7 @@ export function DivinityBranchBuilderScreen({
     draftLoadInFlight.current = false;
     setIsDraftLoadPending(false);
     setIsEditBuildLoading(false);
+    serverRevisionsByHero.current = {};
   }, []);
 
   const resetHeroStatusList = useCallback(() => {
@@ -409,21 +412,19 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
-    void loadPublishedHeroBuildSet({
-      client,
-      fallbackBuildSet,
-      heroId: initialHeroId,
-    })
-      .then((buildSet) => {
+    void fetchPublishedHeroBuildSetRecord(client, initialHeroId)
+      .then((record) => {
         if (!isCurrentRequest()) {
           return;
         }
 
+        const buildSet = record?.buildSet ?? fallbackBuildSet;
         if (!buildSet || !loadBuildSetForEditing(buildSet)) {
           showBackendMessage("error", "Билд для редактирования не найден.");
           return;
         }
 
+        setServerRevision(initialHeroId, record?.revision ?? null);
         showBackendMessage("success", "Билд загружен для редактирования.");
       })
       .catch((error) => {
@@ -456,6 +457,39 @@ export function DivinityBranchBuilderScreen({
   function showBackendMessage(kind: "success" | "error", message: string) {
     setBackendStatus(message);
     setToast({ kind, message });
+  }
+
+  function showRepositoryError(error: unknown) {
+    if (
+      error instanceof HeroBuildSetRepositoryError &&
+      error.kind === "conflict"
+    ) {
+      showBackendMessage(
+        "error",
+        "Билд изменён в другой сессии. Ваши правки сохранены в форме; загрузите актуальную версию.",
+      );
+      return;
+    }
+
+    showBackendMessage(
+      "error",
+      error instanceof Error
+        ? `Ошибка Supabase: ${error.message}`
+        : "Ошибка Supabase.",
+    );
+  }
+
+  function getServerRevision(heroId: string): number | null {
+    return serverRevisionsByHero.current[heroId] ?? null;
+  }
+
+  function setServerRevision(heroId: string, revision: number | null) {
+    if (revision === null) {
+      delete serverRevisionsByHero.current[heroId];
+      return;
+    }
+
+    serverRevisionsByHero.current[heroId] = revision;
   }
 
   function showValidationErrorToast(
@@ -625,24 +659,38 @@ export function DivinityBranchBuilderScreen({
       isScreenMounted.current && requestId === tabSaveRequestId.current;
 
     try {
+      let resultingRevision: number;
+      const expectedRevision = getServerRevision(selectedHeroId);
+
       if (initialMode === "edit") {
-        await updatePublishedHeroBuildSet(
+        if (expectedRevision === null) {
+          showBackendMessage("error", "Загрузите актуальный серверный билд перед сохранением.");
+          return;
+        }
+        const record = await updatePublishedHeroBuildSet(
           client,
           {
             buildSet: prepared.buildSet,
+            expectedRevision,
             heroId: selectedHeroId,
           },
         );
+        resultingRevision =
+          record?.revision ?? expectedRevision + 1;
       } else {
-        await createOrUpdateDraftHeroBuildSet(
+        const record = await createOrUpdateDraftHeroBuildSet(
           client,
           {
             buildSet: prepared.buildSet,
+            expectedRevision,
             heroId: selectedHeroId,
           },
         );
+        resultingRevision =
+          record?.revision ?? (expectedRevision ?? 0) + 1;
       }
 
+      setServerRevision(selectedHeroId, resultingRevision);
       if (!isCurrentRequest()) {
         return;
       }
@@ -671,12 +719,7 @@ export function DivinityBranchBuilderScreen({
         return;
       }
 
-      showBackendMessage(
-        "error",
-        error instanceof Error
-          ? `Ошибка Supabase: ${error.message}`
-          : "Ошибка Supabase.",
-      );
+      showRepositoryError(error);
     } finally {
       if (isCurrentRequest()) {
         tabSaveInFlight.current = false;
@@ -777,18 +820,22 @@ export function DivinityBranchBuilderScreen({
 
     if (status === "draft") {
       try {
-        await createOrUpdateDraftHeroBuildSet(
+        const expectedRevision = getServerRevision(heroId);
+        const record = await createOrUpdateDraftHeroBuildSet(
           client,
-          { buildSet, heroId },
+          {
+            buildSet,
+            expectedRevision,
+            heroId,
+          },
+        );
+        setServerRevision(
+          heroId,
+          record?.revision ?? (expectedRevision ?? 0) + 1,
         );
         showBackendMessage("success", "Черновик сохранён.");
       } catch (error) {
-        showBackendMessage(
-          "error",
-          error instanceof Error
-            ? `Ошибка Supabase: ${error.message}`
-            : "Ошибка Supabase.",
-        );
+        showRepositoryError(error);
       }
       return;
     }
@@ -801,11 +848,24 @@ export function DivinityBranchBuilderScreen({
       isScreenMounted.current && requestId === publishRequestId.current;
 
     try {
+      let resultingRevision: number;
+      const expectedRevision = getServerRevision(heroId);
+
       if (initialMode === "edit") {
-        await updatePublishedHeroBuildSet(
+        if (expectedRevision === null) {
+          showBackendMessage("error", "Загрузите актуальный серверный билд перед сохранением.");
+          return;
+        }
+        const record = await updatePublishedHeroBuildSet(
           client,
-          { buildSet, heroId },
+          {
+            buildSet,
+            expectedRevision,
+            heroId,
+          },
         );
+        resultingRevision =
+          record?.revision ?? expectedRevision + 1;
       } else {
         const remoteBuildSet = await fetchPublishedHeroBuildSet(
           client,
@@ -823,13 +883,21 @@ export function DivinityBranchBuilderScreen({
           );
           return;
         }
-        await publishAdminHeroBuildSet({
+        if (expectedRevision === null) {
+          showBackendMessage("error", "Сначала сохраните черновик на сервере.");
+          return;
+        }
+        const record = await publishAdminHeroBuildSet({
           buildSet,
           client,
+          expectedRevision,
           heroId,
         });
+        resultingRevision =
+          record?.revision ?? expectedRevision + 1;
       }
 
+      setServerRevision(heroId, resultingRevision);
       if (!isCurrentRequest()) {
         return;
       }
@@ -871,12 +939,7 @@ export function DivinityBranchBuilderScreen({
         return;
       }
 
-      showBackendMessage(
-        "error",
-        error instanceof Error
-          ? `Ошибка Supabase: ${error.message}`
-          : "Ошибка Supabase.",
-      );
+      showRepositoryError(error);
     } finally {
       if (isCurrentRequest()) {
         publishInFlight.current = false;
@@ -910,17 +973,18 @@ export function DivinityBranchBuilderScreen({
     }
 
     try {
-      const buildSet = await loadPublishedHeroBuildSet({
+      const record = await fetchPublishedHeroBuildSetRecord(
         client,
-        fallbackBuildSet: getHeroBuildSet(selectedHeroId),
-        heroId: selectedHeroId,
-      });
+        selectedHeroId,
+      );
+      const buildSet = record?.buildSet ?? getHeroBuildSet(selectedHeroId);
 
       if (!buildSet || !loadBuildSetForEditing(buildSet)) {
         setBackendStatus("Билд для выбранного героя не найден.");
         return;
       }
 
+      setServerRevision(selectedHeroId, record?.revision ?? null);
       setBackendStatus("Билд загружен для редактирования.");
     } catch (error) {
       setBackendStatus(
@@ -1091,6 +1155,7 @@ export function DivinityBranchBuilderScreen({
     clearValidationErrors(isHeroErrorPath);
 
     if (!heroStatusIds.draftHeroIds.includes(heroId)) {
+      setServerRevision(heroId, null);
       selectHero(heroId);
       return;
     }
@@ -1108,7 +1173,7 @@ export function DivinityBranchBuilderScreen({
       isScreenMounted.current && requestId === entityLoadRequestId.current;
 
     try {
-      const draft = await fetchDraftHeroBuildSet(
+      const draftRecord = await fetchDraftHeroBuildSetRecord(
         client,
         heroId,
       );
@@ -1117,7 +1182,7 @@ export function DivinityBranchBuilderScreen({
         return;
       }
 
-      if (!draft || !loadBuildSetForEditing(draft)) {
+      if (!draftRecord || !loadBuildSetForEditing(draftRecord.buildSet)) {
         await loadHeroStatusIds();
 
         if (!isCurrentRequest()) {
@@ -1128,6 +1193,7 @@ export function DivinityBranchBuilderScreen({
         return;
       }
 
+      setServerRevision(heroId, draftRecord.revision);
       showBackendMessage("success", "Черновик загружен.");
     } catch (error) {
       if (!isCurrentRequest()) {

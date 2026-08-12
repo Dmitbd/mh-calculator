@@ -333,7 +333,11 @@ type DivinityBranchBuilderExport = {
 
 `AdminAuthPanel` поддерживает вход и выход, состояния pending и видимые success/error toast. Если Supabase не настроен, серверное действие завершается контролируемым `Supabase не настроен.`, а не падением.
 
-Supabase RLS повторяет границу чтения: `draft` доступен только JWT с `app_metadata.role = admin`, без admin claim можно читать только строки `published`. Прямые `insert/update/delete` для `anon` и `authenticated` отозваны; даже admin-клиент выполняет lifecycle-запись только через узкие `SECURITY DEFINER` RPC. Каждая RPC независимо проверяет точный `app_metadata.role === "admin"`, ожидаемое исходное состояние строки и число затронутых строк. Клиентская проверка управляет UI, но не заменяет server boundary; RLS остаётся дополнительной защитой чтения.
+Supabase RLS повторяет границу чтения: `draft` доступен только JWT с `app_metadata.role = admin`, без admin claim можно читать только строки `published`. Прямые `insert/update/delete` для `anon` и `authenticated` отозваны; даже admin-клиент выполняет lifecycle-запись только через узкие `SECURITY DEFINER` RPC. Каждая RPC независимо проверяет точный `app_metadata.role === "admin"`, ожидаемое исходное состояние строки, переданную клиентом `expected_revision` и число затронутых строк. Клиентская проверка управляет UI, но не заменяет server boundary; RLS остаётся дополнительной защитой чтения.
+
+Каждая server-строка имеет монотонный `revision` (существующие и впервые созданные строки начинают с `1`) и `updated_by = auth.uid()`. Успешное изменение увеличивает revision ровно один раз и в той же транзакции добавляет immutable history event с автором, предыдущими и новыми status/payload snapshots. Создание draft передаёт `expected_revision = null` как явное ожидание отсутствующей строки; последующие сохранение, публикация и редактирование требуют загруженную текущую revision. Несовпадение revision, отсутствие строки или неверное исходное состояние возвращаются repository как `HeroBuildSetRepositoryError` с `kind: "conflict"`, отдельно от `network` и `invalid-data`.
+
+История опубликованных snapshot доступна только администратору. Восстановление не изменяет и не удаляет старые history rows: узкая admin RPC берёт выбранную опубликованную history-запись и ожидаемую текущую revision, после чего создаёт более новую published revision с событием `restored_published`.
 
 ## Hero States And Selector
 
@@ -357,7 +361,7 @@ Supabase возвращает ID отдельно по статусам `draft` 
 4. только после успешного server save фиксирует подготовленный snapshot в локальном собираемом комплекте и обновляет status-каталог;
 5. не публикует данные: `published`-строка меняется только отдельным действием публикации.
 
-Повторное сохранение блокируется, пока запрос текущей вкладки не завершён. Устаревший ответ после смены героя/вкладки или закрытия экрана не должен применить snapshot или показать ложный success. Ошибка Supabase сохраняет текущие поля редактирования и показывает backend error, но не выдаёт вкладку за сохранённую.
+Повторное сохранение блокируется, пока запрос текущей вкладки не завершён. Устаревший ответ после смены героя/вкладки или закрытия экрана не должен применить snapshot или показать ложный success. Ошибка Supabase сохраняет текущие поля редактирования и показывает backend error, но не выдаёт вкладку за сохранённую. Optimistic conflict также не коммитит подготовленный snapshot и не сбрасывает локальные правки: экран показывает `Билд изменён в другой сессии. Ваши правки сохранены в форме; загрузите актуальную версию.`
 
 Полный export собирается только из сохранённых leaf-вкладок. Пустые группы и незавершённые drafts не должны маскироваться как готовый комплект.
 
@@ -453,6 +457,7 @@ Backend success не должен жить дольше актуальной о�
 - [multiBuildExport.test.ts](../src/features/admin/__tests__/multiBuildExport.test.ts) — сборка полного комплекта;
 - [saveAdminHeroBuildSet.test.ts](../src/features/admin/__tests__/saveAdminHeroBuildSet.test.ts) — единая атомарная операция публикации черновика;
 - [heroBuildSetsLifecycleSql.test.js](../src/features/admin/__tests__/heroBuildSetsLifecycleSql.test.js) — структура migration, server trigger и publication RPC;
+- [heroBuildSetRevisionsSql.test.js](../src/features/admin/__tests__/heroBuildSetRevisionsSql.test.js) — revision/history immutability, optimistic predicates и restore RPC;
 - [heroGuideSelectorModel.test.ts](../src/features/admin/__tests__/heroGuideSelectorModel.test.ts) — взаимоисключающие списки героев;
 - [HeroGuideSelector.test.tsx](../src/features/admin/__tests__/HeroGuideSelector.test.tsx) — loading/error/группы селектора;
 - [EquipmentVariantBuilder.test.tsx](../src/features/admin/__tests__/EquipmentVariantBuilder.test.tsx) — варианты экипировки;

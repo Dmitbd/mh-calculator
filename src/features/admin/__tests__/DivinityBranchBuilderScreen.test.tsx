@@ -8,7 +8,11 @@ import {
 } from "@testing-library/react-native";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import type { HeroBuildSetStatusIds } from "@/features/builds";
+import {
+  HeroBuildSetRepositoryError,
+  type HeroBuildSetRecord,
+  type HeroBuildSetStatusIds,
+} from "@/features/builds";
 import { getHeroBuildSet } from "@/features/game-data/heroes";
 import type { HeroBuildSet } from "@/features/game-data/heroes";
 
@@ -20,7 +24,9 @@ const mockFetchHeroBuildSetStatusIds = jest.fn<
   []
 >();
 const mockFetchDraftHeroBuildSet = jest.fn();
+const mockFetchDraftHeroBuildSetRecord = jest.fn();
 const mockFetchPublishedHeroBuildSet = jest.fn();
+const mockFetchPublishedHeroBuildSetRecord = jest.fn();
 const mockLoadPublishedHeroBuildSet = jest.fn();
 const mockCreateOrUpdateDraftHeroBuildSet = jest.fn();
 const mockPublishDraftHeroBuildSet = jest.fn();
@@ -78,6 +84,19 @@ function getValidBastetBuildSet(): HeroBuildSet {
   return getValidHeroBuildSet("bastet");
 }
 
+function getBuildSetRecord(
+  status: "draft" | "published",
+  revision = 1,
+): HeroBuildSetRecord {
+  return {
+    buildSet: getValidBastetBuildSet(),
+    revision,
+    status,
+    updatedAt: "2026-08-13T09:00:00.000Z",
+    updatedBy: ADMIN_SESSION.id,
+  };
+}
+
 function getPvpOnlyBastetBuildSet(): HeroBuildSet {
   const buildSet = getValidBastetBuildSet();
   const clearBuilds = (tabs: HeroBuildSet["tabs"]) => {
@@ -108,9 +127,13 @@ jest.mock("@/features/builds", () => {
       mockCreateOrUpdateDraftHeroBuildSet(...args),
     fetchDraftHeroBuildSet: (...args: unknown[]) =>
       mockFetchDraftHeroBuildSet(...args),
+    fetchDraftHeroBuildSetRecord: (...args: unknown[]) =>
+      mockFetchDraftHeroBuildSetRecord(...args),
     fetchHeroBuildSetStatusIds: () => mockFetchHeroBuildSetStatusIds(),
     fetchPublishedHeroBuildSet: (...args: unknown[]) =>
       mockFetchPublishedHeroBuildSet(...args),
+    fetchPublishedHeroBuildSetRecord: (...args: unknown[]) =>
+      mockFetchPublishedHeroBuildSetRecord(...args),
     loadPublishedHeroBuildSet: (...args: unknown[]) =>
       mockLoadPublishedHeroBuildSet(...args),
     publishDraftHeroBuildSet: (...args: unknown[]) =>
@@ -162,10 +185,32 @@ describe("DivinityBranchBuilderScreen", () => {
     });
     mockFetchDraftHeroBuildSet.mockReset();
     mockFetchDraftHeroBuildSet.mockResolvedValue(null);
+    mockFetchDraftHeroBuildSetRecord.mockReset();
+    mockFetchDraftHeroBuildSetRecord.mockImplementation(
+      async (_client: unknown, heroId: string) => {
+        const buildSet = await mockFetchDraftHeroBuildSet(_client, heroId);
+        return buildSet
+          ? { ...getBuildSetRecord("draft"), buildSet }
+          : null;
+      },
+    );
     mockFetchPublishedHeroBuildSet.mockReset();
     mockFetchPublishedHeroBuildSet.mockResolvedValue(null);
+    mockFetchPublishedHeroBuildSetRecord.mockReset();
     mockLoadPublishedHeroBuildSet.mockReset();
     mockLoadPublishedHeroBuildSet.mockResolvedValue(getValidBastetBuildSet());
+    mockFetchPublishedHeroBuildSetRecord.mockImplementation(
+      async (client: unknown, heroId: string) => {
+        const buildSet = await mockLoadPublishedHeroBuildSet({
+          client,
+          fallbackBuildSet: getHeroBuildSet(heroId),
+          heroId,
+        });
+        return buildSet
+          ? { ...getBuildSetRecord("published"), buildSet }
+          : null;
+      },
+    );
     mockCreateOrUpdateDraftHeroBuildSet.mockReset();
     mockCreateOrUpdateDraftHeroBuildSet.mockResolvedValue(undefined);
     mockPublishDraftHeroBuildSet.mockReset();
@@ -272,6 +317,7 @@ describe("DivinityBranchBuilderScreen", () => {
       expect.anything(),
       {
         buildSet: expect.anything(),
+        expectedRevision: 1,
         heroId: "bastet",
       },
     );
@@ -341,6 +387,33 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(
       await screen.findAllByText("Ошибка Supabase: publication failed"),
     ).not.toHaveLength(0);
+    expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps local edits and shows a controlled revision conflict", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockUpdatePublishedHeroBuildSet.mockRejectedValue(
+      new HeroBuildSetRepositoryError("conflict", "revision conflict"),
+    );
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+
+    expect(
+      await screen.findAllByText(
+        "Билд изменён в другой сессии. Ваши правки сохранены в форме; загрузите актуальную версию.",
+      ),
+    ).not.toHaveLength(0);
+    expect(screen.queryByLabelText("Weapon awakening slot 1, Зелёный")).toBeNull();
     expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
   });
 
