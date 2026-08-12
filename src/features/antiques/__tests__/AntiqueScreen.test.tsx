@@ -76,14 +76,19 @@ beforeEach(() => {
   };
 });
 
-test("renders the loaded calculator sections with the initial summary first", () => {
+test("renders the loaded calculator sections with the plain heading first", () => {
   render(<AntiqueScreen />);
 
   expect(screen.getByText("Антиквариат").props.numberOfLines).toBe(1);
-  expect(screen.getByLabelText("Итоговые очки: 0")).toBeTruthy();
-  expect(screen.getByLabelText("Исходные очки: 0")).toBeTruthy();
-  expect(screen.getByLabelText("Осталось очков: 12000")).toBeTruthy();
-  expect(screen.getByText("Прогресс соперничества")).toBeTruthy();
+  expect(
+    screen.getByText("Калькулятор соперничества за антиквариат"),
+  ).toBeTruthy();
+  expect(screen.queryByText("Прогресс соперничества")).toBeNull();
+  expect(screen.queryByText("Итоговые очки")).toBeNull();
+  expect(screen.queryByText("Исходные очки")).toBeNull();
+  expect(screen.queryByText("До 12 000")).toBeNull();
+  expect(screen.queryByText("Узлы")).toBeNull();
+  expect(screen.queryByText("Крупные сундуки")).toBeNull();
   expect(screen.getByText("Монеты исследования")).toBeTruthy();
   expect(screen.getByText("Мои карты")).toBeTruthy();
   expect(screen.getByText("Шкала наград")).toBeTruthy();
