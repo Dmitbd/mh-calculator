@@ -955,6 +955,118 @@ describe("DivinityBranchBuilderScreen", () => {
     ).toEqual(expect.objectContaining({ selected: true }));
   });
 
+  it("keeps the accepted form identity after a new initial edit entity is not found", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+
+    const view = render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    mockLoadPublishedHeroBuildSet.mockResolvedValueOnce(null);
+
+    view.rerender(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="missing-hero"
+        initialMode="edit"
+      />,
+    );
+
+    expect(
+      await screen.findAllByText("Билд для редактирования не найден."),
+    ).not.toHaveLength(0);
+    expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+
+    await waitFor(() =>
+      expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
+    expect(await screen.findAllByText("Билд обновлён.")).not.toHaveLength(0);
+    expect(screen.getByText("Сохранить вкладку")).toBeTruthy();
+    expect(screen.queryByText("Сохраняем...")).toBeNull();
+  });
+
+  it("keeps the accepted form identity after a new initial edit request fails", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+
+    const view = render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    mockLoadPublishedHeroBuildSet.mockRejectedValueOnce(
+      new Error("route failed"),
+    );
+
+    view.rerender(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="morana"
+        initialMode="edit"
+      />,
+    );
+
+    expect(
+      await screen.findAllByText("Ошибка Supabase: route failed"),
+    ).not.toHaveLength(0);
+    expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+
+    await waitFor(() =>
+      expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
+    expect(await screen.findAllByText("Билд обновлён.")).not.toHaveLength(0);
+    expect(screen.getByText("Сохранить вкладку")).toBeTruthy();
+    expect(screen.queryByText("Сохраняем...")).toBeNull();
+  });
+
+  it("keeps the accepted form identity when a draft target has no client", async () => {
+    const client = { from: jest.fn() };
+
+    mockGetSupabaseClient.mockReturnValue(client);
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: ["morana"],
+      publishedHeroIds: ["bastet"],
+    });
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    mockGetSupabaseClient.mockReturnValue(null);
+    fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Морана"));
+
+    expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+    expect(screen.queryByText("Загружаем черновик...")).toBeNull();
+
+    mockGetSupabaseClient.mockReturnValue(client);
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+
+    await waitFor(() =>
+      expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
+    expect(await screen.findAllByText("Билд обновлён.")).not.toHaveLength(0);
+    expect(screen.getByText("Сохранить вкладку")).toBeTruthy();
+    expect(screen.queryByText("Сохраняем...")).toBeNull();
+  });
+
   it("keeps the explicit unfinished hero when its draft resolves before the initial edit load", async () => {
     const initialLoad = createDeferred<HeroBuildSet | null>();
     const draftLoad = createDeferred<HeroBuildSet>();

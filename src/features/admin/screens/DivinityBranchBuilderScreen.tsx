@@ -118,7 +118,7 @@ export function DivinityBranchBuilderScreen({
   const publishInFlight = useRef(false);
   const publishRequestId = useRef(0);
   const authTransitionInFlight = useRef(false);
-  const activeHeroId = useRef<string | null>(initialHeroId);
+  const activeHeroId = useRef<string | null>(null);
   const serverRevisionsByHero = useRef<Record<string, number>>({});
   const authRequestId = useRef(0);
   const isScreenMounted = useRef(true);
@@ -392,7 +392,8 @@ export function DivinityBranchBuilderScreen({
       isScreenMounted.current && requestId === entityLoadRequestId.current;
 
     loadedEditHeroId.current = initialHeroId;
-    activeHeroId.current = initialHeroId;
+    resetTabSave();
+    resetPublish();
     initialEditLoadInFlight.current = true;
     setIsEditBuildLoading(true);
 
@@ -404,6 +405,7 @@ export function DivinityBranchBuilderScreen({
       }
 
       if (fallbackBuildSet && loadBuildSetForEditing(fallbackBuildSet)) {
+        activeHeroId.current = initialHeroId;
         showBackendMessage("success", "Локальный билд загружен для редактирования.");
       } else {
         showBackendMessage("error", "Supabase не настроен.");
@@ -426,6 +428,7 @@ export function DivinityBranchBuilderScreen({
           return;
         }
 
+        activeHeroId.current = initialHeroId;
         setServerRevision(initialHeroId, record?.revision ?? null);
         showBackendMessage("success", "Билд загружен для редактирования.");
       })
@@ -454,6 +457,8 @@ export function DivinityBranchBuilderScreen({
     initialEditLoadRetryId,
     isAuthChecked,
     loadBuildSetForEditing,
+    resetPublish,
+    resetTabSave,
   ]);
 
   function showBackendMessage(kind: "success" | "error", message: string) {
@@ -1162,8 +1167,6 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
-    const previousHeroId = selectedHeroId;
-    activeHeroId.current = heroId;
     resetTabSave();
     resetPublish();
     const requestId = entityLoadRequestId.current + 1;
@@ -1175,6 +1178,7 @@ export function DivinityBranchBuilderScreen({
     if (!heroStatusIds.draftHeroIds.includes(heroId)) {
       setServerRevision(heroId, null);
       selectHero(heroId);
+      activeHeroId.current = heroId;
       return;
     }
 
@@ -1201,7 +1205,6 @@ export function DivinityBranchBuilderScreen({
       }
 
       if (!draftRecord || !loadBuildSetForEditing(draftRecord.buildSet)) {
-        activeHeroId.current = previousHeroId;
         await loadHeroStatusIds();
 
         if (!isCurrentRequest()) {
@@ -1212,6 +1215,7 @@ export function DivinityBranchBuilderScreen({
         return;
       }
 
+      activeHeroId.current = heroId;
       setServerRevision(heroId, draftRecord.revision);
       showBackendMessage("success", "Черновик загружен.");
     } catch (error) {
@@ -1219,7 +1223,6 @@ export function DivinityBranchBuilderScreen({
         return;
       }
 
-      activeHeroId.current = previousHeroId;
       showBackendMessage(
         "error",
         error instanceof Error
