@@ -195,6 +195,10 @@ export function DivinityBranchBuilderScreen({
   }, []);
 
   const loadHeroStatusIds = useCallback(async () => {
+    if (!isScreenMounted.current) {
+      return;
+    }
+
     const requestId = heroListRequestId.current + 1;
     heroListRequestId.current = requestId;
     const client = getSupabaseClient();

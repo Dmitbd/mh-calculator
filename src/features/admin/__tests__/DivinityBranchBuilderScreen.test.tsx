@@ -264,6 +264,48 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
   });
 
+  it("does not start a publication catalog refresh after unmount", async () => {
+    let resolveSave!: () => void;
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockSaveHeroBuildSet.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveSave = resolve;
+      }),
+    );
+
+    const view = render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
+    );
+    fireEvent.press(screen.getByText("Опубликовать"));
+    await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1));
+
+    const consoleError = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    view.unmount();
+
+    try {
+      await act(async () => {
+        resolveSave();
+      });
+
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
   it("ignores an older published-id response after a newer refresh", async () => {
     let resolveFirstRequest!: (ids: HeroBuildSetStatusIds) => void;
     let resolveSecondRequest!: (ids: HeroBuildSetStatusIds) => void;
