@@ -4,6 +4,7 @@ import {
   sortBuildTabs,
 } from "@/features/game-data/heroes";
 import type { HeroBuildTabPath } from "@/features/game-data/heroes/types";
+import type { HeroBuildTab } from "@/features/game-data/heroes";
 
 import { buildTargetTabs } from "../data/buildTargetTabs";
 
@@ -26,11 +27,12 @@ function toFolderTabItems(
 
 export function getBranchBuilderTargetTabs(
   targetTabPath: HeroBuildTabPath,
+  targetTabs: readonly HeroBuildTab[] = buildTargetTabs,
 ): BranchBuilderTargetTabs {
   const selectedTopTabId = targetTabPath[0] ?? "";
   const selectedChildTabId = targetTabPath[1];
-  const selectedTopTab = getTabByPath(buildTargetTabs, [selectedTopTabId]);
-  const topTabs = toFolderTabItems(sortBuildTabs(buildTargetTabs));
+  const selectedTopTab = getTabByPath([...targetTabs], [selectedTopTabId]);
+  const topTabs = toFolderTabItems(sortBuildTabs([...targetTabs]));
   const childTabs =
     selectedTopTab?.children && selectedTopTab.children.length > 0
       ? toFolderTabItems(sortBuildTabs(selectedTopTab.children))

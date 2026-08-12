@@ -5,6 +5,7 @@ import {
   getHeroBuildSet,
   getHeroById,
 } from "@/features/game-data/heroes/heroBuilds";
+import type { HeroBuildSet, HeroBuildTab } from "@/features/game-data/heroes";
 import weaponAwakeningColors from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
 import weaponAwakeningSlots from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
 
@@ -78,6 +79,36 @@ const filledBuild = () => {
   });
 
   return result;
+};
+
+const completePublishedBuildSet = (): HeroBuildSet => {
+  const source = getHeroBuildSet("bastet");
+
+  if (!source) {
+    throw new Error("Expected complete build set.");
+  }
+
+  const buildSet = JSON.parse(JSON.stringify(source)) as HeroBuildSet;
+  const fillDivinitySkills = (tabs: HeroBuildTab[]) => {
+    tabs.forEach((tab) => {
+      if (tab.build) {
+        tab.build.divinitySkills = {
+          base: [
+            "asterial-gemini",
+            "asterial-annihilation",
+            "asterial-supernova",
+          ],
+        };
+      }
+
+      if (tab.children) {
+        fillDivinitySkills(tab.children);
+      }
+    });
+  };
+
+  fillDivinitySkills(buildSet.tabs);
+  return buildSet;
 };
 
 const commitCurrentTargetBuild = (
@@ -683,5 +714,169 @@ describe("useDivinityBranchBuilder", () => {
     expect(result.current.selectedRuneIds).toEqual(
       result.current.savedBuildsByPath.pvp.equipment.runeIds,
     );
+  });
+
+  it("builds an edited published set from every local leaf without saving tabs", () => {
+    const completeBuildSet = completePublishedBuildSet();
+
+    const { result } = renderHook(() =>
+      useDivinityBranchBuilder(weaponAwakeningCatalog, { mode: "edit" }),
+    );
+
+    act(() => {
+      result.current.loadBuildSetForEditing(completeBuildSet);
+    });
+    act(() => {
+      result.current.addArtifact("excalibur");
+    });
+    act(() => {
+      result.current.setTargetTopTab("pve");
+    });
+    act(() => {
+      result.current.setTargetChildTab("campaign");
+    });
+    act(() => {
+      result.current.addRune("fire");
+    });
+    act(() => {
+      result.current.setTargetTopTab("pvp");
+    });
+
+    const edited = result.current.buildFullExport("2026-08-13T12:00:00.000Z");
+
+    expect(edited?.tabs[0].build?.equipment.artifactIds).toEqual([
+      "axe-of-pangu",
+      "excalibur",
+    ]);
+    expect(edited?.tabs[1].children?.[1].build?.equipment.runeIds).toEqual([
+      "air",
+      "fire",
+    ]);
+    expect(result.current.selectedArtifactIds).toEqual([
+      "axe-of-pangu",
+      "excalibur",
+    ]);
+  });
+
+  it("rejects published edit loading when any target leaf is missing", () => {
+    const incompleteBuildSet = completePublishedBuildSet();
+    incompleteBuildSet.tabs[1].children![1].build = null;
+    const { result } = renderHook(() =>
+      useDivinityBranchBuilder(weaponAwakeningCatalog, { mode: "edit" }),
+    );
+
+    let loaded: boolean | undefined;
+    act(() => {
+      loaded = result.current.loadBuildSetForEditing(incompleteBuildSet);
+    });
+
+    expect(loaded).toBe(false);
+    expect(result.current.selectedHeroId).toBeNull();
+    expect(result.current.isDirty).toBe(false);
+  });
+
+  it("tracks structural published edits and clears dirty after a full revert", () => {
+    const completeBuildSet = getHeroBuildSet("bastet");
+
+    if (!completeBuildSet) {
+      throw new Error("Expected complete build set.");
+    }
+
+    const { result } = renderHook(() =>
+      useDivinityBranchBuilder(weaponAwakeningCatalog, { mode: "edit" }),
+    );
+
+    act(() => result.current.loadBuildSetForEditing(completeBuildSet));
+    expect(result.current.isDirty).toBe(false);
+
+    act(() => result.current.removeRune("air"));
+    expect(result.current.isDirty).toBe(true);
+
+    act(() => result.current.addRune("air"));
+    expect(result.current.isDirty).toBe(false);
+  });
+
+  it("resets the published baseline only after committing the successful update", () => {
+    const completeBuildSet = getHeroBuildSet("bastet");
+
+    if (!completeBuildSet) {
+      throw new Error("Expected complete build set.");
+    }
+
+    const { result } = renderHook(() =>
+      useDivinityBranchBuilder(weaponAwakeningCatalog, { mode: "edit" }),
+    );
+
+    act(() => {
+      result.current.loadBuildSetForEditing(completeBuildSet);
+      result.current.addArtifact("excalibur");
+    });
+    expect(result.current.isDirty).toBe(true);
+
+    const prepared = result.current.prepareCurrentTargetBuild(
+      "2026-08-13T12:00:00.000Z",
+    );
+
+    expect(prepared).not.toBeNull();
+    expect(result.current.isDirty).toBe(true);
+
+    act(() => {
+      expect(result.current.commitPreparedTargetBuild(prepared!)).toBe(true);
+    });
+
+    expect(result.current.isDirty).toBe(false);
+  });
+
+  it("normalizes local drafts when a successful published update becomes baseline", () => {
+    const completeBuildSet = completePublishedBuildSet();
+    const { result } = renderHook(() =>
+      useDivinityBranchBuilder(weaponAwakeningCatalog, { mode: "edit" }),
+    );
+
+    act(() => result.current.loadBuildSetForEditing(completeBuildSet));
+    act(() => result.current.setDivinitySkill("base", 1, null));
+    expect(result.current.isDirty).toBe(true);
+
+    const prepared = result.current.prepareCurrentTargetBuild(
+      "2026-08-13T12:00:00.000Z",
+    );
+    act(() => {
+      expect(result.current.commitPreparedTargetBuild(prepared!)).toBe(true);
+    });
+
+    expect(result.current.selectedDivinitySkills.base).toEqual([
+      "asterial-gemini",
+      "asterial-supernova",
+    ]);
+    expect(result.current.isDirty).toBe(false);
+  });
+
+  it("validates unsaved published leaves and locates the first invalid field", () => {
+    const completeBuildSet = getHeroBuildSet("bastet");
+
+    if (!completeBuildSet) {
+      throw new Error("Expected complete build set.");
+    }
+
+    const { result } = renderHook(() =>
+      useDivinityBranchBuilder(weaponAwakeningCatalog, { mode: "edit" }),
+    );
+
+    act(() => {
+      result.current.loadBuildSetForEditing(completeBuildSet);
+      result.current.removeArtifact("axe-of-pangu");
+    });
+
+    const validation = result.current.validateFullExport();
+
+    expect(validation.isValid).toBe(false);
+    expect(validation.errors[0]).toEqual(
+      expect.objectContaining({ path: "pvp.equipment.artifactIds" }),
+    );
+    expect(result.current.getFirstInvalidFullExport(validation.errors)).toEqual({
+      tabPath: ["pvp"],
+      path: "equipment.artifactIds",
+      section: "equipment",
+    });
   });
 });

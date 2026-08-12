@@ -155,7 +155,10 @@ export function DivinityBranchBuilderScreen({
     toggleColumnProgress,
     validateFullExport,
     weaponAwakeningSelections,
-  } = useDivinityBranchBuilder(branchBuilderWeaponAwakeningCatalog);
+    editorTargetTabs,
+  } = useDivinityBranchBuilder(branchBuilderWeaponAwakeningCatalog, {
+    mode: initialMode,
+  });
   const [activeMajorSlot, setActiveMajorSlot] = useState<{
     columnId: BranchColumnId;
     level: number;
@@ -525,7 +528,10 @@ export function DivinityBranchBuilderScreen({
     selectedChildTabId,
     selectedTopTabId,
     topTabs: buildTargetTopTabs,
-  } = useMemo(() => getBranchBuilderTargetTabs(targetTabPath), [targetTabPath]);
+  } = useMemo(
+    () => getBranchBuilderTargetTabs(targetTabPath, editorTargetTabs),
+    [editorTargetTabs, targetTabPath],
+  );
   const targetTabErrors = getErrorMessages(validationErrors, (path, error) =>
     error.code.startsWith("multiBuild.") || isTargetTabErrorPath(path),
   );
@@ -635,10 +641,13 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
-    const result = validateBranchBuild(
-      buildValidationDraft(),
-      branchBuilderValidationCatalog,
-    );
+    const result =
+      initialMode === "edit"
+        ? validateFullExport()
+        : validateBranchBuild(
+            buildValidationDraft(),
+            branchBuilderValidationCatalog,
+          );
 
     showValidationErrors(result.errors);
 
@@ -928,6 +937,10 @@ export function DivinityBranchBuilderScreen({
           : [...current.publishedHeroIds, heroId],
       }));
 
+      if (initialMode === "edit" && preparedEditBuild) {
+        commitPreparedTargetBuild(preparedEditBuild);
+      }
+
       const didRefreshHeroStatusIds = await loadHeroStatusIds({
         preserveCurrentIdsOnError: true,
       });
@@ -946,9 +959,6 @@ export function DivinityBranchBuilderScreen({
         return;
       }
 
-      if (initialMode === "edit" && preparedEditBuild) {
-        commitPreparedTargetBuild(preparedEditBuild);
-      }
       showBackendMessage(
         "success",
         initialMode === "edit" ? "Билд обновлён." : "Билд опубликован.",

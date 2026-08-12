@@ -335,6 +335,34 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(3);
   });
 
+  it("does not update a published build when another local leaf is invalid", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: [],
+      publishedHeroIds: ["bastet"],
+    });
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Select PvE build tab"));
+    fireEvent.press(screen.getByLabelText("Select Кампания build tab"));
+    fireEvent.press(screen.getByLabelText("Remove Air Rune"));
+    fireEvent.press(screen.getByLabelText("Select PvP build tab"));
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+
+    expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
+    expect(
+      await screen.findAllByText("PvE -> Кампания: Выберите руну."),
+    ).not.toHaveLength(0);
+  });
+
   it("keeps create draft and publish operations separate", async () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
     mockFetchHeroBuildSetStatusIds.mockResolvedValue({
@@ -450,6 +478,35 @@ describe("DivinityBranchBuilderScreen", () => {
     );
     expect(lastProps.notPublishedHeroes).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ id: "bastet" })]),
+    );
+  });
+
+  it("accepts the published baseline even when the catalog refresh fails", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds
+      .mockResolvedValueOnce({ draftHeroIds: [], publishedHeroIds: ["bastet"] })
+      .mockRejectedValueOnce(new Error("refresh failed"));
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByText("Опубликовать"));
+    await screen.findAllByText(
+      "Билд обновлён, но список героев обновить не удалось.",
+    );
+
+    fireEvent.press(screen.getByText("Опубликовать"));
+    await waitFor(() =>
+      expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(2),
+    );
+    expect(mockUpdatePublishedHeroBuildSet.mock.calls[1][1]).toEqual(
+      expect.objectContaining({ expectedRevision: 2 }),
     );
   });
 

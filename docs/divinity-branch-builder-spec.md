@@ -351,7 +351,7 @@ Supabase возвращает ID отдельно по статусам `draft` 
 
 ## Tabs And Local Drafts
 
-Тип и helpers комплекта рекурсивно поддерживают группы вкладок, но текущий UI билдера создаёт и показывает только корневой уровень и один уровень дочерних leaf-вкладок. Каждому leaf соответствует независимый editable draft, индексируемый полным path. Переключение вкладки не переносит значения соседнего leaf.
+Тип и helpers комплекта рекурсивно поддерживают группы вкладок, но текущий UI билдера создаёт и показывает только корневой уровень и один уровень дочерних leaf-вкладок. Каждому leaf соответствует независимый editable draft, индексируемый полным path. Переключение вкладки не переносит значения соседнего leaf, не запускает валидацию и не теряет локальные изменения.
 
 `Сохранить вкладку` в create/draft workflow:
 
@@ -363,7 +363,7 @@ Supabase возвращает ID отдельно по статусам `draft` 
 
 Повторное сохранение блокируется, пока запрос текущей вкладки не завершён. Выбор другого героя синхронно инвалидирует pending tab-save и publication: поздний ответ предыдущего героя не меняет revision, status-каталог, toast или loading нового героя. Identity формы меняется только после успешного принятия загруженного билда; ошибка, отсутствие строки или недоступный Supabase оставляют прежнюю форму активной и пригодной для повторного сохранения. Устаревший ответ после смены героя/вкладки или закрытия экрана не должен применить snapshot или показать ложный success. Ошибка Supabase сохраняет текущие поля редактирования и показывает backend error, но не выдаёт вкладку за сохранённую. Optimistic conflict также не коммитит подготовленный snapshot и не сбрасывает локальные правки: экран показывает `Билд изменён в другой сессии. Ваши правки сохранены в форме; загрузите актуальную версию.`
 
-Полный export собирается только из сохранённых leaf-вкладок. Пустые группы и незавершённые drafts не должны маскироваться как готовый комплект.
+В create/draft workflow полный export собирается только из сохранённых leaf-вкладок. Пустые группы и незавершённые drafts не должны маскироваться как готовый комплект. В `mode=edit` полный комплект собирается из текущего локального draft каждого leaf, включая ещё не сохранённые изменения открытой и остальных вкладок.
 
 ## Equipment And Weapon Awakening
 
@@ -390,6 +390,7 @@ Base и awakened slots редактируются отдельно. Awakened-н�
 - Если draft отсутствует, RPC завершает публикацию ошибкой и не создаёт отдельную published-строку.
 - После успешной публикации status-каталог обновляется: герой удаляется из draft IDs и добавляется в published IDs.
 - В `mode=edit` действия `Сохранить вкладку` и `Опубликовать` передают полный валидный комплект отдельной операции обновления опубликованного payload; они не создают draft и не вызывают переход публикации.
+- Загрузка `mode=edit` сохраняет неизменяемый опубликованный baseline и отдельный локальный editable draft для каждого leaf. Структурный `isDirty` сравнивает пользовательские поля всех leaf, сбрасывается при полном возврате значений к baseline и не реагирует на служебные timestamps. Только успешное обновление опубликованного payload принимает текущую форму как новый baseline; revision остаётся отдельным server-конкурентным контрактом.
 - Опубликованный payload обновляется только отдельной repository-операцией, которая требует исходный status `published` и не меняет его.
 - Все три lifecycle-операции repository вызывают отдельные RPC: create/update draft, draft-to-published и update published. Прямой table DML недоступен `anon` и `authenticated`.
 - Публичный repository API не содержит операций удаления. Database trigger запрещает удалить published-строку, вернуть её в draft или изменить её `hero_id`.
@@ -401,6 +402,7 @@ Base и awakened slots редактируются отдельно. Awakened-н�
 
 Валидация остаётся чистой и возвращает errors с путями. Экран:
 
+- в `mode=edit` проверяет полный текущий комплект из всех локальных leaf-drafts и определяет для первой ошибки вкладку, относительный field path и секцию редактора;
 - группирует ошибки по секциям;
 - показывает не более пяти уникальных сообщений в toast и число скрытых;
 - прокручивает к первой проблемной секции;
@@ -455,6 +457,7 @@ Backend success не должен жить дольше актуальной о�
 - [heroBuildSetRepository.test.ts](../src/features/builds/api/__tests__/heroBuildSetRepository.test.ts) — draft/published запросы и явные lifecycle-операции;
 - [branchBuilderTabs.test.ts](../src/features/admin/__tests__/branchBuilderTabs.test.ts) — структура вкладок и path;
 - [multiBuildExport.test.ts](../src/features/admin/__tests__/multiBuildExport.test.ts) — сборка полного комплекта;
+- [publishedBuilderEditModel.test.ts](../src/features/admin/__tests__/publishedBuilderEditModel.test.ts) — immutable baseline, полные локальные leaf-drafts, dirty-state и координаты первой ошибки режима редактирования;
 - [saveAdminHeroBuildSet.test.ts](../src/features/admin/__tests__/saveAdminHeroBuildSet.test.ts) — единая атомарная операция публикации черновика;
 - [heroBuildSetsLifecycleSql.test.js](../src/features/admin/__tests__/heroBuildSetsLifecycleSql.test.js) — структура migration, server trigger и publication RPC;
 - [heroBuildSetRevisionsSql.test.js](../src/features/admin/__tests__/heroBuildSetRevisionsSql.test.js) — revision/history immutability, optimistic predicates и restore RPC;
