@@ -38,18 +38,6 @@ export function getBuilderHeroLists(params: {
   );
 }
 
-export function getSelectableBuilderHeroes(params: {
-  heroes: readonly Hero[];
-  publishedHeroIds: readonly string[];
-  selectedHeroId: string | null;
-}): Hero[] {
-  const publishedIds = new Set(params.publishedHeroIds);
-
-  return params.heroes.filter(
-    (hero) => hero.id === params.selectedHeroId || !publishedIds.has(hero.id),
-  );
-}
-
 export function getHeroGuideSelectorSections(
   heroes: readonly Hero[],
   factions: readonly HeroDictionaryEntry[],

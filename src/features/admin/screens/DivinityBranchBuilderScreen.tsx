@@ -14,10 +14,12 @@ import { StatusToast } from "@/shared/ui/StatusToast";
 import {
   deleteHeroBuildSet,
   DivinitySkillLoadoutSection,
+  fetchDraftHeroBuildSet,
+  fetchHeroBuildSetStatusIds,
   fetchPublishedHeroBuildSet,
-  fetchPublishedHeroIds,
   loadPublishedHeroBuildSet,
   type HeroBuildSetStatus,
+  type HeroBuildSetStatusIds,
   type HeroBuildSetSupabaseClient,
 } from "@/features/builds";
 import { getHeroBuildSet } from "@/features/game-data/heroes";
@@ -47,7 +49,7 @@ import { WeaponAwakeningSection } from "../components/branch-builder/WeaponAwake
 import { ValidationErrorMessages } from "../components/ValidationErrorMessages";
 import { useDivinityBranchBuilder } from "../hooks/useDivinityBranchBuilder";
 import { getBranchBuilderTargetTabs } from "../model/branchBuilderTabs";
-import { getSelectableBuilderHeroes } from "../model/heroGuideSelector";
+import { getBuilderHeroLists } from "../model/heroGuideSelector";
 import type {
   BranchBuildValidationError,
   BranchColumnId,
@@ -107,6 +109,7 @@ export function DivinityBranchBuilderScreen({
   );
   const pendingScrollTarget = useRef<PendingScrollTarget | null>(null);
   const loadedEditHeroId = useRef<string | null>(null);
+  const draftLoadInFlight = useRef(false);
   const heroListRequestId = useRef(0);
   const {
     addArtifact,
@@ -158,24 +161,28 @@ export function DivinityBranchBuilderScreen({
   const [isEditBuildLoading, setIsEditBuildLoading] = useState(false);
   const [isPublishPending, setIsPublishPending] = useState(false);
   const [toast, setToast] = useState<StatusToastState>(null);
-  const [publishedHeroIds, setPublishedHeroIds] = useState<string[]>([]);
+  const [heroStatusIds, setHeroStatusIds] = useState<HeroBuildSetStatusIds>({
+    draftHeroIds: [],
+    publishedHeroIds: [],
+  });
+  const [isDraftLoadPending, setIsDraftLoadPending] = useState(false);
   const [isHeroListLoading, setIsHeroListLoading] = useState(true);
   const [heroListError, setHeroListError] = useState<string | null>(null);
 
-  const resetPublishedHeroList = useCallback(() => {
+  const resetHeroStatusList = useCallback(() => {
     heroListRequestId.current += 1;
-    setPublishedHeroIds([]);
+    setHeroStatusIds({ draftHeroIds: [], publishedHeroIds: [] });
     setHeroListError(null);
     setIsHeroListLoading(true);
   }, []);
 
-  const loadPublishedHeroIds = useCallback(async () => {
+  const loadHeroStatusIds = useCallback(async () => {
     const requestId = heroListRequestId.current + 1;
     heroListRequestId.current = requestId;
     const client = getSupabaseClient();
 
     if (!client) {
-      setPublishedHeroIds([]);
+      setHeroStatusIds({ draftHeroIds: [], publishedHeroIds: [] });
       setHeroListError("Supabase не настроен.");
       setIsHeroListLoading(false);
       return;
@@ -185,7 +192,7 @@ export function DivinityBranchBuilderScreen({
     setHeroListError(null);
 
     try {
-      const ids = await fetchPublishedHeroIds(
+      const ids = await fetchHeroBuildSetStatusIds(
         client as unknown as HeroBuildSetSupabaseClient,
       );
 
@@ -193,13 +200,13 @@ export function DivinityBranchBuilderScreen({
         return;
       }
 
-      setPublishedHeroIds(ids);
+      setHeroStatusIds(ids);
     } catch (error) {
       if (requestId !== heroListRequestId.current) {
         return;
       }
 
-      setPublishedHeroIds([]);
+      setHeroStatusIds({ draftHeroIds: [], publishedHeroIds: [] });
       setHeroListError(
         error instanceof Error ? error.message : "Неизвестная ошибка Supabase.",
       );
@@ -216,16 +223,16 @@ export function DivinityBranchBuilderScreen({
     }
 
     if (!adminSession) {
-      resetPublishedHeroList();
+      resetHeroStatusList();
       return;
     }
 
-    void loadPublishedHeroIds();
+    void loadHeroStatusIds();
   }, [
     adminSession,
     isAuthChecked,
-    loadPublishedHeroIds,
-    resetPublishedHeroList,
+    loadHeroStatusIds,
+    resetHeroStatusList,
   ]);
 
   useEffect(() => {
@@ -376,14 +383,9 @@ export function DivinityBranchBuilderScreen({
     selections: weaponAwakeningSelections,
     combosData: branchBuilderWeaponAwakeningCombos,
   });
-  const selectableHeroes = useMemo(
-    () =>
-      getSelectableBuilderHeroes({
-        heroes: branchBuilderHeroes,
-        publishedHeroIds,
-        selectedHeroId,
-      }),
-    [publishedHeroIds, selectedHeroId],
+  const heroLists = useMemo(
+    () => getBuilderHeroLists({ heroes: branchBuilderHeroes, ...heroStatusIds }),
+    [heroStatusIds],
   );
 
   const {
@@ -590,7 +592,7 @@ export function DivinityBranchBuilderScreen({
         buildSet,
         client: client as unknown as HeroBuildSetSupabaseClient,
         heroId,
-        refreshPublishedHeroIds: loadPublishedHeroIds,
+        refreshPublishedHeroIds: loadHeroStatusIds,
         status,
       });
       showBackendMessage(
@@ -720,7 +722,7 @@ export function DivinityBranchBuilderScreen({
     const client = getSupabaseClient();
 
     if (!client) {
-      resetPublishedHeroList();
+      resetHeroStatusList();
       setAdminSession(null);
       setToast({ kind: "success", message: "Выход выполнен." });
       setIsAuthPending(false);
@@ -729,7 +731,7 @@ export function DivinityBranchBuilderScreen({
 
     try {
       await signOutAdmin(client);
-      resetPublishedHeroList();
+      resetHeroStatusList();
       setAdminSession(null);
       setToast({ kind: "success", message: "Выход выполнен." });
     } catch (error) {
@@ -755,9 +757,47 @@ export function DivinityBranchBuilderScreen({
     setTargetChildTab(tabId);
   };
 
-  const handleSelectHero = (heroId: string) => {
-    selectHero(heroId);
+  const handleSelectHero = async (heroId: string) => {
     clearValidationErrors(isHeroErrorPath);
+
+    if (!heroStatusIds.draftHeroIds.includes(heroId)) {
+      selectHero(heroId);
+      return;
+    }
+
+    const client = getSupabaseClient();
+
+    if (!client || draftLoadInFlight.current) {
+      return;
+    }
+
+    draftLoadInFlight.current = true;
+    setIsDraftLoadPending(true);
+
+    try {
+      const draft = await fetchDraftHeroBuildSet(
+        client as unknown as HeroBuildSetSupabaseClient,
+        heroId,
+      );
+
+      if (!draft || !loadBuildSetForEditing(draft)) {
+        await loadHeroStatusIds();
+        showBackendMessage("error", "Черновик для выбранного героя не найден.");
+        return;
+      }
+
+      showBackendMessage("success", "Черновик загружен.");
+    } catch (error) {
+      showBackendMessage(
+        "error",
+        error instanceof Error
+          ? `Ошибка Supabase: ${error.message}`
+          : "Ошибка Supabase.",
+      );
+    } finally {
+      draftLoadInFlight.current = false;
+      setIsDraftLoadPending(false);
+    }
   };
 
   const handleAddArtifact = (id: string) => {
@@ -946,10 +986,13 @@ export function DivinityBranchBuilderScreen({
         <HeroBuilderSection
           errors={heroErrors}
           heroListError={heroListError}
-          heroes={selectableHeroes}
+          isDraftLoadPending={isDraftLoadPending}
           isHeroListLoading={isHeroListLoading}
-          onRetryHeroList={() => void loadPublishedHeroIds()}
-          onSelectHero={handleSelectHero}
+          notCreatedHeroes={heroLists.notCreatedHeroes}
+          notPublishedHeroes={heroLists.notPublishedHeroes}
+          onRetryHeroList={() => void loadHeroStatusIds()}
+          onSelectHero={(heroId) => void handleSelectHero(heroId)}
+          selectedHero={selectedHero}
           selectedHeroId={selectedHeroId}
         />
       </View>

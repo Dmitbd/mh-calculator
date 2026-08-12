@@ -8,13 +8,18 @@ import {
 } from "@testing-library/react-native";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 
+import type { HeroBuildSetStatusIds } from "@/features/builds";
 import { getHeroBuildSet } from "@/features/game-data/heroes";
 import type { HeroBuildSet } from "@/features/game-data/heroes";
 
 import { DivinityBranchBuilderScreen } from "../screens/DivinityBranchBuilderScreen";
 
 const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
-const mockFetchPublishedHeroIds = jest.fn<Promise<string[]>, []>();
+const mockFetchHeroBuildSetStatusIds = jest.fn<
+  Promise<HeroBuildSetStatusIds>,
+  []
+>();
+const mockFetchDraftHeroBuildSet = jest.fn();
 const mockLoadPublishedHeroBuildSet = jest.fn();
 const mockSaveHeroBuildSet = jest.fn();
 const mockHeroBuilderSectionProps = jest.fn<void, [Record<string, unknown>]>();
@@ -51,7 +56,9 @@ jest.mock("@/features/builds", () => {
 
   return {
     ...actual,
-    fetchPublishedHeroIds: () => mockFetchPublishedHeroIds(),
+    fetchDraftHeroBuildSet: (...args: unknown[]) =>
+      mockFetchDraftHeroBuildSet(...args),
+    fetchHeroBuildSetStatusIds: () => mockFetchHeroBuildSetStatusIds(),
     loadPublishedHeroBuildSet: (...args: unknown[]) =>
       mockLoadPublishedHeroBuildSet(...args),
     saveHeroBuildSet: (...args: unknown[]) => mockSaveHeroBuildSet(...args),
@@ -93,8 +100,13 @@ describe("DivinityBranchBuilderScreen", () => {
 
   beforeEach(() => {
     mockGetSupabaseClient.mockReturnValue(null);
-    mockFetchPublishedHeroIds.mockReset();
-    mockFetchPublishedHeroIds.mockResolvedValue([]);
+    mockFetchHeroBuildSetStatusIds.mockReset();
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: [],
+      publishedHeroIds: [],
+    });
+    mockFetchDraftHeroBuildSet.mockReset();
+    mockFetchDraftHeroBuildSet.mockResolvedValue(null);
     mockLoadPublishedHeroBuildSet.mockReset();
     mockLoadPublishedHeroBuildSet.mockResolvedValue(getValidBastetBuildSet());
     mockSaveHeroBuildSet.mockReset();
@@ -119,7 +131,9 @@ describe("DivinityBranchBuilderScreen", () => {
 
   it("gates the first authenticated hero catalog render behind loading", () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockFetchPublishedHeroIds.mockReturnValue(new Promise(() => undefined));
+    mockFetchHeroBuildSetStatusIds.mockReturnValue(
+      new Promise(() => undefined),
+    );
 
     renderAdminBuilder();
 
@@ -131,11 +145,16 @@ describe("DivinityBranchBuilderScreen", () => {
 
   it("loads published ids after authentication and excludes those heroes", async () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockFetchPublishedHeroIds.mockResolvedValue(["bastet"]);
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: [],
+      publishedHeroIds: ["bastet"],
+    });
 
     renderAdminBuilder();
 
-    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
+    );
     fireEvent.press(screen.getByLabelText("Выбрать героя"));
 
     expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
@@ -143,9 +162,9 @@ describe("DivinityBranchBuilderScreen", () => {
 
   it("shows a retry action instead of the unfiltered catalog after load failure", async () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockFetchPublishedHeroIds
+    mockFetchHeroBuildSetStatusIds
       .mockRejectedValueOnce(new Error("network down"))
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce({ draftHeroIds: [], publishedHeroIds: [] });
 
     renderAdminBuilder();
 
@@ -158,23 +177,28 @@ describe("DivinityBranchBuilderScreen", () => {
 
     fireEvent.press(screen.getByText("Повторить"));
 
-    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
+    );
     expect(screen.getByLabelText("Выбрать героя")).toBeTruthy();
   });
 
   it("refreshes after publication, keeps the selected hero visible, and excludes it in fresh create", async () => {
-    let resolveRefresh!: (ids: string[]) => void;
+    let resolveRefresh!: (ids: HeroBuildSetStatusIds) => void;
 
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockFetchPublishedHeroIds
-      .mockResolvedValueOnce([])
+    mockFetchHeroBuildSetStatusIds
+      .mockResolvedValueOnce({ draftHeroIds: [], publishedHeroIds: [] })
       .mockImplementationOnce(
         () =>
-          new Promise<string[]>((resolve) => {
+          new Promise<HeroBuildSetStatusIds>((resolve) => {
             resolveRefresh = resolve;
           }),
       )
-      .mockResolvedValueOnce(["bastet"]);
+      .mockResolvedValueOnce({
+        draftHeroIds: [],
+        publishedHeroIds: ["bastet"],
+      });
 
     const view = render(
       <DivinityBranchBuilderScreen
@@ -185,27 +209,33 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
-    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
+    );
     fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
     expect(screen.getByLabelText("Герой Бастет выбран")).toBeTruthy();
 
     fireEvent.press(screen.getByText("Опубликовать"));
 
     await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
+    );
     expect(screen.getByText("Загрузка героев")).toBeTruthy();
     expect(screen.queryByLabelText("Герой Бастет выбран")).toBeNull();
 
     await act(async () => {
-      resolveRefresh(["bastet"]);
+      resolveRefresh({ draftHeroIds: [], publishedHeroIds: ["bastet"] });
     });
     expect(await screen.findAllByText("Билд опубликован.")).not.toHaveLength(0);
-    expect(screen.getByLabelText("Герой Бастет выбран")).toBeTruthy();
+    expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
 
     view.unmount();
     renderAdminBuilder();
 
-    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(3));
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(3),
+    );
     fireEvent.press(screen.getByLabelText("Выбрать героя"));
     expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
   });
@@ -223,31 +253,33 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
-    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
+    );
     fireEvent.press(screen.getByText("Опубликовать"));
 
     expect(
       await screen.findAllByText("Ошибка Supabase: publication failed"),
     ).not.toHaveLength(0);
-    expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1);
+    expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
   });
 
   it("ignores an older published-id response after a newer refresh", async () => {
-    let resolveFirstRequest!: (ids: string[]) => void;
-    let resolveSecondRequest!: (ids: string[]) => void;
+    let resolveFirstRequest!: (ids: HeroBuildSetStatusIds) => void;
+    let resolveSecondRequest!: (ids: HeroBuildSetStatusIds) => void;
     const client = { from: jest.fn() };
 
     mockGetSupabaseClient.mockReturnValue(client);
-    mockFetchPublishedHeroIds
+    mockFetchHeroBuildSetStatusIds
       .mockImplementationOnce(
         () =>
-          new Promise<string[]>((resolve) => {
+          new Promise<HeroBuildSetStatusIds>((resolve) => {
             resolveFirstRequest = resolve;
           }),
       )
       .mockImplementationOnce(
         () =>
-          new Promise<string[]>((resolve) => {
+          new Promise<HeroBuildSetStatusIds>((resolve) => {
             resolveSecondRequest = resolve;
           }),
       );
@@ -256,35 +288,42 @@ describe("DivinityBranchBuilderScreen", () => {
 
     renderAdminBuilder();
 
-    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
+    );
     fireEvent.press(screen.getByText("Выйти"));
     await screen.findByPlaceholderText("Email");
     fireEvent.changeText(screen.getByPlaceholderText("Email"), "admin@example.com");
     fireEvent.changeText(screen.getByPlaceholderText("Пароль"), "secret");
     fireEvent.press(screen.getByText("Войти"));
-    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
+    );
 
     await act(async () => {
-      resolveSecondRequest(["bastet"]);
+      resolveSecondRequest({
+        draftHeroIds: [],
+        publishedHeroIds: ["bastet"],
+      });
     });
     fireEvent.press(await screen.findByLabelText("Выбрать героя"));
     expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
 
     await act(async () => {
-      resolveFirstRequest([]);
+      resolveFirstRequest({ draftHeroIds: [], publishedHeroIds: [] });
     });
     expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
   });
 
   it("gates a new session after signing out from a completed hero list", async () => {
-    let resolveSecondRequest!: (ids: string[]) => void;
+    let resolveSecondRequest!: (ids: HeroBuildSetStatusIds) => void;
 
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockFetchPublishedHeroIds
-      .mockResolvedValueOnce([])
+    mockFetchHeroBuildSetStatusIds
+      .mockResolvedValueOnce({ draftHeroIds: [], publishedHeroIds: [] })
       .mockImplementationOnce(
         () =>
-          new Promise<string[]>((resolve) => {
+          new Promise<HeroBuildSetStatusIds>((resolve) => {
             resolveSecondRequest = resolve;
           }),
       );
@@ -303,25 +342,27 @@ describe("DivinityBranchBuilderScreen", () => {
     fireEvent.changeText(screen.getByPlaceholderText("Пароль"), "secret");
     fireEvent.press(screen.getByText("Войти"));
 
-    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
+    );
     expect(mockHeroBuilderSectionProps.mock.calls[0][0]).toMatchObject({
       isHeroListLoading: true,
     });
     expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
 
     await act(async () => {
-      resolveSecondRequest([]);
+      resolveSecondRequest({ draftHeroIds: [], publishedHeroIds: [] });
     });
   });
 
   it("ignores an initial hero-list response that resolves after sign-out", async () => {
-    let resolveInitialRequest!: (ids: string[]) => void;
+    let resolveInitialRequest!: (ids: HeroBuildSetStatusIds) => void;
 
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockFetchPublishedHeroIds
+    mockFetchHeroBuildSetStatusIds
       .mockImplementationOnce(
         () =>
-          new Promise<string[]>((resolve) => {
+          new Promise<HeroBuildSetStatusIds>((resolve) => {
             resolveInitialRequest = resolve;
           }),
       )
@@ -331,11 +372,16 @@ describe("DivinityBranchBuilderScreen", () => {
 
     renderAdminBuilder();
 
-    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
+    );
     fireEvent.press(screen.getByText("Выйти"));
     await screen.findByPlaceholderText("Email");
     await act(async () => {
-      resolveInitialRequest(["bastet"]);
+      resolveInitialRequest({
+        draftHeroIds: [],
+        publishedHeroIds: ["bastet"],
+      });
     });
 
     mockHeroBuilderSectionProps.mockClear();
@@ -343,16 +389,117 @@ describe("DivinityBranchBuilderScreen", () => {
     fireEvent.changeText(screen.getByPlaceholderText("Пароль"), "secret");
     fireEvent.press(screen.getByText("Войти"));
 
-    await waitFor(() => expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
+    );
     const firstAuthenticatedProps = mockHeroBuilderSectionProps.mock.calls[0][0];
-    const firstAuthenticatedHeroes = firstAuthenticatedProps.heroes as Array<{
-      id: string;
-    }>;
+    const firstAuthenticatedHeroes =
+      firstAuthenticatedProps.notCreatedHeroes as Array<{ id: string }>;
 
     expect(firstAuthenticatedProps).toMatchObject({ isHeroListLoading: true });
     expect(firstAuthenticatedHeroes.some((hero) => hero.id === "bastet")).toBe(
       true,
     );
+  });
+
+  it("passes separate not-created and unfinished lists to the selector", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: ["bastet"],
+      publishedHeroIds: ["morana"],
+    });
+
+    renderAdminBuilder();
+
+    await waitFor(() => {
+      expect(mockHeroBuilderSectionProps).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          notPublishedHeroes: expect.arrayContaining([
+            expect.objectContaining({ id: "bastet" }),
+          ]),
+        }),
+      );
+    });
+    const calls = mockHeroBuilderSectionProps.mock.calls;
+    const lastProps = calls[calls.length - 1][0];
+    expect(
+      (lastProps.notCreatedHeroes as Array<{ id: string }>).some(
+        ({ id }) => id === "morana",
+      ),
+    ).toBe(false);
+  });
+
+  it("loads an unfinished hero draft before changing the active builder", async () => {
+    const client = { from: jest.fn() };
+    mockGetSupabaseClient.mockReturnValue(client);
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: ["bastet"],
+      publishedHeroIds: [],
+    });
+    mockFetchDraftHeroBuildSet.mockResolvedValue(getValidBastetBuildSet());
+
+    renderAdminBuilder();
+
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
+
+    expect(screen.getByText("Загружаем черновик...")).toBeTruthy();
+    expect(mockHeroBuilderSectionProps).toHaveBeenLastCalledWith(
+      expect.objectContaining({ selectedHeroId: null }),
+    );
+    await waitFor(() =>
+      expect(mockFetchDraftHeroBuildSet).toHaveBeenCalledWith(client, "bastet"),
+    );
+    expect(await screen.findAllByText("Черновик загружен.")).not.toHaveLength(0);
+    expect(mockHeroBuilderSectionProps).toHaveBeenLastCalledWith(
+      expect.objectContaining({ selectedHeroId: "bastet" }),
+    );
+  });
+
+  it("keeps the current builder state when draft loading fails", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: ["bastet"],
+      publishedHeroIds: [],
+    });
+    mockFetchDraftHeroBuildSet.mockRejectedValue(new Error("network down"));
+
+    renderAdminBuilder();
+
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
+
+    expect(
+      await screen.findAllByText("Ошибка Supabase: network down"),
+    ).not.toHaveLength(0);
+    expect(mockHeroBuilderSectionProps).toHaveBeenLastCalledWith(
+      expect.objectContaining({ selectedHeroId: null }),
+    );
+  });
+
+  it("does not start a duplicate request while an unfinished draft is loading", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: ["bastet"],
+      publishedHeroIds: [],
+    });
+    mockFetchDraftHeroBuildSet.mockReturnValue(new Promise(() => undefined));
+
+    renderAdminBuilder();
+
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
+    await waitFor(() =>
+      expect(mockFetchDraftHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
+
+    const calls = mockHeroBuilderSectionProps.mock.calls;
+    const lastProps = calls[calls.length - 1][0];
+    act(() => {
+      (lastProps.onSelectHero as (heroId: string) => void)("bastet");
+    });
+
+    expect(mockFetchDraftHeroBuildSet).toHaveBeenCalledTimes(1);
   });
 
   it("renders builder controls and validates an incomplete form", async () => {
