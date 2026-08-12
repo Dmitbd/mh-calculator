@@ -224,6 +224,20 @@ export function useDivinityBranchBuilder(
     setTargetTabPath((current) => [current[0], childTabId]);
   }, []);
 
+  const selectTargetTabPath = useCallback(
+    (path: HeroBuildTargetTabPath) => {
+      const tab = getTabByPath(editorTargetTabs, path);
+
+      if (!tab || tab.kind === "group") {
+        return false;
+      }
+
+      setTargetTabPath([...path]);
+      return true;
+    },
+    [editorTargetTabs],
+  );
+
   const selectHero = useCallback((heroId: string) => {
     const hero = getHeroById(heroId);
 
@@ -755,6 +769,7 @@ export function useDivinityBranchBuilder(
       editorTargetTabs,
       setTargetTopTab,
       setTargetChildTab,
+      selectTargetTabPath,
       selectHero,
       cycleWeaponAwakeningSlot,
       addArtifact,
@@ -804,6 +819,7 @@ export function useDivinityBranchBuilder(
       setColumnProgress,
       setTargetTopTab,
       setTargetChildTab,
+      selectTargetTabPath,
       setMajorSkill,
       setDivinitySkill,
       showAwakenedDivinitySkills,

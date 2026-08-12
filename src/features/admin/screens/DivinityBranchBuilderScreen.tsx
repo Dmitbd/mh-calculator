@@ -54,6 +54,7 @@ import type {
   BranchBuildValidationError,
   BranchColumnId,
   DivinityBranchId,
+  HeroBuildTargetTabPath,
 } from "../types/admin.types";
 import { downloadJson } from "../utils/downloadJson";
 import {
@@ -130,6 +131,7 @@ export function DivinityBranchBuilderScreen({
     commitPreparedTargetBuild,
     cycleWeaponAwakeningSlot,
     isPreparedTargetBuildCurrent,
+    getFirstInvalidFullExport,
     loadBuildSetForEditing,
     progressLevels,
     prepareCurrentTargetBuild,
@@ -150,6 +152,7 @@ export function DivinityBranchBuilderScreen({
     setMajorSkill,
     setTargetChildTab,
     setTargetTopTab,
+    selectTargetTabPath,
     showAwakenedDivinitySkills,
     targetTabPath,
     toggleColumnProgress,
@@ -166,6 +169,8 @@ export function DivinityBranchBuilderScreen({
   const [validationErrors, setValidationErrors] = useState<
     BranchBuildValidationError[]
   >([]);
+  const [validationErrorTabPath, setValidationErrorTabPath] =
+    useState<HeroBuildTargetTabPath | null>(null);
   const [backendStatus, setBackendStatus] = useState<string | null>(null);
   const [adminSession, setAdminSession] = useState<AdminSession | null>(
     initialAdminSession ?? null,
@@ -532,25 +537,33 @@ export function DivinityBranchBuilderScreen({
     () => getBranchBuilderTargetTabs(targetTabPath, editorTargetTabs),
     [editorTargetTabs, targetTabPath],
   );
-  const targetTabErrors = getErrorMessages(validationErrors, (path, error) =>
-    error.code.startsWith("multiBuild.") || isTargetTabErrorPath(path),
+  const visibleValidationErrors =
+    validationErrorTabPath &&
+    !areTabPathsEqual(validationErrorTabPath, targetTabPath)
+      ? []
+      : validationErrors;
+  const targetTabErrors = getErrorMessages(
+    visibleValidationErrors,
+    (path, error) =>
+      error.code.startsWith("multiBuild.") || isTargetTabErrorPath(path),
   );
-  const heroErrors = getErrorMessages(validationErrors, (path) =>
+  const heroErrors = getErrorMessages(visibleValidationErrors, (path) =>
     path === "heroId" || path === "heroName",
   );
-  const artifactErrors = getErrorMessages(validationErrors, (path) =>
+  const artifactErrors = getErrorMessages(visibleValidationErrors, (path) =>
     path.startsWith("equipment.artifactIds"),
   );
-  const runeErrors = getErrorMessages(validationErrors, (path) =>
+  const runeErrors = getErrorMessages(visibleValidationErrors, (path) =>
     path.startsWith("equipment.runeIds"),
   );
-  const weaponAwakeningErrors = getErrorMessages(validationErrors, (path) =>
-    path.startsWith("weaponAwakening."),
+  const weaponAwakeningErrors = getErrorMessages(
+    visibleValidationErrors,
+    (path) => path.startsWith("weaponAwakening."),
   );
-  const divinitySkillErrors = getErrorMessages(validationErrors, (path) =>
+  const divinitySkillErrors = getErrorMessages(visibleValidationErrors, (path) =>
     path.startsWith("divinitySkills."),
   );
-  const branchGridErrors = getErrorMessages(validationErrors, (path) =>
+  const branchGridErrors = getErrorMessages(visibleValidationErrors, (path) =>
     path.startsWith("columns.") ||
     path.startsWith("progress.") ||
     path.startsWith("majorNodes."),
@@ -602,6 +615,7 @@ export function DivinityBranchBuilderScreen({
   const showValidationErrors = (
     errors: readonly BranchBuildValidationError[],
   ) => {
+    setValidationErrorTabPath(null);
     setValidationErrors([...errors]);
 
     if (errors.length > 0) {
@@ -617,6 +631,38 @@ export function DivinityBranchBuilderScreen({
       }
     }
   };
+
+  const showPublishedEditValidationErrors = (
+    errors: readonly BranchBuildValidationError[],
+  ) => {
+    const firstInvalid = getFirstInvalidFullExport(errors);
+
+    if (!firstInvalid) {
+      showValidationErrors(errors);
+      return;
+    }
+
+    setValidationErrors(
+      getRelativeValidationErrors(errors, firstInvalid.tabPath),
+    );
+    setValidationErrorTabPath([...firstInvalid.tabPath]);
+    pendingScrollTarget.current = firstInvalid.section;
+    selectTargetTabPath(firstInvalid.tabPath);
+  };
+
+  useEffect(() => {
+    if (
+      validationErrorTabPath &&
+      !areTabPathsEqual(validationErrorTabPath, targetTabPath)
+    ) {
+      pendingScrollTarget.current = null;
+      setValidationErrors([]);
+      setValidationErrorTabPath(null);
+      return;
+    }
+
+    scrollToPendingTarget();
+  }, [targetTabPath, validationErrorTabPath]);
 
   const clearValidationErrors = (
     matches: (path: string, error: BranchBuildValidationError) => boolean,
@@ -649,12 +695,17 @@ export function DivinityBranchBuilderScreen({
             branchBuilderValidationCatalog,
           );
 
-    showValidationErrors(result.errors);
-
     if (!result.isValid) {
+      if (initialMode === "edit") {
+        showPublishedEditValidationErrors(result.errors);
+      } else {
+        showValidationErrors(result.errors);
+      }
       showValidationErrorToast(result.errors, "Сначала исправьте ошибки вкладки.");
       return;
     }
+
+    showValidationErrors([]);
 
     const client = getSupabaseClient();
     const prepared = prepareCurrentTargetBuild();
@@ -784,37 +835,22 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
-    const editValidationResult =
-      initialMode === "edit"
-        ? validateBranchBuild(
-            buildValidationDraft(),
-            branchBuilderValidationCatalog,
-          )
-        : null;
-
-    if (editValidationResult) {
-      showValidationErrors(editValidationResult.errors);
-
-      if (!editValidationResult.isValid) {
-        showValidationErrorToast(
-          editValidationResult.errors,
-          "Сначала исправьте ошибки вкладки.",
-        );
-        return;
-      }
-    }
-
     const result = validateFullExport();
 
-    showValidationErrors(result.errors);
-
     if (!result.isValid) {
+      if (initialMode === "edit") {
+        showPublishedEditValidationErrors(result.errors);
+      } else {
+        showValidationErrors(result.errors);
+      }
       showValidationErrorToast(
         result.errors,
         "Сначала исправьте ошибки полного экспорта.",
       );
       return;
     }
+
+    showValidationErrors([]);
 
     const client = getSupabaseClient();
 
@@ -1605,7 +1641,7 @@ export function DivinityBranchBuilderScreen({
               >
                 <DownloadSection
                   backendStatus={backendStatus}
-                  errors={validationErrors}
+                  errors={visibleValidationErrors}
                   isPublishPending={isPublishPending}
                   isTabSavePending={isTabSavePending}
                   onErrorsLayout={handleSectionLayout("download")}
@@ -1686,6 +1722,45 @@ function getErrorMessages(
   return errors
     .filter((error) => error.path && matches(error.path, error))
     .map((error) => error.message);
+}
+
+function getRelativeValidationErrors(
+  errors: readonly BranchBuildValidationError[],
+  tabPath: readonly string[],
+): BranchBuildValidationError[] {
+  const tabKey = tabPath.join("/");
+  const fieldPrefix = `${tabKey}.`;
+
+  return errors.reduce<BranchBuildValidationError[]>((relativeErrors, error) => {
+    if (!error.path) {
+      return relativeErrors;
+    }
+
+    if (error.path === tabKey) {
+      relativeErrors.push({ ...error, path: undefined });
+      return relativeErrors;
+    }
+
+    if (!error.path.startsWith(fieldPrefix)) {
+      return relativeErrors;
+    }
+
+    relativeErrors.push({
+      ...error,
+      path: error.path.slice(fieldPrefix.length),
+    });
+    return relativeErrors;
+  }, []);
+}
+
+function areTabPathsEqual(
+  first: readonly string[],
+  second: readonly string[],
+): boolean {
+  return (
+    first.length === second.length &&
+    first.every((segment, index) => segment === second[index])
+  );
 }
 
 function getValidationScrollTarget(

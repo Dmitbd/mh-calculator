@@ -335,7 +335,103 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(3);
   });
 
-  it("does not update a published build when another local leaf is invalid", async () => {
+  it.each(["Сохранить вкладку", "Опубликовать"])(
+    "%s opens the first invalid published leaf and maps its inline error",
+    async (actionLabel) => {
+      const scrollToSpy = jest.spyOn(ScrollView.prototype, "scrollTo");
+      mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+      mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+        draftHeroIds: [],
+        publishedHeroIds: ["bastet"],
+      });
+
+      render(
+        <DivinityBranchBuilderScreen
+          initialAdminSession={ADMIN_SESSION}
+          initialHeroId="bastet"
+          initialMode="edit"
+        />,
+      );
+
+      await screen.findAllByText("Билд загружен для редактирования.");
+      fireEvent.press(screen.getByLabelText("Select PvE build tab"));
+      fireEvent.press(screen.getByLabelText("Select Кампания build tab"));
+      fireEvent.press(screen.getByLabelText("Remove Air Rune"));
+      fireEvent.press(screen.getByLabelText("Select PvP build tab"));
+      fireEvent(
+        screen.getByTestId("branch-builder-equipment-section"),
+        "layout",
+        {
+          nativeEvent: {
+            layout: { height: 120, width: 320, x: 0, y: 600 },
+          },
+        },
+      );
+      scrollToSpy.mockClear();
+      fireEvent.press(screen.getByText(actionLabel));
+
+      expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
+      await waitFor(() =>
+        expect(
+          screen.getByLabelText("Select Кампания build tab").props
+            .accessibilityState,
+        ).toEqual(expect.objectContaining({ selected: true })),
+      );
+      expect(
+        within(
+          screen.getByTestId("branch-builder-equipment-section"),
+        ).getByText("PvE -> Кампания: Выберите руну."),
+      ).toBeTruthy();
+      expect(scrollToSpy).toHaveBeenCalledWith({ animated: true, y: 510 });
+
+      fireEvent.press(screen.getByLabelText("Добавить руну"));
+      fireEvent.press(screen.getByLabelText("Add Air Rune"));
+
+      expect(
+        within(
+          screen.getByTestId("branch-builder-equipment-section"),
+        ).queryByText("PvE -> Кампания: Выберите руну."),
+      ).toBeNull();
+      scrollToSpy.mockRestore();
+    },
+  );
+
+  it("uses full edit validation order instead of preferring the current invalid leaf", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: [],
+      publishedHeroIds: ["bastet"],
+    });
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Remove Air Rune"));
+    fireEvent.press(screen.getByLabelText("Select PvE build tab"));
+    fireEvent.press(screen.getByLabelText("Select Кампания build tab"));
+    fireEvent.press(screen.getByLabelText("Remove Air Rune"));
+    fireEvent.press(screen.getByText("Опубликовать"));
+
+    expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText("Select PvP build tab").props.accessibilityState,
+      ).toEqual(expect.objectContaining({ selected: true })),
+    );
+    expect(
+      within(screen.getByTestId("branch-builder-equipment-section")).getByText(
+        "PvP: Выберите руну.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("does not show a mapped edit error under another manually selected leaf", async () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
     mockFetchHeroBuildSetStatusIds.mockResolvedValue({
       draftHeroIds: [],
@@ -357,10 +453,20 @@ describe("DivinityBranchBuilderScreen", () => {
     fireEvent.press(screen.getByLabelText("Select PvP build tab"));
     fireEvent.press(screen.getByText("Сохранить вкладку"));
 
-    expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(
+        within(
+          screen.getByTestId("branch-builder-equipment-section"),
+        ).getByText("PvE -> Кампания: Выберите руну."),
+      ).toBeTruthy(),
+    );
+    fireEvent.press(screen.getByLabelText("Select PvP build tab"));
+
     expect(
-      await screen.findAllByText("PvE -> Кампания: Выберите руну."),
-    ).not.toHaveLength(0);
+      within(screen.getByTestId("branch-builder-equipment-section")).queryByText(
+        "PvE -> Кампания: Выберите руну.",
+      ),
+    ).toBeNull();
   });
 
   it("keeps create draft and publish operations separate", async () => {
@@ -1798,8 +1904,10 @@ describe("DivinityBranchBuilderScreen", () => {
     fireEvent.press(screen.getByText("Опубликовать"));
     expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1);
     expect(
-      screen.getAllByText("Выберите руну."),
-    ).not.toHaveLength(0);
+      within(screen.getByTestId("branch-builder-equipment-section")).getByText(
+        "PvP: Выберите руну.",
+      ),
+    ).toBeTruthy();
   });
 
   it("reports a stale form when it changes during catalog refresh", async () => {
