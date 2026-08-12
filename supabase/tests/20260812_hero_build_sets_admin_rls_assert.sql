@@ -5,45 +5,46 @@ returns text
 language sql
 immutable
 as $$
-  select regexp_replace(
-    replace(
-      regexp_replace(
-        regexp_replace(
-          lower(coalesce(raw_expression, '')),
-          '[[:space:]]+',
-          '',
-          'g'
-        ),
-        '[()]',
-        '',
-        'g'
-      ),
-      '::text',
-      ''
+  select replace(
+    regexp_replace(
+      lower(coalesce(raw_expression, '')),
+      '[[:space:]]+',
+      '',
+      'g'
     ),
-    '^select',
+    '::text',
     ''
   );
 $$;
 
 do $$
 declare
-  admin_expression constant text :=
-    'auth.jwt()->''app_metadata''->>''role''=''admin''';
-  published_expression constant text := 'status=''published''';
+  admin_expected_expression constant text :=
+    '((SELECT ((auth.jwt() -> ''app_metadata'') ->> ''role'')) = ''admin'')';
+  admin_positive_fixture constant text :=
+    '(( SELECT ((auth.jwt() -> ''app_metadata''::text) ->> ''role''::text)) = ''admin''::text)';
+  admin_negative_fixture constant text :=
+    '((( SELECT ((auth.jwt() -> ''app_metadata''::text) ->> ''role''::text)) = ''admin''::text) OR true)';
+  published_expected_expression constant text :=
+    '(status = ''published'')';
+  published_negative_fixture constant text :=
+    '((status = ''published''::text) OR true)';
   policy_count integer;
   policy_record record;
 begin
-  if pg_temp.normalize_policy_expression(
-    '((select auth.jwt() -> ''app_metadata'' ->> ''role'') = ''admin'') or true'
-  ) = admin_expression then
-    raise exception 'policy expression normalizer accepts a permissive clause';
+  if pg_temp.normalize_policy_expression(admin_positive_fixture)
+    is distinct from pg_temp.normalize_policy_expression(admin_expected_expression) then
+    raise exception 'admin positive fixture does not match expected';
   end if;
 
-  if pg_temp.normalize_policy_expression(
-    'status = ''published'' or true'
-  ) = published_expression then
-    raise exception 'published policy normalizer accepts a permissive clause';
+  if pg_temp.normalize_policy_expression(admin_negative_fixture)
+    = pg_temp.normalize_policy_expression(admin_expected_expression) then
+    raise exception 'admin negative fixture accepts a permissive clause';
+  end if;
+
+  if pg_temp.normalize_policy_expression(published_negative_fixture)
+    = pg_temp.normalize_policy_expression(published_expected_expression) then
+    raise exception 'published negative fixture accepts a permissive clause';
   end if;
 
   if not exists (
@@ -76,7 +77,9 @@ begin
     or policy_record.cmd is distinct from 'SELECT'
     or policy_record.roles is distinct from array['public']::name[]
     or pg_temp.normalize_policy_expression(policy_record.qual)
-      is distinct from published_expression
+      is distinct from pg_temp.normalize_policy_expression(
+        published_expected_expression
+      )
     or policy_record.with_check is not null then
     raise exception 'published read policy does not limit public access to published rows';
   end if;
@@ -92,7 +95,9 @@ begin
     or policy_record.cmd is distinct from 'SELECT'
     or policy_record.roles is distinct from array['authenticated']::name[]
     or pg_temp.normalize_policy_expression(policy_record.qual)
-      is distinct from admin_expression
+      is distinct from pg_temp.normalize_policy_expression(
+        admin_expected_expression
+      )
     or policy_record.with_check is not null then
     raise exception 'admin read policy does not require the app_metadata admin claim';
   end if;
@@ -109,7 +114,9 @@ begin
     or policy_record.roles is distinct from array['authenticated']::name[]
     or policy_record.qual is not null
     or pg_temp.normalize_policy_expression(policy_record.with_check)
-      is distinct from admin_expression then
+      is distinct from pg_temp.normalize_policy_expression(
+        admin_expected_expression
+      ) then
     raise exception 'admin insert policy does not require the app_metadata admin claim';
   end if;
 
@@ -124,9 +131,13 @@ begin
     or policy_record.cmd is distinct from 'UPDATE'
     or policy_record.roles is distinct from array['authenticated']::name[]
     or pg_temp.normalize_policy_expression(policy_record.qual)
-      is distinct from admin_expression
+      is distinct from pg_temp.normalize_policy_expression(
+        admin_expected_expression
+      )
     or pg_temp.normalize_policy_expression(policy_record.with_check)
-      is distinct from admin_expression then
+      is distinct from pg_temp.normalize_policy_expression(
+        admin_expected_expression
+      ) then
     raise exception 'admin update policy does not require the app_metadata admin claim';
   end if;
 
@@ -141,7 +152,9 @@ begin
     or policy_record.cmd is distinct from 'DELETE'
     or policy_record.roles is distinct from array['authenticated']::name[]
     or pg_temp.normalize_policy_expression(policy_record.qual)
-      is distinct from admin_expression
+      is distinct from pg_temp.normalize_policy_expression(
+        admin_expected_expression
+      )
     or policy_record.with_check is not null then
     raise exception 'admin delete policy does not require the app_metadata admin claim';
   end if;
