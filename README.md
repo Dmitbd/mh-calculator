@@ -15,6 +15,7 @@
 
 - [Последний GitHub Release](https://github.com/Dmitbd/mh-calculator/releases/latest)
 - [История изменений](docs/CHANGELOG.md)
+- [Бэклог проекта](docs/BACKLOG.md)
 - [Правила выпуска версий](docs/guidelines/documentation-and-releases.md)
 
 На GitHub опубликованный Release показывается в секции **Releases** на главной странице репозитория. Один тег без GitHub Release не показывает полноценные patch notes.

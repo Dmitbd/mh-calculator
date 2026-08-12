@@ -37,6 +37,7 @@
 ## Изменения и правила
 
 - [CHANGELOG.md](CHANGELOG.md) — что добавлено и исправлено по версиям.
+- [BACKLOG.md](BACKLOG.md) — согласованные, но ещё не реализованные задачи; backlog не описывает выпущенное поведение.
 - [guidelines/README.md](guidelines/README.md) — обязательные правила проекта.
 - [guidelines/documentation-and-releases.md](guidelines/documentation-and-releases.md) — как обновлять specs, выпускать теги и публиковать GitHub Releases.
 
