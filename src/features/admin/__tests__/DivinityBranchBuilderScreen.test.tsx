@@ -316,7 +316,7 @@ describe("DivinityBranchBuilderScreen", () => {
     );
   });
 
-  it("keeps the publication outcome when the catalog refresh fails", async () => {
+  it("reports a catalog refresh failure while keeping the published hero excluded", async () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
     mockFetchHeroBuildSetStatusIds
       .mockResolvedValueOnce({ draftHeroIds: ["bastet"], publishedHeroIds: [] })
@@ -334,12 +334,59 @@ describe("DivinityBranchBuilderScreen", () => {
     fireEvent.press(screen.getByText("Опубликовать"));
 
     expect(
-      await screen.findAllByText("Билд опубликован."),
+      await screen.findAllByText(
+        "Билд опубликован, но список героев обновить не удалось.",
+      ),
     ).not.toHaveLength(0);
     expect(
       screen.getByText("Не удалось загрузить список опубликованных гайдов"),
     ).toBeTruthy();
     expect(screen.getByText("Повторить")).toBeTruthy();
+    const calls = mockHeroBuilderSectionProps.mock.calls;
+    const lastProps = calls[calls.length - 1][0];
+    expect(lastProps.notCreatedHeroes).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "bastet" })]),
+    );
+    expect(lastProps.notPublishedHeroes).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "bastet" })]),
+    );
+  });
+
+  it("keeps cleanup failure precedence and published dominance when refresh also fails", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockDeleteDraftHeroBuildSet.mockRejectedValue(new Error("cleanup failed"));
+    mockFetchHeroBuildSetStatusIds
+      .mockResolvedValueOnce({ draftHeroIds: ["bastet"], publishedHeroIds: [] })
+      .mockRejectedValueOnce(new Error("refresh failed"));
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByText("Опубликовать"));
+
+    expect(
+      await screen.findAllByText(
+        "Билд опубликован, но черновик удалить не удалось: cleanup failed",
+      ),
+    ).not.toHaveLength(0);
+    expect(
+      screen.getByText("Не удалось загрузить список опубликованных гайдов"),
+    ).toBeTruthy();
+    expect(screen.getByText("Повторить")).toBeTruthy();
+    const calls = mockHeroBuilderSectionProps.mock.calls;
+    const lastProps = calls[calls.length - 1][0];
+    expect(lastProps.notCreatedHeroes).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "bastet" })]),
+    );
+    expect(lastProps.notPublishedHeroes).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "bastet" })]),
+    );
   });
 
   it("blocks duplicate publication and tab saving while publication is pending", async () => {

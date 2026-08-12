@@ -23,24 +23,30 @@ beforeEach(() => {
 });
 
 it("publishes before deleting the matching draft", async () => {
-  const events: string[] = [];
-  mockedSave.mockImplementation(async () => {
-    events.push("published");
-  });
-  mockedDeleteDraft.mockImplementation(async () => {
-    events.push("draft-deleted");
+  let resolveSave!: () => void;
+  mockedSave.mockReturnValue(
+    new Promise<void>((resolve) => {
+      resolveSave = resolve;
+    }),
+  );
+  mockedDeleteDraft.mockResolvedValue(undefined);
+
+  const publication = publishAdminHeroBuildSet({
+    buildSet,
+    client,
+    heroId: "bastet",
   });
 
-  await expect(
-    publishAdminHeroBuildSet({ buildSet, client, heroId: "bastet" }),
-  ).resolves.toEqual({ draftCleanupError: null });
-
-  expect(events).toEqual(["published", "draft-deleted"]);
   expect(mockedSave).toHaveBeenCalledWith(client, {
     buildSet,
     heroId: "bastet",
     status: "published",
   });
+  expect(mockedDeleteDraft).not.toHaveBeenCalled();
+
+  resolveSave();
+
+  await expect(publication).resolves.toEqual({ draftCleanupError: null });
   expect(mockedDeleteDraft).toHaveBeenCalledWith(client, "bastet");
 });
 

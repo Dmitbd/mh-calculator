@@ -217,9 +217,11 @@ export function DivinityBranchBuilderScreen({
     setIsHeroListLoading(true);
   }, []);
 
-  const loadHeroStatusIds = useCallback(async () => {
+  const loadHeroStatusIds = useCallback(async (options?: {
+    preserveCurrentIdsOnError?: boolean;
+  }): Promise<boolean> => {
     if (!isScreenMounted.current) {
-      return;
+      return false;
     }
 
     const requestId = heroListRequestId.current + 1;
@@ -227,10 +229,12 @@ export function DivinityBranchBuilderScreen({
     const client = getSupabaseClient();
 
     if (!client) {
-      setHeroStatusIds({ draftHeroIds: [], publishedHeroIds: [] });
+      if (!options?.preserveCurrentIdsOnError) {
+        setHeroStatusIds({ draftHeroIds: [], publishedHeroIds: [] });
+      }
       setHeroListError("Supabase не настроен.");
       setIsHeroListLoading(false);
-      return;
+      return false;
     }
 
     setIsHeroListLoading(true);
@@ -242,19 +246,23 @@ export function DivinityBranchBuilderScreen({
       );
 
       if (requestId !== heroListRequestId.current) {
-        return;
+        return false;
       }
 
       setHeroStatusIds(ids);
+      return true;
     } catch (error) {
       if (requestId !== heroListRequestId.current) {
-        return;
+        return false;
       }
 
-      setHeroStatusIds({ draftHeroIds: [], publishedHeroIds: [] });
+      if (!options?.preserveCurrentIdsOnError) {
+        setHeroStatusIds({ draftHeroIds: [], publishedHeroIds: [] });
+      }
       setHeroListError(
         error instanceof Error ? error.message : "Неизвестная ошибка Supabase.",
       );
+      return false;
     } finally {
       if (requestId === heroListRequestId.current) {
         setIsHeroListLoading(false);
@@ -740,7 +748,16 @@ export function DivinityBranchBuilderScreen({
         return;
       }
 
-      await loadHeroStatusIds();
+      setHeroStatusIds((current) => ({
+        draftHeroIds: current.draftHeroIds.filter((id) => id !== heroId),
+        publishedHeroIds: current.publishedHeroIds.includes(heroId)
+          ? current.publishedHeroIds
+          : [...current.publishedHeroIds, heroId],
+      }));
+
+      const didRefreshHeroStatusIds = await loadHeroStatusIds({
+        preserveCurrentIdsOnError: true,
+      });
 
       if (!isCurrentRequest()) {
         return;
@@ -750,6 +767,14 @@ export function DivinityBranchBuilderScreen({
         showBackendMessage(
           "error",
           `Билд опубликован, но черновик удалить не удалось: ${draftCleanupError.message}`,
+        );
+        return;
+      }
+
+      if (!didRefreshHeroStatusIds) {
+        showBackendMessage(
+          "error",
+          "Билд опубликован, но список героев обновить не удалось.",
         );
         return;
       }
