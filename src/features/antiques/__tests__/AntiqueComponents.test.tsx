@@ -183,6 +183,11 @@ test("renders all 16 accessible reward chests in order without visible node numb
   expect(
     chestLabels.filter((label) => label.endsWith("большой сундук")),
   ).toEqual(expectedLargeChestLabels);
+  expect(
+    screen.queryByText(
+      "Четыре линии · большой сундук каждые 3 000 очков",
+    ),
+  ).toBeNull();
   for (let nodeNumber = 1; nodeNumber <= 16; nodeNumber += 1) {
     expect(screen.queryByText(String(nodeNumber))).toBeNull();
   }
@@ -214,6 +219,7 @@ test.each([
 test("shows all four cashback resources and values", () => {
   render(<AntiqueCashback cashback={result.cashback} />);
 
+  expect(screen.getByText("Ресурсы из открытых сундуков")).toBeTruthy();
   expect(screen.getAllByLabelText(/^Кешбэк — /)).toHaveLength(4);
   expect(screen.getByLabelText("Кешбэк — Карта гробницы: 15")).toBeTruthy();
   expect(screen.getByLabelText("Кешбэк — Карта храма: 5")).toBeTruthy();

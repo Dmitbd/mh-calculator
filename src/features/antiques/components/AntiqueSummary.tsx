@@ -9,7 +9,9 @@ type AntiqueSummaryProps = {
 export function AntiqueSummary({ result }: AntiqueSummaryProps) {
   void result;
 
-  return <Text style={styles.title}>Калькулятор соперничества за антиквариат</Text>;
+  return (
+    <Text style={styles.title}>Калькулятор соперничества за антиквариат</Text>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -17,5 +19,6 @@ const styles = StyleSheet.create({
     color: "#fff3d1",
     fontSize: 22,
     fontWeight: "800",
+    textAlign: "center",
   },
 });
