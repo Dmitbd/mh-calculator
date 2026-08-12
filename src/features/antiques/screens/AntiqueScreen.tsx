@@ -116,7 +116,10 @@ export default function AntiqueScreen() {
               void setOwnedTombMaps(value);
             }}
           />
-          <AntiqueRewardTrack openedNodes={result.openedNodes} />
+          <AntiqueRewardTrack
+            openedNodes={result.openedNodes}
+            totalScore={result.totalScore}
+          />
           <AntiqueCashback cashback={result.cashback} />
           <Pressable
             accessibilityRole="button"

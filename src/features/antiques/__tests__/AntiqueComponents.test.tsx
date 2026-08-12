@@ -143,42 +143,73 @@ test("forwards raw owned-card inputs", () => {
   expect(onChangeOwnedTempleMaps).toHaveBeenCalledWith("4y");
 });
 
-test("renders all 16 accessible reward nodes and four major markers", () => {
-  render(<AntiqueRewardTrack openedNodes={result.openedNodes} />);
+test("renders all 16 accessible reward chests in order without visible node numbers", () => {
+  render(
+    <AntiqueRewardTrack
+      openedNodes={result.openedNodes}
+      totalScore={result.totalScore}
+    />,
+  );
 
-  const expectedNodeLabels = [
-    "Узел награды 1: 750 очков, открыт",
-    "Узел награды 2: 1500 очков, открыт",
-    "Узел награды 3: 2250 очков, открыт",
-    "Узел награды 4: 3000 очков, открыт, крупный сундук",
-    "Узел награды 5: 3750 очков, закрыт",
-    "Узел награды 6: 4500 очков, закрыт",
-    "Узел награды 7: 5250 очков, закрыт",
-    "Узел награды 8: 6000 очков, закрыт, крупный сундук",
-    "Узел награды 9: 6750 очков, закрыт",
-    "Узел награды 10: 7500 очков, закрыт",
-    "Узел награды 11: 8250 очков, закрыт",
-    "Узел награды 12: 9000 очков, закрыт, крупный сундук",
-    "Узел награды 13: 9750 очков, закрыт",
-    "Узел награды 14: 10500 очков, закрыт",
-    "Узел награды 15: 11250 очков, закрыт",
-    "Узел награды 16: 12000 очков, закрыт, крупный сундук",
+  const expectedChestLabels = [
+    "Сундук награды 1: 750 очков, открыт",
+    "Сундук награды 2: 1500 очков, открыт",
+    "Сундук награды 3: 2250 очков, открыт",
+    "Сундук награды 4: 3000 очков, открыт, большой сундук",
+    "Сундук награды 5: 3750 очков, закрыт",
+    "Сундук награды 6: 4500 очков, закрыт",
+    "Сундук награды 7: 5250 очков, закрыт",
+    "Сундук награды 8: 6000 очков, закрыт, большой сундук",
+    "Сундук награды 9: 6750 очков, закрыт",
+    "Сундук награды 10: 7500 очков, закрыт",
+    "Сундук награды 11: 8250 очков, закрыт",
+    "Сундук награды 12: 9000 очков, закрыт, большой сундук",
+    "Сундук награды 13: 9750 очков, закрыт",
+    "Сундук награды 14: 10500 очков, закрыт",
+    "Сундук награды 15: 11250 очков, закрыт",
+    "Сундук награды 16: 12000 очков, закрыт, большой сундук",
   ];
-  const expectedMajorLabels = [
-    "Узел награды 4: 3000 очков, открыт, крупный сундук",
-    "Узел награды 8: 6000 очков, закрыт, крупный сундук",
-    "Узел награды 12: 9000 очков, закрыт, крупный сундук",
-    "Узел награды 16: 12000 очков, закрыт, крупный сундук",
+  const expectedLargeChestLabels = [
+    "Сундук награды 4: 3000 очков, открыт, большой сундук",
+    "Сундук награды 8: 6000 очков, закрыт, большой сундук",
+    "Сундук награды 12: 9000 очков, закрыт, большой сундук",
+    "Сундук награды 16: 12000 очков, закрыт, большой сундук",
   ];
-  const nodeLabels = screen
-    .getAllByLabelText(/^Узел награды /)
+  const chestLabels = screen
+    .getAllByLabelText(/^Сундук награды /)
     .map((node) => node.props.accessibilityLabel);
 
-  expect(nodeLabels).toEqual(expectedNodeLabels);
-  expect(nodeLabels.filter((label) => label.endsWith("крупный сундук"))).toEqual(
-    expectedMajorLabels,
-  );
+  expect(chestLabels).toEqual(expectedChestLabels);
+  expect(
+    chestLabels.filter((label) => label.endsWith("большой сундук")),
+  ).toEqual(expectedLargeChestLabels);
+  for (let nodeNumber = 1; nodeNumber <= 16; nodeNumber += 1) {
+    expect(screen.queryByText(String(nodeNumber))).toBeNull();
+  }
 });
+
+test.each([
+  [0, 0, [false, true, true, true]],
+  [3_600, 4, [false, false, true, true]],
+  [12_000, 16, [false, false, false, false]],
+])(
+  "marks reward rows available for a total score of %i",
+  (totalScore, openedNodes, disabledRows) => {
+    render(
+      <AntiqueRewardTrack
+        openedNodes={openedNodes}
+        totalScore={totalScore}
+      />,
+    );
+
+    const rows = screen.getAllByLabelText(/^Линия наград /);
+
+    expect(rows).toHaveLength(4);
+    expect(
+      rows.map((row) => row.props.accessibilityState?.disabled),
+    ).toEqual(disabledRows);
+  },
+);
 
 test("shows all four cashback resources and values", () => {
   render(<AntiqueCashback cashback={result.cashback} />);
