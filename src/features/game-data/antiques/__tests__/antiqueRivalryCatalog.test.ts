@@ -2,8 +2,21 @@ import {
   ANTIQUE_EVENT_MAX_SCORE,
   ANTIQUE_MAJOR_THRESHOLDS,
   ANTIQUE_NODE_STEP,
+  antiqueResourceCatalog,
   antiqueRivalryRewards,
 } from "..";
+
+test("maps the supplied antique icons to the correct resources", () => {
+  expect(antiqueResourceCatalog.researchCoins.icon).toBe(
+    "/img/antiques/research-coins.png",
+  );
+  expect(antiqueResourceCatalog.templeMap.icon).toBe(
+    "/img/antiques/temple-map.png",
+  );
+  expect(antiqueResourceCatalog.tombMap.icon).toBe(
+    "/img/antiques/tomb-map.png",
+  );
+});
 
 test("defines every cumulative rivalry reward node", () => {
   expect(ANTIQUE_NODE_STEP).toBe(750);

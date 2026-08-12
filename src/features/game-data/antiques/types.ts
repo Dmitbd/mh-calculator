@@ -35,7 +35,7 @@ export type UnresolvedAntiqueResourceMetadata<
   verification: "unresolved";
   resourceId?: never;
   spriteName?: never;
-  icon?: never;
+  icon?: string;
 };
 
 export type AntiqueResourceMetadata<

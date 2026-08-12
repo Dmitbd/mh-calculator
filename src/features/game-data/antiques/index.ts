@@ -12,7 +12,7 @@ export const antiqueRivalryRewards = rewardsData as AntiqueRivalryReward[];
 
 /**
  * Resource IDs and sprite names are taken from the v1.48.0 client config.
- * `icon` remains unset until the matching Unity sprite is exported and verified.
+ * `icon` may point to a verified local image when no game resource ID is known.
  */
 export const antiqueResourceCatalog = {
   researchCoins: {
@@ -20,6 +20,7 @@ export const antiqueResourceCatalog = {
     verification: "unresolved",
     label: "Монеты исследования",
     fallbackLabel: "МИ",
+    icon: "/img/antiques/research-coins.png",
   },
   tombMap: {
     kind: "tombMap",
@@ -28,6 +29,7 @@ export const antiqueResourceCatalog = {
     fallbackLabel: "КГ",
     resourceId: 700042,
     spriteName: "700042",
+    icon: "/img/antiques/tomb-map.png",
   },
   templeMap: {
     kind: "templeMap",
@@ -36,6 +38,7 @@ export const antiqueResourceCatalog = {
     fallbackLabel: "КХ",
     resourceId: 700043,
     spriteName: "700043",
+    icon: "/img/antiques/temple-map.png",
   },
   eventChest: {
     kind: "eventChest",
