@@ -1,63 +1,131 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 
-import {
-  ANTIQUE_MAJOR_THRESHOLDS,
-  antiqueResourceCatalog,
-  antiqueRivalryRewards,
-} from "@/features/game-data/antiques";
+import { antiqueRivalryRewards } from "@/features/game-data/antiques";
+import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
 
-import { AntiqueResourceIcon } from "./AntiqueResourceIcon";
+const REWARDS_PER_ROW = 4;
+const REWARD_ROW_COUNT = 4;
+const SCORE_PER_ROW = 3_000;
+const RIVALRY_CHEST_URI = resolveAssetUri(
+  "/img/antiques/rivalry-chest.png",
+);
 
 type AntiqueRewardTrackProps = {
   openedNodes: number;
+  totalScore: number;
 };
 
-export function AntiqueRewardTrack({ openedNodes }: AntiqueRewardTrackProps) {
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.min(Math.max(value, minimum), maximum);
+}
+
+export function AntiqueRewardTrack({
+  openedNodes,
+  totalScore,
+}: AntiqueRewardTrackProps) {
   const nodes = antiqueRivalryRewards.slice(1);
+  const rewardRows = Array.from({ length: REWARD_ROW_COUNT }, (_, rowIndex) =>
+    nodes.slice(
+      rowIndex * REWARDS_PER_ROW,
+      (rowIndex + 1) * REWARDS_PER_ROW,
+    ),
+  );
 
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Шкала наград</Text>
       <Text style={styles.description}>
-        16 узлов · крупный сундук каждые 3 000 очков
+        Четыре линии · большой сундук каждые 3 000 очков
       </Text>
       <View style={styles.track}>
-        {nodes.map((node, index) => {
-          const nodeNumber = index + 1;
-          const isOpened = nodeNumber <= openedNodes;
-          const isMajor = ANTIQUE_MAJOR_THRESHOLDS.includes(node.score);
-          const nodeKind = isMajor ? ", крупный сундук" : "";
+        {rewardRows.map((row, rowIndex) => {
+          const rowStartScore = rowIndex * SCORE_PER_ROW;
+          const rowEndScore = rowStartScore + SCORE_PER_ROW;
+          const rowProgress = clamp(
+            (totalScore - rowStartScore) / (rowEndScore - rowStartScore),
+            0,
+            1,
+          );
+          const isRowAvailable = totalScore >= rowStartScore;
 
           return (
-            <View
-              key={node.score}
-              accessible
-              accessibilityLabel={`Узел награды ${nodeNumber}: ${node.score} очков, ${
-                isOpened ? "открыт" : "закрыт"
-              }${nodeKind}`}
-              accessibilityState={{ selected: isOpened }}
-              style={[
-                styles.node,
-                isOpened && styles.openedNode,
-                isMajor && styles.majorNode,
-              ]}
-            >
-              {isMajor ? (
-                <View style={styles.majorMarker}>
-                  <AntiqueResourceIcon
-                    resource={antiqueResourceCatalog.eventChest}
-                    size={34}
+            <View key={rowStartScore} style={styles.row}>
+              <View
+                accessible
+                accessibilityLabel={`Линия наград ${rowIndex + 1}: ${
+                  isRowAvailable ? "доступна" : "заблокирована"
+                }`}
+                accessibilityState={{ disabled: !isRowAvailable }}
+                style={styles.rowAccessibilityMarker}
+              />
+              <View
+                style={[
+                  styles.rowVisual,
+                  !isRowAvailable && styles.unavailableRow,
+                ]}
+              >
+                <View style={styles.line}>
+                  <View
+                    style={[
+                      styles.lineProgress,
+                      {
+                        width: `${rowProgress * 100}%` as `${number}%`,
+                      },
+                    ]}
                   />
                 </View>
-              ) : (
-                <View style={[styles.dot, isOpened && styles.openedDot]} />
-              )}
-              <Text style={[styles.nodeNumber, isOpened && styles.openedText]}>
-                {nodeNumber}
-              </Text>
-              <Text style={[styles.score, isOpened && styles.openedText]}>
-                {node.score}
-              </Text>
+                <View style={styles.chestRow}>
+                  {row.map((node, indexInRow) => {
+                    const nodeNumber =
+                      rowIndex * REWARDS_PER_ROW + indexInRow + 1;
+                    const isOpened = nodeNumber <= openedNodes;
+                    const isLargeChest = indexInRow === REWARDS_PER_ROW - 1;
+
+                    return (
+                      <View
+                        key={node.score}
+                        accessible
+                        accessibilityLabel={`Сундук награды ${nodeNumber}: ${
+                          node.score
+                        } очков, ${isOpened ? "открыт" : "закрыт"}${
+                          isLargeChest ? ", большой сундук" : ""
+                        }`}
+                        accessibilityState={{ selected: isOpened }}
+                        style={styles.chestNode}
+                      >
+                        <View
+                          style={[
+                            styles.chestGlow,
+                            isOpened && styles.openedChestGlow,
+                            isLargeChest && styles.largeChestGlow,
+                          ]}
+                        >
+                          <Image
+                            accessible={false}
+                            resizeMode="contain"
+                            source={{ uri: RIVALRY_CHEST_URI }}
+                            style={[
+                              styles.chestImage,
+                              isOpened
+                                ? styles.openedChestImage
+                                : styles.closedChestImage,
+                              isLargeChest && styles.largeChestImage,
+                            ]}
+                          />
+                        </View>
+                        <Text
+                          style={[
+                            styles.score,
+                            isOpened && styles.openedScore,
+                          ]}
+                        >
+                          {node.score}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
             </View>
           );
         })}
@@ -86,56 +154,93 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   track: {
+    gap: 16,
+  },
+  row: {
+    position: "relative",
+  },
+  rowAccessibilityMarker: {
+    position: "absolute",
+    width: 1,
+    height: 1,
+    overflow: "hidden",
+  },
+  rowVisual: {
+    minHeight: 88,
+    justifyContent: "center",
+  },
+  unavailableRow: {
+    opacity: 0.55,
+  },
+  line: {
+    position: "absolute",
+    top: 31,
+    left: "10%",
+    right: "10%",
+    height: 5,
+    overflow: "hidden",
+    borderRadius: 3,
+    backgroundColor: "#554b45",
+  },
+  lineProgress: {
+    height: "100%",
+    borderRadius: 3,
+    backgroundColor: "#d7a843",
+  },
+  chestRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+    alignItems: "flex-start",
+    justifyContent: "space-between",
   },
-  node: {
-    minWidth: 64,
-    flexGrow: 1,
-    flexBasis: "20%",
+  chestNode: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: "center",
+    gap: 4,
+  },
+  chestGlow: {
+    width: 58,
+    height: 58,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 82,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: "#503727",
-    backgroundColor: "#34251c",
-    padding: 7,
-    gap: 3,
+    borderRadius: 29,
   },
-  openedNode: {
-    borderColor: "#b9853f",
-    backgroundColor: "#54301a",
+  openedChestGlow: {
+    backgroundColor: "rgba(243, 190, 70, 0.2)",
+    shadowColor: "#ffd76f",
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 7,
   },
-  majorNode: {
-    borderWidth: 2,
-    borderColor: "#d6a951",
+  largeChestGlow: {
+    width: 68,
+    height: 68,
+    marginTop: -5,
+    marginBottom: -5,
+    borderRadius: 34,
   },
-  dot: {
-    width: 11,
-    height: 11,
-    borderRadius: 6,
-    backgroundColor: "#6c5543",
+  chestImage: {
+    width: 52,
+    height: 52,
   },
-  openedDot: {
-    backgroundColor: "#f0c36a",
+  openedChestImage: {
+    opacity: 1,
   },
-  majorMarker: {
-    alignItems: "center",
-    justifyContent: "center",
+  closedChestImage: {
+    opacity: 0.55,
+    tintColor: "#81766f",
   },
-  nodeNumber: {
-    color: "#a99076",
-    fontSize: 11,
-    fontWeight: "800",
+  largeChestImage: {
+    width: 64,
+    height: 64,
   },
   score: {
-    color: "#bca58a",
+    color: "#9f9288",
     fontSize: 12,
     fontWeight: "700",
   },
-  openedText: {
+  openedScore: {
     color: "#fff0c7",
   },
 });
