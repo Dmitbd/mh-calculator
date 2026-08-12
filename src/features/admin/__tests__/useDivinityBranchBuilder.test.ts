@@ -236,13 +236,9 @@ describe("useDivinityBranchBuilder", () => {
 
   it("prepares the current valid tab as a partial build set without committing it", () => {
     const result = filledBuild();
-
-    let prepared: ReturnType<typeof result.current.prepareCurrentTargetBuild>;
-    act(() => {
-      prepared = result.current.prepareCurrentTargetBuild(
-        "2026-08-12T10:00:00.000Z",
-      );
-    });
+    const prepared = result.current.prepareCurrentTargetBuild(
+      "2026-08-12T10:00:00.000Z",
+    );
 
     expect(prepared?.nextSavedBuilds.pvp.heroId).toBe("western-queen");
     expect(prepared?.buildSet.tabs[0].build?.heroId).toBe("western-queen");
