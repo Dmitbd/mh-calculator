@@ -12,13 +12,12 @@ import { getSupabaseClient } from "@/shared/lib/supabaseClient";
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 import { StatusToast } from "@/shared/ui/StatusToast";
 import {
-  deleteHeroBuildSet,
+  createOrUpdateDraftHeroBuildSet,
   DivinitySkillLoadoutSection,
   fetchDraftHeroBuildSet,
   fetchHeroBuildSetStatusIds,
   fetchPublishedHeroBuildSet,
   loadPublishedHeroBuildSet,
-  saveHeroBuildSet,
   type HeroBuildSetStatusIds,
   type HeroBuildSetSupabaseClient,
 } from "@/features/builds";
@@ -626,12 +625,11 @@ export function DivinityBranchBuilderScreen({
       isScreenMounted.current && requestId === tabSaveRequestId.current;
 
     try {
-      await saveHeroBuildSet(
+      await createOrUpdateDraftHeroBuildSet(
         client as unknown as HeroBuildSetSupabaseClient,
         {
           buildSet: prepared.buildSet,
           heroId: selectedHeroId,
-          status: "draft",
         },
       );
 
@@ -743,9 +741,9 @@ export function DivinityBranchBuilderScreen({
 
     if (status === "draft") {
       try {
-        await saveHeroBuildSet(
+        await createOrUpdateDraftHeroBuildSet(
           client as unknown as HeroBuildSetSupabaseClient,
-          { buildSet, heroId, status },
+          { buildSet, heroId },
         );
         showBackendMessage("success", "Черновик сохранён.");
       } catch (error) {
@@ -786,7 +784,7 @@ export function DivinityBranchBuilderScreen({
         }
       }
 
-      const { draftCleanupError } = await publishAdminHeroBuildSet({
+      await publishAdminHeroBuildSet({
         buildSet,
         client: client as unknown as HeroBuildSetSupabaseClient,
         heroId,
@@ -808,14 +806,6 @@ export function DivinityBranchBuilderScreen({
       });
 
       if (!isCurrentRequest()) {
-        return;
-      }
-
-      if (draftCleanupError) {
-        showBackendMessage(
-          "error",
-          `Билд опубликован, но черновик удалить не удалось: ${draftCleanupError.message}`,
-        );
         return;
       }
 
@@ -884,38 +874,6 @@ export function DivinityBranchBuilderScreen({
       }
 
       setBackendStatus("Билд загружен для редактирования.");
-    } catch (error) {
-      setBackendStatus(
-        error instanceof Error
-          ? `Ошибка Supabase: ${error.message}`
-          : "Ошибка Supabase.",
-      );
-    }
-  };
-
-  const handleDeleteFullBuildSet = async () => {
-    if (isBuilderActionBlocked()) {
-      return;
-    }
-
-    if (!selectedHeroId) {
-      setBackendStatus("Сначала выберите героя.");
-      return;
-    }
-
-    const client = getSupabaseClient();
-
-    if (!client) {
-      setBackendStatus("Supabase не настроен.");
-      return;
-    }
-
-    try {
-      await deleteHeroBuildSet(
-        client as unknown as HeroBuildSetSupabaseClient,
-        selectedHeroId,
-      );
-      setBackendStatus("Билд удалён.");
     } catch (error) {
       setBackendStatus(
         error instanceof Error
@@ -1504,9 +1462,6 @@ export function DivinityBranchBuilderScreen({
                   isPublishPending={isPublishPending}
                   isTabSavePending={isTabSavePending}
                   onErrorsLayout={handleSectionLayout("download")}
-                  onDeleteFull={() => {
-                    void handleDeleteFullBuildSet();
-                  }}
                   onDownloadFull={handleDownloadFullJson}
                   onLoadFull={() => {
                     void handleLoadFullBuildSet();

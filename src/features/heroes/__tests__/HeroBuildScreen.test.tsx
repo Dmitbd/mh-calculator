@@ -150,49 +150,7 @@ describe("HeroBuildScreen", () => {
       pathname: "/admin/branch-builder",
       params: { heroId: "bastet", mode: "edit" },
     });
-  });
-
-  test("asks for confirmation, shows delete loading state, and returns to heroes after success", async () => {
-    let resolveDelete!: (value: { data: null; error: null }) => void;
-    const deletePromise = new Promise<{ data: null; error: null }>((resolve) => {
-      resolveDelete = resolve;
-    });
-    const deleteEq = jest.fn(() => deletePromise);
-    const deleteMock = jest.fn(() => ({ eq: deleteEq }));
-    const fromMock = jest.fn(() => ({ delete: deleteMock }));
-
-    mockGetSupabaseClient.mockReturnValue({ from: fromMock });
-
-    render(
-      <HeroBuildScreen
-        heroId="bastet"
-        initialAdminSession={ADMIN_SESSION}
-      />,
-    );
-
-    fireEvent.press(screen.getByText("Удалить"));
-
-    expect(screen.getByText("Удалить билд?")).toBeTruthy();
-    expect(deleteEq).not.toHaveBeenCalled();
-
-    fireEvent.press(screen.getByText("Нет"));
-
-    expect(screen.queryByText("Удалить билд?")).toBeNull();
-
-    fireEvent.press(screen.getByText("Удалить"));
-    fireEvent.press(screen.getByText("Да"));
-
-    expect(screen.getByText("Удаляем...")).toBeTruthy();
-    fireEvent.press(screen.getByText("Удаляем..."));
-    expect(deleteEq).toHaveBeenCalledTimes(1);
-
-    resolveDelete({ data: null, error: null });
-
-    await waitFor(() => {
-      expect(deleteEq).toHaveBeenCalledWith("hero_id", "bastet");
-    });
-    expect(await screen.findByText("Билд удалён.")).toBeTruthy();
-    expect(mockRouter.replace).toHaveBeenCalledWith("/heroes");
+    expect(screen.queryByText("Удалить")).toBeNull();
   });
 
   test("does not show empty 7-node divinity row in read-only builds", () => {

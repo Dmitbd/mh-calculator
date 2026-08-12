@@ -7,14 +7,14 @@ export {
   WeaponAwakeningPicker,
 } from "./components";
 export {
-  deleteHeroBuildSet,
-  deleteDraftHeroBuildSet,
+  createOrUpdateDraftHeroBuildSet,
   fetchDraftHeroBuildSet,
   fetchHeroBuildSetStatusIds,
   fetchPublishedHeroBuildSet,
   fetchPublishedHeroIds,
   loadPublishedHeroBuildSet,
-  saveHeroBuildSet,
+  publishDraftHeroBuildSet,
+  updatePublishedHeroBuildSet,
 } from "./api/heroBuildSetRepository";
 export type {
   HeroBuildSetStatus,

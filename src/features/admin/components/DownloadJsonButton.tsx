@@ -14,7 +14,6 @@ type DownloadJsonButtonProps = {
   isPublishPending?: boolean;
   isTabSavePending?: boolean;
   onErrorsLayout?: (event: LayoutChangeEvent) => void;
-  onDeleteFull: () => void;
   onDownloadFull: () => void;
   onLoadFull: () => void;
   onPublishFull: () => void;
@@ -27,7 +26,6 @@ export function DownloadJsonButton({
   backendStatus,
   isPublishPending = false,
   isTabSavePending = false,
-  onDeleteFull,
   onDownloadFull,
   onLoadFull,
   onPublishFull,
@@ -98,15 +96,6 @@ export function DownloadJsonButton({
             {isPublishPending ? "Публикуем..." : "Опубликовать"}
           </Text>
         </Pressable>
-        {showAdvancedActions ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={onDeleteFull}
-            style={[styles.button, styles.dangerButton]}
-          >
-            <Text style={styles.buttonText}>Удалить билд</Text>
-          </Pressable>
-        ) : null}
       </View>
       {backendStatus ? (
         <Text style={styles.backendStatus}>{backendStatus}</Text>
@@ -145,11 +134,6 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: "#f6d59a",
-  },
-  dangerButton: {
-    borderWidth: 1,
-    borderColor: "#9c5144",
-    backgroundColor: "#55231c",
   },
   backendStatus: {
     color: "#e8d7b5",

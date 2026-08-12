@@ -1,17 +1,9 @@
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
-  deleteHeroBuildSet,
   loadPublishedHeroBuildSet,
   type HeroBuildSetSupabaseClient,
 } from "@/features/builds";
@@ -41,7 +33,6 @@ import {
 import type { HeroBuildTabPath } from "@/features/game-data/heroes/types";
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
-import { StatusToast } from "@/shared/ui/StatusToast";
 
 import { HeroMetadataRow } from "../components/HeroMetadataRow";
 import { HeroBuildBranchSection } from "../components/hero-build/HeroBuildBranchSection";
@@ -58,11 +49,6 @@ type HeroBuildScreenProps = {
   heroId: string;
   initialAdminSession?: AdminSession | null;
 };
-
-type StatusToastState = {
-  kind: "success" | "error";
-  message: string;
-} | null;
 
 /** Read-only экран билда героя: вёрстка branch-builder без редактирования */
 export function HeroBuildScreen({
@@ -82,9 +68,6 @@ export function HeroBuildScreen({
   const [isAuthChecked, setIsAuthChecked] = useState(
     initialAdminSession !== undefined,
   );
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [isDeletePending, setIsDeletePending] = useState(false);
-  const [toast, setToast] = useState<StatusToastState>(null);
 
   useEffect(() => {
     const client = getSupabaseClient();
@@ -149,19 +132,6 @@ export function HeroBuildScreen({
     };
   }, [initialAdminSession]);
 
-  useEffect(() => {
-    if (toast?.kind !== "success") {
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      setToast(null);
-    }, 3000);
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [toast]);
   const sortedTabs = useMemo(
     () => (buildSet ? filterTabsWithReadyBuilds(buildSet.tabs) : []),
     [buildSet],
@@ -231,44 +201,6 @@ export function HeroBuildScreen({
     });
   };
 
-  const handleConfirmDelete = async () => {
-    if (isDeletePending) {
-      return;
-    }
-
-    const client = getSupabaseClient();
-
-    if (!client) {
-      setIsDeleteConfirmOpen(false);
-      setToast({ kind: "error", message: "Supabase не настроен." });
-      return;
-    }
-
-    setIsDeletePending(true);
-
-    try {
-      await deleteHeroBuildSet(
-        client as unknown as HeroBuildSetSupabaseClient,
-        heroId,
-      );
-      setBuildSet(null);
-      setIsDeleteConfirmOpen(false);
-      setToast({ kind: "success", message: "Билд удалён." });
-      router.replace("/heroes");
-    } catch (error) {
-      setIsDeleteConfirmOpen(false);
-      setToast({
-        kind: "error",
-        message:
-          error instanceof Error
-            ? `Ошибка Supabase: ${error.message}`
-            : "Ошибка Supabase.",
-      });
-    } finally {
-      setIsDeletePending(false);
-    }
-  };
-
   const contentPadding = {
     paddingTop: SCREEN_HEADER_HEIGHT + top + 10,
     paddingBottom: SCREEN_PADDING + bottom,
@@ -310,13 +242,6 @@ export function HeroBuildScreen({
               >
                 Редактировать
               </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setIsDeleteConfirmOpen(true)}
-              style={[styles.adminButton, styles.dangerButton]}
-            >
-              <Text style={styles.adminButtonText}>Удалить</Text>
             </Pressable>
           </View>
         ) : null}
@@ -385,73 +310,6 @@ export function HeroBuildScreen({
           </View>
         )}
       </ScrollView>
-      <Modal
-        animationType="fade"
-        onRequestClose={() => {
-          if (!isDeletePending) {
-            setIsDeleteConfirmOpen(false);
-          }
-        }}
-        transparent
-        visible={isDeleteConfirmOpen}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Удалить билд?</Text>
-            <Text style={styles.modalText}>
-              После удаления опубликованный билд героя пропадёт с экрана.
-            </Text>
-            <View style={styles.modalActions}>
-              <Pressable
-                accessibilityRole="button"
-                disabled={isDeletePending}
-                onPress={() => {
-                  if (!isDeletePending) {
-                    setIsDeleteConfirmOpen(false);
-                  }
-                }}
-                style={[
-                  styles.modalButton,
-                  styles.secondaryAdminButton,
-                  isDeletePending && styles.modalButtonDisabled,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.adminButtonText,
-                    styles.secondaryAdminButtonText,
-                  ]}
-                >
-                  Нет
-                </Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                disabled={isDeletePending}
-                onPress={() => {
-                  void handleConfirmDelete();
-                }}
-                style={[
-                  styles.modalButton,
-                  styles.dangerButton,
-                  isDeletePending && styles.modalButtonDisabled,
-                ]}
-              >
-                <Text style={styles.adminButtonText}>
-                  {isDeletePending ? "Удаляем..." : "Да"}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-      {toast ? (
-        <StatusToast
-          kind={toast.kind}
-          message={toast.message}
-          onDismiss={() => setToast(null)}
-        />
-      ) : null}
     </View>
   );
 }
@@ -500,11 +358,6 @@ const styles = StyleSheet.create({
   secondaryAdminButtonText: {
     color: "#f6d59a",
   },
-  dangerButton: {
-    borderWidth: 1,
-    borderColor: "#9c5144",
-    backgroundColor: "#55231c",
-  },
   loadingCard: {
     borderRadius: 8,
     borderWidth: 1,
@@ -537,49 +390,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     textAlign: "center",
-  },
-  modalBackdrop: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.64)",
-    padding: 20,
-  },
-  modalCard: {
-    width: "100%",
-    maxWidth: 360,
-    gap: 14,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#5a412b",
-    backgroundColor: "#1d130f",
-    padding: 18,
-  },
-  modalTitle: {
-    color: "#f6d59a",
-    fontSize: 19,
-    fontWeight: "900",
-    textAlign: "center",
-  },
-  modalText: {
-    color: "#d7c19a",
-    fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  modalActions: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  modalButton: {
-    minHeight: 44,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    paddingHorizontal: 14,
-  },
-  modalButtonDisabled: {
-    opacity: 0.72,
   },
 });

@@ -26,12 +26,12 @@ export type HeroBuildSetStatusIds = {
 };
 
 type SupabaseQuery = {
-  delete: () => SupabaseQuery;
   eq: (column: string, value: string) => SupabaseQuery;
   maybeSingle: () => Promise<QueryResult<HeroBuildSetRow>>;
   select: (columns: string) => SupabaseQuery;
   single: () => Promise<QueryResult<unknown>>;
   then: Promise<QueryResult<unknown>>["then"];
+  update: (row: { payload: HeroBuildSet }) => SupabaseQuery;
   upsert: (
     row: {
       hero_id: string;
@@ -44,6 +44,10 @@ type SupabaseQuery = {
 
 export type HeroBuildSetSupabaseClient = {
   from: (table: "hero_build_sets") => SupabaseQuery;
+  rpc: (
+    functionName: "publish_hero_build_set",
+    params: { p_hero_id: string; p_payload: HeroBuildSet },
+  ) => Promise<QueryResult<unknown>>;
 };
 
 export async function fetchHeroBuildSetStatusIds(
@@ -122,24 +126,23 @@ export async function fetchPublishedHeroIds(
   return data?.map((row) => row.hero_id) ?? [];
 }
 
-export async function saveHeroBuildSet(
+export async function createOrUpdateDraftHeroBuildSet(
   client: HeroBuildSetSupabaseClient,
   params: {
     buildSet: HeroBuildSet;
     heroId: string;
-    status: HeroBuildSetStatus;
   },
 ): Promise<void> {
-  const { buildSet, heroId, status } = params;
+  const { buildSet, heroId } = params;
   const { error } = await client
     .from("hero_build_sets")
     .upsert(
       {
         hero_id: heroId,
         payload: buildSet,
-        status,
+        status: "draft",
       },
-      { onConflict: "hero_id,status" },
+      { onConflict: "hero_id" },
     )
     .select("hero_id")
     .single();
@@ -149,31 +152,37 @@ export async function saveHeroBuildSet(
   }
 }
 
-export async function deleteHeroBuildSet(
+export async function publishDraftHeroBuildSet(
   client: HeroBuildSetSupabaseClient,
-  heroId: string,
+  params: { buildSet: HeroBuildSet; heroId: string },
 ): Promise<void> {
-  const { error } = await (client
-    .from("hero_build_sets")
-    .delete()
-    .eq("hero_id", heroId) as unknown as Promise<QueryResult<unknown>>);
+  const { buildSet, heroId } = params;
+  const { error } = await client.rpc("publish_hero_build_set", {
+    p_hero_id: heroId,
+    p_payload: buildSet,
+  });
 
   if (error) {
     throw new Error(error.message);
   }
 }
 
-export async function deleteDraftHeroBuildSet(
+export async function updatePublishedHeroBuildSet(
   client: HeroBuildSetSupabaseClient,
-  heroId: string,
+  params: { buildSet: HeroBuildSet; heroId: string },
 ): Promise<void> {
-  const { error } = await (client
+  const { buildSet, heroId } = params;
+  const { error } = await client
     .from("hero_build_sets")
-    .delete()
+    .update({ payload: buildSet })
     .eq("hero_id", heroId)
-    .eq("status", "draft") as unknown as Promise<QueryResult<unknown>>);
+    .eq("status", "published")
+    .select("hero_id")
+    .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function loadPublishedHeroBuildSet(params: {

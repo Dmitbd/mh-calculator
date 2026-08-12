@@ -5,7 +5,6 @@ import { DownloadJsonButton } from "../components/DownloadJsonButton";
 describe("DownloadJsonButton", () => {
   it("renders only current tab save and publish actions by default", () => {
     const onDownloadFull = jest.fn();
-    const onDeleteFull = jest.fn();
     const onLoadFull = jest.fn();
     const onPublishFull = jest.fn();
     const onSaveCurrent = jest.fn();
@@ -14,7 +13,6 @@ describe("DownloadJsonButton", () => {
     render(
       <DownloadJsonButton
         errors={[]}
-        onDeleteFull={onDeleteFull}
         onDownloadFull={onDownloadFull}
         onLoadFull={onLoadFull}
         onPublishFull={onPublishFull}
@@ -35,19 +33,16 @@ describe("DownloadJsonButton", () => {
     expect(onDownloadFull).not.toHaveBeenCalled();
     expect(onLoadFull).not.toHaveBeenCalled();
     expect(onSaveDraft).not.toHaveBeenCalled();
-    expect(onDeleteFull).not.toHaveBeenCalled();
   });
 
   it("keeps advanced actions available behind an explicit flag", () => {
     const onDownloadFull = jest.fn();
-    const onDeleteFull = jest.fn();
     const onLoadFull = jest.fn();
     const onSaveDraft = jest.fn();
 
     render(
       <DownloadJsonButton
         errors={[]}
-        onDeleteFull={onDeleteFull}
         onDownloadFull={onDownloadFull}
         onLoadFull={onLoadFull}
         onPublishFull={jest.fn()}
@@ -60,12 +55,11 @@ describe("DownloadJsonButton", () => {
     fireEvent.press(screen.getByText("Скачать полный JSON"));
     fireEvent.press(screen.getByText("Загрузить билд"));
     fireEvent.press(screen.getByText("Сохранить черновик"));
-    fireEvent.press(screen.getByText("Удалить билд"));
 
     expect(onDownloadFull).toHaveBeenCalledTimes(1);
     expect(onLoadFull).toHaveBeenCalledTimes(1);
     expect(onSaveDraft).toHaveBeenCalledTimes(1);
-    expect(onDeleteFull).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Удалить билд")).toBeNull();
   });
 
   it("shows backend status text", () => {
@@ -73,7 +67,6 @@ describe("DownloadJsonButton", () => {
       <DownloadJsonButton
         backendStatus="Билд опубликован."
         errors={[]}
-        onDeleteFull={jest.fn()}
         onDownloadFull={jest.fn()}
         onLoadFull={jest.fn()}
         onPublishFull={jest.fn()}
@@ -95,7 +88,6 @@ describe("DownloadJsonButton", () => {
             path: "heroId",
           },
         ]}
-        onDeleteFull={jest.fn()}
         onDownloadFull={jest.fn()}
         onLoadFull={jest.fn()}
         onPublishFull={jest.fn()}
@@ -117,7 +109,6 @@ describe("DownloadJsonButton", () => {
       <DownloadJsonButton
         errors={[]}
         isPublishPending
-        onDeleteFull={jest.fn()}
         onDownloadFull={jest.fn()}
         onLoadFull={jest.fn()}
         onPublishFull={onPublishFull}
@@ -142,7 +133,6 @@ describe("DownloadJsonButton", () => {
       <DownloadJsonButton
         errors={[]}
         isTabSavePending
-        onDeleteFull={jest.fn()}
         onDownloadFull={jest.fn()}
         onLoadFull={jest.fn()}
         onPublishFull={onPublishFull}

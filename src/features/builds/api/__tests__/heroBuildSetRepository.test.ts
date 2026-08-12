@@ -1,14 +1,15 @@
 import type { HeroBuildSet } from "@/features/game-data/heroes/types";
+import * as repository from "../heroBuildSetRepository";
 
 import {
-  deleteDraftHeroBuildSet,
+  createOrUpdateDraftHeroBuildSet,
   fetchHeroBuildSetStatusIds,
   fetchDraftHeroBuildSet,
-  deleteHeroBuildSet,
   fetchPublishedHeroBuildSet,
   fetchPublishedHeroIds,
   loadPublishedHeroBuildSet,
-  saveHeroBuildSet,
+  publishDraftHeroBuildSet,
+  updatePublishedHeroBuildSet,
 } from "../heroBuildSetRepository";
 
 const buildSet: HeroBuildSet = {
@@ -21,23 +22,34 @@ function createQueryResult(result: unknown) {
     delete: jest.Mock;
     eq: jest.Mock;
     maybeSingle: jest.Mock;
+    rpc: jest.Mock;
     select: jest.Mock;
     single: jest.Mock;
     then: jest.Mock;
+    update: jest.Mock;
     upsert: jest.Mock;
   } = {} as never;
 
   query.delete = jest.fn(() => query);
   query.eq = jest.fn(() => query);
   query.maybeSingle = jest.fn(async () => result);
+  query.rpc = jest.fn(async () => result);
   query.select = jest.fn(() => query);
   query.single = jest.fn(async () => result);
   query.then = jest.fn((resolve, reject) =>
     Promise.resolve(result).then(resolve, reject),
   );
+  query.update = jest.fn(() => query);
   query.upsert = jest.fn(() => query);
 
   return query;
+}
+
+function createClient(query: ReturnType<typeof createQueryResult>) {
+  return {
+    from: jest.fn(() => query),
+    rpc: jest.fn(async () => ({ data: null, error: null })),
+  };
 }
 
 describe("heroBuildSetRepository", () => {
@@ -50,7 +62,7 @@ describe("heroBuildSetRepository", () => {
       ],
       error: null,
     });
-    const client = { from: jest.fn(() => query) };
+    const client = createClient(query);
 
     await expect(fetchHeroBuildSetStatusIds(client)).resolves.toEqual({
       draftHeroIds: ["bastet"],
@@ -61,7 +73,7 @@ describe("heroBuildSetRepository", () => {
 
   it("fetches only the draft build set for a hero", async () => {
     const query = createQueryResult({ data: { payload: buildSet }, error: null });
-    const client = { from: jest.fn(() => query) };
+    const client = createClient(query);
 
     await expect(fetchDraftHeroBuildSet(client, "bastet")).resolves.toEqual(
       buildSet,
@@ -72,16 +84,6 @@ describe("heroBuildSetRepository", () => {
     expect(query.maybeSingle).toHaveBeenCalledTimes(1);
   });
 
-  it("deletes only the draft row for one hero", async () => {
-    const query = createQueryResult({ data: null, error: null });
-    const client = { from: jest.fn(() => query) };
-
-    await deleteDraftHeroBuildSet(client, "bastet");
-    expect(query.delete).toHaveBeenCalledTimes(1);
-    expect(query.eq).toHaveBeenCalledWith("hero_id", "bastet");
-    expect(query.eq).toHaveBeenCalledWith("status", "draft");
-  });
-
   it("throws when the status catalog cannot be loaded", async () => {
     const query = createQueryResult({
       data: null,
@@ -89,7 +91,7 @@ describe("heroBuildSetRepository", () => {
     });
 
     await expect(
-      fetchHeroBuildSetStatusIds({ from: jest.fn(() => query) }),
+      fetchHeroBuildSetStatusIds(createClient(query)),
     ).rejects.toThrow("network down");
   });
 
@@ -100,18 +102,7 @@ describe("heroBuildSetRepository", () => {
     });
 
     await expect(
-      fetchDraftHeroBuildSet({ from: jest.fn(() => query) }, "bastet"),
-    ).rejects.toThrow("network down");
-  });
-
-  it("throws when a draft cannot be deleted", async () => {
-    const query = createQueryResult({
-      data: null,
-      error: { message: "network down" },
-    });
-
-    await expect(
-      deleteDraftHeroBuildSet({ from: jest.fn(() => query) }, "bastet"),
+      fetchDraftHeroBuildSet(createClient(query), "bastet"),
     ).rejects.toThrow("network down");
   });
 
@@ -120,7 +111,7 @@ describe("heroBuildSetRepository", () => {
       data: { payload: buildSet },
       error: null,
     });
-    const client = { from: jest.fn(() => query) };
+    const client = createClient(query);
 
     await expect(fetchPublishedHeroBuildSet(client, "bastet")).resolves.toEqual(
       buildSet,
@@ -135,7 +126,7 @@ describe("heroBuildSetRepository", () => {
 
   it("returns null when Supabase has no published build set", async () => {
     const query = createQueryResult({ data: null, error: null });
-    const client = { from: jest.fn(() => query) };
+    const client = createClient(query);
 
     await expect(fetchPublishedHeroBuildSet(client, "unknown")).resolves.toBeNull();
   });
@@ -145,7 +136,7 @@ describe("heroBuildSetRepository", () => {
       data: [{ hero_id: "bastet" }, { hero_id: "morana" }],
       error: null,
     });
-    const client = { from: jest.fn(() => query) };
+    const client = createClient(query);
 
     await expect(fetchPublishedHeroIds(client)).resolves.toEqual([
       "bastet",
@@ -162,7 +153,7 @@ describe("heroBuildSetRepository", () => {
       data: null,
       error: { message: "network down" },
     });
-    const client = { from: jest.fn(() => query) };
+    const client = createClient(query);
 
     await expect(fetchPublishedHeroIds(client)).rejects.toThrow("network down");
   });
@@ -173,21 +164,20 @@ describe("heroBuildSetRepository", () => {
       data: null,
       error: { message: "network down" },
     });
-    const client = { from: jest.fn(() => query) };
+    const client = createClient(query);
 
     await expect(fetchPublishedHeroBuildSet(client, "bastet")).rejects.toThrow(
       "network down",
     );
   });
 
-  it("upserts a draft or published build set by hero and status", async () => {
+  it("creates or updates only a draft row by hero identity", async () => {
     const query = createQueryResult({ data: { hero_id: "bastet" }, error: null });
-    const client = { from: jest.fn(() => query) };
+    const client = createClient(query);
 
-    await saveHeroBuildSet(client, {
+    await createOrUpdateDraftHeroBuildSet(client, {
       buildSet,
       heroId: "bastet",
-      status: "draft",
     });
 
     expect(client.from).toHaveBeenCalledWith("hero_build_sets");
@@ -197,21 +187,60 @@ describe("heroBuildSetRepository", () => {
         payload: buildSet,
         status: "draft",
       },
-      { onConflict: "hero_id,status" },
+      { onConflict: "hero_id" },
     );
     expect(query.select).toHaveBeenCalledWith("hero_id");
     expect(query.single).toHaveBeenCalledTimes(1);
   });
 
-  it("deletes all stored build rows for a hero", async () => {
-    const query = createQueryResult({ data: null, error: null });
-    const client = { from: jest.fn(() => query) };
+  it("publishes a draft through the atomic database transition", async () => {
+    const rpc = jest.fn(async () => ({ data: null, error: null }));
+    const client = { from: jest.fn(), rpc };
 
-    await deleteHeroBuildSet(client, "bastet");
+    await publishDraftHeroBuildSet(client, {
+      buildSet,
+      heroId: "bastet",
+    });
 
-    expect(client.from).toHaveBeenCalledWith("hero_build_sets");
-    expect(query.delete).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith("publish_hero_build_set", {
+      p_hero_id: "bastet",
+      p_payload: buildSet,
+    });
+  });
+
+  it("surfaces an atomic publication error", async () => {
+    const rpc = jest.fn(async () => ({
+      data: null,
+      error: { message: "draft not found" },
+    }));
+
+    await expect(
+      publishDraftHeroBuildSet({ from: jest.fn(), rpc }, {
+        buildSet,
+        heroId: "bastet",
+      }),
+    ).rejects.toThrow("draft not found");
+  });
+
+  it("updates payload only on an existing published row", async () => {
+    const query = createQueryResult({ data: { hero_id: "bastet" }, error: null });
+    const client = { from: jest.fn(() => query), rpc: query.rpc };
+
+    await updatePublishedHeroBuildSet(client, {
+      buildSet,
+      heroId: "bastet",
+    });
+
+    expect(query.update).toHaveBeenCalledWith({ payload: buildSet });
     expect(query.eq).toHaveBeenCalledWith("hero_id", "bastet");
+    expect(query.eq).toHaveBeenCalledWith("status", "published");
+    expect(query.select).toHaveBeenCalledWith("hero_id");
+    expect(query.single).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not expose draft or published deletion operations", () => {
+    expect(repository).not.toHaveProperty("deleteDraftHeroBuildSet");
+    expect(repository).not.toHaveProperty("deleteHeroBuildSet");
   });
 
   it("loads a remote published build set before using local fallback", async () => {
@@ -220,7 +249,7 @@ describe("heroBuildSetRepository", () => {
       data: { payload: remoteBuildSet },
       error: null,
     });
-    const client = { from: jest.fn(() => query) };
+    const client = createClient(query);
 
     await expect(
       loadPublishedHeroBuildSet({
@@ -233,7 +262,7 @@ describe("heroBuildSetRepository", () => {
 
   it("uses local fallback when remote has no published build set", async () => {
     const query = createQueryResult({ data: null, error: null });
-    const client = { from: jest.fn(() => query) };
+    const client = createClient(query);
 
     await expect(
       loadPublishedHeroBuildSet({
@@ -259,7 +288,7 @@ describe("heroBuildSetRepository", () => {
       data: null,
       error: { message: "network down" },
     });
-    const client = { from: jest.fn(() => query) };
+    const client = createClient(query);
 
     await expect(
       loadPublishedHeroBuildSet({

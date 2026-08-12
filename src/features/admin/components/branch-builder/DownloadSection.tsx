@@ -9,7 +9,6 @@ type DownloadSectionProps = {
   isPublishPending?: boolean;
   isTabSavePending?: boolean;
   onErrorsLayout: (event: LayoutChangeEvent) => void;
-  onDeleteFull: () => void;
   onDownloadFull: () => void;
   onLoadFull: () => void;
   onLayout: (event: LayoutChangeEvent) => void;
@@ -24,7 +23,6 @@ export function DownloadSection({
   isPublishPending = false,
   isTabSavePending = false,
   onErrorsLayout,
-  onDeleteFull,
   onDownloadFull,
   onLoadFull,
   onLayout,
@@ -40,7 +38,6 @@ export function DownloadSection({
         isPublishPending={isPublishPending}
         isTabSavePending={isTabSavePending}
         onErrorsLayout={onErrorsLayout}
-        onDeleteFull={onDeleteFull}
         onDownloadFull={onDownloadFull}
         onLoadFull={onLoadFull}
         onPublishFull={onPublishFull}

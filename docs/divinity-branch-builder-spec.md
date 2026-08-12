@@ -321,7 +321,7 @@ type DivinityBranchBuilderExport = {
 - пробуждение оружия и вычисленные бонусы;
 - base/awakened loadout скиллов божественности;
 - локальное сохранение валидной вкладки в комплект;
-- загрузку, серверный черновик, публикацию, удаление и полный JSON-экспорт.
+- загрузку, серверный черновик, атомарную публикацию и полный JSON-экспорт.
 
 Новые секции этого экрана дописываются сюда и не получают отдельный постоянный spec.
 
@@ -335,7 +335,7 @@ Supabase RLS повторяет эту границу: чтение `draft` и �
 
 ## Hero States And Selector
 
-Supabase возвращает ID отдельно по статусам `draft` и `published`. Селектор делит мастер-каталог на взаимоисключающие группы:
+Supabase возвращает ID отдельно по статусам `draft` и `published`, но на каждого героя существует не более одной server-строки. Селектор делит мастер-каталог на взаимоисключающие группы:
 
 - `Не созданы` — нет ни draft, ни published строки;
 - `Не опубликованы` — существует draft, но нет published строки;
@@ -347,11 +347,11 @@ Supabase возвращает ID отдельно по статусам `draft` 
 
 Тип и helpers комплекта рекурсивно поддерживают группы вкладок, но текущий UI билдера создаёт и показывает только корневой уровень и один уровень дочерних leaf-вкладок. Каждому leaf соответствует независимый editable draft, индексируемый полным path. Переключение вкладки не переносит значения соседнего leaf.
 
-`Сохранить вкладку`:
+`Сохранить вкладку` в create/draft workflow:
 
 1. валидирует только текущий leaf;
 2. собирает partial `HeroBuildSet` с текущей вкладкой и устойчивыми `heroId`, path и build contract;
-3. upsert-ит этот комплект в Supabase как `status: "draft"`;
+3. создаёт или обновляет строку героя в Supabase только как `status: "draft"`; существующую published-строку эта операция не понижает;
 4. только после успешного server save фиксирует подготовленный snapshot в локальном собираемом комплекте и обновляет status-каталог;
 5. не публикует данные: `published`-строка меняется только отдельным действием публикации.
 
@@ -374,16 +374,17 @@ Base и awakened slots редактируются отдельно. Awakened-н�
 
 ## Server Drafts And Publication
 
-Таблица `hero_build_sets` различает строки `status: "draft" | "published"` по одному `hero_id`.
+Таблица `hero_build_sets` хранит для каждого `hero_id` не более одной строки со статусом `draft` или `published`.
 
-- `Сохранить черновик` валидирует полный текущий комплект и upsert-ит status `draft`.
+- `Сохранить черновик` валидирует полный текущий комплект и создаёт либо обновляет только status `draft`.
 - Выбор героя из `Не опубликованы` загружает только его draft через `fetchDraftHeroBuildSet` и восстанавливает редактируемые вкладки.
 - Повторная загрузка блокируется, пока предыдущая draft-load операция не завершена.
 - Устаревший ответ после выбора другого героя или закрытия селектора не должен менять текущий draft или показывать ложный успех.
-- `Опубликовать` сначала сохраняет status `published`, затем удаляет draft этого героя.
-- Если публикация успешна, а cleanup draft не удался, published-состояние сохраняется и пользователь получает отдельное предупреждение; нельзя сообщать, что публикация провалилась полностью.
+- `Опубликовать` вызывает один RPC, который атомарно обновляет payload существующего draft и переводит ту же строку в status `published`.
+- Если draft отсутствует, RPC завершает публикацию ошибкой и не создаёт отдельную published-строку.
 - После успешной публикации status-каталог обновляется: герой удаляется из draft IDs и добавляется в published IDs.
-- `Удалить билд` удаляет серверные данные через подтверждённый backend flow; pending защищает от повторного запуска.
+- Опубликованный payload обновляется только отдельной repository-операцией, которая не меняет status; соответствующий edit UI оформляется отдельно.
+- Публичный repository API не содержит операций удаления. Database trigger запрещает удалить published-строку, вернуть её в draft или изменить её `hero_id`.
 
 ## Validation And Feedback
 
@@ -411,7 +412,7 @@ Backend success не должен жить дольше актуальной о�
 8. Горизонтальные соединители только на уровнях, где у `isMain`-колонки стоит мажорная нода.
 9. JSON содержит `columns`, `majorNodes`, `progress`, `activeNodes`; экспорт неполной сборки запрещён (`null`).
 10. Вкладки независимы по полному path и имеют не более двух уровней.
-11. Server draft и published build — разные status-строки; публикация удаляет draft только после успешного published-save.
+11. Server build — одна строка на `hero_id`; публикация атомарно переводит эту строку из draft в published.
 12. Устаревшие async-ответы не меняют выбранного героя и не показывают ложный успех.
 13. Admin-доступ требует `app_metadata.role === "admin"` одновременно на клиентской auth-границе и в Supabase RLS.
 
@@ -428,7 +429,8 @@ Backend success не должен жить дольше актуальной о�
 - класть ассеты в `public/assets/...` (конфликт с маршрутом `/assets` дев-сервера) — иконки лежат в `public/img/...`.
 - считать сохранение одной вкладки публикацией полного комплекта;
 - смешивать героев со статусами draft и published в одной группе селектора;
-- удалять draft до подтверждённой публикации;
+- создавать для одного героя отдельные draft и published строки;
+- удалять или понижать до draft опубликованную строку;
 - хранить computed-текст бонусов вместо selections и каталогов;
 - создавать отдельные постоянные specs для вкладок, экипировки или server drafts этого билдера.
 
@@ -438,10 +440,11 @@ Backend success не должен жить дольше актуальной о�
 - [useDivinityBranchBuilder.test.ts](../src/features/admin/__tests__/useDivinityBranchBuilder.test.ts) — пустой драфт и сборка JSON (включая `progress` и `activeNodes`);
 - [validateBranchBuild.test.ts](../src/features/admin/__tests__/validateBranchBuild.test.ts) — валидация и `slugifyFileName`;
 - [DivinityBranchBuilderScreen.test.tsx](../src/features/admin/__tests__/DivinityBranchBuilderScreen.test.tsx) — поведение экрана.
-- [heroBuildSetRepository.test.ts](../src/features/builds/api/__tests__/heroBuildSetRepository.test.ts) — draft/published запросы, upsert и удаление;
+- [heroBuildSetRepository.test.ts](../src/features/builds/api/__tests__/heroBuildSetRepository.test.ts) — draft/published запросы и явные lifecycle-операции;
 - [branchBuilderTabs.test.ts](../src/features/admin/__tests__/branchBuilderTabs.test.ts) — структура вкладок и path;
 - [multiBuildExport.test.ts](../src/features/admin/__tests__/multiBuildExport.test.ts) — сборка полного комплекта;
-- [saveAdminHeroBuildSet.test.ts](../src/features/admin/__tests__/saveAdminHeroBuildSet.test.ts) — публикация и cleanup черновика;
+- [saveAdminHeroBuildSet.test.ts](../src/features/admin/__tests__/saveAdminHeroBuildSet.test.ts) — единая атомарная операция публикации черновика;
+- [heroBuildSetsLifecycleSql.test.js](../src/features/admin/__tests__/heroBuildSetsLifecycleSql.test.js) — структура migration, server trigger и publication RPC;
 - [heroGuideSelectorModel.test.ts](../src/features/admin/__tests__/heroGuideSelectorModel.test.ts) — взаимоисключающие списки героев;
 - [HeroGuideSelector.test.tsx](../src/features/admin/__tests__/HeroGuideSelector.test.tsx) — loading/error/группы селектора;
 - [EquipmentVariantBuilder.test.tsx](../src/features/admin/__tests__/EquipmentVariantBuilder.test.tsx) — варианты экипировки;

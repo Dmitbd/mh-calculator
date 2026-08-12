@@ -22,7 +22,6 @@ const mockFetchHeroBuildSetStatusIds = jest.fn<
 const mockFetchDraftHeroBuildSet = jest.fn();
 const mockLoadPublishedHeroBuildSet = jest.fn();
 const mockSaveHeroBuildSet = jest.fn();
-const mockDeleteDraftHeroBuildSet = jest.fn();
 const mockHeroBuilderSectionProps = jest.fn<void, [Record<string, unknown>]>();
 const mockSignInAdmin = jest.fn();
 const mockSignOutAdmin = jest.fn();
@@ -102,14 +101,15 @@ jest.mock("@/features/builds", () => {
 
   return {
     ...actual,
-    deleteDraftHeroBuildSet: (...args: unknown[]) =>
-      mockDeleteDraftHeroBuildSet(...args),
+    createOrUpdateDraftHeroBuildSet: (...args: unknown[]) =>
+      mockSaveHeroBuildSet(...args),
     fetchDraftHeroBuildSet: (...args: unknown[]) =>
       mockFetchDraftHeroBuildSet(...args),
     fetchHeroBuildSetStatusIds: () => mockFetchHeroBuildSetStatusIds(),
     loadPublishedHeroBuildSet: (...args: unknown[]) =>
       mockLoadPublishedHeroBuildSet(...args),
-    saveHeroBuildSet: (...args: unknown[]) => mockSaveHeroBuildSet(...args),
+    publishDraftHeroBuildSet: (...args: unknown[]) =>
+      mockSaveHeroBuildSet(...args),
   };
 });
 
@@ -159,8 +159,6 @@ describe("DivinityBranchBuilderScreen", () => {
     mockLoadPublishedHeroBuildSet.mockResolvedValue(getValidBastetBuildSet());
     mockSaveHeroBuildSet.mockReset();
     mockSaveHeroBuildSet.mockResolvedValue(undefined);
-    mockDeleteDraftHeroBuildSet.mockReset();
-    mockDeleteDraftHeroBuildSet.mockResolvedValue(undefined);
     mockHeroBuilderSectionProps.mockReset();
     mockSignInAdmin.mockReset();
     mockSignOutAdmin.mockReset();
@@ -271,12 +269,7 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(mockSaveHeroBuildSet).toHaveBeenCalledWith(expect.anything(), {
       buildSet: expect.anything(),
       heroId: "bastet",
-      status: "published",
     });
-    expect(mockDeleteDraftHeroBuildSet).toHaveBeenCalledWith(
-      expect.anything(),
-      "bastet",
-    );
     await waitFor(() =>
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
     );
@@ -323,45 +316,7 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(
       await screen.findAllByText("Ошибка Supabase: publication failed"),
     ).not.toHaveLength(0);
-    expect(mockDeleteDraftHeroBuildSet).not.toHaveBeenCalled();
     expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
-  });
-
-  it("reports cleanup failure after publication and keeps the published hero excluded", async () => {
-    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockDeleteDraftHeroBuildSet.mockRejectedValue(new Error("cleanup failed"));
-    mockFetchHeroBuildSetStatusIds
-      .mockResolvedValueOnce({ draftHeroIds: ["bastet"], publishedHeroIds: [] })
-      .mockResolvedValueOnce({
-        draftHeroIds: ["bastet"],
-        publishedHeroIds: ["bastet"],
-      });
-
-    render(
-      <DivinityBranchBuilderScreen
-        initialAdminSession={ADMIN_SESSION}
-        initialHeroId="bastet"
-        initialMode="edit"
-      />,
-    );
-
-    await screen.findAllByText("Билд загружен для редактирования.");
-    fireEvent.press(screen.getByText("Опубликовать"));
-
-    expect(
-      await screen.findAllByText(
-        "Билд опубликован, но черновик удалить не удалось: cleanup failed",
-      ),
-    ).not.toHaveLength(0);
-    expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2);
-    const calls = mockHeroBuilderSectionProps.mock.calls;
-    const lastProps = calls[calls.length - 1][0];
-    expect(lastProps.notCreatedHeroes).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: "bastet" })]),
-    );
-    expect(lastProps.notPublishedHeroes).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: "bastet" })]),
-    );
   });
 
   it("reports a catalog refresh failure while keeping the published hero excluded", async () => {
@@ -400,42 +355,6 @@ describe("DivinityBranchBuilderScreen", () => {
     );
   });
 
-  it("keeps cleanup failure precedence and published dominance when refresh also fails", async () => {
-    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockDeleteDraftHeroBuildSet.mockRejectedValue(new Error("cleanup failed"));
-    mockFetchHeroBuildSetStatusIds
-      .mockResolvedValueOnce({ draftHeroIds: ["bastet"], publishedHeroIds: [] })
-      .mockRejectedValueOnce(new Error("refresh failed"));
-
-    render(
-      <DivinityBranchBuilderScreen
-        initialAdminSession={ADMIN_SESSION}
-        initialHeroId="bastet"
-        initialMode="edit"
-      />,
-    );
-
-    await screen.findAllByText("Билд загружен для редактирования.");
-    fireEvent.press(screen.getByText("Опубликовать"));
-
-    expect(
-      await screen.findAllByText(
-        "Билд опубликован, но черновик удалить не удалось: cleanup failed",
-      ),
-    ).not.toHaveLength(0);
-    expect(
-      screen.getByText("Не удалось загрузить списки героев"),
-    ).toBeTruthy();
-    expect(screen.getByText("Повторить")).toBeTruthy();
-    const calls = mockHeroBuilderSectionProps.mock.calls;
-    const lastProps = calls[calls.length - 1][0];
-    expect(lastProps.notCreatedHeroes).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: "bastet" })]),
-    );
-    expect(lastProps.notPublishedHeroes).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: "bastet" })]),
-    );
-  });
 
   it("blocks duplicate publication and tab saving while publication is pending", async () => {
     let resolvePublish!: () => void;
@@ -466,9 +385,8 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1);
     expect(mockSaveHeroBuildSet).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ status: "published" }),
+      expect.objectContaining({ heroId: "bastet" }),
     );
-    expect(mockDeleteDraftHeroBuildSet).not.toHaveBeenCalled();
 
     await act(async () => {
       resolvePublish();
@@ -508,54 +426,6 @@ describe("DivinityBranchBuilderScreen", () => {
     try {
       await act(async () => {
         resolveSave();
-      });
-
-      expect(mockDeleteDraftHeroBuildSet).toHaveBeenCalledWith(
-        expect.anything(),
-        "bastet",
-      );
-      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
-      expect(consoleError).not.toHaveBeenCalled();
-    } finally {
-      consoleError.mockRestore();
-    }
-  });
-
-  it("does not start a catalog refresh or write screen state after cleanup resolves post-unmount", async () => {
-    let resolveCleanup!: () => void;
-
-    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-    mockDeleteDraftHeroBuildSet.mockReturnValue(
-      new Promise<void>((resolve) => {
-        resolveCleanup = resolve;
-      }),
-    );
-
-    const view = render(
-      <DivinityBranchBuilderScreen
-        initialAdminSession={ADMIN_SESSION}
-        initialHeroId="bastet"
-        initialMode="edit"
-      />,
-    );
-
-    await screen.findAllByText("Билд загружен для редактирования.");
-    await waitFor(() =>
-      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
-    );
-    fireEvent.press(screen.getByText("Опубликовать"));
-    await waitFor(() =>
-      expect(mockDeleteDraftHeroBuildSet).toHaveBeenCalledTimes(1),
-    );
-
-    const consoleError = jest
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
-    view.unmount();
-
-    try {
-      await act(async () => {
-        resolveCleanup();
       });
 
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
@@ -1444,7 +1314,6 @@ describe("DivinityBranchBuilderScreen", () => {
         expect.anything(),
         expect.objectContaining({
           heroId: "bastet",
-          status: "draft",
           buildSet: expect.objectContaining({ schemaVersion: 2 }),
         }),
       );
