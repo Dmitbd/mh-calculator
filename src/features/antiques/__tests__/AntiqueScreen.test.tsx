@@ -91,9 +91,33 @@ test("renders the loaded calculator sections with the plain heading first", () =
   expect(screen.queryByText("Крупные сундуки")).toBeNull();
   expect(screen.getByText("Монеты исследования")).toBeTruthy();
   expect(screen.getByText("Мои карты")).toBeTruthy();
+  expect(screen.getByText("Очки соревнования")).toBeTruthy();
+  expect(screen.getByText("0 / 12000")).toBeTruthy();
+  expect(
+    screen.getByLabelText("Очки соревнования: 0 из 12000"),
+  ).toBeTruthy();
   expect(screen.getByText("Шкала наград")).toBeTruthy();
   expect(screen.getByText("Кешбэк")).toBeTruthy();
   expect(screen.getByText("Сбросить расчёт")).toBeTruthy();
+});
+
+test("wires the uncapped total score into rivalry progress", () => {
+  mockCalculatorState = {
+    ...mockCalculatorState,
+    input: {
+      coins: 0,
+      templeMapAllocation: 0,
+      ownedTombMaps: 400,
+      ownedTempleMaps: 0,
+    },
+  };
+
+  render(<AntiqueScreen />);
+
+  expect(screen.getByText("15000 / 12000")).toBeTruthy();
+  expect(
+    screen.getByLabelText("Очки соревнования: 15000 из 12000"),
+  ).toBeTruthy();
 });
 
 test("shows a nonblocking persistence warning and keeps reset available", () => {

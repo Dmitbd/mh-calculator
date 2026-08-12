@@ -5,6 +5,7 @@ import { AntiqueCashback } from "../components/AntiqueCashback";
 import { AntiqueCoinAllocation } from "../components/AntiqueCoinAllocation";
 import { AntiqueOwnedCards } from "../components/AntiqueOwnedCards";
 import { AntiqueRewardTrack } from "../components/AntiqueRewardTrack";
+import { AntiqueScoreProgress } from "../components/AntiqueScoreProgress";
 import { AntiqueSummary } from "../components/AntiqueSummary";
 import type { AntiqueRivalryResult } from "../model/types";
 
@@ -213,6 +214,20 @@ test.each([
     expect(
       rows.map((row) => row.props.accessibilityState?.disabled),
     ).toEqual(disabledRows);
+  },
+);
+
+test.each([
+  [0, "0 / 12000", "Очки соревнования: 0 из 12000"],
+  [15_000, "15000 / 12000", "Очки соревнования: 15000 из 12000"],
+])(
+  "shows the uncapped rivalry score %i against the fixed maximum",
+  (totalScore, visibleValue, accessibilityLabel) => {
+    render(<AntiqueScoreProgress totalScore={totalScore} />);
+
+    expect(screen.getByText("Очки соревнования")).toBeTruthy();
+    expect(screen.getByText(visibleValue)).toBeTruthy();
+    expect(screen.getByLabelText(accessibilityLabel)).toBeTruthy();
   },
 );
 

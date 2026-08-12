@@ -6,6 +6,7 @@ import { AntiqueCashback } from "../components/AntiqueCashback";
 import { AntiqueCoinAllocation } from "../components/AntiqueCoinAllocation";
 import { AntiqueOwnedCards } from "../components/AntiqueOwnedCards";
 import { AntiqueRewardTrack } from "../components/AntiqueRewardTrack";
+import { AntiqueScoreProgress } from "../components/AntiqueScoreProgress";
 import { AntiqueSummary } from "../components/AntiqueSummary";
 import { useAntiqueCalculator } from "../hooks/useAntiqueCalculator";
 import { calculateAntiqueRivalry } from "../model/calculateAntiqueRivalry";
@@ -116,6 +117,7 @@ export default function AntiqueScreen() {
               void setOwnedTombMaps(value);
             }}
           />
+          <AntiqueScoreProgress totalScore={result.totalScore} />
           <AntiqueRewardTrack
             openedNodes={result.openedNodes}
             totalScore={result.totalScore}
