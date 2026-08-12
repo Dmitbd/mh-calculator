@@ -26,9 +26,7 @@ export function AntiqueCashback({ cashback }: AntiqueCashbackProps) {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Кешбэк</Text>
-      <Text style={styles.description}>
-        Ресурсы из открытых узлов в текущем расчёте.
-      </Text>
+      <Text style={styles.description}>Ресурсы из открытых сундуков</Text>
       <View style={styles.grid}>
         {resources.map(({ resource, value }) => (
           <View

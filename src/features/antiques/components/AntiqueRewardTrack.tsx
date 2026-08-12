@@ -34,9 +34,6 @@ export function AntiqueRewardTrack({
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Шкала наград</Text>
-      <Text style={styles.description}>
-        Четыре линии · большой сундук каждые 3 000 очков
-      </Text>
       <View style={styles.track}>
         {rewardRows.map((row, rowIndex) => {
           const rowStartScore = rowIndex * SCORE_PER_ROW;
@@ -104,11 +101,10 @@ export function AntiqueRewardTrack({
                             accessible={false}
                             resizeMode="contain"
                             source={{ uri: RIVALRY_CHEST_URI }}
+                            tintColor={isOpened ? undefined : "#81766f"}
                             style={[
                               styles.chestImage,
-                              isOpened
-                                ? styles.openedChestImage
-                                : styles.closedChestImage,
+                              !isOpened && styles.closedChestImage,
                               isLargeChest && styles.largeChestImage,
                             ]}
                           />
@@ -148,10 +144,6 @@ const styles = StyleSheet.create({
     color: "#fff3d1",
     fontSize: 22,
     fontWeight: "800",
-  },
-  description: {
-    color: "#bea17b",
-    fontSize: 13,
   },
   track: {
     gap: 16,
@@ -224,12 +216,8 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
   },
-  openedChestImage: {
-    opacity: 1,
-  },
   closedChestImage: {
     opacity: 0.55,
-    tintColor: "#81766f",
   },
   largeChestImage: {
     width: 64,
