@@ -6,6 +6,7 @@ import type { BranchBuildValidationError } from "../../types/admin.types";
 type DownloadSectionProps = {
   backendStatus?: string | null;
   errors: readonly BranchBuildValidationError[];
+  isDirty?: boolean;
   isPublishPending?: boolean;
   isTabSavePending?: boolean;
   onErrorsLayout: (event: LayoutChangeEvent) => void;
@@ -15,11 +16,13 @@ type DownloadSectionProps = {
   onPublishFull: () => void;
   onSaveCurrent: () => void;
   onSaveDraft: () => void;
+  mode?: "create" | "edit";
 };
 
 export function DownloadSection({
   backendStatus,
   errors,
+  isDirty = false,
   isPublishPending = false,
   isTabSavePending = false,
   onErrorsLayout,
@@ -29,12 +32,14 @@ export function DownloadSection({
   onPublishFull,
   onSaveCurrent,
   onSaveDraft,
+  mode = "create",
 }: DownloadSectionProps) {
   return (
     <View onLayout={onLayout}>
       <DownloadJsonButton
         backendStatus={backendStatus}
         errors={errors}
+        isDirty={isDirty}
         isPublishPending={isPublishPending}
         isTabSavePending={isTabSavePending}
         onErrorsLayout={onErrorsLayout}
@@ -43,6 +48,7 @@ export function DownloadSection({
         onPublishFull={onPublishFull}
         onSaveCurrent={onSaveCurrent}
         onSaveDraft={onSaveDraft}
+        mode={mode}
       />
     </View>
   );

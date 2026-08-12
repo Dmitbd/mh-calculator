@@ -6,7 +6,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react-native";
-import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   HeroBuildSetRepositoryError,
@@ -34,6 +34,11 @@ const mockUpdatePublishedHeroBuildSet = jest.fn();
 const mockHeroBuilderSectionProps = jest.fn<void, [Record<string, unknown>]>();
 const mockSignInAdmin = jest.fn();
 const mockSignOutAdmin = jest.fn();
+const mockRouter = {
+  back: jest.fn(),
+  canGoBack: jest.fn(() => true),
+  replace: jest.fn(),
+};
 const ADMIN_SESSION = {
   id: "admin-user-id",
   email: "admin@example.com",
@@ -148,6 +153,15 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
 
+jest.mock("expo-router", () => ({
+  __esModule: true,
+  router: {
+    back: () => mockRouter.back(),
+    canGoBack: () => mockRouter.canGoBack(),
+    replace: (href: string) => mockRouter.replace(href),
+  },
+}));
+
 jest.mock("../components/branch-builder/HeroBuilderSection", () => {
   const actual = jest.requireActual(
     "../components/branch-builder/HeroBuilderSection",
@@ -177,6 +191,26 @@ describe("DivinityBranchBuilderScreen", () => {
   const originalNodeEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
+    Object.defineProperty(window, "confirm", {
+      configurable: true,
+      value: jest.fn(() => true),
+      writable: true,
+    });
+    Object.defineProperty(window, "addEventListener", {
+      configurable: true,
+      value: jest.fn(),
+      writable: true,
+    });
+    Object.defineProperty(window, "removeEventListener", {
+      configurable: true,
+      value: jest.fn(),
+      writable: true,
+    });
+    jest.spyOn(Alert, "alert").mockImplementation(
+      (_title, _message, buttons) => {
+        buttons?.find((button) => button.text === "Выйти")?.onPress?.();
+      },
+    );
     mockGetSupabaseClient.mockReturnValue(null);
     mockFetchHeroBuildSetStatusIds.mockReset();
     mockFetchHeroBuildSetStatusIds.mockResolvedValue({
@@ -220,11 +254,16 @@ describe("DivinityBranchBuilderScreen", () => {
     mockHeroBuilderSectionProps.mockReset();
     mockSignInAdmin.mockReset();
     mockSignOutAdmin.mockReset();
+    mockRouter.back.mockClear();
+    mockRouter.canGoBack.mockClear();
+    mockRouter.canGoBack.mockReturnValue(true);
+    mockRouter.replace.mockClear();
   });
 
   afterEach(() => {
     Object.defineProperty(Platform, "OS", { value: originalPlatform });
     process.env.NODE_ENV = originalNodeEnv;
+    jest.restoreAllMocks();
   });
 
   function renderAdminBuilder() {
@@ -289,7 +328,7 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByLabelText("Выбрать героя")).toBeTruthy();
   });
 
-  it("keeps both edit actions on the published update path", async () => {
+  it("shows one dirty-only edit action on the published update path", async () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
     mockFetchHeroBuildSetStatusIds.mockResolvedValue({
       draftHeroIds: [],
@@ -304,11 +343,19 @@ describe("DivinityBranchBuilderScreen", () => {
       />,
     );
 
-    await screen.findAllByText("Билд загружен для редактирования.");
+    await screen.findAllByText(/загружен для редактирования\./);
     await waitFor(() =>
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
     );
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    expect(screen.queryByText("Обновить")).toBeNull();
+    expect(screen.queryByText("Сохранить вкладку")).toBeNull();
+    expect(screen.queryByText("Опубликовать")).toBeNull();
+    expect(screen.queryByText("Скачать полный JSON")).toBeNull();
+    expect(screen.queryByText("Загрузить билд")).toBeNull();
+    expect(screen.queryByText("Сохранить черновик")).toBeNull();
+
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
 
     await waitFor(() =>
       expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1),
@@ -324,26 +371,188 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(mockCreateOrUpdateDraftHeroBuildSet).not.toHaveBeenCalled();
     expect(mockPublishDraftHeroBuildSet).not.toHaveBeenCalled();
     expect(await screen.findAllByText("Билд обновлён.")).not.toHaveLength(0);
-
-    fireEvent.press(screen.getByText("Опубликовать"));
-    await waitFor(() =>
-      expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(2),
-    );
-    expect(mockCreateOrUpdateDraftHeroBuildSet).not.toHaveBeenCalled();
-    expect(mockPublishDraftHeroBuildSet).not.toHaveBeenCalled();
+    expect(screen.queryByText("Обновить")).toBeNull();
     expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
-    expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(3);
+    expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2);
   });
 
-  it.each(["Сохранить вкладку", "Опубликовать"])(
-    "%s opens the first invalid published leaf and maps its inline error",
-    async (actionLabel) => {
-      const scrollToSpy = jest.spyOn(ScrollView.prototype, "scrollTo");
-      mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
-      mockFetchHeroBuildSetStatusIds.mockResolvedValue({
-        draftHeroIds: [],
-        publishedHeroIds: ["bastet"],
-      });
+  it("asks before a dirty header back action on web and leaves clean back unguarded", async () => {
+    Object.defineProperty(Platform, "OS", { value: "web" });
+    const confirmSpy = jest.mocked(window.confirm);
+    confirmSpy.mockReturnValue(false);
+
+    const view = render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText(/загружен для редактирования\./);
+    fireEvent.press(screen.getByLabelText("Назад"));
+    await waitFor(() => expect(mockRouter.back).toHaveBeenCalledTimes(1));
+    expect(confirmSpy).not.toHaveBeenCalled();
+
+    mockRouter.back.mockClear();
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByLabelText("Назад"));
+    await waitFor(() => expect(confirmSpy).toHaveBeenCalledTimes(1));
+    expect(mockRouter.back).not.toHaveBeenCalled();
+
+    confirmSpy.mockReturnValue(true);
+    fireEvent.press(screen.getByLabelText("Назад"));
+    await waitFor(() => expect(mockRouter.back).toHaveBeenCalledTimes(1));
+
+    view.unmount();
+  });
+
+  it("uses a native confirmation before leaving a dirty edit", async () => {
+    Object.defineProperty(Platform, "OS", { value: "ios" });
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(
+      (_title, _message, buttons) => {
+        buttons?.find((button) => button.text === "Выйти")?.onPress?.();
+      },
+    );
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText(/загружен для редактирования\./);
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByLabelText("Назад"));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith(
+        "Несохранённые изменения",
+        "Выйти без сохранения?",
+        expect.arrayContaining([
+          expect.objectContaining({ text: "Остаться" }),
+          expect.objectContaining({ text: "Выйти" }),
+        ]),
+        { cancelable: false },
+      ),
+    );
+    expect(mockRouter.back).toHaveBeenCalledTimes(1);
+    alertSpy.mockRestore();
+  });
+
+  it("registers and symmetrically removes web beforeunload only while dirty", async () => {
+    Object.defineProperty(Platform, "OS", { value: "web" });
+    const addEventListenerSpy = jest.mocked(window.addEventListener);
+    const removeEventListenerSpy = jest.mocked(window.removeEventListener);
+
+    const view = render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText(/загружен для редактирования\./);
+    expect(
+      addEventListenerSpy.mock.calls.some(([type]) => type === "beforeunload"),
+    ).toBe(false);
+
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+
+    await waitFor(() =>
+      expect(
+        addEventListenerSpy.mock.calls.some(([type]) => type === "beforeunload"),
+      ).toBe(true),
+    );
+    const beforeUnloadListener = addEventListenerSpy.mock.calls.find(
+      ([type]) => type === "beforeunload",
+    )?.[1];
+    const event = {
+      preventDefault: jest.fn(),
+      returnValue: undefined,
+    } as unknown as BeforeUnloadEvent;
+
+    expect(beforeUnloadListener).toBeDefined();
+    (beforeUnloadListener as EventListener)(event);
+    expect(event.preventDefault).toHaveBeenCalledTimes(1);
+    expect(event.returnValue).toBe("");
+
+    view.unmount();
+    expect(removeEventListenerSpy).toHaveBeenCalledWith(
+      "beforeunload",
+      beforeUnloadListener,
+    );
+  });
+
+  it("asks before logging out with dirty edits", async () => {
+    Object.defineProperty(Platform, "OS", { value: "web" });
+    const confirmSpy = jest.mocked(window.confirm);
+    confirmSpy.mockReturnValue(false);
+    mockGetSupabaseClient.mockReturnValue({ auth: {}, from: jest.fn() });
+    mockSignOutAdmin.mockResolvedValue(undefined);
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Выйти"));
+
+    await waitFor(() => expect(confirmSpy).toHaveBeenCalledTimes(1));
+    expect(mockSignOutAdmin).not.toHaveBeenCalled();
+
+    confirmSpy.mockReturnValue(true);
+    fireEvent.press(screen.getByText("Выйти"));
+    await waitFor(() => expect(mockSignOutAdmin).toHaveBeenCalledTimes(1));
+  });
+
+  it("asks before switching heroes with dirty edits", async () => {
+    Object.defineProperty(Platform, "OS", { value: "web" });
+    const confirmSpy = jest.mocked(window.confirm);
+    confirmSpy.mockReturnValue(false);
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: [],
+      publishedHeroIds: ["bastet"],
+    });
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Морана"));
+
+    await waitFor(() => expect(confirmSpy).toHaveBeenCalledTimes(1));
+    expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+    expect(screen.queryByLabelText("Изменить героя: Морана")).toBeNull();
+
+    confirmSpy.mockReturnValue(true);
+    fireEvent.press(screen.getByLabelText("Выбрать героя Морана"));
+    expect(await screen.findByLabelText("Изменить героя: Морана")).toBeTruthy();
+  });
+
+  it("update opens the first invalid published leaf and maps its inline error", async () => {
+    const scrollToSpy = jest.spyOn(ScrollView.prototype, "scrollTo");
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: [],
+      publishedHeroIds: ["bastet"],
+    });
 
       render(
         <DivinityBranchBuilderScreen
@@ -368,7 +577,7 @@ describe("DivinityBranchBuilderScreen", () => {
         },
       );
       scrollToSpy.mockClear();
-      fireEvent.press(screen.getByText(actionLabel));
+      fireEvent.press(screen.getByText("Обновить"));
 
       expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
       await waitFor(() =>
@@ -392,9 +601,8 @@ describe("DivinityBranchBuilderScreen", () => {
           screen.getByTestId("branch-builder-equipment-section"),
         ).queryByText("PvE -> Кампания: Выберите руну."),
       ).toBeNull();
-      scrollToSpy.mockRestore();
-    },
-  );
+    scrollToSpy.mockRestore();
+  });
 
   it("uses full edit validation order instead of preferring the current invalid leaf", async () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
@@ -416,7 +624,7 @@ describe("DivinityBranchBuilderScreen", () => {
     fireEvent.press(screen.getByLabelText("Select PvE build tab"));
     fireEvent.press(screen.getByLabelText("Select Кампания build tab"));
     fireEvent.press(screen.getByLabelText("Remove Air Rune"));
-    fireEvent.press(screen.getByText("Опубликовать"));
+    fireEvent.press(screen.getByText("Обновить"));
 
     expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
     await waitFor(() =>
@@ -451,7 +659,7 @@ describe("DivinityBranchBuilderScreen", () => {
     fireEvent.press(screen.getByLabelText("Select Кампания build tab"));
     fireEvent.press(screen.getByLabelText("Remove Air Rune"));
     fireEvent.press(screen.getByLabelText("Select PvP build tab"));
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByText("Обновить"));
 
     await waitFor(() =>
       expect(
@@ -516,12 +724,14 @@ describe("DivinityBranchBuilderScreen", () => {
     await waitFor(() =>
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
     );
-    fireEvent.press(screen.getByText("Опубликовать"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
 
     expect(
       await screen.findAllByText("Ошибка Supabase: publication failed"),
     ).not.toHaveLength(0);
     expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Обновить")).toBeTruthy();
   });
 
   it("keeps local edits and shows a controlled revision conflict", async () => {
@@ -540,7 +750,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     await screen.findAllByText("Билд загружен для редактирования.");
     fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByText("Обновить"));
 
     expect(
       await screen.findAllByText(
@@ -549,6 +759,7 @@ describe("DivinityBranchBuilderScreen", () => {
     ).not.toHaveLength(0);
     expect(screen.queryByLabelText("Weapon awakening slot 1, Зелёный")).toBeNull();
     expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Обновить")).toBeTruthy();
   });
 
   it("reports a catalog refresh failure while keeping the published hero excluded", async () => {
@@ -566,7 +777,8 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
-    fireEvent.press(screen.getByText("Опубликовать"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
 
     expect(
       await screen.findAllByText(
@@ -602,12 +814,14 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
-    fireEvent.press(screen.getByText("Опубликовать"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
     await screen.findAllByText(
       "Билд обновлён, но список героев обновить не удалось.",
     );
 
-    fireEvent.press(screen.getByText("Опубликовать"));
+    fireEvent.press(screen.getByLabelText(/^Weapon awakening slot 1,/));
+    fireEvent.press(screen.getByText("Обновить"));
     await waitFor(() =>
       expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(2),
     );
@@ -636,11 +850,12 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
-    const publishButton = screen.getByText("Опубликовать");
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    const publishButton = screen.getByText("Обновить");
     act(() => {
       fireEvent.press(publishButton);
       fireEvent.press(publishButton);
-      fireEvent.press(screen.getByText("Сохранить вкладку"));
+      fireEvent.press(publishButton);
     });
 
     expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1);
@@ -676,7 +891,8 @@ describe("DivinityBranchBuilderScreen", () => {
     await waitFor(() =>
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
     );
-    fireEvent.press(screen.getByText("Опубликовать"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
     await waitFor(() =>
       expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1),
     );
@@ -717,14 +933,15 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
-    fireEvent.press(screen.getByText("Опубликовать"));
-    expect(screen.getByText("Публикуем...")).toBeTruthy();
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
+    expect(screen.getByText("Обновляем...")).toBeTruthy();
 
     fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
     fireEvent.press(screen.getByLabelText("Выбрать героя Морана"));
 
-    expect(screen.getByLabelText("Изменить героя: Морана")).toBeTruthy();
-    expect(screen.getByText("Опубликовать")).toBeTruthy();
+    expect(await screen.findByLabelText("Изменить героя: Морана")).toBeTruthy();
+    expect(screen.queryByText("Обновить")).toBeNull();
 
     await act(async () => {
       publication.resolve(getBuildSetRecord("published", 2));
@@ -733,7 +950,7 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("Билд обновлён.")).toBeNull();
     expect(screen.getByLabelText("Изменить героя: Морана")).toBeTruthy();
-    expect(screen.getByText("Опубликовать")).toBeTruthy();
+    expect(screen.queryByText("Обновить")).toBeNull();
   });
 
   it("ignores a late tab save after another hero is selected", async () => {
@@ -755,13 +972,15 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
-    expect(screen.getByText("Сохраняем...")).toBeTruthy();
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
+    expect(screen.getByText("Обновляем...")).toBeTruthy();
 
     fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
     fireEvent.press(screen.getByLabelText("Выбрать героя Морана"));
 
-    expect(screen.getByText("Сохранить вкладку")).toBeTruthy();
+    await screen.findByLabelText("Изменить героя: Морана");
+    expect(screen.queryByText("Обновить")).toBeNull();
 
     await act(async () => {
       save.resolve(getBuildSetRecord("published", 2));
@@ -770,7 +989,7 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("Билд обновлён.")).toBeNull();
     expect(screen.getByLabelText("Изменить героя: Морана")).toBeTruthy();
-    expect(screen.getByText("Сохранить вкладку")).toBeTruthy();
+    expect(screen.queryByText("Обновить")).toBeNull();
   });
 
   it("does not show a publication result after logout during catalog refresh", async () => {
@@ -796,7 +1015,8 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
-    fireEvent.press(screen.getByText("Опубликовать"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
     await waitFor(() =>
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
     );
@@ -1022,19 +1242,20 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
     const removeRune = screen.getByLabelText("Remove Air Rune");
     const pveTab = screen.getByLabelText("Select PvE build tab");
-    const save = screen.getByText("Сохранить вкладку");
-    const publish = screen.getByText("Опубликовать");
+    const update = screen.getByText("Обновить");
 
     fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
     fireEvent.press(screen.getByLabelText("Выбрать героя Морана"));
 
-    expect(screen.getAllByText("Загружаем черновик...")).toHaveLength(2);
+    await waitFor(() =>
+      expect(screen.getAllByText("Загружаем черновик...")).toHaveLength(2),
+    );
 
     act(() => {
-      fireEvent.press(save);
-      fireEvent.press(publish);
+      fireEvent.press(update);
       fireEvent.press(pveTab);
       fireEvent.press(removeRune);
     });
@@ -1042,8 +1263,7 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
     expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
     expect(screen.queryByLabelText("Select PvE build tab")).toBeNull();
-    expect(screen.queryByText("Сохранить вкладку")).toBeNull();
-    expect(screen.queryByText("Опубликовать")).toBeNull();
+    expect(screen.queryByText("Обновить")).toBeNull();
 
     await act(async () => {
       draft.reject(new Error("draft failed"));
@@ -1074,10 +1294,10 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
     const removeRune = screen.getByLabelText("Remove Air Rune");
     const pveTab = screen.getByLabelText("Select PvE build tab");
-    const save = screen.getByText("Сохранить вкладку");
-    const publish = screen.getByText("Опубликовать");
+    const update = screen.getByText("Обновить");
     mockLoadPublishedHeroBuildSet.mockReturnValueOnce(routeLoad.promise);
 
     view.rerender(
@@ -1095,14 +1315,12 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
     expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
     expect(screen.queryByLabelText("Select PvE build tab")).toBeNull();
-    expect(screen.queryByText("Сохранить вкладку")).toBeNull();
-    expect(screen.queryByText("Опубликовать")).toBeNull();
+    expect(screen.queryByText("Обновить")).toBeNull();
 
     act(() => {
       fireEvent.press(removeRune);
       fireEvent.press(pveTab);
-      fireEvent.press(save);
-      fireEvent.press(publish);
+      fireEvent.press(update);
     });
 
     expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
@@ -1144,15 +1362,16 @@ describe("DivinityBranchBuilderScreen", () => {
       await screen.findAllByText("Билд для редактирования не найден."),
     ).not.toHaveLength(0);
     expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
 
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByText("Обновить"));
 
     await waitFor(() =>
       expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1),
     );
     expect(await screen.findAllByText("Билд обновлён.")).not.toHaveLength(0);
-    expect(screen.getByText("Сохранить вкладку")).toBeTruthy();
-    expect(screen.queryByText("Сохраняем...")).toBeNull();
+    expect(screen.queryByText("Обновить")).toBeNull();
+    expect(screen.queryByText("Обновляем...")).toBeNull();
   });
 
   it("keeps the accepted form identity after a new initial edit request fails", async () => {
@@ -1183,15 +1402,16 @@ describe("DivinityBranchBuilderScreen", () => {
       await screen.findAllByText("Ошибка Supabase: route failed"),
     ).not.toHaveLength(0);
     expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
 
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByText("Обновить"));
 
     await waitFor(() =>
       expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1),
     );
     expect(await screen.findAllByText("Билд обновлён.")).not.toHaveLength(0);
-    expect(screen.getByText("Сохранить вкладку")).toBeTruthy();
-    expect(screen.queryByText("Сохраняем...")).toBeNull();
+    expect(screen.queryByText("Обновить")).toBeNull();
+    expect(screen.queryByText("Обновляем...")).toBeNull();
   });
 
   it("keeps the accepted form identity when a draft target has no client", async () => {
@@ -1220,14 +1440,15 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.queryByText("Загружаем черновик...")).toBeNull();
 
     mockGetSupabaseClient.mockReturnValue(client);
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
 
     await waitFor(() =>
       expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1),
     );
     expect(await screen.findAllByText("Билд обновлён.")).not.toHaveLength(0);
-    expect(screen.getByText("Сохранить вкладку")).toBeTruthy();
-    expect(screen.queryByText("Сохраняем...")).toBeNull();
+    expect(screen.queryByText("Обновить")).toBeNull();
+    expect(screen.queryByText("Обновляем...")).toBeNull();
   });
 
   it("keeps the explicit unfinished hero when its draft resolves before the initial edit load", async () => {
@@ -1757,7 +1978,8 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
 
     await waitFor(() => {
       expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledWith(
@@ -1790,7 +2012,8 @@ describe("DivinityBranchBuilderScreen", () => {
     fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
     expect(screen.getByLabelText("Герой Бастет выбран")).toBeTruthy();
 
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
     await waitFor(() =>
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
     );
@@ -1827,11 +2050,11 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
 
-    expect(screen.getByText("Сохраняем...")).toBeTruthy();
-    fireEvent.press(screen.getByText("Сохраняем..."));
-    fireEvent.press(screen.getByText("Опубликовать"));
+    expect(screen.getByText("Обновляем...")).toBeTruthy();
+    fireEvent.press(screen.getByText("Обновляем..."));
     expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1);
 
     await act(async () => {
@@ -1853,7 +2076,8 @@ describe("DivinityBranchBuilderScreen", () => {
 
     await screen.findAllByText("Билд загружен для редактирования.");
     expect(screen.getByLabelText("Remove Air Rune")).toBeTruthy();
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
 
     expect(
       await screen.findAllByText("Ошибка Supabase: save failed"),
@@ -1884,7 +2108,8 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
     fireEvent.press(screen.getByLabelText("Remove Air Rune"));
     expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
 
@@ -1901,7 +2126,7 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
     expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2);
 
-    fireEvent.press(screen.getByText("Опубликовать"));
+    fireEvent.press(screen.getByText("Обновить"));
     expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1);
     expect(
       within(screen.getByTestId("branch-builder-equipment-section")).getByText(
@@ -1942,7 +2167,8 @@ describe("DivinityBranchBuilderScreen", () => {
     await waitFor(() =>
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
     );
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
     await waitFor(() =>
       expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1),
     );
@@ -1953,7 +2179,7 @@ describe("DivinityBranchBuilderScreen", () => {
     await waitFor(() =>
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
     );
-    expect(screen.getByText("Сохраняем...")).toBeTruthy();
+    expect(screen.getByText("Обновляем...")).toBeTruthy();
 
     fireEvent.press(screen.getByLabelText("Remove Air Rune"));
     expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
@@ -1993,7 +2219,8 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
     await waitFor(() =>
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
     );
@@ -2040,7 +2267,8 @@ describe("DivinityBranchBuilderScreen", () => {
     await waitFor(() =>
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
     );
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
     fireEvent.press(screen.getByText("Выйти"));
     await screen.findByPlaceholderText("Email");
 
@@ -2084,7 +2312,8 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
     await waitFor(() =>
       expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1),
     );
@@ -2119,13 +2348,13 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
-    fireEvent.press(screen.getByLabelText("Remove Air Rune"));
-    fireEvent.press(screen.getByLabelText("Добавить руну"));
-    fireEvent.press(screen.getByLabelText("Add Air Rune"));
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
 
     expect(
-      await screen.findAllByText("Билд обновлён."),
+      await screen.findAllByText(
+        "Билд обновлён, но список героев обновить не удалось.",
+      ),
     ).not.toHaveLength(0);
     expect(
       await screen.findByText(
@@ -2137,7 +2366,8 @@ describe("DivinityBranchBuilderScreen", () => {
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(3),
     );
 
-    fireEvent.press(screen.getByText("Опубликовать"));
+    fireEvent.press(screen.getByLabelText(/^Weapon awakening slot 1,/));
+    fireEvent.press(screen.getByText("Обновить"));
     await waitFor(() =>
       expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(2),
     );
@@ -2352,25 +2582,24 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
     const removeRune = screen.getByLabelText("Remove Air Rune");
     const pveTab = screen.getByLabelText("Select PvE build tab");
-    const save = screen.getByText("Сохранить вкладку");
-    const publish = screen.getByText("Опубликовать");
+    const update = screen.getByText("Обновить");
 
     fireEvent.press(screen.getByText("Выйти"));
 
-    expect(screen.getByText("Выходим...")).toBeTruthy();
+    await screen.findByText("Выходим...");
 
     act(() => {
       fireEvent.press(removeRune);
       fireEvent.press(pveTab);
-      fireEvent.press(save);
-      fireEvent.press(publish);
+      fireEvent.press(update);
     });
 
     expect(mockUpdatePublishedHeroBuildSet).not.toHaveBeenCalled();
     expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
-    expect(screen.queryByText("Сохранить вкладку")).toBeNull();
+    expect(screen.queryByText("Обновить")).toBeNull();
 
     await act(async () => {
       signOut.resolve(undefined);
@@ -2402,21 +2631,22 @@ describe("DivinityBranchBuilderScreen", () => {
     );
 
     await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
     fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
     const morana = screen.getByLabelText("Выбрать героя Морана");
     const removeRune = screen.getByLabelText("Remove Air Rune");
     const pveTab = screen.getByLabelText("Select PvE build tab");
-    const publish = screen.getByText("Опубликовать");
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    const update = screen.getByText("Обновить");
+    fireEvent.press(update);
     await waitFor(() => expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1));
 
     fireEvent.press(screen.getByText("Выйти"));
-    expect(screen.getByText("Выходим...")).toBeTruthy();
+    await screen.findByText("Выходим...");
 
     act(() => {
       fireEvent.press(removeRune);
       fireEvent.press(pveTab);
-      fireEvent.press(publish);
+      fireEvent.press(update);
       fireEvent.press(morana);
     });
     await act(async () => {
@@ -2440,7 +2670,7 @@ describe("DivinityBranchBuilderScreen", () => {
       screen.getByLabelText("Select PvP build tab").props.accessibilityState,
     ).toEqual(expect.objectContaining({ selected: true }));
 
-    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    fireEvent.press(screen.getByText("Обновить"));
     await waitFor(() => expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(2));
   });
 

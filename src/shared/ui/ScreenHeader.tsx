@@ -1,4 +1,5 @@
 import { type Href, router } from "expo-router";
+import { useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -12,11 +13,41 @@ type ScreenHeaderProps = {
   title: string;
   /** Куда вести "назад", если в истории пусто */
   fallbackHref?: Href;
+  /** Разрешает экрану асинхронно подтвердить уход назад */
+  onBeforeBack?: () => boolean | Promise<boolean>;
 };
 
 /** Фиксированная шапка экрана с кнопкой "назад" (паттерн экрана божественности) */
-export function ScreenHeader({ title, fallbackHref = "/" }: ScreenHeaderProps) {
+export function ScreenHeader({
+  title,
+  fallbackHref = "/",
+  onBeforeBack,
+}: ScreenHeaderProps) {
   const { top } = useSafeAreaInsets();
+  const isBackPending = useRef(false);
+
+  const handleBack = async () => {
+    if (isBackPending.current) {
+      return;
+    }
+
+    isBackPending.current = true;
+
+    try {
+      if (onBeforeBack && !(await onBeforeBack())) {
+        return;
+      }
+
+      if (router.canGoBack()) {
+        router.back();
+        return;
+      }
+
+      router.replace(fallbackHref);
+    } finally {
+      isBackPending.current = false;
+    }
+  };
 
   return (
     <View
@@ -29,14 +60,7 @@ export function ScreenHeader({ title, fallbackHref = "/" }: ScreenHeaderProps) {
         <Pressable
           accessibilityLabel="Назад"
           accessibilityRole="button"
-          onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-              return;
-            }
-
-            router.replace(fallbackHref);
-          }}
+          onPress={() => void handleBack()}
           style={styles.backButton}
         >
           <Text style={styles.backArrow}>‹</Text>

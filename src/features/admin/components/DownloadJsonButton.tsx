@@ -11,8 +11,10 @@ import type { BranchBuildValidationError } from "../types/admin.types";
 type DownloadJsonButtonProps = {
   backendStatus?: string | null;
   errors: readonly BranchBuildValidationError[];
+  isDirty?: boolean;
   isPublishPending?: boolean;
   isTabSavePending?: boolean;
+  mode?: "create" | "edit";
   onErrorsLayout?: (event: LayoutChangeEvent) => void;
   onDownloadFull: () => void;
   onLoadFull: () => void;
@@ -24,8 +26,10 @@ type DownloadJsonButtonProps = {
 
 export function DownloadJsonButton({
   backendStatus,
+  isDirty = false,
   isPublishPending = false,
   isTabSavePending = false,
+  mode = "create",
   onDownloadFull,
   onLoadFull,
   onPublishFull,
@@ -33,6 +37,33 @@ export function DownloadJsonButton({
   onSaveDraft,
   showAdvancedActions = false,
 }: DownloadJsonButtonProps) {
+  if (mode === "edit") {
+    return (
+      <View style={styles.wrapper}>
+        {isDirty || isPublishPending ? (
+          <View style={styles.actions}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={isPublishPending}
+              onPress={isPublishPending ? undefined : onPublishFull}
+              style={[
+                styles.button,
+                isPublishPending && styles.buttonDisabled,
+              ]}
+            >
+              <Text style={styles.buttonText}>
+                {isPublishPending ? "Обновляем..." : "Обновить"}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {backendStatus ? (
+          <Text style={styles.backendStatus}>{backendStatus}</Text>
+        ) : null}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.actions}>

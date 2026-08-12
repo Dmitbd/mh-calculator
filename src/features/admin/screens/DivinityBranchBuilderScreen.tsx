@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   type LayoutChangeEvent,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -131,6 +133,7 @@ export function DivinityBranchBuilderScreen({
     commitPreparedTargetBuild,
     cycleWeaponAwakeningSlot,
     isPreparedTargetBuildCurrent,
+    isDirty,
     getFirstInvalidFullExport,
     loadBuildSetForEditing,
     progressLevels,
@@ -191,6 +194,7 @@ export function DivinityBranchBuilderScreen({
   const [isDraftLoadPending, setIsDraftLoadPending] = useState(false);
   const [isHeroListLoading, setIsHeroListLoading] = useState(true);
   const [heroListError, setHeroListError] = useState<string | null>(null);
+  const hasUnsavedPublishedEdits = initialMode === "edit" && isDirty;
   const isBuilderTransitionPending =
     isEditBuildLoading || isDraftLoadPending || isAuthPending;
   const isBuilderActionBlocked = useCallback(
@@ -223,6 +227,60 @@ export function DivinityBranchBuilderScreen({
     publishInFlight.current = false;
     setIsPublishPending(false);
   }, []);
+
+  const confirmDiscardChanges = useCallback(async (): Promise<boolean> => {
+    if (!hasUnsavedPublishedEdits) {
+      return true;
+    }
+
+    if (Platform.OS === "web") {
+      return typeof window !== "undefined"
+        ? window.confirm(
+            "Есть несохранённые изменения. Выйти без сохранения?",
+          )
+        : false;
+    }
+
+    return new Promise<boolean>((resolve) => {
+      Alert.alert(
+        "Несохранённые изменения",
+        "Выйти без сохранения?",
+        [
+          {
+            style: "cancel",
+            text: "Остаться",
+            onPress: () => resolve(false),
+          },
+          {
+            style: "destructive",
+            text: "Выйти",
+            onPress: () => resolve(true),
+          },
+        ],
+        { cancelable: false },
+      );
+    });
+  }, [hasUnsavedPublishedEdits]);
+
+  useEffect(() => {
+    if (
+      Platform.OS !== "web" ||
+      !hasUnsavedPublishedEdits ||
+      typeof window === "undefined"
+    ) {
+      return;
+    }
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasUnsavedPublishedEdits]);
 
   useEffect(() => {
     isScreenMounted.current = true;
@@ -973,15 +1031,28 @@ export function DivinityBranchBuilderScreen({
           : [...current.publishedHeroIds, heroId],
       }));
 
-      if (initialMode === "edit" && preparedEditBuild) {
-        commitPreparedTargetBuild(preparedEditBuild);
-      }
+      const didCommitEditSnapshot =
+        initialMode === "edit" && preparedEditBuild
+          ? commitPreparedTargetBuild(preparedEditBuild)
+          : true;
 
       const didRefreshHeroStatusIds = await loadHeroStatusIds({
         preserveCurrentIdsOnError: true,
       });
 
       if (!isCurrentRequest()) {
+        return;
+      }
+
+      const isCurrentEditSnapshot =
+        didCommitEditSnapshot &&
+        (!preparedEditBuild || isPreparedTargetBuildCurrent(preparedEditBuild));
+
+      if (!isCurrentEditSnapshot) {
+        showBackendMessage(
+          "error",
+          "Билд обновлён на сервере, но форма уже изменилась.",
+        );
         return;
       }
 
@@ -1121,6 +1192,10 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
+    if (hasUnsavedPublishedEdits && !(await confirmDiscardChanges())) {
+      return;
+    }
+
     authTransitionInFlight.current = true;
     const requestId = authRequestId.current + 1;
     authRequestId.current = requestId;
@@ -1210,6 +1285,10 @@ export function DivinityBranchBuilderScreen({
 
   const handleSelectHero = async (heroId: string) => {
     if (isHeroSelectionBlocked()) {
+      return;
+    }
+
+    if (hasUnsavedPublishedEdits && !(await confirmDiscardChanges())) {
       return;
     }
 
@@ -1461,7 +1540,11 @@ export function DivinityBranchBuilderScreen({
 
   return (
     <View style={styles.screen}>
-      <ScreenHeader title="Builder" fallbackHref="/" />
+      <ScreenHeader
+        title="Builder"
+        fallbackHref="/"
+        onBeforeBack={confirmDiscardChanges}
+      />
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={[
@@ -1642,6 +1725,7 @@ export function DivinityBranchBuilderScreen({
                 <DownloadSection
                   backendStatus={backendStatus}
                   errors={visibleValidationErrors}
+                  isDirty={isDirty}
                   isPublishPending={isPublishPending}
                   isTabSavePending={isTabSavePending}
                   onErrorsLayout={handleSectionLayout("download")}
@@ -1659,6 +1743,7 @@ export function DivinityBranchBuilderScreen({
                   onSaveDraft={() => {
                     void saveFullBuildSetToBackend("draft");
                   }}
+                  mode={initialMode}
                 />
               </View>
             </>
