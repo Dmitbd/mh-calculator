@@ -1,5 +1,10 @@
+jest.mock("@/shared/lib/resolveAssetUri", () => ({
+  __esModule: true,
+  resolveAssetUri: (assetPath: string) => `resolved:${assetPath}`,
+}));
+
 import { fireEvent, render, screen } from "@testing-library/react-native";
-import { StyleSheet } from "react-native";
+import { Image, StyleSheet } from "react-native";
 
 import { AntiqueCashback } from "../components/AntiqueCashback";
 import { AntiqueCoinAllocation } from "../components/AntiqueCoinAllocation";
@@ -145,7 +150,7 @@ test("forwards raw owned-card inputs", () => {
 });
 
 test("renders all 16 accessible reward chests in order without visible node numbers", () => {
-  render(
+  const view = render(
     <AntiqueRewardTrack
       openedNodes={result.openedNodes}
       totalScore={result.totalScore}
@@ -179,8 +184,17 @@ test("renders all 16 accessible reward chests in order without visible node numb
   const chestLabels = screen
     .getAllByLabelText(/^Сундук награды /)
     .map((node) => node.props.accessibilityLabel);
+  const chestUris = view
+    .UNSAFE_getAllByType(Image)
+    .map((image) => image.props.source.uri);
 
   expect(chestLabels).toEqual(expectedChestLabels);
+  expect(chestUris).toEqual([
+    ...Array(4).fill(
+      "resolved:/img/antiques/rivalry-chest-active.png",
+    ),
+    ...Array(12).fill("resolved:/img/antiques/rivalry-chest.png"),
+  ]);
   expect(
     chestLabels.filter((label) => label.endsWith("большой сундук")),
   ).toEqual(expectedLargeChestLabels);
