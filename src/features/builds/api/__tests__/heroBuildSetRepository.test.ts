@@ -1,4 +1,5 @@
-import type { HeroBuildSet } from "@/features/game-data/heroes/types";
+import bastetBuild from "@/features/game-data/heroes/builds/bastet.json";
+import { parseHeroBuildSet } from "@/features/builds/model/heroBuildSetSchema";
 import * as repository from "../heroBuildSetRepository";
 
 import {
@@ -7,15 +8,14 @@ import {
   fetchDraftHeroBuildSet,
   fetchPublishedHeroBuildSet,
   fetchPublishedHeroIds,
+  HeroBuildSetRepositoryError,
+  type HeroBuildSetSupabaseClient,
   loadPublishedHeroBuildSet,
   publishDraftHeroBuildSet,
   updatePublishedHeroBuildSet,
 } from "../heroBuildSetRepository";
 
-const buildSet: HeroBuildSet = {
-  schemaVersion: 2,
-  tabs: [],
-};
+const buildSet = parseHeroBuildSet(bastetBuild, "bastet");
 
 function createQueryResult(result: unknown) {
   const query: {
@@ -45,11 +45,17 @@ function createQueryResult(result: unknown) {
   return query;
 }
 
-function createClient(query: ReturnType<typeof createQueryResult>) {
+function createClient(
+  query: ReturnType<typeof createQueryResult>,
+): HeroBuildSetSupabaseClient {
   return {
     from: jest.fn(() => query),
     rpc: jest.fn(async () => ({ data: null, error: null })),
-  };
+  } as unknown as HeroBuildSetSupabaseClient;
+}
+
+function createRpcClient(rpc: jest.Mock): HeroBuildSetSupabaseClient {
+  return { from: jest.fn(), rpc } as unknown as HeroBuildSetSupabaseClient;
 }
 
 describe("heroBuildSetRepository", () => {
@@ -104,6 +110,17 @@ describe("heroBuildSetRepository", () => {
     await expect(
       fetchDraftHeroBuildSet(createClient(query), "bastet"),
     ).rejects.toThrow("network down");
+  });
+
+  it("rejects malformed draft payloads at the same read boundary", async () => {
+    const query = createQueryResult({
+      data: { payload: { schemaVersion: 2, tabs: "not-an-array" } },
+      error: null,
+    });
+
+    await expect(
+      fetchDraftHeroBuildSet(createClient(query), "bastet"),
+    ).rejects.toMatchObject({ kind: "invalid-data" });
   });
 
   it("fetches only the published build set for a hero", async () => {
@@ -166,14 +183,42 @@ describe("heroBuildSetRepository", () => {
     });
     const client = createClient(query);
 
-    await expect(fetchPublishedHeroBuildSet(client, "bastet")).rejects.toThrow(
-      "network down",
+    await expect(fetchPublishedHeroBuildSet(client, "bastet")).rejects.toMatchObject({
+      kind: "network",
+      message: "network down",
+    });
+  });
+
+  it("rejects malformed remote payloads with a typed invalid-data error", async () => {
+    const query = createQueryResult({
+      data: { payload: { schemaVersion: 999, tabs: [] } },
+      error: null,
+    });
+
+    await expect(
+      fetchPublishedHeroBuildSet(createClient(query), "bastet"),
+    ).rejects.toEqual(
+      expect.objectContaining<Partial<HeroBuildSetRepositoryError>>({
+        kind: "invalid-data",
+        name: "HeroBuildSetRepositoryError",
+      }),
     );
+  });
+
+  it("rejects a valid payload stored under the wrong hero identity", async () => {
+    const query = createQueryResult({
+      data: { payload: buildSet },
+      error: null,
+    });
+
+    await expect(
+      fetchPublishedHeroBuildSet(createClient(query), "morana"),
+    ).rejects.toMatchObject({ kind: "invalid-data" });
   });
 
   it("creates or updates only a draft row by hero identity", async () => {
     const rpc = jest.fn(async () => ({ data: null, error: null }));
-    const client = { from: jest.fn(), rpc };
+    const client = createRpcClient(rpc);
 
     await createOrUpdateDraftHeroBuildSet(client, {
       buildSet,
@@ -188,7 +233,7 @@ describe("heroBuildSetRepository", () => {
 
   it("publishes a draft through the atomic database transition", async () => {
     const rpc = jest.fn(async () => ({ data: null, error: null }));
-    const client = { from: jest.fn(), rpc };
+    const client = createRpcClient(rpc);
 
     await publishDraftHeroBuildSet(client, {
       buildSet,
@@ -208,7 +253,7 @@ describe("heroBuildSetRepository", () => {
     }));
 
     await expect(
-      publishDraftHeroBuildSet({ from: jest.fn(), rpc }, {
+      publishDraftHeroBuildSet(createRpcClient(rpc), {
         buildSet,
         heroId: "bastet",
       }),
@@ -217,7 +262,7 @@ describe("heroBuildSetRepository", () => {
 
   it("updates payload only on an existing published row", async () => {
     const rpc = jest.fn(async () => ({ data: null, error: null }));
-    const client = { from: jest.fn(), rpc };
+    const client = createRpcClient(rpc);
 
     await updatePublishedHeroBuildSet(client, {
       buildSet,
@@ -236,7 +281,8 @@ describe("heroBuildSetRepository", () => {
   });
 
   it("loads a remote published build set before using local fallback", async () => {
-    const remoteBuildSet = { schemaVersion: 2, tabs: [] } satisfies HeroBuildSet;
+    const remoteBuildSet = structuredClone(buildSet);
+    remoteBuildSet.tabs[0].label = "Remote PvP";
     const query = createQueryResult({
       data: { payload: remoteBuildSet },
       error: null,
@@ -289,5 +335,64 @@ describe("heroBuildSetRepository", () => {
         heroId: "bastet",
       }),
     ).resolves.toEqual(buildSet);
+  });
+
+  it("reports no-data fallback separately from network and invalid data", async () => {
+    const noDataFallback = jest.fn();
+    const noDataClient = createClient(
+      createQueryResult({ data: null, error: null }),
+    );
+
+    await loadPublishedHeroBuildSet({
+      client: noDataClient,
+      fallbackBuildSet: buildSet,
+      heroId: "bastet",
+      onFallback: noDataFallback,
+    });
+
+    expect(noDataFallback).toHaveBeenCalledWith({ kind: "no-data" });
+
+    const networkFallback = jest.fn();
+    const networkClient = createClient(
+      createQueryResult({ data: null, error: { message: "network down" } }),
+    );
+
+    await loadPublishedHeroBuildSet({
+      client: networkClient,
+      fallbackBuildSet: buildSet,
+      heroId: "bastet",
+      onFallback: networkFallback,
+    });
+
+    expect(networkFallback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: expect.objectContaining({ kind: "network" }),
+        kind: "network",
+      }),
+    );
+  });
+
+  it("falls back without accepting invalid remote data and reports the cause", async () => {
+    const onFallback = jest.fn();
+    const invalidRemote = { ...buildSet, schemaVersion: 999 };
+    const client = createClient(
+      createQueryResult({ data: { payload: invalidRemote }, error: null }),
+    );
+
+    await expect(
+      loadPublishedHeroBuildSet({
+        client,
+        fallbackBuildSet: buildSet,
+        heroId: "bastet",
+        onFallback,
+      }),
+    ).resolves.toBe(buildSet);
+
+    expect(onFallback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: expect.objectContaining({ kind: "invalid-data" }),
+        kind: "invalid-data",
+      }),
+    );
   });
 });

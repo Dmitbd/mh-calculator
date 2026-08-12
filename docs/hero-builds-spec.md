@@ -95,7 +95,7 @@
 5. неизвестный `heroId` показывает `Герой не найден.`;
 6. отсутствие готового билда показывает контролируемое пустое состояние, а не частично собранные секции.
 
-Удалённые данные не должны мутировать локальные каталоги. Сетевые и Supabase-ошибки не должны скрывать корректный локальный комплект.
+Удалённые данные не должны мутировать локальные каталоги. Сетевые и Supabase-ошибки не должны скрывать корректный локальный комплект. Невалидный удалённый payload также не принимается: loader возвращает локальный fallback и через `onFallback` различает `no-data`, `network` и `invalid-data`, чтобы причина оставалась доступной для диагностики.
 
 ## Build Set And Tabs
 
@@ -105,6 +105,22 @@
 - группой с `children`, каждый ребёнок которой является leaf-вкладкой.
 
 `HeroBuildTab.children` и model helpers рекурсивны и не ограничивают data contract двумя уровнями. Текущий UI визуализирует верхнюю строку папок и, для активной группы, вторую строку дочерних вкладок; более глубокая навигация пока не представлена. Выбор группы открывает её первый отсортированный leaf. `getDefaultTabPath` выбирает первый доступный готовый билд, а `filterTabsWithReadyBuilds` рекурсивно не показывает пустые вкладки пользователю.
+
+## Backend Payload Boundary
+
+`hero_build_sets.payload` является недоверенным JSON независимо от сгенерированного TypeScript-типа `jsonb`. `fetchPublishedHeroBuildSet` и `fetchDraftHeroBuildSet` передают значение как `unknown` в [heroBuildSetSchema.ts](../src/features/builds/model/heroBuildSetSchema.ts) и возвращают `HeroBuildSet` только после полной проверки.
+
+Runtime-схема проверяет:
+
+- `HeroBuildSet.schemaVersion === 2` и `build.schemaVersion === 1`;
+- совпадение каждого `build.heroId` с `hero_id` строки и существование героя в каталоге;
+- рекурсивную структуру вкладок, уникальность sibling IDs, устойчивые kebab-case path IDs и наследование `gameMode`;
+- отсутствие standalone `targetTabPath` внутри committed leaf;
+- известные и непротиворечивые IDs веток, мажорных скиллов, экипировки, loadout-скиллов и пробуждения оружия;
+- диапазон `progress`, существование его уровней в tree template и точное соответствие производного `activeNodes`;
+- форму metadata, стабильный `source` и корректную дату `createdAt`.
+
+Повреждённые данные приводят к `HeroBuildSetRepositoryError` с `kind: "invalid-data"`; ошибка Supabase — к тому же типу с `kind: "network"`; отсутствие строки остаётся отдельным `null`/`no-data` исходом. Невалидный remote не может попасть в Viewer или заменить корректный fallback/будущий last-known-good snapshot.
 
 Порядок и подписи вкладок принадлежат данным комплекта. Компонент просмотра не должен хардкодить режимы `PvP`, `PvE` или их варианты.
 
@@ -202,6 +218,7 @@
 - определять класс Iconic Weapon по выбранному оружию или UI-подписи;
 - скрывать локальный fallback только из-за недоступного Supabase;
 - импортировать admin-компоненты или admin-типы в пользовательскую feature.
+- принимать `jsonb` как `HeroBuildSet` без runtime-валидации на repository boundary.
 
 ## Verification
 
@@ -216,6 +233,7 @@
 - [heroBuildTabs.test.ts](../src/features/game-data/heroes/__tests__/heroBuildTabs.test.ts)
 - [heroCatalogDataIntegrity.test.ts](../src/features/game-data/heroes/__tests__/heroCatalogDataIntegrity.test.ts)
 - [heroBuildSetRepository.test.ts](../src/features/builds/api/__tests__/heroBuildSetRepository.test.ts)
+- [heroBuildSetSchema.test.ts](../src/features/builds/model/__tests__/heroBuildSetSchema.test.ts)
 - [EquipmentVariantTabs.test.tsx](../src/features/builds/__tests__/EquipmentVariantTabs.test.tsx)
 - [WeaponAwakeningBonusList.test.tsx](../src/features/builds/__tests__/WeaponAwakeningBonusList.test.tsx)
 - [weaponAwakeningBonuses.test.ts](../src/features/game-data/weapon-awakening/__tests__/weaponAwakeningBonuses.test.ts)

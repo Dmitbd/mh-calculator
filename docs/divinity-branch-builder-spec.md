@@ -42,6 +42,8 @@
 - [src/shared/ui/IconPreview.tsx](../src/shared/ui/IconPreview.tsx) — иконка или пунктирный плейсхолдер
 - [src/features/admin/hooks/useDivinityBranchBuilder.ts](../src/features/admin/hooks/useDivinityBranchBuilder.ts) — состояние и экспорт
 - [src/features/admin/utils/validateBranchBuild.ts](../src/features/admin/utils/validateBranchBuild.ts) — валидация
+- [src/features/builds/model/heroBuildSetSchema.ts](../src/features/builds/model/heroBuildSetSchema.ts) — runtime-валидация загруженных Supabase payload
+- [src/features/builds/api/heroBuildSetRepository.ts](../src/features/builds/api/heroBuildSetRepository.ts) — типизированная граница чтения и lifecycle RPC
 - [src/features/admin/types/admin.types.ts](../src/features/admin/types/admin.types.ts) — типы
 - [src/features/game-data/divinity/tree-template.json](../src/features/game-data/divinity/tree-template.json) — структура дерева
 - [src/features/game-data/divinity/divinity-branches.json](../src/features/game-data/divinity/divinity-branches.json) — ветки
@@ -276,7 +278,7 @@ type DivinityBranchBuilderExport = {
 
 Важно:
 - standalone-выгрузка билдера содержит `targetTabPath`; после размещения в `HeroBuildSet` committed leaf хранит вложенный `DivinityBranchBuildExport` без этого поля;
-- `progress` и `activeNodes` сохраняются в JSON, но НЕ участвуют в валидации;
+- `progress` и `activeNodes` сохраняются в JSON и не участвуют в интерактивной проверке незавершённой формы; при чтении готового Supabase payload runtime-схема проверяет диапазоны, tree-template paths и точное соответствие производного `activeNodes` значению `progress`;
 - `activeNodes` — производное от `progress` (все ноды столбца с `level <= progress`).
 
 ## Validation
@@ -387,6 +389,8 @@ Base и awakened slots редактируются отдельно. Awakened-н�
 - Опубликованный payload обновляется только отдельной repository-операцией, которая требует исходный status `published` и не меняет его.
 - Все три lifecycle-операции repository вызывают отдельные RPC: create/update draft, draft-to-published и update published. Прямой table DML недоступен `anon` и `authenticated`.
 - Публичный repository API не содержит операций удаления. Database trigger запрещает удалить published-строку, вернуть её в draft или изменить её `hero_id`.
+- Любой draft/published `payload` читается как недоверенный `jsonb` и проходит `heroBuildSetSchema` до восстановления редактора. Несовместимая версия, неверная hero identity, повреждённые tabs/path, неизвестные catalog IDs или несогласованные build-поля дают типизированную `HeroBuildSetRepositoryError(kind: "invalid-data")`, а не частично восстановленный draft.
+- Сетевой сбой имеет `kind: "network"`, отсутствие строки остаётся отдельным `null`/`no-data` исходом. Публичный loader может сохранить локальный fallback, но сообщает точную причину через диагностический `onFallback` outcome.
 
 ## Validation And Feedback
 
@@ -413,7 +417,7 @@ Backend success не должен жить дольше актуальной о�
 7. Вертикальная линия идёт только от первой до последней ноды столбца.
 8. Горизонтальные соединители только на уровнях, где у `isMain`-колонки стоит мажорная нода.
 9. JSON содержит `columns`, `majorNodes`, `progress`, `activeNodes`; экспорт неполной сборки запрещён (`null`).
-10. Вкладки независимы по полному path и имеют не более двух уровней.
+10. Вкладки независимы по полному path; data contract и helpers рекурсивны, а текущий builder UI создаёт не более двух отображаемых уровней.
 11. Server build — одна строка на `hero_id`; публикация атомарно переводит эту строку из draft в published.
 12. Устаревшие async-ответы не меняют выбранного героя и не показывают ложный успех.
 13. Admin-доступ требует `app_metadata.role === "admin"` одновременно на клиентской auth-границе и в Supabase RLS.
@@ -441,6 +445,7 @@ Backend success не должен жить дольше актуальной о�
 Поведение хука и валидации частично покрыто тестами:
 - [useDivinityBranchBuilder.test.ts](../src/features/admin/__tests__/useDivinityBranchBuilder.test.ts) — пустой драфт и сборка JSON (включая `progress` и `activeNodes`);
 - [validateBranchBuild.test.ts](../src/features/admin/__tests__/validateBranchBuild.test.ts) — валидация и `slugifyFileName`;
+- [heroBuildSetSchema.test.ts](../src/features/builds/model/__tests__/heroBuildSetSchema.test.ts) — версия и полная runtime-целостность загруженного комплекта;
 - [DivinityBranchBuilderScreen.test.tsx](../src/features/admin/__tests__/DivinityBranchBuilderScreen.test.tsx) — поведение экрана.
 - [heroBuildSetRepository.test.ts](../src/features/builds/api/__tests__/heroBuildSetRepository.test.ts) — draft/published запросы и явные lifecycle-операции;
 - [branchBuilderTabs.test.ts](../src/features/admin/__tests__/branchBuilderTabs.test.ts) — структура вкладок и path;

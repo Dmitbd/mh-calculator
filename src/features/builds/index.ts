@@ -12,6 +12,7 @@ export {
   fetchHeroBuildSetStatusIds,
   fetchPublishedHeroBuildSet,
   fetchPublishedHeroIds,
+  HeroBuildSetRepositoryError,
   loadPublishedHeroBuildSet,
   publishDraftHeroBuildSet,
   updatePublishedHeroBuildSet,
@@ -20,5 +21,7 @@ export type {
   HeroBuildSetStatus,
   HeroBuildSetStatusIds,
   HeroBuildSetSupabaseClient,
+  HeroBuildSetFallbackOutcome,
+  HeroBuildSetRepositoryErrorKind,
 } from "./api/heroBuildSetRepository";
 export type { BuildFolderTabItem } from "./types";

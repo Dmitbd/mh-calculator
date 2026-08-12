@@ -20,7 +20,6 @@ import {
   loadPublishedHeroBuildSet,
   updatePublishedHeroBuildSet,
   type HeroBuildSetStatusIds,
-  type HeroBuildSetSupabaseClient,
 } from "@/features/builds";
 import { getHeroBuildSet } from "@/features/game-data/heroes";
 import { resolveWeaponAwakeningBonuses } from "@/features/game-data/weapon-awakening";
@@ -271,7 +270,7 @@ export function DivinityBranchBuilderScreen({
 
     try {
       const ids = await fetchHeroBuildSetStatusIds(
-        client as unknown as HeroBuildSetSupabaseClient,
+        client,
       );
 
       if (requestId !== heroListRequestId.current) {
@@ -411,7 +410,7 @@ export function DivinityBranchBuilderScreen({
     }
 
     void loadPublishedHeroBuildSet({
-      client: client as unknown as HeroBuildSetSupabaseClient,
+      client,
       fallbackBuildSet,
       heroId: initialHeroId,
     })
@@ -628,7 +627,7 @@ export function DivinityBranchBuilderScreen({
     try {
       if (initialMode === "edit") {
         await updatePublishedHeroBuildSet(
-          client as unknown as HeroBuildSetSupabaseClient,
+          client,
           {
             buildSet: prepared.buildSet,
             heroId: selectedHeroId,
@@ -636,7 +635,7 @@ export function DivinityBranchBuilderScreen({
         );
       } else {
         await createOrUpdateDraftHeroBuildSet(
-          client as unknown as HeroBuildSetSupabaseClient,
+          client,
           {
             buildSet: prepared.buildSet,
             heroId: selectedHeroId,
@@ -779,7 +778,7 @@ export function DivinityBranchBuilderScreen({
     if (status === "draft") {
       try {
         await createOrUpdateDraftHeroBuildSet(
-          client as unknown as HeroBuildSetSupabaseClient,
+          client,
           { buildSet, heroId },
         );
         showBackendMessage("success", "Черновик сохранён.");
@@ -804,12 +803,12 @@ export function DivinityBranchBuilderScreen({
     try {
       if (initialMode === "edit") {
         await updatePublishedHeroBuildSet(
-          client as unknown as HeroBuildSetSupabaseClient,
+          client,
           { buildSet, heroId },
         );
       } else {
         const remoteBuildSet = await fetchPublishedHeroBuildSet(
-          client as unknown as HeroBuildSetSupabaseClient,
+          client,
           heroId,
         );
 
@@ -826,7 +825,7 @@ export function DivinityBranchBuilderScreen({
         }
         await publishAdminHeroBuildSet({
           buildSet,
-          client: client as unknown as HeroBuildSetSupabaseClient,
+          client,
           heroId,
         });
       }
@@ -912,7 +911,7 @@ export function DivinityBranchBuilderScreen({
 
     try {
       const buildSet = await loadPublishedHeroBuildSet({
-        client: client as unknown as HeroBuildSetSupabaseClient,
+        client,
         fallbackBuildSet: getHeroBuildSet(selectedHeroId),
         heroId: selectedHeroId,
       });
@@ -1110,7 +1109,7 @@ export function DivinityBranchBuilderScreen({
 
     try {
       const draft = await fetchDraftHeroBuildSet(
-        client as unknown as HeroBuildSetSupabaseClient,
+        client,
         heroId,
       );
 

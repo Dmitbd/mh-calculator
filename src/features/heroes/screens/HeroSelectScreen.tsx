@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   fetchPublishedHeroIds,
-  type HeroBuildSetSupabaseClient,
 } from "@/features/builds";
 import { heroes, heroesWithBuilds } from "@/features/game-data/heroes";
 import { HeroListCard } from "@/features/heroes/components/HeroListCard";
@@ -40,7 +39,7 @@ export function HeroSelectScreen() {
 
     setIsRemoteBuildsLoading(true);
     void fetchPublishedHeroIds(
-      client as unknown as HeroBuildSetSupabaseClient,
+      client,
     )
       .then((heroIds) => {
         if (isMounted) {

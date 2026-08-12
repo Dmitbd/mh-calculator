@@ -1,61 +1,57 @@
+import {
+  HeroBuildSetSchemaError,
+  parseHeroBuildSet,
+} from "@/features/builds/model/heroBuildSetSchema";
 import type { HeroBuildSet } from "@/features/game-data/heroes/types";
+import type { AppSupabaseClient } from "@/shared/lib/supabaseClient";
 
 export type HeroBuildSetStatus = "draft" | "published";
-
-type QueryResult<T> = {
-  data: T | null;
-  error: { message: string } | null;
-};
-
-type HeroBuildSetRow = {
-  payload: HeroBuildSet;
-};
-
-type HeroBuildSetHeroIdRow = {
-  hero_id: string;
-};
-
-type HeroBuildSetStatusRow = {
-  hero_id: string;
-  status: HeroBuildSetStatus;
-};
 
 export type HeroBuildSetStatusIds = {
   draftHeroIds: string[];
   publishedHeroIds: string[];
 };
 
-type SupabaseQuery = {
-  eq: (column: string, value: string) => SupabaseQuery;
-  maybeSingle: () => Promise<QueryResult<HeroBuildSetRow>>;
-  select: (columns: string) => SupabaseQuery;
-  then: Promise<QueryResult<unknown>>["then"];
-};
+export type HeroBuildSetSupabaseClient = Pick<
+  AppSupabaseClient,
+  "from" | "rpc"
+>;
 
-type HeroBuildSetWriteRpc =
-  | "create_or_update_draft_hero_build_set"
-  | "publish_hero_build_set"
-  | "update_published_hero_build_set";
+export type HeroBuildSetRepositoryErrorKind = "invalid-data" | "network";
 
-export type HeroBuildSetSupabaseClient = {
-  from: (table: "hero_build_sets") => SupabaseQuery;
-  rpc: (
-    functionName: HeroBuildSetWriteRpc,
-    params: { p_hero_id: string; p_payload: HeroBuildSet },
-  ) => Promise<QueryResult<unknown>>;
-};
+export class HeroBuildSetRepositoryError extends Error {
+  readonly cause: unknown;
+  readonly kind: HeroBuildSetRepositoryErrorKind;
+
+  constructor(
+    kind: HeroBuildSetRepositoryErrorKind,
+    message: string,
+    cause?: unknown,
+  ) {
+    super(message);
+    this.name = "HeroBuildSetRepositoryError";
+    this.kind = kind;
+    this.cause = cause;
+  }
+}
+
+export type HeroBuildSetFallbackOutcome =
+  | { kind: "not-configured" }
+  | { kind: "no-data" }
+  | {
+      error: HeroBuildSetRepositoryError;
+      kind: HeroBuildSetRepositoryErrorKind;
+    };
 
 export async function fetchHeroBuildSetStatusIds(
   client: HeroBuildSetSupabaseClient,
 ): Promise<HeroBuildSetStatusIds> {
-  const { data, error } = await (client
+  const { data, error } = await client
     .from("hero_build_sets")
-    .select("hero_id,status") as unknown as Promise<
-    QueryResult<HeroBuildSetStatusRow[]>
-  >);
+    .select("hero_id,status");
 
   if (error) {
-    throw new Error(error.message);
+    throw createNetworkError(error);
   }
 
   return (data ?? []).reduce<HeroBuildSetStatusIds>(
@@ -83,10 +79,10 @@ export async function fetchPublishedHeroBuildSet(
     .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw createNetworkError(error);
   }
 
-  return data?.payload ?? null;
+  return parseRowPayload(data?.payload, heroId);
 }
 
 export async function fetchDraftHeroBuildSet(
@@ -100,22 +96,23 @@ export async function fetchDraftHeroBuildSet(
     .eq("status", "draft")
     .maybeSingle();
 
-  if (error) throw new Error(error.message);
-  return data?.payload ?? null;
+  if (error) {
+    throw createNetworkError(error);
+  }
+
+  return parseRowPayload(data?.payload, heroId);
 }
 
 export async function fetchPublishedHeroIds(
   client: HeroBuildSetSupabaseClient,
 ): Promise<string[]> {
-  const { data, error } = await (client
+  const { data, error } = await client
     .from("hero_build_sets")
     .select("hero_id")
-    .eq("status", "published") as unknown as Promise<
-    QueryResult<HeroBuildSetHeroIdRow[]>
-  >);
+    .eq("status", "published");
 
   if (error) {
-    throw new Error(error.message);
+    throw createNetworkError(error);
   }
 
   return data?.map((row) => row.hero_id) ?? [];
@@ -138,7 +135,7 @@ export async function createOrUpdateDraftHeroBuildSet(
   );
 
   if (error) {
-    throw new Error(error.message);
+    throw createNetworkError(error);
   }
 }
 
@@ -153,7 +150,7 @@ export async function publishDraftHeroBuildSet(
   });
 
   if (error) {
-    throw new Error(error.message);
+    throw createNetworkError(error);
   }
 }
 
@@ -168,7 +165,7 @@ export async function updatePublishedHeroBuildSet(
   });
 
   if (error) {
-    throw new Error(error.message);
+    throw createNetworkError(error);
   }
 }
 
@@ -176,20 +173,67 @@ export async function loadPublishedHeroBuildSet(params: {
   client: HeroBuildSetSupabaseClient | null;
   fallbackBuildSet: HeroBuildSet | null;
   heroId: string;
+  onFallback?: (outcome: HeroBuildSetFallbackOutcome) => void;
 }): Promise<HeroBuildSet | null> {
-  const { client, fallbackBuildSet, heroId } = params;
+  const { client, fallbackBuildSet, heroId, onFallback } = params;
 
   if (!client) {
+    onFallback?.({ kind: "not-configured" });
     return fallbackBuildSet;
   }
 
-  let remoteBuildSet: HeroBuildSet | null = null;
+  let remoteBuildSet: HeroBuildSet | null;
 
   try {
     remoteBuildSet = await fetchPublishedHeroBuildSet(client, heroId);
-  } catch {
+  } catch (error) {
+    const repositoryError =
+      error instanceof HeroBuildSetRepositoryError
+        ? error
+        : createNetworkError(error);
+    onFallback?.({ error: repositoryError, kind: repositoryError.kind });
     return fallbackBuildSet;
   }
 
-  return remoteBuildSet ?? fallbackBuildSet;
+  if (!remoteBuildSet) {
+    onFallback?.({ kind: "no-data" });
+    return fallbackBuildSet;
+  }
+
+  return remoteBuildSet;
+}
+
+function parseRowPayload(
+  payload: unknown,
+  expectedHeroId: string,
+): HeroBuildSet | null {
+  if (payload === undefined) {
+    return null;
+  }
+
+  try {
+    return parseHeroBuildSet(payload, expectedHeroId);
+  } catch (error) {
+    if (error instanceof HeroBuildSetSchemaError) {
+      throw new HeroBuildSetRepositoryError(
+        "invalid-data",
+        error.message,
+        error,
+      );
+    }
+
+    throw error;
+  }
+}
+
+function createNetworkError(error: unknown): HeroBuildSetRepositoryError {
+  const message =
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string"
+      ? error.message
+      : "Supabase request failed";
+
+  return new HeroBuildSetRepositoryError("network", message, error);
 }

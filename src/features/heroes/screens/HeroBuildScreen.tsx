@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   loadPublishedHeroBuildSet,
-  type HeroBuildSetSupabaseClient,
 } from "@/features/builds";
 import {
   getCurrentAdminSession,
@@ -84,7 +83,7 @@ export function HeroBuildScreen({
 
     setIsBuildLoading(true);
     void loadPublishedHeroBuildSet({
-      client: client as unknown as HeroBuildSetSupabaseClient,
+      client,
       fallbackBuildSet,
       heroId,
     }).then((loadedBuildSet) => {
