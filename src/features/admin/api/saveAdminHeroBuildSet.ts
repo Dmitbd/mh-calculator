@@ -1,6 +1,6 @@
 import {
+  deleteDraftHeroBuildSet,
   saveHeroBuildSet,
-  type HeroBuildSetStatus,
   type HeroBuildSetSupabaseClient,
 } from "@/features/builds";
 import type { HeroBuildSet } from "@/features/game-data/heroes/types";
@@ -11,20 +11,30 @@ export function hasCreatePublicationConflict(
   return publishedBuildSet !== null;
 }
 
-export async function saveAdminHeroBuildSet(params: {
+export type PublishAdminHeroBuildSetResult = {
+  draftCleanupError: Error | null;
+};
+
+export async function publishAdminHeroBuildSet(params: {
   buildSet: HeroBuildSet;
   client: HeroBuildSetSupabaseClient;
   heroId: string;
-  refreshPublishedHeroIds: () => Promise<void>;
-  status: HeroBuildSetStatus;
-}): Promise<void> {
+}): Promise<PublishAdminHeroBuildSetResult> {
   await saveHeroBuildSet(params.client, {
     buildSet: params.buildSet,
     heroId: params.heroId,
-    status: params.status,
+    status: "published",
   });
 
-  if (params.status === "published") {
-    await params.refreshPublishedHeroIds();
+  try {
+    await deleteDraftHeroBuildSet(params.client, params.heroId);
+    return { draftCleanupError: null };
+  } catch (error) {
+    return {
+      draftCleanupError:
+        error instanceof Error
+          ? error
+          : new Error("Не удалось удалить черновик."),
+    };
   }
 }

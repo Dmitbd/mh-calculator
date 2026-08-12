@@ -19,7 +19,6 @@ import {
   fetchPublishedHeroBuildSet,
   loadPublishedHeroBuildSet,
   saveHeroBuildSet,
-  type HeroBuildSetStatus,
   type HeroBuildSetStatusIds,
   type HeroBuildSetSupabaseClient,
 } from "@/features/builds";
@@ -69,7 +68,7 @@ import {
 } from "../api/adminAuthRepository";
 import {
   hasCreatePublicationConflict,
-  saveAdminHeroBuildSet,
+  publishAdminHeroBuildSet,
 } from "../api/saveAdminHeroBuildSet";
 
 const SCREEN_PADDING = 20;
@@ -115,6 +114,8 @@ export function DivinityBranchBuilderScreen({
   const heroListRequestId = useRef(0);
   const tabSaveInFlight = useRef(false);
   const tabSaveRequestId = useRef(0);
+  const publishInFlight = useRef(false);
+  const publishRequestId = useRef(0);
   const isScreenMounted = useRef(true);
   const {
     addArtifact,
@@ -183,6 +184,12 @@ export function DivinityBranchBuilderScreen({
     setIsTabSavePending(false);
   }, []);
 
+  const resetPublish = useCallback(() => {
+    publishRequestId.current += 1;
+    publishInFlight.current = false;
+    setIsPublishPending(false);
+  }, []);
+
   useEffect(() => {
     isScreenMounted.current = true;
 
@@ -192,6 +199,8 @@ export function DivinityBranchBuilderScreen({
       draftLoadInFlight.current = false;
       tabSaveRequestId.current += 1;
       tabSaveInFlight.current = false;
+      publishRequestId.current += 1;
+      publishInFlight.current = false;
     };
   }, []);
 
@@ -534,7 +543,7 @@ export function DivinityBranchBuilderScreen({
   };
 
   const handleSaveCurrentTargetBuild = async () => {
-    if (tabSaveInFlight.current || isPublishPending) {
+    if (tabSaveInFlight.current || publishInFlight.current) {
       return;
     }
 
@@ -637,8 +646,8 @@ export function DivinityBranchBuilderScreen({
     }
   };
 
-  const saveFullBuildSetToBackend = async (status: HeroBuildSetStatus) => {
-    if (tabSaveInFlight.current) {
+  const saveFullBuildSetToBackend = async (status: "draft" | "published") => {
+    if (tabSaveInFlight.current || publishInFlight.current) {
       return;
     }
 
@@ -676,14 +685,41 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
-    setIsPublishPending(status === "published");
+    if (status === "draft") {
+      try {
+        await saveHeroBuildSet(
+          client as unknown as HeroBuildSetSupabaseClient,
+          { buildSet, heroId, status },
+        );
+        showBackendMessage("success", "Черновик сохранён.");
+      } catch (error) {
+        showBackendMessage(
+          "error",
+          error instanceof Error
+            ? `Ошибка Supabase: ${error.message}`
+            : "Ошибка Supabase.",
+        );
+      }
+      return;
+    }
+
+    publishInFlight.current = true;
+    const requestId = publishRequestId.current + 1;
+    publishRequestId.current = requestId;
+    setIsPublishPending(true);
+    const isCurrentRequest = () =>
+      isScreenMounted.current && requestId === publishRequestId.current;
 
     try {
-      if (status === "published" && initialMode !== "edit") {
+      if (initialMode !== "edit") {
         const remoteBuildSet = await fetchPublishedHeroBuildSet(
           client as unknown as HeroBuildSetSupabaseClient,
           heroId,
         );
+
+        if (!isCurrentRequest()) {
+          return;
+        }
 
         if (hasCreatePublicationConflict(remoteBuildSet)) {
           showBackendMessage(
@@ -694,18 +730,36 @@ export function DivinityBranchBuilderScreen({
         }
       }
 
-      await saveAdminHeroBuildSet({
+      const { draftCleanupError } = await publishAdminHeroBuildSet({
         buildSet,
         client: client as unknown as HeroBuildSetSupabaseClient,
         heroId,
-        refreshPublishedHeroIds: loadHeroStatusIds,
-        status,
       });
-      showBackendMessage(
-        "success",
-        status === "published" ? "Билд опубликован." : "Черновик сохранён.",
-      );
+
+      if (!isCurrentRequest()) {
+        return;
+      }
+
+      await loadHeroStatusIds();
+
+      if (!isCurrentRequest()) {
+        return;
+      }
+
+      if (draftCleanupError) {
+        showBackendMessage(
+          "error",
+          `Билд опубликован, но черновик удалить не удалось: ${draftCleanupError.message}`,
+        );
+        return;
+      }
+
+      showBackendMessage("success", "Билд опубликован.");
     } catch (error) {
+      if (!isCurrentRequest()) {
+        return;
+      }
+
       showBackendMessage(
         "error",
         error instanceof Error
@@ -713,7 +767,8 @@ export function DivinityBranchBuilderScreen({
           : "Ошибка Supabase.",
       );
     } finally {
-      if (status === "published") {
+      if (isCurrentRequest()) {
+        publishInFlight.current = false;
         setIsPublishPending(false);
       }
     }
@@ -826,6 +881,7 @@ export function DivinityBranchBuilderScreen({
     setToast(null);
     resetDraftLoad();
     resetTabSave();
+    resetPublish();
 
     const client = getSupabaseClient();
 

@@ -22,6 +22,7 @@ const mockFetchHeroBuildSetStatusIds = jest.fn<
 const mockFetchDraftHeroBuildSet = jest.fn();
 const mockLoadPublishedHeroBuildSet = jest.fn();
 const mockSaveHeroBuildSet = jest.fn();
+const mockDeleteDraftHeroBuildSet = jest.fn();
 const mockHeroBuilderSectionProps = jest.fn<void, [Record<string, unknown>]>();
 const mockSignInAdmin = jest.fn();
 const mockSignOutAdmin = jest.fn();
@@ -56,6 +57,8 @@ jest.mock("@/features/builds", () => {
 
   return {
     ...actual,
+    deleteDraftHeroBuildSet: (...args: unknown[]) =>
+      mockDeleteDraftHeroBuildSet(...args),
     fetchDraftHeroBuildSet: (...args: unknown[]) =>
       mockFetchDraftHeroBuildSet(...args),
     fetchHeroBuildSetStatusIds: () => mockFetchHeroBuildSetStatusIds(),
@@ -111,6 +114,8 @@ describe("DivinityBranchBuilderScreen", () => {
     mockLoadPublishedHeroBuildSet.mockResolvedValue(getValidBastetBuildSet());
     mockSaveHeroBuildSet.mockReset();
     mockSaveHeroBuildSet.mockResolvedValue(undefined);
+    mockDeleteDraftHeroBuildSet.mockReset();
+    mockDeleteDraftHeroBuildSet.mockResolvedValue(undefined);
     mockHeroBuilderSectionProps.mockReset();
     mockSignInAdmin.mockReset();
     mockSignOutAdmin.mockReset();
@@ -218,6 +223,15 @@ describe("DivinityBranchBuilderScreen", () => {
     fireEvent.press(screen.getByText("Опубликовать"));
 
     await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1));
+    expect(mockSaveHeroBuildSet).toHaveBeenCalledWith(expect.anything(), {
+      buildSet: expect.anything(),
+      heroId: "bastet",
+      status: "published",
+    });
+    expect(mockDeleteDraftHeroBuildSet).toHaveBeenCalledWith(
+      expect.anything(),
+      "bastet",
+    );
     await waitFor(() =>
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
     );
@@ -261,7 +275,109 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(
       await screen.findAllByText("Ошибка Supabase: publication failed"),
     ).not.toHaveLength(0);
+    expect(mockDeleteDraftHeroBuildSet).not.toHaveBeenCalled();
     expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports cleanup failure after publication and keeps the published hero excluded", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockDeleteDraftHeroBuildSet.mockRejectedValue(new Error("cleanup failed"));
+    mockFetchHeroBuildSetStatusIds
+      .mockResolvedValueOnce({ draftHeroIds: ["bastet"], publishedHeroIds: [] })
+      .mockResolvedValueOnce({
+        draftHeroIds: ["bastet"],
+        publishedHeroIds: ["bastet"],
+      });
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByText("Опубликовать"));
+
+    expect(
+      await screen.findAllByText(
+        "Билд опубликован, но черновик удалить не удалось: cleanup failed",
+      ),
+    ).not.toHaveLength(0);
+    expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2);
+    const calls = mockHeroBuilderSectionProps.mock.calls;
+    const lastProps = calls[calls.length - 1][0];
+    expect(lastProps.notCreatedHeroes).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "bastet" })]),
+    );
+    expect(lastProps.notPublishedHeroes).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "bastet" })]),
+    );
+  });
+
+  it("keeps the publication outcome when the catalog refresh fails", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds
+      .mockResolvedValueOnce({ draftHeroIds: ["bastet"], publishedHeroIds: [] })
+      .mockRejectedValueOnce(new Error("refresh failed"));
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByText("Опубликовать"));
+
+    expect(
+      await screen.findAllByText("Билд опубликован."),
+    ).not.toHaveLength(0);
+    expect(
+      screen.getByText("Не удалось загрузить список опубликованных гайдов"),
+    ).toBeTruthy();
+    expect(screen.getByText("Повторить")).toBeTruthy();
+  });
+
+  it("blocks duplicate publication and tab saving while publication is pending", async () => {
+    let resolvePublish!: () => void;
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockSaveHeroBuildSet.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolvePublish = resolve;
+      }),
+    );
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    const publishButton = screen.getByText("Опубликовать");
+    act(() => {
+      fireEvent.press(publishButton);
+      fireEvent.press(publishButton);
+      fireEvent.press(screen.getByText("Сохранить вкладку"));
+    });
+
+    expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1);
+    expect(mockSaveHeroBuildSet).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ status: "published" }),
+    );
+    expect(mockDeleteDraftHeroBuildSet).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolvePublish();
+    });
   });
 
   it("does not start a publication catalog refresh after unmount", async () => {
@@ -299,11 +415,97 @@ describe("DivinityBranchBuilderScreen", () => {
         resolveSave();
       });
 
+      expect(mockDeleteDraftHeroBuildSet).toHaveBeenCalledWith(
+        expect.anything(),
+        "bastet",
+      );
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
       expect(consoleError).not.toHaveBeenCalled();
     } finally {
       consoleError.mockRestore();
     }
+  });
+
+  it("does not start a catalog refresh or write screen state after cleanup resolves post-unmount", async () => {
+    let resolveCleanup!: () => void;
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockDeleteDraftHeroBuildSet.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveCleanup = resolve;
+      }),
+    );
+
+    const view = render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
+    );
+    fireEvent.press(screen.getByText("Опубликовать"));
+    await waitFor(() =>
+      expect(mockDeleteDraftHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
+
+    const consoleError = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    view.unmount();
+
+    try {
+      await act(async () => {
+        resolveCleanup();
+      });
+
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("does not show a publication result after logout during catalog refresh", async () => {
+    let resolveRefresh!: (ids: HeroBuildSetStatusIds) => void;
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds
+      .mockResolvedValueOnce({ draftHeroIds: [], publishedHeroIds: [] })
+      .mockImplementationOnce(
+        () =>
+          new Promise<HeroBuildSetStatusIds>((resolve) => {
+            resolveRefresh = resolve;
+          }),
+      );
+    mockSignOutAdmin.mockResolvedValue(undefined);
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByText("Опубликовать"));
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
+    );
+    fireEvent.press(screen.getByText("Выйти"));
+    await screen.findByPlaceholderText("Email");
+
+    await act(async () => {
+      resolveRefresh({ draftHeroIds: [], publishedHeroIds: ["bastet"] });
+    });
+
+    expect(screen.getByText("Выход выполнен.")).toBeTruthy();
+    expect(screen.queryByText("Билд опубликован.")).toBeNull();
   });
 
   it("ignores an older published-id response after a newer refresh", async () => {

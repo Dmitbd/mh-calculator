@@ -1,68 +1,66 @@
 import type { HeroBuildSet } from "@/features/game-data/heroes/types";
 import { getHeroBuildSet } from "@/features/game-data/heroes";
 
-import { saveHeroBuildSet } from "@/features/builds";
+import { deleteDraftHeroBuildSet, saveHeroBuildSet } from "@/features/builds";
 import {
   hasCreatePublicationConflict,
-  saveAdminHeroBuildSet,
+  publishAdminHeroBuildSet,
 } from "../api/saveAdminHeroBuildSet";
 
 jest.mock("@/features/builds", () => ({
+  deleteDraftHeroBuildSet: jest.fn(),
   saveHeroBuildSet: jest.fn(),
 }));
 
 const mockedSave = jest.mocked(saveHeroBuildSet);
+const mockedDeleteDraft = jest.mocked(deleteDraftHeroBuildSet);
 const buildSet: HeroBuildSet = { schemaVersion: 2, tabs: [] };
 const client = { from: jest.fn() } as never;
 
-beforeEach(() => mockedSave.mockReset());
-
-it("refreshes published ids after a successful publication", async () => {
-  const refreshPublishedHeroIds = jest.fn(async () => undefined);
-  mockedSave.mockResolvedValue(undefined);
-
-  await saveAdminHeroBuildSet({
-    buildSet,
-    client,
-    heroId: "bastet",
-    refreshPublishedHeroIds,
-    status: "published",
-  });
-
-  expect(mockedSave).toHaveBeenCalledTimes(1);
-  expect(refreshPublishedHeroIds).toHaveBeenCalledTimes(1);
+beforeEach(() => {
+  mockedSave.mockReset();
+  mockedDeleteDraft.mockReset();
 });
 
-it("does not refresh after a failed publication", async () => {
-  const refreshPublishedHeroIds = jest.fn(async () => undefined);
-  mockedSave.mockRejectedValue(new Error("save failed"));
+it("publishes before deleting the matching draft", async () => {
+  const events: string[] = [];
+  mockedSave.mockImplementation(async () => {
+    events.push("published");
+  });
+  mockedDeleteDraft.mockImplementation(async () => {
+    events.push("draft-deleted");
+  });
 
   await expect(
-    saveAdminHeroBuildSet({
-      buildSet,
-      client,
-      heroId: "bastet",
-      refreshPublishedHeroIds,
-      status: "published",
-    }),
-  ).rejects.toThrow("save failed");
+    publishAdminHeroBuildSet({ buildSet, client, heroId: "bastet" }),
+  ).resolves.toEqual({ draftCleanupError: null });
 
-  expect(refreshPublishedHeroIds).not.toHaveBeenCalled();
+  expect(events).toEqual(["published", "draft-deleted"]);
+  expect(mockedSave).toHaveBeenCalledWith(client, {
+    buildSet,
+    heroId: "bastet",
+    status: "published",
+  });
+  expect(mockedDeleteDraft).toHaveBeenCalledWith(client, "bastet");
 });
 
-it("does not refresh after saving a draft", async () => {
-  const refreshPublishedHeroIds = jest.fn(async () => undefined);
+it("preserves the draft when publication fails", async () => {
+  mockedSave.mockRejectedValue(new Error("publish failed"));
+
+  await expect(
+    publishAdminHeroBuildSet({ buildSet, client, heroId: "bastet" }),
+  ).rejects.toThrow("publish failed");
+
+  expect(mockedDeleteDraft).not.toHaveBeenCalled();
+});
+
+it("returns a cleanup error after a successful publication", async () => {
   mockedSave.mockResolvedValue(undefined);
+  mockedDeleteDraft.mockRejectedValue(new Error("cleanup failed"));
 
-  await saveAdminHeroBuildSet({
-    buildSet,
-    client,
-    heroId: "bastet",
-    refreshPublishedHeroIds,
-    status: "draft",
-  });
-
-  expect(refreshPublishedHeroIds).not.toHaveBeenCalled();
+  await expect(
+    publishAdminHeroBuildSet({ buildSet, client, heroId: "bastet" }),
+  ).resolves.toEqual({ draftCleanupError: new Error("cleanup failed") });
 });
 
 it("does not treat a local-only build as a create publication conflict", () => {
