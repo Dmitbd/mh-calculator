@@ -33,16 +33,18 @@ const result: AntiqueRivalryResult = {
   },
 };
 
-test("shows the five summary values without recalculating them", () => {
+test("shows only the rivalry calculator heading", () => {
   render(<AntiqueSummary result={result} />);
 
-  expect(screen.getByLabelText("Итоговые очки: 3600")).toBeTruthy();
-  expect(screen.getByLabelText("Исходные очки: 2850")).toBeTruthy();
-  expect(screen.getByLabelText("Осталось очков: 8400")).toBeTruthy();
-  expect(screen.getByLabelText("Открыто узлов: 4 из 16")).toBeTruthy();
   expect(
-    screen.getByLabelText("Открыто крупных сундуков: 1 из 4"),
+    screen.getByText("Калькулятор соперничества за антиквариат"),
   ).toBeTruthy();
+  expect(screen.queryByText("Прогресс соперничества")).toBeNull();
+  expect(screen.queryByText("Итоговые очки")).toBeNull();
+  expect(screen.queryByText("Исходные очки")).toBeNull();
+  expect(screen.queryByText("До 12 000")).toBeNull();
+  expect(screen.queryByText("Узлы")).toBeNull();
+  expect(screen.queryByText("Крупные сундуки")).toBeNull();
 });
 
 test("forwards raw coin input and linked conversion actions", () => {
@@ -68,7 +70,8 @@ test("forwards raw coin input and linked conversion actions", () => {
   fireEvent.changeText(input, "12abc");
   expect(onChangeCoins).toHaveBeenCalledWith("12abc");
 
-  expect(screen.getByText("Неиспользовано монет: 499")).toBeTruthy();
+  expect(screen.getByText("Обменять монеты на карты")).toBeTruthy();
+  expect(screen.queryByText(/Неиспользовано монет:/)).toBeNull();
   expect(screen.getByLabelText("Карт гробницы: 20")).toBeTruthy();
   expect(screen.getByLabelText("Карт храма: 0")).toBeTruthy();
 
