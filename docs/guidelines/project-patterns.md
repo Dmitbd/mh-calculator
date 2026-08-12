@@ -20,7 +20,7 @@
 - User-facing build lists MUST use build-ready collections such as `heroesWithBuilds`.
 - Hero and build lookup MUST use stable ids such as `heroId`.
 - Display labels MUST NOT be used as source-of-truth identifiers for hero or build relationships.
-- Hero catalog rules MUST preserve behavior documented in the hero catalog and hero builder specs.
+- Hero catalog and viewer rules MUST preserve behavior documented in `docs/hero-builds-spec.md`.
 
 ## Builder Draft Validation Export
 
@@ -30,6 +30,7 @@
 - Exported JSON MUST use stable ids instead of display labels as source-of-truth fields.
 - Admin builder code MAY depend on game-data and admin-specific controls.
 - Builder export behavior MUST preserve the existing approved JSON contract unless a spec changes it.
+- The complete admin builder workflow MUST preserve `docs/divinity-branch-builder-spec.md`.
 
 ## Build Presentation
 
@@ -54,6 +55,13 @@
 - `src/features/divinity/ui` is currently an allowed local convention for divinity presentation components.
 - Do not introduce new `ui` folders without updating architecture guidelines and boundary tests.
 - Divinity calculator behavior MUST preserve the product rules in `docs/divinity-screen-spec.md`.
+
+## Antique Calculator
+
+- Antique inputs MUST be normalized before calculation and persistence.
+- Cascading rewards MUST be calculated sequentially from the local reward catalog.
+- Verified and unresolved game resource metadata MUST remain distinct.
+- Antique behavior MUST preserve `docs/antique-rivalry-spec.md`.
 
 ## Admin Boundaries
 

@@ -81,8 +81,12 @@ Current violations are refactor targets, not patterns to copy.
 
 ## Documentation Rules
 
-- `docs/` MUST store product behavior specs, implementation plans, guidelines, and other project documentation.
-- Product behavior specs in `docs/` MUST continue to govern user-facing behavior.
+- `docs/` MUST store permanent capability-level product specs, the capability catalog, changelog, guidelines, and other durable project documentation.
+- Product behavior specs in `docs/*-spec.md` MUST continue to govern user-facing behavior.
+- A tab, mode, field, filter, or isolated task MUST update its parent capability spec instead of creating another permanent spec.
+- `docs/README.md` MUST list every standalone application capability and link to its spec.
+- User-visible changes MUST update `docs/CHANGELOG.md#unreleased` in the same change.
+- `docs/superpowers/`, `.superpowers/`, brainstorming notes, and implementation plans MUST remain local and MUST NOT be tracked.
 - Guidelines MUST govern placement, import boundaries, style, and repeatable project patterns.
 - Current architecture violations MUST be documented as refactor targets before they are copied into new work.
 

@@ -19,27 +19,27 @@
 - вертикальную линию-«ветку» по каждому столбцу и горизонтальные соединители на уровнях ветвления ствола;
 - сборку и валидацию JSON-выгрузки, включая прогресс и список активных нод.
 
-Билдер дерева НЕ реализует:
+Билдер НЕ реализует:
 - ручной текстовый ввод значений нод;
 - редактирование самой структуры дерева из UI (структура задаётся данными);
 - расчёт суммарных бонусов/ресурсов по выбранным нодам;
-- серверную синхронизацию или несколько профилей.
+- offline-only сохранение без Supabase или несколько пользовательских профилей одного героя.
 
-Экран `Divinity Branch Builder` дополнительно содержит соседние секции, которые НЕ входят в этот документ:
+Экран `Divinity Branch Builder` также содержит соседние секции:
 - режим игры PvP/PvE ([GameModeRadio](../src/features/admin/components/GameModeRadio.tsx));
-- пробуждение оружия ([WeaponAwakeningPicker](../src/features/admin/components/WeaponAwakeningPicker.tsx)).
+- пробуждение оружия ([WeaponAwakeningPicker](../src/features/builds/components/WeaponAwakeningPicker.tsx)).
 
-Эти секции живут в том же экране и в той же JSON-выгрузке, но описываются отдельно.
+Эти секции живут в том же экране и в той же JSON-выгрузке. Данный файл является постоянным spec всего билдера, поэтому их общий контракт, серверные черновики, оборудование и публикация зафиксированы ниже.
 
 ## Source Files
 
 Логика билдера дерева распределена так:
 - [app/admin/branch-builder.tsx](../app/admin/branch-builder.tsx) — маршрут
 - [src/features/admin/screens/DivinityBranchBuilderScreen.tsx](../src/features/admin/screens/DivinityBranchBuilderScreen.tsx) — экран, сборка секций
-- [src/features/admin/components/BranchBuilderGrid.tsx](../src/features/admin/components/BranchBuilderGrid.tsx) — сетка, заголовки-селекторы веток, линии дерева
-- [src/features/admin/components/BranchNodeCard.tsx](../src/features/admin/components/BranchNodeCard.tsx) — `MinorStatCard` и `MajorNodeCard`
-- [src/features/admin/components/MajorSkillPicker.tsx](../src/features/admin/components/MajorSkillPicker.tsx) — список выбора скилла
-- [src/features/admin/components/IconPreview.tsx](../src/features/admin/components/IconPreview.tsx) — иконка или пунктирный плейсхолдер
+- [src/features/builds/components/BranchBuilderGrid.tsx](../src/features/builds/components/BranchBuilderGrid.tsx) — сетка, заголовки-селекторы веток, линии дерева
+- [src/features/builds/components/BranchNodeCard.tsx](../src/features/builds/components/BranchNodeCard.tsx) — `MinorStatCard` и `MajorNodeCard`
+- [src/features/builds/components/MajorSkillPicker.tsx](../src/features/builds/components/MajorSkillPicker.tsx) — список выбора скилла
+- [src/shared/ui/IconPreview.tsx](../src/shared/ui/IconPreview.tsx) — иконка или пунктирный плейсхолдер
 - [src/features/admin/hooks/useDivinityBranchBuilder.ts](../src/features/admin/hooks/useDivinityBranchBuilder.ts) — состояние и экспорт
 - [src/features/admin/utils/validateBranchBuild.ts](../src/features/admin/utils/validateBranchBuild.ts) — валидация
 - [src/features/admin/types/admin.types.ts](../src/features/admin/types/admin.types.ts) — типы
@@ -236,6 +236,9 @@ type ActiveBranchNode = {
 ## JSON Export
 
 `buildExport` (в `useDivinityBranchBuilder`) формирует выгрузку и возвращает `null`, если сборка неполная:
+- path вкладки не определяет режим игры, ИЛИ
+- не выбран герой из мастер-каталога, ИЛИ
+- нет хотя бы одного артефакта или одной руны, ИЛИ
 - выбраны не все три ветки, ИЛИ
 - заполнены не все мажорные слоты (`majorNodes.length !== число majorSkill-нод`), ИЛИ
 - выбраны не все слоты пробуждения оружия.
@@ -243,25 +246,36 @@ type ActiveBranchNode = {
 Форма выгрузки (поля, относящиеся к дереву, выделены):
 
 ```ts
-type DivinityBranchBuildExport = {
+type DivinityBranchBuilderExport = {
   schemaVersion: 1;
-  gameMode: "pvp" | "pve";          // соседняя секция
+  gameMode: "pvp" | "pve";
+  heroId: string;
   heroName: string;
-  columns: Record<BranchColumnId, DivinityBranchId>;        // дерево: выбранные ветки
-  majorNodes: {                                             // дерево: выбранные мажорные ноды
+  targetTabPath: string[];
+  columns: Record<BranchColumnId, DivinityBranchId>;
+  majorNodes: {
     level: number;
     columnId: BranchColumnId;
     branchId: DivinityBranchId;
     skillId: string;
   }[];
-  weaponAwakening: { slot: number; colorId: string }[];     // соседняя секция
-  progress: BranchProgressLevels;                           // дерево: прогресс по столбцам
-  activeNodes: { columnId: BranchColumnId; level: number }[]; // дерево: все активные ноды
+  divinitySkills?: {
+    base: string[];
+    awakened?: string[];
+  };
+  weaponAwakening: { slot: number; colorId: string }[];
+  equipment: {
+    artifactIds: string[];
+    runeIds: string[];
+  };
+  progress: BranchProgressLevels;
+  activeNodes: { columnId: BranchColumnId; level: number }[];
   metadata: { createdAt: string; source: "manual-branch-builder" };
 };
 ```
 
 Важно:
+- standalone-выгрузка билдера содержит `targetTabPath`; после размещения в `HeroBuildSet` committed leaf хранит вложенный `DivinityBranchBuildExport` без этого поля;
 - `progress` и `activeNodes` сохраняются в JSON, но НЕ участвуют в валидации;
 - `activeNodes` — производное от `progress` (все ноды столбца с `level <= progress`).
 
@@ -295,6 +309,92 @@ type DivinityBranchBuildExport = {
 - иконки у обычных статов (кроме `Divinity skill level` и `Enhance limit`);
 - буква-плейсхолдер вместо пунктирного круга при отсутствии иконки.
 
+## Complete Builder Workflow
+
+`/admin/branch-builder` — единая функция создания и сопровождения комплекта билдов героя. Помимо дерева, экран включает:
+
+- admin-аутентификацию;
+- выбор целевого героя и режима создания/редактирования;
+- верхнеуровневые и вложенные папки вкладок;
+- режим игры;
+- варианты артефактов и рун;
+- пробуждение оружия и вычисленные бонусы;
+- base/awakened loadout скиллов божественности;
+- локальное сохранение валидной вкладки в комплект;
+- загрузку, серверный черновик, публикацию, удаление и полный JSON-экспорт.
+
+Новые секции этого экрана дописываются сюда и не получают отдельный постоянный spec.
+
+## Authentication And Backend Boundary
+
+Пока auth-проверка не завершена, backend-действия не должны ошибочно считаться доступными. Без admin-сессии экран может показывать локальный билдер, но серверные save/load/publish/delete защищены существующим Supabase boundary.
+
+`AdminAuthPanel` поддерживает вход и выход, состояния pending и видимые success/error toast. Если Supabase не настроен, серверное действие завершается контролируемым `Supabase не настроен.`, а не падением.
+
+## Hero States And Selector
+
+Supabase возвращает ID отдельно по статусам `draft` и `published`. Селектор делит мастер-каталог на взаимоисключающие группы:
+
+- `Не созданы` — нет ни draft, ни published строки;
+- `Не опубликованы` — существует draft, но нет published строки;
+- опубликованные герои доступны для редактирования опубликованного билда.
+
+Опубликованный герой не должен одновременно оставаться в `Не опубликованы`. Загрузка каталога имеет request identity: поздний ответ закрытого или устаревшего запроса не обновляет экран. Во время загрузки селектор остаётся управляемым, показывает loading, ошибки и повторную попытку.
+
+## Tabs And Local Drafts
+
+Тип и helpers комплекта рекурсивно поддерживают группы вкладок, но текущий UI билдера создаёт и показывает только корневой уровень и один уровень дочерних leaf-вкладок. Каждому leaf соответствует независимый editable draft, индексируемый полным path. Переключение вкладки не переносит значения соседнего leaf.
+
+`Сохранить вкладку`:
+
+1. валидирует только текущий leaf;
+2. собирает partial `HeroBuildSet` с текущей вкладкой и устойчивыми `heroId`, path и build contract;
+3. upsert-ит этот комплект в Supabase как `status: "draft"`;
+4. только после успешного server save фиксирует подготовленный snapshot в локальном собираемом комплекте и обновляет status-каталог;
+5. не публикует данные: `published`-строка меняется только отдельным действием публикации.
+
+Повторное сохранение блокируется, пока запрос текущей вкладки не завершён. Устаревший ответ после смены героя/вкладки или закрытия экрана не должен применить snapshot или показать ложный success. Ошибка Supabase сохраняет текущие поля редактирования и показывает backend error, но не выдаёт вкладку за сохранённую.
+
+Полный export собирается только из сохранённых leaf-вкладок. Пустые группы и незавершённые drafts не должны маскироваться как готовый комплект.
+
+## Equipment And Weapon Awakening
+
+- Артефакты и руны хранятся отдельными массивами стабильных IDs; они не образуют пары.
+- Варианты принадлежат текущей вкладке, сохраняют порядок добавления и экспортируются как `equipment.artifactIds` и `equipment.runeIds`.
+- В каждом массиве нужен хотя бы один вариант; неизвестный или повторный ID блокирует сохранение и export.
+- Добавление исключает уже выбранные элементы, удаление одного варианта не меняет второй тип экипировки.
+- Пробуждение оружия хранит selections по слотам; бонусы вычисляются из каталога и класса выбранного героя по порогам и правилам из [Hero Builds Spec](hero-builds-spec.md#weapon-awakening).
+- Экспорт содержит исходные selections, а не только отображаемый текст бонуса.
+
+## Divinity Skill Loadout
+
+Base и awakened slots редактируются отдельно. Awakened-набор применяется только при включённом состоянии. Дубликаты и несовместимые уровни/ветки блокируются валидацией. Скилл дерева и скилл loadout используют общие стабильные IDs каталога, но являются разными частями build contract.
+
+## Server Drafts And Publication
+
+Таблица `hero_build_sets` различает строки `status: "draft" | "published"` по одному `hero_id`.
+
+- `Сохранить черновик` валидирует полный текущий комплект и upsert-ит status `draft`.
+- Выбор героя из `Не опубликованы` загружает только его draft через `fetchDraftHeroBuildSet` и восстанавливает редактируемые вкладки.
+- Повторная загрузка блокируется, пока предыдущая draft-load операция не завершена.
+- Устаревший ответ после выбора другого героя или закрытия селектора не должен менять текущий draft или показывать ложный успех.
+- `Опубликовать` сначала сохраняет status `published`, затем удаляет draft этого героя.
+- Если публикация успешна, а cleanup draft не удался, published-состояние сохраняется и пользователь получает отдельное предупреждение; нельзя сообщать, что публикация провалилась полностью.
+- После успешной публикации status-каталог обновляется: герой удаляется из draft IDs и добавляется в published IDs.
+- `Удалить билд` удаляет серверные данные через подтверждённый backend flow; pending защищает от повторного запуска.
+
+## Validation And Feedback
+
+Валидация остаётся чистой и возвращает errors с путями. Экран:
+
+- группирует ошибки по секциям;
+- показывает не более пяти уникальных сообщений в toast и число скрытых;
+- прокручивает к первой проблемной секции;
+- очищает относящиеся к полю ошибки после исправления;
+- блокирует export/save/publish неполного комплекта.
+
+Backend success не должен жить дольше актуальной операции или выбранного героя. Loading, error, empty и retry состояния являются частью контракта, а не временным служебным UI.
+
 ## Porting Rules
 
 При переносе на другой стек нельзя терять инварианты:
@@ -308,6 +408,9 @@ type DivinityBranchBuildExport = {
 7. Вертикальная линия идёт только от первой до последней ноды столбца.
 8. Горизонтальные соединители только на уровнях, где у `isMain`-колонки стоит мажорная нода.
 9. JSON содержит `columns`, `majorNodes`, `progress`, `activeNodes`; экспорт неполной сборки запрещён (`null`).
+10. Вкладки независимы по полному path и имеют не более двух уровней.
+11. Server draft и published build — разные status-строки; публикация удаляет draft только после успешного published-save.
+12. Устаревшие async-ответы не меняют выбранного героя и не показывают ложный успех.
 
 ## Change Guardrails
 
@@ -320,6 +423,11 @@ type DivinityBranchBuildExport = {
 - удалять `progress`/`activeNodes` из JSON;
 - возвращать иконки всем статам или букву-плейсхолдер вместо пунктирного круга;
 - класть ассеты в `public/assets/...` (конфликт с маршрутом `/assets` дев-сервера) — иконки лежат в `public/img/...`.
+- считать сохранение одной вкладки публикацией полного комплекта;
+- смешивать героев со статусами draft и published в одной группе селектора;
+- удалять draft до подтверждённой публикации;
+- хранить computed-текст бонусов вместо selections и каталогов;
+- создавать отдельные постоянные specs для вкладок, экипировки или server drafts этого билдера.
 
 ## Verification
 
@@ -327,5 +435,13 @@ type DivinityBranchBuildExport = {
 - [useDivinityBranchBuilder.test.ts](../src/features/admin/__tests__/useDivinityBranchBuilder.test.ts) — пустой драфт и сборка JSON (включая `progress` и `activeNodes`);
 - [validateBranchBuild.test.ts](../src/features/admin/__tests__/validateBranchBuild.test.ts) — валидация и `slugifyFileName`;
 - [DivinityBranchBuilderScreen.test.tsx](../src/features/admin/__tests__/DivinityBranchBuilderScreen.test.tsx) — поведение экрана.
+- [heroBuildSetRepository.test.ts](../src/features/builds/api/__tests__/heroBuildSetRepository.test.ts) — draft/published запросы, upsert и удаление;
+- [branchBuilderTabs.test.ts](../src/features/admin/__tests__/branchBuilderTabs.test.ts) — структура вкладок и path;
+- [multiBuildExport.test.ts](../src/features/admin/__tests__/multiBuildExport.test.ts) — сборка полного комплекта;
+- [saveAdminHeroBuildSet.test.ts](../src/features/admin/__tests__/saveAdminHeroBuildSet.test.ts) — публикация и cleanup черновика;
+- [heroGuideSelectorModel.test.ts](../src/features/admin/__tests__/heroGuideSelectorModel.test.ts) — взаимоисключающие списки героев;
+- [HeroGuideSelector.test.tsx](../src/features/admin/__tests__/HeroGuideSelector.test.tsx) — loading/error/группы селектора;
+- [EquipmentVariantBuilder.test.tsx](../src/features/admin/__tests__/EquipmentVariantBuilder.test.tsx) — варианты экипировки;
+- [weaponAwakening.test.ts](../src/features/admin/__tests__/weaponAwakening.test.ts) — selections пробуждения;
 
 Любая правка билдера дерева должна сохранять эти инварианты или осознанно обновлять одновременно код, этот документ и тесты.

@@ -2,6 +2,8 @@ import { Link } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { APP_VERSION, LATEST_RELEASE_URL } from "@/shared/lib/appVersion";
+
 const BUTTON_HEIGHT = 54;
 
 export default function HomeScreen() {
@@ -47,6 +49,17 @@ export default function HomeScreen() {
           <Text style={[styles.buttonText, styles.builderButtonText]}>
             build builder
           </Text>
+        </Pressable>
+      </Link>
+
+      <Link href={LATEST_RELEASE_URL} asChild>
+        <Pressable
+          accessibilityLabel={`Версия ${APP_VERSION}. Что нового`}
+          style={styles.releaseLink}
+        >
+          <Text style={styles.releaseVersion}>Версия {APP_VERSION}</Text>
+          <Text style={styles.releaseSeparator}>·</Text>
+          <Text style={styles.releaseAction}>Что нового</Text>
         </Pressable>
       </Link>
     </ScrollView>
@@ -106,6 +119,28 @@ const styles = StyleSheet.create({
   builderButtonText: {
     color: "#8a8170",
     fontWeight: "500",
+  },
+  releaseLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 40,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  releaseVersion: {
+    color: "#8a8170",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  releaseSeparator: {
+    color: "#b0a594",
+    fontSize: 12,
+  },
+  releaseAction: {
+    color: "#8a5c42",
+    fontSize: 12,
+    fontWeight: "700",
   },
 });
 

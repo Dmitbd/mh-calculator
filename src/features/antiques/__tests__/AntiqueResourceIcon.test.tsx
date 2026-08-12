@@ -37,9 +37,18 @@ test("resolves the image branch for explicitly synthetic metadata", () => {
 });
 
 test.each(Object.values(antiqueResourceCatalog))(
-  "renders the real $kind catalog entry through its controlled fallback",
+  "renders the real $kind catalog entry according to its icon metadata",
   (resource) => {
     render(<AntiqueResourceIcon resource={resource} />);
+
+    if ("icon" in resource && resource.icon) {
+      expect(resolveAssetUri).toHaveBeenCalledWith(resource.icon);
+      expect(screen.getByLabelText(resource.label).props.source).toEqual({
+        uri: `resolved:${resource.icon}`,
+      });
+      expect(screen.queryByText(resource.fallbackLabel)).toBeNull();
+      return;
+    }
 
     expect(screen.getByText(resource.fallbackLabel)).toBeTruthy();
     expect(

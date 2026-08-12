@@ -38,3 +38,14 @@ test("renders calculator and build entry points", () => {
   expect(screen.getByText("Билды героев")).toBeTruthy();
   expect(screen.getByText("build builder")).toBeTruthy();
 });
+
+test("shows the current version in a footer linked to the latest release", () => {
+  render(<HomeScreen />);
+
+  const releaseLink = screen.getByTestId(
+    "link-https://github.com/Dmitbd/mh-calculator/releases/latest",
+  );
+
+  expect(within(releaseLink).getByText("Версия 1.1.0")).toBeTruthy();
+  expect(within(releaseLink).getByText("Что нового")).toBeTruthy();
+});

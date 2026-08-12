@@ -1,50 +1,50 @@
 # MH Calculator
 
-Mobile calculator for Mythic Heroes progression, starting with the Divinity screen.
+Калькуляторы ресурсов и каталог билдов для Mythic Heroes.
+
+## Возможности
+
+- [Божественность](docs/divinity-screen-spec.md) — расчёт прокачки и остатка ресурсов.
+- [Билды героев](docs/hero-builds-spec.md) — каталог и просмотр вариантов билдов.
+- [Билдер билдов](docs/divinity-branch-builder-spec.md) — административное создание, черновики и публикация.
+- [Антиквариат](docs/antique-rivalry-spec.md) — каскадный расчёт события и наград.
+
+Полный каталог: [docs/README.md](docs/README.md).
+
+## Версии и изменения
+
+- [Последний GitHub Release](https://github.com/Dmitbd/mh-calculator/releases/latest)
+- [История изменений](docs/CHANGELOG.md)
+- [Правила выпуска версий](docs/guidelines/documentation-and-releases.md)
+
+На GitHub опубликованный Release показывается в секции **Releases** на главной странице репозитория. Один тег без GitHub Release не показывает полноценные patch notes.
 
 ## Setup
 
-1. Install dependencies:
-`npm install`
-
-2. Start the Expo dev server:
-`npm start`
-
-3. Run the test suite:
-`npm test`
-
-4. Export the web build:
-`npm run export:web`
+1. Установить зависимости: `npm install`.
+2. Запустить Expo dev server: `npm start`.
+3. Выполнить тесты: `npm test`.
+4. Собрать web-экспорт: `npm run export:web`.
 
 ## Scripts
 
-- `npm start` - start the Expo dev server
-- `npm run android` - open the Android build target
-- `npm run ios` - open the iOS build target
-- `npm run export:web` - export the static web build to `dist/`
-- `npm test` - run the Jest test suite
+- `npm start` — Expo dev server;
+- `npm run android` — Android target;
+- `npm run ios` — iOS target;
+- `npm run export:web` — статический web build в `dist/`;
+- `npm test` — Jest suite.
 
 ## GitHub Pages
 
-This project is configured for free static hosting on GitHub Pages.
+Проект настроен на статический Expo export с base path `/mh-calculator`.
 
-- Web output uses Expo static export.
-- The current Pages base path is `/mh-calculator`.
-- If the GitHub repository name changes, update `expo.experiments.baseUrl` and `expo.extra.assetOrigin` in [app.json](app.json).
+1. Отправить изменения в `main`.
+2. В GitHub открыть `Settings → Pages`.
+3. Выбрать `Source: GitHub Actions`.
+4. Дождаться workflow `Deploy GitHub Pages`.
 
-### Deployment
-
-1. Push to `main`.
-2. In the GitHub repository, open `Settings -> Pages`.
-3. Set `Source` to `GitHub Actions`.
-4. Wait for the `Deploy GitHub Pages` workflow to finish.
-
-The site will be published at:
-`https://<your-github-user>.github.io/mh-calculator/`
+Сайт публикуется по адресу [dmitbd.github.io/mh-calculator](https://dmitbd.github.io/mh-calculator/). Если имя репозитория изменится, нужно синхронно обновить `expo.experiments.baseUrl` и `expo.extra.assetOrigin` в [app.json](app.json).
 
 ## Data
 
-Divinity progression data lives in:
-`src/features/divinity/data/divinity-levels.json`
-
-User progress is stored locally on the device through AsyncStorage.
+Данные прогресса божественности находятся в [divinity-levels.json](src/features/divinity/data/divinity-levels.json). Пользовательский прогресс и ввод калькуляторов сохраняются локально через AsyncStorage. Остальные источники данных и их integrity-правила перечислены в соответствующих capability specs.
