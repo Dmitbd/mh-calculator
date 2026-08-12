@@ -875,6 +875,110 @@ describe("DivinityBranchBuilderScreen", () => {
     ).not.toHaveLength(0);
   });
 
+  it("reports a stale form when it changes during catalog refresh", async () => {
+    let resolveSave!: () => void;
+    let resolveRefresh!: (ids: HeroBuildSetStatusIds) => void;
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockSaveHeroBuildSet.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    mockFetchHeroBuildSetStatusIds
+      .mockResolvedValueOnce({ draftHeroIds: [], publishedHeroIds: [] })
+      .mockImplementationOnce(
+        () =>
+          new Promise<HeroBuildSetStatusIds>((resolve) => {
+            resolveRefresh = resolve;
+          }),
+      );
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
+    );
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1));
+
+    act(() => {
+      resolveSave();
+    });
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
+    );
+    expect(screen.getByText("Сохраняем...")).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText("Remove Air Rune"));
+    expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
+
+    await act(async () => {
+      resolveRefresh({ draftHeroIds: ["bastet"], publishedHeroIds: [] });
+    });
+
+    expect(
+      await screen.findAllByText(
+        "Вкладка сохранена на сервере, но форма уже изменилась.",
+      ),
+    ).not.toHaveLength(0);
+    expect(screen.queryByText("Вкладка сохранена.")).toBeNull();
+    expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
+  });
+
+  it("keeps stale wording when catalog refresh fails after a form change", async () => {
+    let rejectRefresh!: (error: Error) => void;
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds
+      .mockResolvedValueOnce({ draftHeroIds: [], publishedHeroIds: [] })
+      .mockImplementationOnce(
+        () =>
+          new Promise<HeroBuildSetStatusIds>((_resolve, reject) => {
+            rejectRefresh = reject;
+          }),
+      );
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
+    );
+
+    fireEvent.press(screen.getByLabelText("Remove Air Rune"));
+
+    await act(async () => {
+      rejectRefresh(new Error("refresh failed"));
+    });
+
+    expect(
+      await screen.findAllByText(
+        "Вкладка сохранена на сервере, но форма уже изменилась.",
+      ),
+    ).not.toHaveLength(0);
+    expect(screen.queryByText("Вкладка сохранена.")).toBeNull();
+    expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
+    expect(
+      screen.getByText("Не удалось загрузить список опубликованных гайдов"),
+    ).toBeTruthy();
+  });
+
   it("invalidates a pending tab save on logout", async () => {
     let resolveSave!: () => void;
 

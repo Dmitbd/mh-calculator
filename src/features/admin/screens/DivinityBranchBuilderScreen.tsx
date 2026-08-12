@@ -123,6 +123,7 @@ export function DivinityBranchBuilderScreen({
     buildFullExport,
     commitPreparedTargetBuild,
     cycleWeaponAwakeningSlot,
+    isPreparedTargetBuildCurrent,
     loadBuildSetForEditing,
     progressLevels,
     prepareCurrentTargetBuild,
@@ -588,9 +589,11 @@ export function DivinityBranchBuilderScreen({
         return;
       }
 
+      const isCurrent =
+        committed && isPreparedTargetBuildCurrent(prepared);
       showBackendMessage(
-        committed ? "success" : "error",
-        committed
+        isCurrent ? "success" : "error",
+        isCurrent
           ? "Вкладка сохранена."
           : "Вкладка сохранена на сервере, но форма уже изменилась.",
       );

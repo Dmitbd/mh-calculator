@@ -157,6 +157,7 @@ export function useDivinityBranchBuilder(
     buildTargetTabs[0]?.gameMode ??
     "pvp";
   const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
+  const selectedHeroIdRef = useRef<string | null>(null);
   const selectedHero = selectedHeroId ? getHeroById(selectedHeroId) : null;
   const heroName = selectedHero?.name.ru ?? "";
   const [draftsByPath, setDraftsByPath] = useState<DraftsByPath>({});
@@ -221,13 +222,14 @@ export function useDivinityBranchBuilder(
       return;
     }
 
-    if (selectedHeroId !== heroId) {
+    if (selectedHeroIdRef.current !== heroId) {
       contentRevisionRef.current += 1;
       setSavedBuildsByPath({});
     }
 
+    selectedHeroIdRef.current = heroId;
     setSelectedHeroId(heroId);
-  }, [selectedHeroId]);
+  }, []);
 
   const setColumnBranch = useCallback(
     (columnId: BranchColumnId, branchId: DivinityBranchId | null) => {
@@ -593,7 +595,10 @@ export function useDivinityBranchBuilder(
 
   const commitPreparedTargetBuild = useCallback(
     (prepared: PreparedTargetBuildSave) => {
-      if (prepared.revision !== contentRevisionRef.current) {
+      if (
+        prepared.revision !== contentRevisionRef.current ||
+        prepared.exported.heroId !== selectedHeroIdRef.current
+      ) {
         return false;
       }
 
@@ -603,6 +608,13 @@ export function useDivinityBranchBuilder(
 
       return true;
     },
+    [],
+  );
+
+  const isPreparedTargetBuildCurrent = useCallback(
+    (prepared: PreparedTargetBuildSave) =>
+      prepared.revision + 1 === contentRevisionRef.current &&
+      prepared.exported.heroId === selectedHeroIdRef.current,
     [],
   );
 
@@ -647,6 +659,7 @@ export function useDivinityBranchBuilder(
     }, {});
 
     contentRevisionRef.current += 1;
+    selectedHeroIdRef.current = hero.id;
     setSelectedHeroId(hero.id);
     setSavedBuildsByPath(loadedBuilds);
     setDraftsByPath(loadedDrafts);
@@ -691,6 +704,7 @@ export function useDivinityBranchBuilder(
       loadBuildSetForEditing,
       prepareCurrentTargetBuild,
       commitPreparedTargetBuild,
+      isPreparedTargetBuildCurrent,
       validateFullExport,
       buildFullExport,
     }),
@@ -724,6 +738,7 @@ export function useDivinityBranchBuilder(
       loadBuildSetForEditing,
       prepareCurrentTargetBuild,
       commitPreparedTargetBuild,
+      isPreparedTargetBuildCurrent,
       validateFullExport,
       buildFullExport,
     ],

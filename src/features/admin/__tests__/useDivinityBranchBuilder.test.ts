@@ -273,6 +273,41 @@ describe("useDivinityBranchBuilder", () => {
     expect(result.current.savedBuildsByPath["pve/bosses"]).toBeUndefined();
   });
 
+  it("tracks whether a committed prepared snapshot remains current", () => {
+    const result = filledBuild();
+    const prepared = result.current.prepareCurrentTargetBuild(
+      "2026-08-12T10:00:00.000Z",
+    )!;
+
+    act(() => {
+      expect(result.current.commitPreparedTargetBuild(prepared)).toBe(true);
+    });
+
+    expect(result.current.isPreparedTargetBuildCurrent(prepared)).toBe(true);
+
+    act(() => {
+      result.current.removeRune("fire");
+    });
+
+    expect(result.current.isPreparedTargetBuildCurrent(prepared)).toBe(false);
+
+    const heroResult = filledBuild();
+    const heroPrepared = heroResult.current.prepareCurrentTargetBuild(
+      "2026-08-12T10:05:00.000Z",
+    )!;
+
+    act(() => {
+      expect(
+        heroResult.current.commitPreparedTargetBuild(heroPrepared),
+      ).toBe(true);
+      heroResult.current.selectHero("bastet");
+    });
+
+    expect(
+      heroResult.current.isPreparedTargetBuildCurrent(heroPrepared),
+    ).toBe(false);
+  });
+
   it("rejects a prepared snapshot after an intervening draft edit", () => {
     const completeBuildSet = getHeroBuildSet("bastet");
 
