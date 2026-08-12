@@ -70,7 +70,7 @@ test("forwards raw coin input and linked conversion actions", () => {
   fireEvent.changeText(input, "12abc");
   expect(onChangeCoins).toHaveBeenCalledWith("12abc");
 
-  expect(screen.getByText("Обменять монеты на карты")).toBeTruthy();
+  expect(screen.getByText("Обмен монет на карты")).toBeTruthy();
   expect(screen.queryByText(/Неиспользовано монет:/)).toBeNull();
   expect(screen.getByLabelText("Карт гробницы: 20")).toBeTruthy();
   expect(screen.getByLabelText("Карт храма: 0")).toBeTruthy();

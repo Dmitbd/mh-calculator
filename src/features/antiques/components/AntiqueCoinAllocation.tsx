@@ -128,7 +128,7 @@ export function AntiqueCoinAllocation({
           />
         </View>
       </View>
-      <Text style={styles.unusedCoins}>Обменять монеты на карты</Text>
+      <Text style={styles.unusedCoins}>Обмен монет на карты</Text>
 
       <View style={styles.allocationList}>
         <AllocationRow
