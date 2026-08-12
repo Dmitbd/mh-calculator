@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AntiqueCashback } from "../components/AntiqueCashback";
+import { AntiqueCashbackToggle } from "../components/AntiqueCashbackToggle";
 import { AntiqueCoinAllocation } from "../components/AntiqueCoinAllocation";
 import { AntiqueOwnedCards } from "../components/AntiqueOwnedCards";
 import { AntiqueRewardTrack } from "../components/AntiqueRewardTrack";
@@ -59,6 +60,7 @@ export default function AntiqueScreen() {
     setCoins,
     setOwnedTombMaps,
     setOwnedTempleMaps,
+    setIncludeCashback,
     convertOneToTemple,
     convertOneToTombs,
     reset,
@@ -115,6 +117,12 @@ export default function AntiqueScreen() {
             }}
             onChangeOwnedTombMaps={(value) => {
               void setOwnedTombMaps(value);
+            }}
+          />
+          <AntiqueCashbackToggle
+            checked={input.includeCashback}
+            onChange={(checked) => {
+              void setIncludeCashback(checked);
             }}
           />
           <AntiqueScoreProgress totalScore={result.totalScore} />

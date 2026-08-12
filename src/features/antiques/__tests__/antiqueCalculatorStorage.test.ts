@@ -28,6 +28,7 @@ const emptyInput = {
   templeMapAllocation: 0,
   ownedTombMaps: 0,
   ownedTempleMaps: 0,
+  includeCashback: true,
 };
 
 beforeEach(() => {
@@ -55,6 +56,7 @@ test("saves normalized calculator inputs with a clamped temple allocation", asyn
     templeMapAllocation: 99,
     ownedTombMaps: -1,
     ownedTempleMaps: 4.8,
+    includeCashback: false,
   });
 
   await expect(loadAntiqueCalculator()).resolves.toMatchObject({
@@ -62,6 +64,23 @@ test("saves normalized calculator inputs with a clamped temple allocation", asyn
     templeMapAllocation: 2,
     ownedTombMaps: 0,
     ownedTempleMaps: 4,
+    includeCashback: false,
+  });
+});
+
+test("defaults legacy records without a cashback preference to enabled", async () => {
+  mockStorage.set(
+    "antique-rivalry-calculator",
+    JSON.stringify({
+      coins: 1_000,
+      templeMapAllocation: 0,
+      ownedTombMaps: 2,
+      ownedTempleMaps: 3,
+    }),
+  );
+
+  await expect(loadAntiqueCalculator()).resolves.toMatchObject({
+    includeCashback: true,
   });
 });
 

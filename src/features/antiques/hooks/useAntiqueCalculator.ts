@@ -41,6 +41,7 @@ export function useAntiqueCalculator() {
           templeMapAllocation: record.templeMapAllocation,
           ownedTombMaps: record.ownedTombMaps,
           ownedTempleMaps: record.ownedTempleMaps,
+          includeCashback: record.includeCashback,
         };
       } catch {
         loadedInput = createEmptyAntiqueCalculatorInput();
@@ -95,6 +96,10 @@ export function useAntiqueCalculator() {
     await updateInput((current) => ({ ...current, ownedTempleMaps }));
   };
 
+  const setIncludeCashback = async (includeCashback: boolean) => {
+    await updateInput((current) => ({ ...current, includeCashback }));
+  };
+
   const convertOneToTemple = async () => {
     await updateInput((current) => ({
       ...current,
@@ -123,6 +128,7 @@ export function useAntiqueCalculator() {
     setCoins,
     setOwnedTombMaps,
     setOwnedTempleMaps,
+    setIncludeCashback,
     convertOneToTemple,
     convertOneToTombs,
     reset,

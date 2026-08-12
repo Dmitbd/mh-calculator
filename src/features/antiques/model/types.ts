@@ -3,6 +3,7 @@ export type AntiqueRivalryInput = {
   templeMapAllocation: unknown;
   ownedTombMaps: unknown;
   ownedTempleMaps: unknown;
+  includeCashback?: boolean;
 };
 
 export type AntiqueCoinAllocation = {
