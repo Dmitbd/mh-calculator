@@ -26,6 +26,11 @@ const mockDeleteDraftHeroBuildSet = jest.fn();
 const mockHeroBuilderSectionProps = jest.fn<void, [Record<string, unknown>]>();
 const mockSignInAdmin = jest.fn();
 const mockSignOutAdmin = jest.fn();
+const ADMIN_SESSION = {
+  id: "admin-user-id",
+  email: "admin@example.com",
+  role: "admin",
+} as const;
 
 function createDeferred<T>() {
   let resolve!: (value: T) => void;
@@ -169,7 +174,7 @@ describe("DivinityBranchBuilderScreen", () => {
   function renderAdminBuilder() {
     return render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
       />,
     );
   }
@@ -247,7 +252,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     const view = render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -303,7 +308,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -334,7 +339,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -367,7 +372,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -404,7 +409,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -444,7 +449,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -482,7 +487,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     const view = render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -528,7 +533,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     const view = render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -576,7 +581,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -618,7 +623,7 @@ describe("DivinityBranchBuilderScreen", () => {
           }),
       );
     mockSignOutAdmin.mockResolvedValue(undefined);
-    mockSignInAdmin.mockResolvedValue({ email: "admin@example.com" });
+    mockSignInAdmin.mockResolvedValue(ADMIN_SESSION);
 
     renderAdminBuilder();
 
@@ -662,7 +667,7 @@ describe("DivinityBranchBuilderScreen", () => {
           }),
       );
     mockSignOutAdmin.mockResolvedValue(undefined);
-    mockSignInAdmin.mockResolvedValue({ email: "admin@example.com" });
+    mockSignInAdmin.mockResolvedValue(ADMIN_SESSION);
 
     renderAdminBuilder();
 
@@ -702,7 +707,7 @@ describe("DivinityBranchBuilderScreen", () => {
       )
       .mockReturnValueOnce(new Promise(() => undefined));
     mockSignOutAdmin.mockResolvedValue(undefined);
-    mockSignInAdmin.mockResolvedValue({ email: "admin@example.com" });
+    mockSignInAdmin.mockResolvedValue(ADMIN_SESSION);
 
     renderAdminBuilder();
 
@@ -802,7 +807,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -854,7 +859,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     const view = render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -869,7 +874,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     view.rerender(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="morana"
         initialMode="edit"
       />,
@@ -919,7 +924,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -956,7 +961,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -993,7 +998,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -1024,7 +1029,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -1064,7 +1069,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     const view = render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -1107,7 +1112,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     const view = render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -1234,7 +1239,7 @@ describe("DivinityBranchBuilderScreen", () => {
       )
       .mockResolvedValueOnce(getValidBastetBuildSet());
     mockSignOutAdmin.mockResolvedValue(undefined);
-    mockSignInAdmin.mockResolvedValue({ email: "admin@example.com" });
+    mockSignInAdmin.mockResolvedValue(ADMIN_SESSION);
 
     renderAdminBuilder();
 
@@ -1425,7 +1430,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -1456,7 +1461,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -1496,7 +1501,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -1521,7 +1526,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -1553,7 +1558,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -1606,7 +1611,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -1658,7 +1663,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -1702,7 +1707,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -1749,7 +1754,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     const view = render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -1782,7 +1787,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -1967,7 +1972,7 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.getByLabelText("Загрузка авторизации")).toBeTruthy();
     expect(screen.getByText("Входим...")).toBeTruthy();
 
-    resolveSignIn({ email: "admin@example.com" });
+    resolveSignIn(ADMIN_SESSION);
 
     await waitFor(() => {
       expect(screen.getByText("Вход выполнен.")).toBeTruthy();
@@ -2013,7 +2018,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -2063,7 +2068,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -2124,7 +2129,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,
@@ -2163,11 +2168,11 @@ describe("DivinityBranchBuilderScreen", () => {
       .mockReturnValueOnce(interruptedLoad.promise)
       .mockReturnValueOnce(resumedLoad.promise);
     mockSignOutAdmin.mockReturnValue(signOut.promise);
-    mockSignInAdmin.mockResolvedValue({ email: "admin@example.com" });
+    mockSignInAdmin.mockResolvedValue(ADMIN_SESSION);
 
     render(
       <DivinityBranchBuilderScreen
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
         initialHeroId="bastet"
         initialMode="edit"
       />,

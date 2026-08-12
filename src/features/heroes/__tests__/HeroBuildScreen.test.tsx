@@ -12,6 +12,11 @@ const mockRouter = {
   replace: jest.fn(),
 };
 const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
+const ADMIN_SESSION = {
+  id: "admin-user-id",
+  email: "admin@example.com",
+  role: "admin",
+} as const;
 
 jest.mock("react-native-safe-area-context", () => ({
   __esModule: true,
@@ -135,7 +140,7 @@ describe("HeroBuildScreen", () => {
     render(
       <HeroBuildScreen
         heroId="bastet"
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
       />,
     );
 
@@ -161,7 +166,7 @@ describe("HeroBuildScreen", () => {
     render(
       <HeroBuildScreen
         heroId="bastet"
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
       />,
     );
 

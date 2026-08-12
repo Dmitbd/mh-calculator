@@ -327,9 +327,11 @@ type DivinityBranchBuilderExport = {
 
 ## Authentication And Backend Boundary
 
-Пока auth-проверка не завершена, backend-действия не должны ошибочно считаться доступными. Без admin-сессии экран может показывать локальный билдер, но серверные save/load/publish/delete защищены существующим Supabase boundary.
+Административная сессия признаётся только для Supabase-пользователя, у которого `app_metadata.role === "admin"`. Стабильный контракт сессии содержит `id`, `email` и литеральную роль `admin`. Обычная authenticated-сессия не открывает билдер и не даёт доступ к server draft/published данным. Если password login успешен, но admin claim отсутствует, клиент сразу завершает созданную сессию и показывает `Недостаточно прав администратора.`; восстановленная non-admin сессия считается отсутствующей административной сессией.
 
 `AdminAuthPanel` поддерживает вход и выход, состояния pending и видимые success/error toast. Если Supabase не настроен, серверное действие завершается контролируемым `Supabase не настроен.`, а не падением.
+
+Supabase RLS повторяет эту границу: чтение `draft` и любые insert/update/delete разрешены только JWT с `app_metadata.role = admin`; без admin claim доступно только чтение строк `published`. Клиентская проверка управляет UI, но не заменяет RLS.
 
 ## Hero States And Selector
 
@@ -411,6 +413,7 @@ Backend success не должен жить дольше актуальной о�
 10. Вкладки независимы по полному path и имеют не более двух уровней.
 11. Server draft и published build — разные status-строки; публикация удаляет draft только после успешного published-save.
 12. Устаревшие async-ответы не меняют выбранного героя и не показывают ложный успех.
+13. Admin-доступ требует `app_metadata.role === "admin"` одновременно на клиентской auth-границе и в Supabase RLS.
 
 ## Change Guardrails
 
