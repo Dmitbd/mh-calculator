@@ -109,13 +109,16 @@ export function DivinityBranchBuilderScreen({
   );
   const pendingScrollTarget = useRef<PendingScrollTarget | null>(null);
   const loadedEditHeroId = useRef<string | null>(null);
+  const initialEditLoadInFlight = useRef(false);
   const draftLoadInFlight = useRef(false);
-  const draftLoadRequestId = useRef(0);
+  const entityLoadRequestId = useRef(0);
   const heroListRequestId = useRef(0);
   const tabSaveInFlight = useRef(false);
   const tabSaveRequestId = useRef(0);
   const publishInFlight = useRef(false);
   const publishRequestId = useRef(0);
+  const authTransitionInFlight = useRef(false);
+  const authRequestId = useRef(0);
   const isScreenMounted = useRef(true);
   const {
     addArtifact,
@@ -167,6 +170,7 @@ export function DivinityBranchBuilderScreen({
   );
   const [isAuthPending, setIsAuthPending] = useState(false);
   const [isEditBuildLoading, setIsEditBuildLoading] = useState(false);
+  const [initialEditLoadRetryId, setInitialEditLoadRetryId] = useState(0);
   const [isPublishPending, setIsPublishPending] = useState(false);
   const [isTabSavePending, setIsTabSavePending] = useState(false);
   const [toast, setToast] = useState<StatusToastState>(null);
@@ -177,6 +181,15 @@ export function DivinityBranchBuilderScreen({
   const [isDraftLoadPending, setIsDraftLoadPending] = useState(false);
   const [isHeroListLoading, setIsHeroListLoading] = useState(true);
   const [heroListError, setHeroListError] = useState<string | null>(null);
+  const isBuilderTransitionPending = isDraftLoadPending || isAuthPending;
+  const isBuilderActionBlocked = useCallback(
+    () =>
+      isDraftLoadPending ||
+      isAuthPending ||
+      draftLoadInFlight.current ||
+      authTransitionInFlight.current,
+    [isAuthPending, isDraftLoadPending],
+  );
 
   const resetTabSave = useCallback(() => {
     tabSaveRequestId.current += 1;
@@ -195,19 +208,24 @@ export function DivinityBranchBuilderScreen({
 
     return () => {
       isScreenMounted.current = false;
-      draftLoadRequestId.current += 1;
+      entityLoadRequestId.current += 1;
+      initialEditLoadInFlight.current = false;
       draftLoadInFlight.current = false;
       tabSaveRequestId.current += 1;
       tabSaveInFlight.current = false;
       publishRequestId.current += 1;
       publishInFlight.current = false;
+      authRequestId.current += 1;
+      authTransitionInFlight.current = false;
     };
   }, []);
 
   const resetDraftLoad = useCallback(() => {
-    draftLoadRequestId.current += 1;
+    entityLoadRequestId.current += 1;
+    initialEditLoadInFlight.current = false;
     draftLoadInFlight.current = false;
     setIsDraftLoadPending(false);
+    setIsEditBuildLoading(false);
   }, []);
 
   const resetHeroStatusList = useCallback(() => {
@@ -354,24 +372,31 @@ export function DivinityBranchBuilderScreen({
     }
 
     const client = getSupabaseClient();
-    let isMounted = true;
+    const requestId = entityLoadRequestId.current + 1;
+    entityLoadRequestId.current = requestId;
+    const isCurrentRequest = () =>
+      isScreenMounted.current && requestId === entityLoadRequestId.current;
 
     loadedEditHeroId.current = initialHeroId;
+    initialEditLoadInFlight.current = true;
     setIsEditBuildLoading(true);
 
     const fallbackBuildSet = getHeroBuildSet(initialHeroId);
 
     if (!client) {
+      if (!isCurrentRequest()) {
+        return;
+      }
+
       if (fallbackBuildSet && loadBuildSetForEditing(fallbackBuildSet)) {
         showBackendMessage("success", "Локальный билд загружен для редактирования.");
       } else {
         showBackendMessage("error", "Supabase не настроен.");
       }
 
+      initialEditLoadInFlight.current = false;
       setIsEditBuildLoading(false);
-      return () => {
-        isMounted = false;
-      };
+      return;
     }
 
     void loadPublishedHeroBuildSet({
@@ -380,7 +405,7 @@ export function DivinityBranchBuilderScreen({
       heroId: initialHeroId,
     })
       .then((buildSet) => {
-        if (!isMounted) {
+        if (!isCurrentRequest()) {
           return;
         }
 
@@ -392,28 +417,28 @@ export function DivinityBranchBuilderScreen({
         showBackendMessage("success", "Билд загружен для редактирования.");
       })
       .catch((error) => {
-        if (isMounted) {
-          showBackendMessage(
-            "error",
-            error instanceof Error
-              ? `Ошибка Supabase: ${error.message}`
-              : "Ошибка Supabase.",
-          );
+        if (!isCurrentRequest()) {
+          return;
         }
+
+        showBackendMessage(
+          "error",
+          error instanceof Error
+            ? `Ошибка Supabase: ${error.message}`
+            : "Ошибка Supabase.",
+        );
       })
       .finally(() => {
-        if (isMounted) {
+        if (isCurrentRequest()) {
+          initialEditLoadInFlight.current = false;
           setIsEditBuildLoading(false);
         }
       });
-
-    return () => {
-      isMounted = false;
-    };
   }, [
     adminSession,
     initialHeroId,
     initialMode,
+    initialEditLoadRetryId,
     isAuthChecked,
     loadBuildSetForEditing,
   ]);
@@ -551,7 +576,11 @@ export function DivinityBranchBuilderScreen({
   };
 
   const handleSaveCurrentTargetBuild = async () => {
-    if (tabSaveInFlight.current || publishInFlight.current) {
+    if (
+      isBuilderActionBlocked() ||
+      tabSaveInFlight.current ||
+      publishInFlight.current
+    ) {
       return;
     }
 
@@ -634,6 +663,10 @@ export function DivinityBranchBuilderScreen({
   };
 
   const handleDownloadFullJson = () => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
     const result = validateFullExport();
 
     showValidationErrors(result.errors);
@@ -655,7 +688,11 @@ export function DivinityBranchBuilderScreen({
   };
 
   const saveFullBuildSetToBackend = async (status: "draft" | "published") => {
-    if (tabSaveInFlight.current || publishInFlight.current) {
+    if (
+      isBuilderActionBlocked() ||
+      tabSaveInFlight.current ||
+      publishInFlight.current
+    ) {
       return;
     }
 
@@ -800,6 +837,10 @@ export function DivinityBranchBuilderScreen({
   };
 
   const handleLoadFullBuildSet = async () => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
     if (!selectedHeroId) {
       setBackendStatus("Сначала выберите героя.");
       return;
@@ -842,6 +883,10 @@ export function DivinityBranchBuilderScreen({
   };
 
   const handleDeleteFullBuildSet = async () => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
     if (!selectedHeroId) {
       setBackendStatus("Сначала выберите героя.");
       return;
@@ -873,22 +918,43 @@ export function DivinityBranchBuilderScreen({
     email: string;
     password: string;
   }) => {
+    if (authTransitionInFlight.current) {
+      return;
+    }
+
+    authTransitionInFlight.current = true;
+    const requestId = authRequestId.current + 1;
+    authRequestId.current = requestId;
     setIsAuthPending(true);
     setToast(null);
+    const isCurrentRequest = () =>
+      isScreenMounted.current && requestId === authRequestId.current;
 
     const client = getSupabaseClient();
 
     if (!client) {
-      setToast({ kind: "error", message: "Supabase не настроен." });
-      setIsAuthPending(false);
+      if (isCurrentRequest()) {
+        setToast({ kind: "error", message: "Supabase не настроен." });
+        authTransitionInFlight.current = false;
+        setIsAuthPending(false);
+      }
       return;
     }
 
     try {
       const session = await signInAdmin(client, credentials);
+
+      if (!isCurrentRequest()) {
+        return;
+      }
+
       setAdminSession(session);
       setToast({ kind: "success", message: "Вход выполнен." });
     } catch (error) {
+      if (!isCurrentRequest()) {
+        return;
+      }
+
       setToast({
         kind: "error",
         message:
@@ -897,33 +963,59 @@ export function DivinityBranchBuilderScreen({
             : "Ошибка входа.",
       });
     } finally {
-      setIsAuthPending(false);
+      if (isCurrentRequest()) {
+        authTransitionInFlight.current = false;
+        setIsAuthPending(false);
+      }
     }
   };
 
   const handleAdminSignOut = async () => {
+    if (authTransitionInFlight.current) {
+      return;
+    }
+
+    authTransitionInFlight.current = true;
+    const requestId = authRequestId.current + 1;
+    authRequestId.current = requestId;
+    const shouldRetryInitialEditLoad = initialEditLoadInFlight.current;
     setIsAuthPending(true);
     setToast(null);
     resetDraftLoad();
     resetTabSave();
     resetPublish();
+    heroListRequestId.current += 1;
+    const isCurrentRequest = () =>
+      isScreenMounted.current && requestId === authRequestId.current;
 
     const client = getSupabaseClient();
 
     if (!client) {
-      resetHeroStatusList();
-      setAdminSession(null);
-      setToast({ kind: "success", message: "Выход выполнен." });
-      setIsAuthPending(false);
+      if (isCurrentRequest()) {
+        resetHeroStatusList();
+        setAdminSession(null);
+        setToast({ kind: "success", message: "Выход выполнен." });
+        authTransitionInFlight.current = false;
+        setIsAuthPending(false);
+      }
       return;
     }
 
     try {
       await signOutAdmin(client);
+
+      if (!isCurrentRequest()) {
+        return;
+      }
+
       resetHeroStatusList();
       setAdminSession(null);
       setToast({ kind: "success", message: "Выход выполнен." });
     } catch (error) {
+      if (!isCurrentRequest()) {
+        return;
+      }
+
       setToast({
         kind: "error",
         message:
@@ -931,22 +1023,48 @@ export function DivinityBranchBuilderScreen({
             ? `Ошибка выхода: ${error.message}`
             : "Ошибка выхода.",
       });
+
+      if (shouldRetryInitialEditLoad) {
+        loadedEditHeroId.current = null;
+        setInitialEditLoadRetryId((current) => current + 1);
+      }
+
+      void loadHeroStatusIds({ preserveCurrentIdsOnError: true });
     } finally {
-      setIsAuthPending(false);
+      if (isCurrentRequest()) {
+        authTransitionInFlight.current = false;
+        setIsAuthPending(false);
+      }
     }
   };
 
   const handleSelectTopTab = (tabId: string) => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
     clearTargetTabErrors();
     setTargetTopTab(tabId);
   };
 
   const handleSelectChildTab = (tabId: string) => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
     clearTargetTabErrors();
     setTargetChildTab(tabId);
   };
 
   const handleSelectHero = async (heroId: string) => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
+    const requestId = entityLoadRequestId.current + 1;
+    entityLoadRequestId.current = requestId;
+    initialEditLoadInFlight.current = false;
+    setIsEditBuildLoading(false);
     clearValidationErrors(isHeroErrorPath);
 
     if (!heroStatusIds.draftHeroIds.includes(heroId)) {
@@ -960,13 +1078,11 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
-    const requestId = draftLoadRequestId.current + 1;
-    draftLoadRequestId.current = requestId;
     draftLoadInFlight.current = true;
     setIsDraftLoadPending(true);
 
     const isCurrentRequest = () =>
-      isScreenMounted.current && requestId === draftLoadRequestId.current;
+      isScreenMounted.current && requestId === entityLoadRequestId.current;
 
     try {
       const draft = await fetchDraftHeroBuildSet(
@@ -1010,26 +1126,46 @@ export function DivinityBranchBuilderScreen({
   };
 
   const handleAddArtifact = (id: string) => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
     addArtifact(id);
     clearValidationErrors(isArtifactErrorPath);
   };
 
   const handleRemoveArtifact = (id: string) => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
     removeArtifact(id);
     clearValidationErrors(isArtifactErrorPath);
   };
 
   const handleAddRune = (id: string) => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
     addRune(id);
     clearValidationErrors(isRuneErrorPath);
   };
 
   const handleRemoveRune = (id: string) => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
     removeRune(id);
     clearValidationErrors(isRuneErrorPath);
   };
 
   const handleCycleWeaponAwakeningSlot = (slot: number) => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
     cycleWeaponAwakeningSlot(slot);
     clearValidationErrors((path) => path === `weaponAwakening.${slot}`);
   };
@@ -1039,6 +1175,10 @@ export function DivinityBranchBuilderScreen({
     slotIndex: number,
     skillId: string | null,
   ) => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
     setDivinitySkill(rowId, slotIndex, skillId);
     clearValidationErrors((path) =>
       path === `divinitySkills.${rowId}` ||
@@ -1046,10 +1186,22 @@ export function DivinityBranchBuilderScreen({
     );
   };
 
+  const handleShowAwakenedDivinitySkills = () => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
+    showAwakenedDivinitySkills();
+  };
+
   const handleSetColumnBranch = (
     columnId: BranchColumnId,
     branchId: Parameters<typeof setColumnBranch>[1],
   ) => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
     const shouldNotifyDivinityReset =
       selectedBranches[columnId] !== branchId &&
       hasDivinitySkillSelection(selectedDivinitySkills);
@@ -1071,12 +1223,26 @@ export function DivinityBranchBuilderScreen({
     level: number,
     skillId: string,
   ) => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
     setMajorSkill(columnId, level, skillId);
     setColumnProgress(columnId, level);
     clearValidationErrors((path) =>
       path === getMajorNodePath(columnId, level) ||
       (level >= MIN_BRANCH_PROGRESS_LEVEL && path === `progress.${columnId}`),
     );
+    setActiveMajorSlot(null);
+  };
+
+  const handleClearMajorSkill = (columnId: BranchColumnId, level: number) => {
+    if (isBuilderActionBlocked()) {
+      return;
+    }
+
+    setMajorSkill(columnId, level, null);
+    rollbackColumnProgress(columnId, level);
     setActiveMajorSlot(null);
   };
 
@@ -1099,6 +1265,10 @@ export function DivinityBranchBuilderScreen({
       ) ?? null;
 
   const canUseBranchLevel = (columnId: BranchColumnId, level: number) => {
+    if (isBuilderActionBlocked()) {
+      return false;
+    }
+
     if (getMissingPreviousMajorSkillLevel(columnId, level) === null) {
       return true;
     }
@@ -1171,154 +1341,177 @@ export function DivinityBranchBuilderScreen({
 
       {isAuthChecked && adminSession ? (
         <>
-      <View
-        onLayout={handleSectionLayout("targetTabs")}
-        style={styles.section}
-        testID="branch-builder-target-tabs-section"
-      >
-        <BuildTargetSection
-          childTabs={buildTargetChildTabs}
-          errors={targetTabErrors}
-          onSelectChildTab={handleSelectChildTab}
-          onSelectTab={handleSelectTopTab}
-          selectedChildTabId={selectedChildTabId}
-          selectedTabId={selectedTopTabId}
-          tabs={buildTargetTopTabs}
-        />
-      </View>
+          {!isBuilderTransitionPending ? (
+            <View
+              onLayout={handleSectionLayout("targetTabs")}
+              style={styles.section}
+              testID="branch-builder-target-tabs-section"
+            >
+              <BuildTargetSection
+                childTabs={buildTargetChildTabs}
+                errors={targetTabErrors}
+                onSelectChildTab={handleSelectChildTab}
+                onSelectTab={handleSelectTopTab}
+                selectedChildTabId={selectedChildTabId}
+                selectedTabId={selectedTopTabId}
+                tabs={buildTargetTopTabs}
+              />
+            </View>
+          ) : null}
 
-      <View
-        onLayout={handleSectionLayout("hero")}
-        style={styles.section}
-        testID="branch-builder-hero-section"
-      >
-        <HeroBuilderSection
-          errors={heroErrors}
-          heroListError={heroListError}
-          isDraftLoadPending={isDraftLoadPending}
-          isHeroListLoading={isHeroListLoading}
-          notCreatedHeroes={heroLists.notCreatedHeroes}
-          notPublishedHeroes={heroLists.notPublishedHeroes}
-          onRetryHeroList={() => void loadHeroStatusIds()}
-          onSelectHero={(heroId) => void handleSelectHero(heroId)}
-          selectedHero={selectedHero}
-          selectedHeroId={selectedHeroId}
-        />
-      </View>
+          {!isAuthPending ? (
+            <View
+              onLayout={handleSectionLayout("hero")}
+              style={styles.section}
+              testID="branch-builder-hero-section"
+            >
+              <HeroBuilderSection
+                errors={heroErrors}
+                heroListError={heroListError}
+                isDraftLoadPending={isDraftLoadPending}
+                isHeroListLoading={isHeroListLoading}
+                notCreatedHeroes={heroLists.notCreatedHeroes}
+                notPublishedHeroes={heroLists.notPublishedHeroes}
+                onRetryHeroList={() => {
+                  if (!isBuilderActionBlocked()) {
+                    void loadHeroStatusIds();
+                  }
+                }}
+                onSelectHero={(heroId) => void handleSelectHero(heroId)}
+                selectedHero={selectedHero}
+                selectedHeroId={selectedHeroId}
+              />
+            </View>
+          ) : null}
 
-      <View
-        onLayout={handleSectionLayout("equipment")}
-        style={styles.section}
-        testID="branch-builder-equipment-section"
-      >
-        <EquipmentBuilderSection
-          artifactErrors={artifactErrors}
-          artifacts={branchBuilderArtifacts}
-          onAddArtifact={handleAddArtifact}
-          onAddRune={handleAddRune}
-          onRemoveArtifact={handleRemoveArtifact}
-          onRemoveRune={handleRemoveRune}
-          runeErrors={runeErrors}
-          runes={branchBuilderRunes}
-          selectedArtifactIds={selectedArtifactIds}
-          selectedRuneIds={selectedRuneIds}
-        />
-      </View>
+          {isBuilderTransitionPending ? (
+            <View
+              accessibilityRole="progressbar"
+              style={styles.loadingCard}
+              testID="branch-builder-transition-loading"
+            >
+              <Text style={styles.loadingText}>
+                {isDraftLoadPending
+                  ? "Загружаем черновик..."
+                  : "Завершаем авторизацию..."}
+              </Text>
+            </View>
+          ) : (
+            <>
+              <View
+                onLayout={handleSectionLayout("equipment")}
+                style={styles.section}
+                testID="branch-builder-equipment-section"
+              >
+                <EquipmentBuilderSection
+                  artifactErrors={artifactErrors}
+                  artifacts={branchBuilderArtifacts}
+                  onAddArtifact={handleAddArtifact}
+                  onAddRune={handleAddRune}
+                  onRemoveArtifact={handleRemoveArtifact}
+                  onRemoveRune={handleRemoveRune}
+                  runeErrors={runeErrors}
+                  runes={branchBuilderRunes}
+                  selectedArtifactIds={selectedArtifactIds}
+                  selectedRuneIds={selectedRuneIds}
+                />
+              </View>
 
-      <View
-        onLayout={handleSectionLayout("weaponAwakening")}
-        style={styles.section}
-        testID="branch-builder-weapon-awakening-section"
-      >
-        <WeaponAwakeningSection
-          bonuses={weaponAwakeningBonuses}
-          colors={branchBuilderWeaponAwakeningColors}
-          errors={weaponAwakeningErrors}
-          onCycleSlot={handleCycleWeaponAwakeningSlot}
-          selectedHero={selectedHero}
-          selections={weaponAwakeningSelections}
-          slots={branchBuilderWeaponAwakeningSlots}
-        />
-      </View>
+              <View
+                onLayout={handleSectionLayout("weaponAwakening")}
+                style={styles.section}
+                testID="branch-builder-weapon-awakening-section"
+              >
+                <WeaponAwakeningSection
+                  bonuses={weaponAwakeningBonuses}
+                  colors={branchBuilderWeaponAwakeningColors}
+                  errors={weaponAwakeningErrors}
+                  onCycleSlot={handleCycleWeaponAwakeningSlot}
+                  selectedHero={selectedHero}
+                  selections={weaponAwakeningSelections}
+                  slots={branchBuilderWeaponAwakeningSlots}
+                />
+              </View>
 
-      <View
-        onLayout={handleSectionLayout("divinitySkills")}
-        style={styles.section}
-        testID="branch-builder-divinity-skills-section"
-      >
-        <DivinitySkillLoadoutSection
-          awakenedEnabled={selectedDivinitySkills.awakenedEnabled}
-          awakenedSkillIds={selectedDivinitySkills.awakened}
-          availableSkillIds={selectedTreeSkillIds}
-          baseSkillIds={selectedDivinitySkills.base}
-          branches={branchBuilderBranches}
-          onSelectSkill={handleSetDivinitySkill}
-          onShowAwakened={showAwakenedDivinitySkills}
-          skills={branchBuilderSkills}
-        />
-        <View
-          style={styles.divinitySkillErrors}
-          testID="branch-builder-divinity-skill-errors"
-        >
-          <ValidationErrorMessages messages={divinitySkillErrors} />
-        </View>
-      </View>
+              <View
+                onLayout={handleSectionLayout("divinitySkills")}
+                style={styles.section}
+                testID="branch-builder-divinity-skills-section"
+              >
+                <DivinitySkillLoadoutSection
+                  awakenedEnabled={selectedDivinitySkills.awakenedEnabled}
+                  awakenedSkillIds={selectedDivinitySkills.awakened}
+                  availableSkillIds={selectedTreeSkillIds}
+                  baseSkillIds={selectedDivinitySkills.base}
+                  branches={branchBuilderBranches}
+                  onSelectSkill={handleSetDivinitySkill}
+                  onShowAwakened={handleShowAwakenedDivinitySkills}
+                  skills={branchBuilderSkills}
+                />
+                <View
+                  style={styles.divinitySkillErrors}
+                  testID="branch-builder-divinity-skill-errors"
+                >
+                  <ValidationErrorMessages messages={divinitySkillErrors} />
+                </View>
+              </View>
 
-      <View
-        onLayout={handleSectionLayout("branchGrid")}
-        style={styles.section}
-        testID="branch-builder-branch-grid-section"
-      >
-        <BranchGridSection
-          activeMajorSlot={activeMajorSlot}
-          branches={branchBuilderBranches}
-          columns={branchBuilderColumns}
-          errors={branchGridErrors}
-          onClearMajorSkill={(columnId, level) => {
-            setMajorSkill(columnId, level, null);
-            rollbackColumnProgress(columnId, level);
-            setActiveMajorSlot(null);
-          }}
-          onOpenMajorSlot={handleOpenMajorSlot}
-          onSelectMajorSkill={(columnId, level, skillId) => {
-            handleSetMajorSkill(columnId, level, skillId);
-          }}
-          onSelectBranch={handleSetColumnBranch}
-          onToggleProgress={handleToggleProgress}
-          progressLevels={progressLevels}
-          selectedBranches={selectedBranches}
-          selectedMajorSkills={selectedMajorSkills}
-          skills={branchBuilderSkills}
-          template={branchBuilderTemplate}
-        />
-      </View>
+              <View
+                onLayout={handleSectionLayout("branchGrid")}
+                style={styles.section}
+                testID="branch-builder-branch-grid-section"
+              >
+                <BranchGridSection
+                  activeMajorSlot={activeMajorSlot}
+                  branches={branchBuilderBranches}
+                  columns={branchBuilderColumns}
+                  errors={branchGridErrors}
+                  onClearMajorSkill={handleClearMajorSkill}
+                  onOpenMajorSlot={handleOpenMajorSlot}
+                  onSelectMajorSkill={(columnId, level, skillId) => {
+                    handleSetMajorSkill(columnId, level, skillId);
+                  }}
+                  onSelectBranch={handleSetColumnBranch}
+                  onToggleProgress={handleToggleProgress}
+                  progressLevels={progressLevels}
+                  selectedBranches={selectedBranches}
+                  selectedMajorSkills={selectedMajorSkills}
+                  skills={branchBuilderSkills}
+                  template={branchBuilderTemplate}
+                />
+              </View>
 
-      <View style={styles.section} testID="branch-builder-download-section">
-        <DownloadSection
-          backendStatus={backendStatus}
-          errors={validationErrors}
-          isPublishPending={isPublishPending}
-          isTabSavePending={isTabSavePending}
-          onErrorsLayout={handleSectionLayout("download")}
-          onDeleteFull={() => {
-            void handleDeleteFullBuildSet();
-          }}
-          onDownloadFull={handleDownloadFullJson}
-          onLoadFull={() => {
-            void handleLoadFullBuildSet();
-          }}
-          onLayout={handleSectionLayout("download")}
-          onPublishFull={() => {
-            void saveFullBuildSetToBackend("published");
-          }}
-          onSaveCurrent={() => {
-            void handleSaveCurrentTargetBuild();
-          }}
-          onSaveDraft={() => {
-            void saveFullBuildSetToBackend("draft");
-          }}
-        />
-      </View>
+              <View
+                style={styles.section}
+                testID="branch-builder-download-section"
+              >
+                <DownloadSection
+                  backendStatus={backendStatus}
+                  errors={validationErrors}
+                  isPublishPending={isPublishPending}
+                  isTabSavePending={isTabSavePending}
+                  onErrorsLayout={handleSectionLayout("download")}
+                  onDeleteFull={() => {
+                    void handleDeleteFullBuildSet();
+                  }}
+                  onDownloadFull={handleDownloadFullJson}
+                  onLoadFull={() => {
+                    void handleLoadFullBuildSet();
+                  }}
+                  onLayout={handleSectionLayout("download")}
+                  onPublishFull={() => {
+                    void saveFullBuildSetToBackend("published");
+                  }}
+                  onSaveCurrent={() => {
+                    void handleSaveCurrentTargetBuild();
+                  }}
+                  onSaveDraft={() => {
+                    void saveFullBuildSetToBackend("draft");
+                  }}
+                />
+              </View>
+            </>
+          )}
         </>
       ) : null}
       </ScrollView>

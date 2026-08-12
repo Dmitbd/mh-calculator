@@ -27,10 +27,25 @@ const mockHeroBuilderSectionProps = jest.fn<void, [Record<string, unknown>]>();
 const mockSignInAdmin = jest.fn();
 const mockSignOutAdmin = jest.fn();
 
-function getValidBastetBuildSet(): HeroBuildSet {
-  const buildSet = JSON.parse(
-    JSON.stringify(getHeroBuildSet("bastet")),
-  ) as HeroBuildSet;
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, reject, resolve };
+}
+
+function getValidHeroBuildSet(heroId: string): HeroBuildSet {
+  const buildSet = JSON.parse(JSON.stringify(getHeroBuildSet(heroId))) as
+    | HeroBuildSet
+    | null;
+
+  if (!buildSet) {
+    throw new Error(`Missing test build set for ${heroId}.`);
+  }
 
   const addRequiredDivinitySkill = (tabs: HeroBuildSet["tabs"]) => {
     tabs.forEach((tab) => {
@@ -48,6 +63,31 @@ function getValidBastetBuildSet(): HeroBuildSet {
   };
 
   addRequiredDivinitySkill(buildSet.tabs);
+
+  return buildSet;
+}
+
+function getValidBastetBuildSet(): HeroBuildSet {
+  return getValidHeroBuildSet("bastet");
+}
+
+function getPvpOnlyBastetBuildSet(): HeroBuildSet {
+  const buildSet = getValidBastetBuildSet();
+  const clearBuilds = (tabs: HeroBuildSet["tabs"]) => {
+    tabs.forEach((tab) => {
+      tab.build = null;
+
+      if (tab.children) {
+        clearBuilds(tab.children);
+      }
+    });
+  };
+
+  buildSet.tabs.forEach((tab) => {
+    if (tab.id !== "pvp") {
+      clearBuilds([tab]);
+    }
+  });
 
   return buildSet;
 }
@@ -235,7 +275,10 @@ describe("DivinityBranchBuilderScreen", () => {
     await waitFor(() =>
       expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
     );
-    expect(screen.getByText("Загрузка героев")).toBeTruthy();
+    expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+    expect(screen.getByLabelText("Бастет selected hero")).toBeTruthy();
+    expect(screen.getByLabelText("Загрузка списка героев")).toBeTruthy();
+    expect(screen.queryByText("Загрузка героев")).toBeNull();
     expect(screen.queryByLabelText("Герой Бастет выбран")).toBeNull();
 
     await act(async () => {
@@ -734,7 +777,7 @@ describe("DivinityBranchBuilderScreen", () => {
     fireEvent.press(await screen.findByLabelText("Выбрать героя"));
     fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
 
-    expect(screen.getByText("Загружаем черновик...")).toBeTruthy();
+    expect(screen.getAllByText("Загружаем черновик...")).toHaveLength(2);
     expect(mockHeroBuilderSectionProps).toHaveBeenLastCalledWith(
       expect.objectContaining({ selectedHeroId: null }),
     );
@@ -745,6 +788,324 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(mockHeroBuilderSectionProps).toHaveBeenLastCalledWith(
       expect.objectContaining({ selectedHeroId: "bastet" }),
     );
+  });
+
+  it("locks stale form, tab, save, and publish controls while a different draft loads", async () => {
+    const draft = createDeferred<HeroBuildSet>();
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: ["morana"],
+      publishedHeroIds: ["bastet"],
+    });
+    mockFetchDraftHeroBuildSet.mockReturnValue(draft.promise);
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    const removeRune = screen.getByLabelText("Remove Air Rune");
+    const pveTab = screen.getByLabelText("Select PvE build tab");
+    const save = screen.getByText("Сохранить вкладку");
+    const publish = screen.getByText("Опубликовать");
+
+    fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Морана"));
+
+    expect(screen.getAllByText("Загружаем черновик...")).toHaveLength(2);
+
+    act(() => {
+      fireEvent.press(save);
+      fireEvent.press(publish);
+      fireEvent.press(pveTab);
+      fireEvent.press(removeRune);
+    });
+
+    expect(mockSaveHeroBuildSet).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
+    expect(screen.queryByLabelText("Select PvE build tab")).toBeNull();
+    expect(screen.queryByText("Сохранить вкладку")).toBeNull();
+    expect(screen.queryByText("Опубликовать")).toBeNull();
+
+    await act(async () => {
+      draft.reject(new Error("draft failed"));
+    });
+
+    expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+    expect(await screen.findByLabelText("Remove Air Rune")).toBeTruthy();
+    expect(
+      screen.getByLabelText("Select PvP build tab").props.accessibilityState,
+    ).toEqual(expect.objectContaining({ selected: true }));
+  });
+
+  it("keeps the explicit unfinished hero when its draft resolves before the initial edit load", async () => {
+    const initialLoad = createDeferred<HeroBuildSet | null>();
+    const draftLoad = createDeferred<HeroBuildSet>();
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: ["morana"],
+      publishedHeroIds: ["bastet"],
+    });
+    mockLoadPublishedHeroBuildSet.mockReturnValue(initialLoad.promise);
+    mockFetchDraftHeroBuildSet.mockReturnValue(draftLoad.promise);
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Морана"));
+
+    await act(async () => {
+      draftLoad.resolve(getValidHeroBuildSet("morana"));
+    });
+    expect(await screen.findByLabelText("Изменить героя: Морана")).toBeTruthy();
+
+    await act(async () => {
+      initialLoad.resolve(getValidBastetBuildSet());
+    });
+
+    expect(screen.getByLabelText("Изменить героя: Морана")).toBeTruthy();
+    expect(screen.queryByLabelText("Изменить героя: Бастет")).toBeNull();
+    expect(screen.queryByText("Билд загружен для редактирования.")).toBeNull();
+  });
+
+  it("ignores the initial edit response when it resolves before the explicit draft", async () => {
+    const initialLoad = createDeferred<HeroBuildSet | null>();
+    const draftLoad = createDeferred<HeroBuildSet>();
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: ["morana"],
+      publishedHeroIds: ["bastet"],
+    });
+    mockLoadPublishedHeroBuildSet.mockReturnValue(initialLoad.promise);
+    mockFetchDraftHeroBuildSet.mockReturnValue(draftLoad.promise);
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Морана"));
+
+    await act(async () => {
+      initialLoad.resolve(getValidBastetBuildSet());
+    });
+
+    expect(screen.getAllByText("Загружаем черновик...")).toHaveLength(2);
+    expect(screen.queryByText("Билд загружен для редактирования.")).toBeNull();
+
+    await act(async () => {
+      draftLoad.resolve(getValidHeroBuildSet("morana"));
+    });
+
+    expect(await screen.findByLabelText("Изменить героя: Морана")).toBeTruthy();
+    expect(screen.queryByLabelText("Изменить героя: Бастет")).toBeNull();
+  });
+
+  it("ignores a late initial edit error and finally after an explicit draft wins", async () => {
+    const initialLoad = createDeferred<HeroBuildSet | null>();
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: ["morana"],
+      publishedHeroIds: ["bastet"],
+    });
+    mockLoadPublishedHeroBuildSet.mockReturnValue(initialLoad.promise);
+    mockFetchDraftHeroBuildSet.mockResolvedValue(getValidHeroBuildSet("morana"));
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Морана"));
+    expect(await screen.findByLabelText("Изменить героя: Морана")).toBeTruthy();
+
+    await act(async () => {
+      initialLoad.reject(new Error("late initial failure"));
+    });
+
+    expect(screen.getByLabelText("Изменить героя: Морана")).toBeTruthy();
+    expect(screen.queryByText("Ошибка Supabase: late initial failure")).toBeNull();
+    expect(screen.queryByText("Загружаем билд...")).toBeNull();
+  });
+
+  it("invalidates the initial edit load when a fresh hero is selected", async () => {
+    const initialLoad = createDeferred<HeroBuildSet | null>();
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: [],
+      publishedHeroIds: ["bastet"],
+    });
+    mockLoadPublishedHeroBuildSet.mockReturnValue(initialLoad.promise);
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Морана"));
+    expect(screen.getByLabelText("Изменить героя: Морана")).toBeTruthy();
+
+    await act(async () => {
+      initialLoad.resolve(getValidBastetBuildSet());
+    });
+
+    expect(screen.getByLabelText("Изменить героя: Морана")).toBeTruthy();
+    expect(screen.queryByLabelText("Изменить героя: Бастет")).toBeNull();
+    expect(screen.queryByText("Билд загружен для редактирования.")).toBeNull();
+  });
+
+  it("does not consume an initial edit payload that resolves after unmount", async () => {
+    const initialLoad = createDeferred<HeroBuildSet | null>();
+    const buildSet = getValidBastetBuildSet();
+    const tabs = buildSet.tabs;
+    let tabsReadCount = 0;
+    const consoleError = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    Object.defineProperty(buildSet, "tabs", {
+      configurable: true,
+      get: () => {
+        tabsReadCount += 1;
+        return tabs;
+      },
+    });
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockLoadPublishedHeroBuildSet.mockReturnValue(initialLoad.promise);
+
+    const view = render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await waitFor(() =>
+      expect(mockLoadPublishedHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
+    view.unmount();
+
+    try {
+      await act(async () => {
+        initialLoad.resolve(buildSet);
+      });
+
+      expect(tabsReadCount).toBe(0);
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("does not inspect an initial edit error that rejects after unmount", async () => {
+    const initialLoad = createDeferred<HeroBuildSet | null>();
+    const lateError = new Error();
+    let messageReadCount = 0;
+    const consoleError = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    Object.defineProperty(lateError, "message", {
+      configurable: true,
+      get: () => {
+        messageReadCount += 1;
+        return "late initial failure";
+      },
+    });
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockLoadPublishedHeroBuildSet.mockReturnValue(initialLoad.promise);
+
+    const view = render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await waitFor(() =>
+      expect(mockLoadPublishedHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
+    view.unmount();
+
+    try {
+      await act(async () => {
+        initialLoad.reject(lateError);
+      });
+
+      expect(messageReadCount).toBe(0);
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("restores a true one-leaf draft and keeps publication blocked for missing PvE leaves", async () => {
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: ["bastet"],
+      publishedHeroIds: [],
+    });
+    mockFetchDraftHeroBuildSet.mockResolvedValue(getPvpOnlyBastetBuildSet());
+
+    renderAdminBuilder();
+
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
+
+    expect(await screen.findByLabelText("Remove Air Rune")).toBeTruthy();
+    expect(
+      screen.getByLabelText("Select PvP build tab").props.accessibilityState,
+    ).toEqual(expect.objectContaining({ selected: true }));
+
+    fireEvent.press(screen.getByText("Опубликовать"));
+
+    expect(mockSaveHeroBuildSet).not.toHaveBeenCalled();
+    expect(
+      screen.getAllByText("PvE -> Боссы: Сохраните билд для этой вкладки.")
+        .length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("PvE -> Кампания: Сохраните билд для этой вкладки.")
+        .length,
+    ).toBeGreaterThan(0);
+
+    fireEvent.press(screen.getByLabelText("Select PvE build tab"));
+
+    expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
+    expect(screen.getByLabelText("Добавить оружие")).toBeTruthy();
+    expect(screen.getByLabelText("Добавить руну")).toBeTruthy();
+    expect(
+      screen.getByLabelText("Select Боссы build tab").props.accessibilityState,
+    ).toEqual(expect.objectContaining({ selected: true }));
   });
 
   it("keeps the current builder state when draft loading fails", async () => {
@@ -817,7 +1178,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     fireEvent.press(await screen.findByLabelText("Выбрать героя"));
     fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
-    expect(screen.getByText("Загружаем черновик...")).toBeTruthy();
+    expect(screen.getAllByText("Загружаем черновик...")).toHaveLength(2);
 
     fireEvent.press(screen.getByText("Выйти"));
     await screen.findByPlaceholderText("Email");
@@ -1021,6 +1382,43 @@ describe("DivinityBranchBuilderScreen", () => {
         }),
       );
     });
+  });
+
+  it("keeps the selected hero header during the not-created to unfinished refresh", async () => {
+    const refresh = createDeferred<HeroBuildSetStatusIds>();
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds
+      .mockResolvedValueOnce({ draftHeroIds: [], publishedHeroIds: [] })
+      .mockReturnValueOnce(refresh.promise);
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
+    expect(screen.getByLabelText("Герой Бастет выбран")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
+    );
+
+    expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+    expect(screen.getByLabelText("Бастет selected hero")).toBeTruthy();
+    expect(screen.getByLabelText("Загрузка списка героев")).toBeTruthy();
+    expect(screen.queryByText("Загрузка героев")).toBeNull();
+
+    await act(async () => {
+      refresh.resolve({ draftHeroIds: ["bastet"], publishedHeroIds: [] });
+    });
+
+    expect(await screen.findAllByText("Вкладка сохранена.")).not.toHaveLength(0);
   });
 
   it("blocks duplicate save and publication while a tab save is pending", async () => {
@@ -1543,6 +1941,154 @@ describe("DivinityBranchBuilderScreen", () => {
 
     expect(screen.queryByText("Админ вышел.")).toBeNull();
     expect(screen.getByPlaceholderText("Email")).toBeTruthy();
+  });
+
+  it("locks all stale builder controls until a deferred logout succeeds", async () => {
+    const signOut = createDeferred<void>();
+
+    mockGetSupabaseClient.mockReturnValue({ auth: {} });
+    mockSignOutAdmin.mockReturnValue(signOut.promise);
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    const removeRune = screen.getByLabelText("Remove Air Rune");
+    const pveTab = screen.getByLabelText("Select PvE build tab");
+    const save = screen.getByText("Сохранить вкладку");
+    const publish = screen.getByText("Опубликовать");
+
+    fireEvent.press(screen.getByText("Выйти"));
+
+    expect(screen.getByText("Выходим...")).toBeTruthy();
+
+    act(() => {
+      fireEvent.press(removeRune);
+      fireEvent.press(pveTab);
+      fireEvent.press(save);
+      fireEvent.press(publish);
+    });
+
+    expect(mockSaveHeroBuildSet).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
+    expect(screen.queryByText("Сохранить вкладку")).toBeNull();
+
+    await act(async () => {
+      signOut.resolve(undefined);
+    });
+
+    expect(await screen.findByPlaceholderText("Email")).toBeTruthy();
+  });
+
+  it("rejects stale writes and mutations during logout, then unlocks after rejection", async () => {
+    const firstSave = createDeferred<void>();
+    const signOut = createDeferred<void>();
+
+    mockGetSupabaseClient.mockReturnValue({ auth: {} });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: [],
+      publishedHeroIds: ["bastet"],
+    });
+    mockSaveHeroBuildSet
+      .mockReturnValueOnce(firstSave.promise)
+      .mockResolvedValueOnce(undefined);
+    mockSignOutAdmin.mockReturnValue(signOut.promise);
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
+    const morana = screen.getByLabelText("Выбрать героя Морана");
+    const removeRune = screen.getByLabelText("Remove Air Rune");
+    const pveTab = screen.getByLabelText("Select PvE build tab");
+    const publish = screen.getByText("Опубликовать");
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1));
+
+    fireEvent.press(screen.getByText("Выйти"));
+    expect(screen.getByText("Выходим...")).toBeTruthy();
+
+    act(() => {
+      fireEvent.press(removeRune);
+      fireEvent.press(pveTab);
+      fireEvent.press(publish);
+      fireEvent.press(morana);
+    });
+    await act(async () => {
+      firstSave.resolve(undefined);
+    });
+
+    expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(1);
+    expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Вкладка сохранена.")).toBeNull();
+
+    await act(async () => {
+      signOut.reject(new Error("session retained"));
+    });
+
+    expect(
+      await screen.findByText("Ошибка выхода: session retained"),
+    ).toBeTruthy();
+    expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+    expect(screen.getByLabelText("Remove Air Rune")).toBeTruthy();
+    expect(
+      screen.getByLabelText("Select PvP build tab").props.accessibilityState,
+    ).toEqual(expect.objectContaining({ selected: true }));
+
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    await waitFor(() => expect(mockSaveHeroBuildSet).toHaveBeenCalledTimes(2));
+  });
+
+  it("restarts an interrupted initial edit load after logout rejection", async () => {
+    const interruptedLoad = createDeferred<HeroBuildSet | null>();
+    const signOut = createDeferred<void>();
+
+    mockGetSupabaseClient.mockReturnValue({ auth: {} });
+    mockLoadPublishedHeroBuildSet
+      .mockReturnValueOnce(interruptedLoad.promise)
+      .mockResolvedValueOnce(getValidBastetBuildSet());
+    mockSignOutAdmin.mockReturnValue(signOut.promise);
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await waitFor(() =>
+      expect(mockLoadPublishedHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
+    expect(screen.getByText("Загружаем билд...")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Выйти"));
+    await act(async () => {
+      signOut.reject(new Error("session retained"));
+    });
+
+    await waitFor(() =>
+      expect(mockLoadPublishedHeroBuildSet).toHaveBeenCalledTimes(2),
+    );
+    expect(await screen.findByLabelText("Изменить героя: Бастет")).toBeTruthy();
+
+    await act(async () => {
+      interruptedLoad.resolve(getValidHeroBuildSet("morana"));
+    });
+
+    expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+    expect(screen.queryByLabelText("Изменить героя: Морана")).toBeNull();
   });
 
   it("keeps equipment selections independent between target tabs", () => {

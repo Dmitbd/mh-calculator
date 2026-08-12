@@ -329,7 +329,7 @@ it("keeps an interactive loading header and restores an open catalog", () => {
   expect(screen.getByText("UR")).toBeTruthy();
 });
 
-it("does not expose hero options while availability is loading", () => {
+it("keeps the selected hero header while availability refresh is loading", () => {
   render(
     <HeroGuideSelector
       {...props}
@@ -339,10 +339,20 @@ it("does not expose hero options while availability is loading", () => {
     />,
   );
 
-  expect(screen.getByText("Загрузка героев")).toBeTruthy();
+  const header = screen.getByLabelText(`Изменить героя: ${ssrHero.name.ru}`);
+  expect(header.props.accessibilityState).toEqual(
+    expect.objectContaining({ busy: true }),
+  );
+  expect(screen.getByText(ssrHero.name.ru)).toBeTruthy();
   expect(
-    screen.queryByLabelText(`Герой ${ssrHero.name.ru} выбран`),
-  ).toBeNull();
+    screen.getByLabelText(`${ssrHero.name.ru} selected hero`),
+  ).toBeTruthy();
+  expect(screen.queryByText("Загрузка героев")).toBeNull();
+
+  fireEvent.press(header);
+
+  expect(screen.getByLabelText("Загрузка списка героев")).toBeTruthy();
+  expect(screen.queryByLabelText(`Герой ${ssrHero.name.ru} выбран`)).toBeNull();
   expect(screen.queryByLabelText(`Выбрать героя ${urHero.name.ru}`)).toBeNull();
 });
 

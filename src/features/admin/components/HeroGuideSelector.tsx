@@ -51,15 +51,15 @@ export function HeroGuideSelector({
           accessibilityLabel={
             isDraftLoadPending
               ? "Загрузка черновика"
-              : isLoading
-              ? "Загрузка героев"
               : selectedHero
               ? `Изменить героя: ${selectedHero.name.ru}`
+              : isLoading
+              ? "Загрузка героев"
               : "Выбрать героя"
           }
           accessibilityRole="button"
           accessibilityState={{
-            busy: isDraftLoadPending,
+            busy: isDraftLoadPending || isLoading,
             expanded: isExpanded,
           }}
           onPress={() => setIsExpanded((current) => !current)}
@@ -69,15 +69,6 @@ export function HeroGuideSelector({
             <View style={styles.loadingHeader}>
               <ActivityIndicator color="#d6c2a4" size="small" />
               <Text style={styles.toggleText}>Загружаем черновик...</Text>
-            </View>
-          ) : isLoading ? (
-            <View style={styles.loadingHeader}>
-              <ActivityIndicator
-                accessibilityLabel="Загрузка героев"
-                color="#d6c2a4"
-                size="small"
-              />
-              <Text style={styles.toggleText}>Загрузка героев</Text>
             </View>
           ) : selectedHero ? (
             <View style={styles.toggleHero}>
@@ -93,6 +84,15 @@ export function HeroGuideSelector({
               >
                 {selectedHero.name.ru}
               </Text>
+            </View>
+          ) : isLoading ? (
+            <View style={styles.loadingHeader}>
+              <ActivityIndicator
+                accessibilityLabel="Загрузка героев"
+                color="#d6c2a4"
+                size="small"
+              />
+              <Text style={styles.toggleText}>Загрузка героев</Text>
             </View>
           ) : (
             <Text style={styles.toggleText}>Выбрать героя</Text>
