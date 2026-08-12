@@ -1,6 +1,9 @@
 import type { HeroBuildSet } from "@/features/game-data/heroes/types";
 
 import {
+  deleteDraftHeroBuildSet,
+  fetchHeroBuildSetStatusIds,
+  fetchDraftHeroBuildSet,
   deleteHeroBuildSet,
   fetchPublishedHeroBuildSet,
   fetchPublishedHeroIds,
@@ -38,6 +41,80 @@ function createQueryResult(result: unknown) {
 }
 
 describe("heroBuildSetRepository", () => {
+  it("fetches draft and published hero ids in one status catalog query", async () => {
+    const query = createQueryResult({
+      data: [
+        { hero_id: "bastet", status: "draft" },
+        { hero_id: "morana", status: "published" },
+        { hero_id: "bastet", status: "published" },
+      ],
+      error: null,
+    });
+    const client = { from: jest.fn(() => query) };
+
+    await expect(fetchHeroBuildSetStatusIds(client)).resolves.toEqual({
+      draftHeroIds: ["bastet"],
+      publishedHeroIds: ["morana", "bastet"],
+    });
+    expect(query.select).toHaveBeenCalledWith("hero_id,status");
+  });
+
+  it("fetches only the draft build set for a hero", async () => {
+    const query = createQueryResult({ data: { payload: buildSet }, error: null });
+    const client = { from: jest.fn(() => query) };
+
+    await expect(fetchDraftHeroBuildSet(client, "bastet")).resolves.toEqual(
+      buildSet,
+    );
+    expect(query.select).toHaveBeenCalledWith("payload");
+    expect(query.eq).toHaveBeenCalledWith("hero_id", "bastet");
+    expect(query.eq).toHaveBeenCalledWith("status", "draft");
+    expect(query.maybeSingle).toHaveBeenCalledTimes(1);
+  });
+
+  it("deletes only the draft row for one hero", async () => {
+    const query = createQueryResult({ data: null, error: null });
+    const client = { from: jest.fn(() => query) };
+
+    await deleteDraftHeroBuildSet(client, "bastet");
+    expect(query.delete).toHaveBeenCalledTimes(1);
+    expect(query.eq).toHaveBeenCalledWith("hero_id", "bastet");
+    expect(query.eq).toHaveBeenCalledWith("status", "draft");
+  });
+
+  it("throws when the status catalog cannot be loaded", async () => {
+    const query = createQueryResult({
+      data: null,
+      error: { message: "network down" },
+    });
+
+    await expect(
+      fetchHeroBuildSetStatusIds({ from: jest.fn(() => query) }),
+    ).rejects.toThrow("network down");
+  });
+
+  it("throws when a draft cannot be loaded", async () => {
+    const query = createQueryResult({
+      data: null,
+      error: { message: "network down" },
+    });
+
+    await expect(
+      fetchDraftHeroBuildSet({ from: jest.fn(() => query) }, "bastet"),
+    ).rejects.toThrow("network down");
+  });
+
+  it("throws when a draft cannot be deleted", async () => {
+    const query = createQueryResult({
+      data: null,
+      error: { message: "network down" },
+    });
+
+    await expect(
+      deleteDraftHeroBuildSet({ from: jest.fn(() => query) }, "bastet"),
+    ).rejects.toThrow("network down");
+  });
+
   it("fetches only the published build set for a hero", async () => {
     const query = createQueryResult({
       data: { payload: buildSet },

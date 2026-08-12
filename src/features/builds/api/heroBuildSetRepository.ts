@@ -15,6 +15,16 @@ type HeroBuildSetHeroIdRow = {
   hero_id: string;
 };
 
+type HeroBuildSetStatusRow = {
+  hero_id: string;
+  status: HeroBuildSetStatus;
+};
+
+export type HeroBuildSetStatusIds = {
+  draftHeroIds: string[];
+  publishedHeroIds: string[];
+};
+
 type SupabaseQuery = {
   delete: () => SupabaseQuery;
   eq: (column: string, value: string) => SupabaseQuery;
@@ -36,6 +46,32 @@ export type HeroBuildSetSupabaseClient = {
   from: (table: "hero_build_sets") => SupabaseQuery;
 };
 
+export async function fetchHeroBuildSetStatusIds(
+  client: HeroBuildSetSupabaseClient,
+): Promise<HeroBuildSetStatusIds> {
+  const { data, error } = await (client
+    .from("hero_build_sets")
+    .select("hero_id,status") as unknown as Promise<
+    QueryResult<HeroBuildSetStatusRow[]>
+  >);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []).reduce<HeroBuildSetStatusIds>(
+    (ids, row) => {
+      if (row.status === "draft") {
+        ids.draftHeroIds.push(row.hero_id);
+      } else {
+        ids.publishedHeroIds.push(row.hero_id);
+      }
+      return ids;
+    },
+    { draftHeroIds: [], publishedHeroIds: [] },
+  );
+}
+
 export async function fetchPublishedHeroBuildSet(
   client: HeroBuildSetSupabaseClient,
   heroId: string,
@@ -51,6 +87,21 @@ export async function fetchPublishedHeroBuildSet(
     throw new Error(error.message);
   }
 
+  return data?.payload ?? null;
+}
+
+export async function fetchDraftHeroBuildSet(
+  client: HeroBuildSetSupabaseClient,
+  heroId: string,
+): Promise<HeroBuildSet | null> {
+  const { data, error } = await client
+    .from("hero_build_sets")
+    .select("payload")
+    .eq("hero_id", heroId)
+    .eq("status", "draft")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
   return data?.payload ?? null;
 }
 
@@ -110,6 +161,19 @@ export async function deleteHeroBuildSet(
   if (error) {
     throw new Error(error.message);
   }
+}
+
+export async function deleteDraftHeroBuildSet(
+  client: HeroBuildSetSupabaseClient,
+  heroId: string,
+): Promise<void> {
+  const { error } = await (client
+    .from("hero_build_sets")
+    .delete()
+    .eq("hero_id", heroId)
+    .eq("status", "draft") as unknown as Promise<QueryResult<unknown>>);
+
+  if (error) throw new Error(error.message);
 }
 
 export async function loadPublishedHeroBuildSet(params: {
