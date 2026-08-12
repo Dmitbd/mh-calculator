@@ -215,7 +215,7 @@ describe("DivinityBranchBuilderScreen", () => {
 
     expect(
       await screen.findByText(
-        "Не удалось загрузить список опубликованных гайдов",
+        "Не удалось загрузить списки героев",
       ),
     ).toBeTruthy();
     expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
@@ -382,7 +382,7 @@ describe("DivinityBranchBuilderScreen", () => {
       ),
     ).not.toHaveLength(0);
     expect(
-      screen.getByText("Не удалось загрузить список опубликованных гайдов"),
+      screen.getByText("Не удалось загрузить списки героев"),
     ).toBeTruthy();
     expect(screen.getByText("Повторить")).toBeTruthy();
     const calls = mockHeroBuilderSectionProps.mock.calls;
@@ -419,7 +419,7 @@ describe("DivinityBranchBuilderScreen", () => {
       ),
     ).not.toHaveLength(0);
     expect(
-      screen.getByText("Не удалось загрузить список опубликованных гайдов"),
+      screen.getByText("Не удалось загрузить списки героев"),
     ).toBeTruthy();
     expect(screen.getByText("Повторить")).toBeTruthy();
     const calls = mockHeroBuilderSectionProps.mock.calls;
@@ -834,6 +834,68 @@ describe("DivinityBranchBuilderScreen", () => {
 
     await act(async () => {
       draft.reject(new Error("draft failed"));
+    });
+
+    expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+    expect(await screen.findByLabelText("Remove Air Rune")).toBeTruthy();
+    expect(
+      screen.getByLabelText("Select PvP build tab").props.accessibilityState,
+    ).toEqual(expect.objectContaining({ selected: true }));
+  });
+
+  it("locks an existing form while a new initial edit entity loads", async () => {
+    const routeLoad = createDeferred<HeroBuildSet | null>();
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: [],
+      publishedHeroIds: ["bastet", "morana"],
+    });
+
+    const view = render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    const removeRune = screen.getByLabelText("Remove Air Rune");
+    const pveTab = screen.getByLabelText("Select PvE build tab");
+    const save = screen.getByText("Сохранить вкладку");
+    const publish = screen.getByText("Опубликовать");
+    mockLoadPublishedHeroBuildSet.mockReturnValueOnce(routeLoad.promise);
+
+    view.rerender(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="morana"
+        initialMode="edit"
+      />,
+    );
+
+    await waitFor(() =>
+      expect(mockLoadPublishedHeroBuildSet).toHaveBeenCalledTimes(2),
+    );
+    expect(screen.getByText("Загружаем билд...")).toBeTruthy();
+    expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+    expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
+    expect(screen.queryByLabelText("Select PvE build tab")).toBeNull();
+    expect(screen.queryByText("Сохранить вкладку")).toBeNull();
+    expect(screen.queryByText("Опубликовать")).toBeNull();
+
+    act(() => {
+      fireEvent.press(removeRune);
+      fireEvent.press(pveTab);
+      fireEvent.press(save);
+      fireEvent.press(publish);
+    });
+
+    expect(mockSaveHeroBuildSet).not.toHaveBeenCalled();
+
+    await act(async () => {
+      routeLoad.reject(new Error("route failed"));
     });
 
     expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
@@ -1622,7 +1684,7 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(screen.queryByText("Вкладка сохранена.")).toBeNull();
     expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
     expect(
-      screen.getByText("Не удалось загрузить список опубликованных гайдов"),
+      screen.getByText("Не удалось загрузить списки героев"),
     ).toBeTruthy();
   });
 
@@ -1737,7 +1799,7 @@ describe("DivinityBranchBuilderScreen", () => {
     ).not.toHaveLength(0);
     expect(
       await screen.findByText(
-        "Не удалось загрузить список опубликованных гайдов",
+        "Не удалось загрузить списки героев",
       ),
     ).toBeTruthy();
     fireEvent.press(screen.getByText("Повторить"));
@@ -2087,6 +2149,58 @@ describe("DivinityBranchBuilderScreen", () => {
       interruptedLoad.resolve(getValidHeroBuildSet("morana"));
     });
 
+    expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
+    expect(screen.queryByLabelText("Изменить героя: Морана")).toBeNull();
+  });
+
+  it("restarts only the interrupted initial edit load after successful logout and sign in", async () => {
+    const interruptedLoad = createDeferred<HeroBuildSet | null>();
+    const resumedLoad = createDeferred<HeroBuildSet | null>();
+    const signOut = createDeferred<void>();
+
+    mockGetSupabaseClient.mockReturnValue({ auth: {} });
+    mockLoadPublishedHeroBuildSet
+      .mockReturnValueOnce(interruptedLoad.promise)
+      .mockReturnValueOnce(resumedLoad.promise);
+    mockSignOutAdmin.mockReturnValue(signOut.promise);
+    mockSignInAdmin.mockResolvedValue({ email: "admin@example.com" });
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={{ email: "admin@example.com" }}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await waitFor(() =>
+      expect(mockLoadPublishedHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
+    fireEvent.press(screen.getByText("Выйти"));
+    await act(async () => {
+      signOut.resolve(undefined);
+    });
+
+    fireEvent.changeText(
+      await screen.findByPlaceholderText("Email"),
+      "admin@example.com",
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("Пароль"), "secret");
+    fireEvent.press(screen.getByText("Войти"));
+
+    await waitFor(() =>
+      expect(mockLoadPublishedHeroBuildSet).toHaveBeenCalledTimes(2),
+    );
+    await act(async () => {
+      resumedLoad.resolve(getValidBastetBuildSet());
+    });
+    expect(await screen.findByLabelText("Изменить героя: Бастет")).toBeTruthy();
+
+    await act(async () => {
+      interruptedLoad.resolve(getValidHeroBuildSet("morana"));
+    });
+
+    expect(mockLoadPublishedHeroBuildSet).toHaveBeenCalledTimes(2);
     expect(screen.getByLabelText("Изменить героя: Бастет")).toBeTruthy();
     expect(screen.queryByLabelText("Изменить героя: Морана")).toBeNull();
   });

@@ -181,8 +181,19 @@ export function DivinityBranchBuilderScreen({
   const [isDraftLoadPending, setIsDraftLoadPending] = useState(false);
   const [isHeroListLoading, setIsHeroListLoading] = useState(true);
   const [heroListError, setHeroListError] = useState<string | null>(null);
-  const isBuilderTransitionPending = isDraftLoadPending || isAuthPending;
+  const isBuilderTransitionPending =
+    isEditBuildLoading || isDraftLoadPending || isAuthPending;
   const isBuilderActionBlocked = useCallback(
+    () =>
+      isEditBuildLoading ||
+      isDraftLoadPending ||
+      isAuthPending ||
+      initialEditLoadInFlight.current ||
+      draftLoadInFlight.current ||
+      authTransitionInFlight.current,
+    [isAuthPending, isDraftLoadPending, isEditBuildLoading],
+  );
+  const isHeroSelectionBlocked = useCallback(
     () =>
       isDraftLoadPending ||
       isAuthPending ||
@@ -992,6 +1003,9 @@ export function DivinityBranchBuilderScreen({
 
     if (!client) {
       if (isCurrentRequest()) {
+        if (shouldRetryInitialEditLoad) {
+          loadedEditHeroId.current = null;
+        }
         resetHeroStatusList();
         setAdminSession(null);
         setToast({ kind: "success", message: "Выход выполнен." });
@@ -1008,6 +1022,9 @@ export function DivinityBranchBuilderScreen({
         return;
       }
 
+      if (shouldRetryInitialEditLoad) {
+        loadedEditHeroId.current = null;
+      }
       resetHeroStatusList();
       setAdminSession(null);
       setToast({ kind: "success", message: "Выход выполнен." });
@@ -1057,7 +1074,7 @@ export function DivinityBranchBuilderScreen({
   };
 
   const handleSelectHero = async (heroId: string) => {
-    if (isBuilderActionBlocked()) {
+    if (isHeroSelectionBlocked()) {
       return;
     }
 
@@ -1333,12 +1350,6 @@ export function DivinityBranchBuilderScreen({
         </View>
       ) : null}
 
-      {isEditBuildLoading ? (
-        <View style={styles.loadingCard}>
-          <Text style={styles.loadingText}>Загружаем билд...</Text>
-        </View>
-      ) : null}
-
       {isAuthChecked && adminSession ? (
         <>
           {!isBuilderTransitionPending ? (
@@ -1391,7 +1402,9 @@ export function DivinityBranchBuilderScreen({
               testID="branch-builder-transition-loading"
             >
               <Text style={styles.loadingText}>
-                {isDraftLoadPending
+                {isEditBuildLoading
+                  ? "Загружаем билд..."
+                  : isDraftLoadPending
                   ? "Загружаем черновик..."
                   : "Завершаем авторизацию..."}
               </Text>

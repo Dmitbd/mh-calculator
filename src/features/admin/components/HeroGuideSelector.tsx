@@ -125,7 +125,7 @@ export function HeroGuideSelector({
       {error ? (
         <View style={styles.stateCard}>
           <Text accessibilityLiveRegion="polite" style={styles.stateText}>
-            Не удалось загрузить список опубликованных гайдов
+            Не удалось загрузить списки героев
           </Text>
           <Pressable
             accessibilityRole="button"

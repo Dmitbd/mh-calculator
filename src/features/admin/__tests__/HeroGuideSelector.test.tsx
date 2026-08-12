@@ -293,7 +293,7 @@ it("shows loading, retryable error, and empty states", () => {
 
   rerender(<HeroGuideSelector {...props} error="failed" />);
   expect(
-    screen.getByText("Не удалось загрузить список опубликованных гайдов").props
+    screen.getByText("Не удалось загрузить списки героев").props
       .accessibilityLiveRegion,
   ).toBe("polite");
   fireEvent.press(screen.getByText("Повторить"));
@@ -367,7 +367,7 @@ it("keeps only the selected hero visible when availability loading fails", () =>
   );
 
   expect(
-    screen.getByText("Не удалось загрузить список опубликованных гайдов"),
+    screen.getByText("Не удалось загрузить списки героев"),
   ).toBeTruthy();
   expect(screen.getByLabelText(`Герой ${ssrHero.name.ru} выбран`)).toBeTruthy();
   expect(screen.queryByLabelText(`Выбрать героя ${urHero.name.ru}`)).toBeNull();
