@@ -4,7 +4,7 @@ import {
   divinityBranches,
   divinitySkills,
   divinityTreeTemplate,
-  getDivinitySkillLoadoutCost,
+  getDivinitySkillNodeCost,
 } from "@/features/game-data/divinity";
 import {
   equipmentArtifacts,
@@ -23,6 +23,7 @@ import {
   addHeroBuildSetSchemaIssue as addIssue,
   isHeroBuildSetCanonicalUtcDate as isCanonicalUtcDate,
   isHeroBuildSetPlainObject as isPlainObject,
+  readHeroBuildSetArrayEntry as readArrayEntry,
   validateHeroBuildSetAllowedKeys as validateAllowedKeys,
   validateHeroBuildSetEnum as validateEnum,
   validateHeroBuildSetInteger as validateInteger,
@@ -66,25 +67,29 @@ export function validateHeroBuildLeaf(
     return;
   }
 
-  validateAllowedKeys(
-    value,
-    [
-      "schemaVersion",
-      "gameMode",
-      "heroId",
-      "heroName",
-      "columns",
-      "majorNodes",
-      "divinitySkills",
-      "weaponAwakening",
-      "equipment",
-      "progress",
-      "activeNodes",
-      "metadata",
-    ],
-    path,
-    issues,
-  );
+  if (
+    !validateAllowedKeys(
+      value,
+      [
+        "schemaVersion",
+        "gameMode",
+        "heroId",
+        "heroName",
+        "columns",
+        "majorNodes",
+        "divinitySkills",
+        "weaponAwakening",
+        "equipment",
+        "progress",
+        "activeNodes",
+        "metadata",
+      ],
+      path,
+      issues,
+    )
+  ) {
+    return;
+  }
 
   validateLiteral(value.schemaVersion, 1, `${path}.schemaVersion`, issues);
 
@@ -170,13 +175,9 @@ function validateColumns(
     return;
   }
 
-  validateAllowedKeys(value, columnIds, path, issues);
-
-  Object.keys(value).forEach((columnId) => {
-    if (!columnIds.includes(columnId as (typeof columnIds)[number])) {
-      addIssue(issues, `${path}.${columnId}`, "must be a known column");
-    }
-  });
+  if (!validateAllowedKeys(value, columnIds, path, issues)) {
+    return;
+  }
 
   columnIds.forEach((columnId) => {
     const branchId = value[columnId];
@@ -218,24 +219,29 @@ function validateMajorNodes(
   for (let index = 0; index < entriesToVisit; index += 1) {
     const entryPath = `${path}.${index}`;
 
-    if (!(index in value)) {
-      addIssue(issues, entryPath, "must not contain sparse entries");
+    const arrayEntry = readArrayEntry(value, index, entryPath, issues);
+
+    if (!arrayEntry.valid) {
       continue;
     }
 
-    const entry = value[index];
+    const entry = arrayEntry.value;
 
     if (!isPlainObject(entry)) {
       addIssue(issues, entryPath, "must be a plain object");
       continue;
     }
 
-    validateAllowedKeys(
-      entry,
-      ["level", "columnId", "branchId", "skillId"],
-      entryPath,
-      issues,
-    );
+    if (
+      !validateAllowedKeys(
+        entry,
+        ["level", "columnId", "branchId", "skillId"],
+        entryPath,
+        issues,
+      )
+    ) {
+      continue;
+    }
 
     validateInteger(entry.level, `${entryPath}.level`, issues, 1, 30);
     validateEnum(entry.columnId, columnIds, `${entryPath}.columnId`, issues);
@@ -328,7 +334,9 @@ function validateDivinitySkills(
     return;
   }
 
-  validateAllowedKeys(value, ["base", "awakened"], path, issues);
+  if (!validateAllowedKeys(value, ["base", "awakened"], path, issues)) {
+    return;
+  }
 
   validateDivinitySkillRow(
     value.base,
@@ -353,13 +361,61 @@ function validateDivinitySkillRow(
   issues: HeroBuildSetSchemaIssue[],
   path: string,
 ): void {
-  validateKnownUniqueIds(value, skillById, issues, path, true, 3);
+  if (!Array.isArray(value)) {
+    addIssue(issues, path, "must be an array");
+    return;
+  }
 
-  if (
-    Array.isArray(value) &&
-    value.every((skillId): skillId is string => typeof skillId === "string") &&
-    getDivinitySkillLoadoutCost(value, skillById) > nodeBudget
+  const maximumLength = 3;
+  const withinLengthBudget = value.length <= maximumLength;
+
+  if (!withinLengthBudget) {
+    addIssue(issues, path, `must contain at most ${maximumLength} entries`);
+  }
+
+  let loadoutCost = 0;
+  let allEntriesValid = true;
+  const seenIds = new Set<string>();
+
+  for (
+    let index = 0;
+    index < Math.min(value.length, maximumLength);
+    index += 1
   ) {
+    const entryPath = `${path}.${index}`;
+
+    const arrayEntry = readArrayEntry(value, index, entryPath, issues);
+
+    if (!arrayEntry.valid) {
+      allEntriesValid = false;
+      continue;
+    }
+
+    const skillId = arrayEntry.value;
+    validateStableId(skillId, entryPath, issues);
+
+    if (typeof skillId !== "string") {
+      allEntriesValid = false;
+      continue;
+    }
+
+    const skill = skillById.get(skillId);
+
+    if (!skill) {
+      addIssue(issues, entryPath, "must reference a known stable id");
+      allEntriesValid = false;
+    } else {
+      loadoutCost += getDivinitySkillNodeCost(skill);
+    }
+
+    if (seenIds.has(skillId)) {
+      addIssue(issues, entryPath, "must not be duplicated");
+      allEntriesValid = false;
+    }
+    seenIds.add(skillId);
+  }
+
+  if (withinLengthBudget && allEntriesValid && loadoutCost > nodeBudget) {
     addIssue(issues, path, `must fit the ${nodeBudget}-node budget`);
   }
 }
@@ -384,19 +440,22 @@ function validateWeaponAwakening(
   for (let index = 0; index < entriesToVisit; index += 1) {
     const entryPath = `${path}.${index}`;
 
-    if (!(index in value)) {
-      addIssue(issues, entryPath, "must not contain sparse entries");
+    const arrayEntry = readArrayEntry(value, index, entryPath, issues);
+
+    if (!arrayEntry.valid) {
       continue;
     }
 
-    const entry = value[index];
+    const entry = arrayEntry.value;
 
     if (!isPlainObject(entry)) {
       addIssue(issues, entryPath, "must be a plain object");
       continue;
     }
 
-    validateAllowedKeys(entry, ["slot", "colorId"], entryPath, issues);
+    if (!validateAllowedKeys(entry, ["slot", "colorId"], entryPath, issues)) {
+      continue;
+    }
     validateInteger(entry.slot, `${entryPath}.slot`, issues, 1, 8);
     validateStableId(entry.colorId, `${entryPath}.colorId`, issues);
 
@@ -435,7 +494,9 @@ function validateEquipment(
     return;
   }
 
-  validateAllowedKeys(value, ["artifactIds", "runeIds"], path, issues);
+  if (!validateAllowedKeys(value, ["artifactIds", "runeIds"], path, issues)) {
+    return;
+  }
   validateKnownUniqueIds(
     value.artifactIds,
     artifactIds,
@@ -464,7 +525,9 @@ function validateProgress(
     return;
   }
 
-  validateAllowedKeys(value, columnIds, path, issues);
+  if (!validateAllowedKeys(value, columnIds, path, issues)) {
+    return;
+  }
 
   columnIds.forEach((columnId) => {
     const level = value[columnId];
@@ -520,19 +583,22 @@ function validateActiveNodes(
   for (let index = 0; index < entriesToVisit; index += 1) {
     const entryPath = `${path}.${index}`;
 
-    if (!(index in value)) {
-      addIssue(issues, entryPath, "must not contain sparse entries");
+    const arrayEntry = readArrayEntry(value, index, entryPath, issues);
+
+    if (!arrayEntry.valid) {
       continue;
     }
 
-    const entry = value[index];
+    const entry = arrayEntry.value;
 
     if (!isPlainObject(entry)) {
       addIssue(issues, entryPath, "must be a plain object");
       continue;
     }
 
-    validateAllowedKeys(entry, ["columnId", "level"], entryPath, issues);
+    if (!validateAllowedKeys(entry, ["columnId", "level"], entryPath, issues)) {
+      continue;
+    }
     validateEnum(entry.columnId, columnIds, `${entryPath}.columnId`, issues);
     validateInteger(entry.level, `${entryPath}.level`, issues, 1, 30);
 
@@ -589,7 +655,9 @@ function validateMetadata(
     return;
   }
 
-  validateAllowedKeys(value, ["createdAt", "source"], path, issues);
+  if (!validateAllowedKeys(value, ["createdAt", "source"], path, issues)) {
+    return;
+  }
   validateLiteral(
     value.source,
     "manual-branch-builder",
@@ -605,6 +673,7 @@ function validateMetadata(
 
   if (
     typeof value.createdAt === "string" &&
+    value.createdAt.length <= HERO_BUILD_SET_SCHEMA_LIMITS.maxStringLength &&
     !isCanonicalUtcDate(value.createdAt)
   ) {
     addIssue(
@@ -645,12 +714,13 @@ function validateKnownUniqueIds(
   for (let index = 0; index < entriesToVisit; index += 1) {
     const entryPath = `${path}.${index}`;
 
-    if (!(index in value)) {
-      addIssue(issues, entryPath, "must not contain sparse entries");
+    const arrayEntry = readArrayEntry(value, index, entryPath, issues);
+
+    if (!arrayEntry.valid) {
       continue;
     }
 
-    const id = value[index];
+    const id = arrayEntry.value;
     validateStableId(id, entryPath, issues);
 
     if (typeof id !== "string") {

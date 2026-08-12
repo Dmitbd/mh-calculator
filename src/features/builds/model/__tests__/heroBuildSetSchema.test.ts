@@ -4,6 +4,7 @@ import type { HeroBuildSet } from "@/features/game-data/heroes/types";
 import * as heroBuildTabsModel from "@/features/game-data/heroes/heroBuildTabs";
 
 import {
+  HERO_BUILD_SET_SCHEMA_LIMITS,
   HeroBuildSetSchemaError,
   parseHeroBuildSet,
 } from "../heroBuildSetSchema";
@@ -204,24 +205,30 @@ describe("parseHeroBuildSet", () => {
     expect(getSchemaError(payload).issues).toHaveLength(64);
   });
 
-  it("wraps unexpected property-access failures as schema errors", () => {
-    const payload = getPayload() as unknown as Record<string, unknown>;
-    Object.defineProperty(payload, "schemaVersion", {
-      get() {
-        throw new Error("getter exploded");
-      },
-    });
+  it("bounds object-key validation and caps issues for a huge object", () => {
+    const payload = getPayload();
+    const metadata = payload.tabs[0].build!.metadata as unknown as Record<
+      string,
+      unknown
+    >;
+
+    for (let index = 0; index < 10_000; index += 1) {
+      metadata[`unknown-${index}`] = index;
+    }
 
     const error = getSchemaError(payload);
+    const maxObjectKeys = HERO_BUILD_SET_SCHEMA_LIMITS.maxObjectKeys;
 
-    expect(error.issues[0]).toEqual({
-      message: "could not be validated",
-      path: "payload",
+    expect(error.issues).toContainEqual({
+      message: `must contain at most ${maxObjectKeys} object keys`,
+      path: "tabs.0.build.metadata",
     });
-    expect(error.cause).toEqual(new Error("getter exploded"));
+    expect(error.issues.length).toBeLessThanOrEqual(
+      HERO_BUILD_SET_SCHEMA_LIMITS.maxIssues,
+    );
   });
 
-  it("wraps an unexpected domain-helper failure as a schema error", () => {
+  it("does not run a second recursive tab validator", () => {
     const helper = jest
       .spyOn(heroBuildTabsModel, "validateHeroBuildTabs")
       .mockImplementation(() => {
@@ -229,17 +236,63 @@ describe("parseHeroBuildSet", () => {
       });
 
     try {
-      const error = getSchemaError(getPayload());
-
-      expect(error.issues[0]).toEqual({
-        message: "could not be validated",
-        path: "payload",
-      });
-      expect(error.cause).toEqual(new Error("helper exploded"));
+      expect(parseHeroBuildSet(getPayload(), "bastet")).toEqual(bastetBuild);
+      expect(helper).not.toHaveBeenCalled();
     } finally {
       helper.mockRestore();
     }
   });
+
+  it.each(["stateful", "throwing"] as const)(
+    "rejects a %s nested accessor without invoking it",
+    (behavior) => {
+      const payload = getPayload();
+      let calls = 0;
+
+      Object.defineProperty(payload.tabs[0], "label", {
+        enumerable: true,
+        get() {
+          calls += 1;
+          if (behavior === "throwing") {
+            throw new Error("getter exploded");
+          }
+          return calls === 1 ? "PvP" : "changed";
+        },
+      });
+
+      expect(getSchemaError(payload).issues).toContainEqual({
+        message: "must be a plain data property",
+        path: "tabs.0.label",
+      });
+      expect(calls).toBe(0);
+    },
+  );
+
+  it.each(["stateful", "throwing"] as const)(
+    "rejects a %s nested array-entry accessor without invoking it",
+    (behavior) => {
+      const payload = getPayload();
+      const firstTab = payload.tabs[0];
+      let calls = 0;
+
+      Object.defineProperty(payload.tabs, "0", {
+        enumerable: true,
+        get() {
+          calls += 1;
+          if (behavior === "throwing") {
+            throw new Error("array getter exploded");
+          }
+          return firstTab;
+        },
+      });
+
+      expect(getSchemaError(payload).issues).toContainEqual({
+        message: "must be a plain data property",
+        path: "tabs.0",
+      });
+      expect(calls).toBe(0);
+    },
+  );
 
   it("rejects non-plain payload objects", () => {
     const payload = Object.assign(
@@ -258,6 +311,34 @@ describe("parseHeroBuildSet", () => {
     }, "tabs.0.label");
   });
 
+  it("checks a huge string length before trimming it", () => {
+    const originalTrim = String.prototype.trim;
+    let hugeTrimCalls = 0;
+    const trim = jest
+      .spyOn(String.prototype, "trim")
+      .mockImplementation(function (this: string) {
+        if (this.length > HERO_BUILD_SET_SCHEMA_LIMITS.maxLabelLength) {
+          hugeTrimCalls += 1;
+          throw new Error("huge trim must not run");
+        }
+        return originalTrim.call(this);
+      });
+
+    try {
+      const payload = getPayload();
+      payload.tabs[0].label = "x".repeat(1_000_000);
+
+      expect(getSchemaError(payload).issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ path: "tabs.0.label" }),
+        ]),
+      );
+      expect(hugeTrimCalls).toBe(0);
+    } finally {
+      trim.mockRestore();
+    }
+  });
+
   it("rejects a non-object payload", () => {
     expect(() => parseHeroBuildSet("not-json-object", "bastet")).toThrow(
       HeroBuildSetSchemaError,
@@ -274,6 +355,27 @@ describe("parseHeroBuildSet", () => {
     expectInvalidPayload((payload) => {
       payload.tabs[1].children![0].id = "Boss Builds";
     }, "tabs.1.children.0.id");
+  });
+
+  it("requires an exact gameMode path on a ready root leaf", () => {
+    const payload = getPayload();
+    delete payload.tabs[0].gameMode;
+
+    expect(getSchemaError(payload).issues).toContainEqual({
+      message: "is required for a ready build",
+      path: "tabs.0.gameMode",
+    });
+  });
+
+  it("requires an exact gameMode path when neither a ready leaf nor its ancestor defines one", () => {
+    const payload = getPayload();
+    delete payload.tabs[1].gameMode;
+    delete payload.tabs[1].children![0].gameMode;
+
+    expect(getSchemaError(payload).issues).toContainEqual({
+      message: "is required for a ready build",
+      path: "tabs.1.children.0.gameMode",
+    });
   });
 
   it("rejects a leaf whose hero identity differs from its row", () => {
@@ -336,6 +438,36 @@ describe("parseHeroBuildSet", () => {
         "asterial-spotlight",
       ];
     }, "divinitySkills.base");
+  });
+
+  it("does bounded work for an oversized divinity loadout", () => {
+    const payload = getPayload();
+    const skillIds = [
+      "asterial-new-moon",
+      "asterial-night",
+      "asterial-spotlight",
+    ];
+    skillIds.length = 1_000_000;
+    let highestInspectedIndex = -1;
+    const instrumentedSkills = new Proxy(skillIds, {
+      getOwnPropertyDescriptor(target, property) {
+        if (typeof property === "string" && /^\d+$/.test(property)) {
+          const index = Number(property);
+          highestInspectedIndex = Math.max(highestInspectedIndex, index);
+          if (index > 2) {
+            throw new Error("unbounded array traversal");
+          }
+        }
+        return Reflect.getOwnPropertyDescriptor(target, property);
+      },
+    });
+    payload.tabs[0].build!.divinitySkills!.base = instrumentedSkills;
+
+    expect(getSchemaError(payload).issues).toContainEqual({
+      message: "must contain at most 3 entries",
+      path: "tabs.0.build.divinitySkills.base",
+    });
+    expect(highestInspectedIndex).toBeLessThanOrEqual(2);
   });
 
   it("rejects invalid progress and active-node paths", () => {

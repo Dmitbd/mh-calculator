@@ -1,4 +1,4 @@
-import { heroes, validateHeroBuildTabs } from "@/features/game-data/heroes";
+import { heroes } from "@/features/game-data/heroes";
 import type { HeroBuildSet } from "@/features/game-data/heroes/types";
 
 import { validateHeroBuildLeaf } from "./heroBuildSetLeafSchema";
@@ -8,6 +8,7 @@ import {
   addHeroBuildSetSchemaIssue as addIssue,
   createHeroBuildSetValidationContext,
   isHeroBuildSetPlainObject as isPlainObject,
+  readHeroBuildSetArrayEntry as readArrayEntry,
   validateHeroBuildSetAllowedKeys as validateAllowedKeys,
   validateHeroBuildSetEnum as validateEnum,
   validateHeroBuildSetInteger as validateInteger,
@@ -61,7 +62,9 @@ function parseHeroBuildSetInternal(
     ]);
   }
 
-  validateAllowedKeys(value, ["schemaVersion", "tabs"], "", issues);
+  if (!validateAllowedKeys(value, ["schemaVersion", "tabs"], "", issues)) {
+    throw new HeroBuildSetSchemaError(issues);
+  }
   validateLiteral(value.schemaVersion, 2, "schemaVersion", issues);
   validateStableId(expectedHeroId, "heroId", issues);
 
@@ -79,16 +82,7 @@ function parseHeroBuildSetInternal(
     throw new HeroBuildSetSchemaError(issues);
   }
 
-  const buildSet = value as HeroBuildSet;
-  const tabIssues = validateHeroBuildTabs(buildSet);
-
-  if (tabIssues.length > 0) {
-    throw new HeroBuildSetSchemaError(
-      tabIssues.map((message) => ({ message, path: "tabs" })),
-    );
-  }
-
-  return buildSet;
+  return value as HeroBuildSet;
 }
 
 function validateTabs(
@@ -127,8 +121,9 @@ function validateTabs(
   for (let index = 0; index < entriesToVisit; index += 1) {
     const tabPath = `${path}.${index}`;
 
-    if (!(index in value)) {
-      addIssue(issues, tabPath, "must not contain sparse entries");
+    const tabEntry = readArrayEntry(value, index, tabPath, issues);
+
+    if (!tabEntry.valid) {
       continue;
     }
 
@@ -138,19 +133,23 @@ function validateTabs(
       return;
     }
 
-    const entry = value[index];
+    const entry = tabEntry.value;
 
     if (!isPlainObject(entry)) {
       addIssue(issues, tabPath, "must be a plain object");
       continue;
     }
 
-    validateAllowedKeys(
-      entry,
-      ["id", "label", "order", "kind", "gameMode", "build", "children"],
-      tabPath,
-      issues,
-    );
+    if (
+      !validateAllowedKeys(
+        entry,
+        ["id", "label", "order", "kind", "gameMode", "build", "children"],
+        tabPath,
+        issues,
+      )
+    ) {
+      continue;
+    }
     validateStableId(entry.id, `${tabPath}.id`, issues);
     validateNonEmptyString(
       entry.label,
@@ -167,6 +166,12 @@ function validateTabs(
       }
       siblingIds.add(entry.id);
     }
+
+    const ownGameMode =
+      entry.gameMode === "pvp" || entry.gameMode === "pve"
+        ? entry.gameMode
+        : undefined;
+    const resolvedGameMode = ownGameMode ?? inheritedGameMode;
 
     if (entry.gameMode !== undefined) {
       validateEnum(
@@ -189,9 +194,7 @@ function validateTabs(
           context,
           `${tabPath}.children`,
           depth + 1,
-          typeof entry.gameMode === "string"
-            ? entry.gameMode
-            : inheritedGameMode,
+          resolvedGameMode,
         );
       }
 
@@ -210,14 +213,20 @@ function validateTabs(
       }
 
       if (entry.build !== null) {
+        if (!resolvedGameMode) {
+          addIssue(
+            issues,
+            `${tabPath}.gameMode`,
+            "is required for a ready build",
+          );
+        }
+
         validateHeroBuildLeaf(
           entry.build,
           expectedHeroId,
           context,
           `${tabPath}.build`,
-          typeof entry.gameMode === "string"
-            ? entry.gameMode
-            : inheritedGameMode,
+          resolvedGameMode,
         );
       }
     }

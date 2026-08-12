@@ -136,9 +136,12 @@ Parser остаётся ограниченным текущим `HeroBuildSet` �
 | Варианты одного типа экипировки | `16` |
 | Общий safety ceiling массива | `128` |
 | Длина stable ID / label / прочей строки | `64` / `160` / `256` |
+| Собственные enumerable keys одного объекта | `32` |
 | Накопленные validation issues | `64` |
 
-Каждый массив обходится по индексам: sparse entry не пропускается и получает точный рекурсивный path. Объекты должны быть plain JSON objects и содержать только поля текущей версии схемы; неизвестное поле отклоняется вместо молчаливого протаскивания. `metadata.createdAt` имеет каноническую форму `YYYY-MM-DDTHH:mm:ss.sssZ` и проходит calendar round-trip. Любое неожиданное исключение при чтении или в доменном helper также преобразуется в `HeroBuildSetSchemaError`, поэтому repository классифицирует его как `invalid-data`, а не как сеть.
+Каждый массив обходится по индексам в пределах своего budget: sparse entry не пропускается, accessor не вызывается, и оба получают точный рекурсивный path. Проверка divinity loadout инспектирует не более трёх entries и не запускает aggregate helper после превышения длины. Объекты должны быть plain JSON objects, иметь не более `32` enumerable keys, использовать только data properties и содержать только поля текущей версии схемы; accessor и неизвестное поле отклоняются вместо чтения или молчаливого протаскивания. Проверка keys завершается при исчерпании object/issue budget. Строки сначала проверяются по длине и только затем проходят `trim` или regex; `metadata.createdAt` имеет каноническую форму `YYYY-MM-DDTHH:mm:ss.sssZ` и проходит calendar round-trip.
+
+Рекурсивный parser сам полностью проверяет tab invariants и не запускает второй обход `validateHeroBuildTabs`. Для каждого непустого leaf он требует валидный собственный или унаследованный `gameMode`; отсутствие сообщает точный path `<leaf>.gameMode`. Любое неожиданное исключение внутри parser преобразуется в `HeroBuildSetSchemaError`, а row-level `payload` принимается только как собственное data property, поэтому repository классифицирует accessor/повреждение как `invalid-data`, а не как сеть.
 
 Повреждённые данные приводят к `HeroBuildSetRepositoryError` с `kind: "invalid-data"`; ошибка Supabase — к тому же типу с `kind: "network"`; отсутствие строки остаётся отдельным `null`/`no-data` исходом. Невалидный remote не может попасть в Viewer или заменить корректный fallback/будущий last-known-good snapshot.
 

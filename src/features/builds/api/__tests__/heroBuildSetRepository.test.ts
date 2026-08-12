@@ -222,6 +222,33 @@ describe("heroBuildSetRepository", () => {
     });
   });
 
+  it.each(["stateful", "throwing"] as const)(
+    "rejects a %s row payload accessor as invalid data without invoking it",
+    async (behavior) => {
+      let calls = 0;
+      const row = {};
+      Object.defineProperty(row, "payload", {
+        enumerable: true,
+        get() {
+          calls += 1;
+          if (behavior === "throwing") {
+            throw new Error("row payload getter exploded");
+          }
+          return calls === 1 ? buildSet : null;
+        },
+      });
+      const query = createQueryResult({ data: row, error: null });
+
+      await expect(
+        fetchPublishedHeroBuildSet(createClient(query), "bastet"),
+      ).rejects.toMatchObject({
+        kind: "invalid-data",
+        name: "HeroBuildSetRepositoryError",
+      });
+      expect(calls).toBe(0);
+    },
+  );
+
   it("rejects a valid payload stored under the wrong hero identity", async () => {
     const query = createQueryResult({
       data: { payload: buildSet },

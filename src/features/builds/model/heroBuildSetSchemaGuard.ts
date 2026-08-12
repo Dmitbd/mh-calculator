@@ -42,6 +42,7 @@ export const HERO_BUILD_SET_SCHEMA_LIMITS = {
   maxLabelLength: 160,
   maxMajorNodesPerLeaf: 16,
   maxNestingDepth: 8,
+  maxObjectKeys: 32,
   maxStringLength: 256,
   maxTabsPerLevel: 32,
   maxTotalLeaves: 96,
@@ -73,10 +74,64 @@ export function validateHeroBuildSetAllowedKeys(
   allowedKeys: readonly string[],
   path: string,
   issues: HeroBuildSetSchemaIssue[],
-): void {
+): boolean {
   const allowed = new Set(allowedKeys);
+  const invalidDataProperties = new Set<string>();
+  let inspectedKeys = 0;
+  let valid = true;
 
-  for (const key of Object.keys(value)) {
+  if (issues.length >= HERO_BUILD_SET_SCHEMA_LIMITS.maxIssues) {
+    return false;
+  }
+
+  for (const key of allowedKeys) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+
+    if (descriptor && !("value" in descriptor)) {
+      addHeroBuildSetSchemaIssue(
+        issues,
+        path ? `${path}.${key}` : key,
+        "must be a plain data property",
+      );
+      invalidDataProperties.add(key);
+      valid = false;
+    }
+  }
+
+  for (const key in value) {
+    if (!Object.prototype.hasOwnProperty.call(value, key)) {
+      continue;
+    }
+
+    inspectedKeys += 1;
+
+    if (inspectedKeys > HERO_BUILD_SET_SCHEMA_LIMITS.maxObjectKeys) {
+      addHeroBuildSetSchemaIssue(
+        issues,
+        path || "payload",
+        `must contain at most ${HERO_BUILD_SET_SCHEMA_LIMITS.maxObjectKeys} object keys`,
+      );
+      return false;
+    }
+
+    if (issues.length >= HERO_BUILD_SET_SCHEMA_LIMITS.maxIssues) {
+      return false;
+    }
+
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+
+    if (!descriptor || !("value" in descriptor)) {
+      if (!invalidDataProperties.has(key)) {
+        addHeroBuildSetSchemaIssue(
+          issues,
+          path ? `${path}.${key}` : key,
+          "must be a plain data property",
+        );
+      }
+      valid = false;
+      continue;
+    }
+
     if (!allowed.has(key)) {
       addHeroBuildSetSchemaIssue(
         issues,
@@ -85,6 +140,29 @@ export function validateHeroBuildSetAllowedKeys(
       );
     }
   }
+
+  return valid;
+}
+
+export function readHeroBuildSetArrayEntry(
+  value: unknown[],
+  index: number,
+  path: string,
+  issues: HeroBuildSetSchemaIssue[],
+): { valid: false } | { valid: true; value: unknown } {
+  const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+
+  if (!descriptor) {
+    addHeroBuildSetSchemaIssue(issues, path, "must not contain sparse entries");
+    return { valid: false };
+  }
+
+  if (!("value" in descriptor)) {
+    addHeroBuildSetSchemaIssue(issues, path, "must be a plain data property");
+    return { valid: false };
+  }
+
+  return { valid: true, value: descriptor.value };
 }
 
 export function validateHeroBuildSetStableId(
@@ -109,8 +187,8 @@ export function validateHeroBuildSetNonEmptyString(
 ): void {
   if (
     typeof value !== "string" ||
-    value.trim().length === 0 ||
-    value.length > maximumLength
+    value.length > maximumLength ||
+    value.trim().length === 0
   ) {
     addHeroBuildSetSchemaIssue(issues, path, "must be a non-empty string");
   }

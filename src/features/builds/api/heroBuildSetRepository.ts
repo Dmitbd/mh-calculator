@@ -82,7 +82,7 @@ export async function fetchPublishedHeroBuildSet(
     throw createNetworkError(error);
   }
 
-  return parseRowPayload(data?.payload, heroId);
+  return parseRowPayload(data, heroId);
 }
 
 export async function fetchDraftHeroBuildSet(
@@ -100,7 +100,7 @@ export async function fetchDraftHeroBuildSet(
     throw createNetworkError(error);
   }
 
-  return parseRowPayload(data?.payload, heroId);
+  return parseRowPayload(data, heroId);
 }
 
 export async function fetchPublishedHeroIds(
@@ -204,25 +204,37 @@ export async function loadPublishedHeroBuildSet(params: {
 }
 
 function parseRowPayload(
-  payload: unknown,
+  row: unknown,
   expectedHeroId: string,
 ): HeroBuildSet | null {
-  if (payload === undefined) {
+  if (row === undefined || row === null) {
     return null;
   }
 
   try {
-    return parseHeroBuildSet(payload, expectedHeroId);
-  } catch (error) {
-    if (error instanceof HeroBuildSetSchemaError) {
-      throw new HeroBuildSetRepositoryError(
-        "invalid-data",
-        error.message,
-        error,
-      );
+    if (typeof row !== "object" || Array.isArray(row)) {
+      throw new HeroBuildSetSchemaError([
+        { message: "must be a plain object", path: "row" },
+      ]);
     }
 
-    throw error;
+    const payloadDescriptor = Object.getOwnPropertyDescriptor(row, "payload");
+
+    if (!payloadDescriptor) {
+      return null;
+    }
+
+    if (!("value" in payloadDescriptor)) {
+      throw new HeroBuildSetSchemaError([
+        { message: "must be a plain data property", path: "row.payload" },
+      ]);
+    }
+
+    return parseHeroBuildSet(payloadDescriptor.value, expectedHeroId);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Invalid hero build set row";
+    throw new HeroBuildSetRepositoryError("invalid-data", message, error);
   }
 }
 
