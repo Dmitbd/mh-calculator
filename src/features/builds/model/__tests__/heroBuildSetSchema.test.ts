@@ -268,6 +268,59 @@ describe("parseHeroBuildSet", () => {
     },
   );
 
+  it("rejects a non-enumerable unknown accessor without invoking it", () => {
+    const payload = getPayload();
+    let calls = 0;
+
+    Object.defineProperty(payload.tabs[0].build!.metadata, "hidden", {
+      get() {
+        calls += 1;
+        return "hidden";
+      },
+    });
+
+    expect(getSchemaError(payload).issues).toEqual(
+      expect.arrayContaining([
+        {
+          message: "must be a plain data property",
+          path: "tabs.0.build.metadata.hidden",
+        },
+        {
+          message: "is not allowed",
+          path: "tabs.0.build.metadata.hidden",
+        },
+      ]),
+    );
+    expect(calls).toBe(0);
+  });
+
+  it("rejects a symbol accessor without invoking it", () => {
+    const payload = getPayload();
+    const secret = Symbol("secret");
+    let calls = 0;
+
+    Object.defineProperty(payload.tabs[0].build!.metadata, secret, {
+      get() {
+        calls += 1;
+        return "secret";
+      },
+    });
+
+    expect(getSchemaError(payload).issues).toEqual(
+      expect.arrayContaining([
+        {
+          message: "must be a plain data property",
+          path: "tabs.0.build.metadata.[Symbol(secret)]",
+        },
+        {
+          message: "is not allowed",
+          path: "tabs.0.build.metadata.[Symbol(secret)]",
+        },
+      ]),
+    );
+    expect(calls).toBe(0);
+  });
+
   it.each(["stateful", "throwing"] as const)(
     "rejects a %s nested array-entry accessor without invoking it",
     (behavior) => {

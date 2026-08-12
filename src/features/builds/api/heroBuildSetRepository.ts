@@ -221,7 +221,9 @@ function parseRowPayload(
     const payloadDescriptor = Object.getOwnPropertyDescriptor(row, "payload");
 
     if (!payloadDescriptor) {
-      return null;
+      throw new HeroBuildSetSchemaError([
+        { message: "must be an own data property", path: "row.payload" },
+      ]);
     }
 
     if (!("value" in payloadDescriptor)) {

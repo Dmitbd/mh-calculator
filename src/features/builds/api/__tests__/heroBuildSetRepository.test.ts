@@ -148,6 +148,24 @@ describe("heroBuildSetRepository", () => {
     await expect(fetchPublishedHeroBuildSet(client, "unknown")).resolves.toBeNull();
   });
 
+  it.each([
+    ["missing", {}],
+    ["inherited", Object.create({ payload: buildSet })],
+  ])("rejects a non-null row with a %s payload property", async (_, row) => {
+    const query = createQueryResult({ data: row, error: null });
+
+    await expect(
+      fetchPublishedHeroBuildSet(createClient(query), "bastet"),
+    ).rejects.toMatchObject({
+      cause: {
+        issues: expect.arrayContaining([
+          expect.objectContaining({ path: "row.payload" }),
+        ]),
+      },
+      kind: "invalid-data",
+    });
+  });
+
   it("fetches published hero ids", async () => {
     const query = createQueryResult({
       data: [{ hero_id: "bastet" }, { hero_id: "morana" }],

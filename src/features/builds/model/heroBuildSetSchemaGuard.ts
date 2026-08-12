@@ -76,66 +76,47 @@ export function validateHeroBuildSetAllowedKeys(
   issues: HeroBuildSetSchemaIssue[],
 ): boolean {
   const allowed = new Set(allowedKeys);
-  const invalidDataProperties = new Set<string>();
-  let inspectedKeys = 0;
-  let valid = true;
 
   if (issues.length >= HERO_BUILD_SET_SCHEMA_LIMITS.maxIssues) {
     return false;
   }
 
-  for (const key of allowedKeys) {
-    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+  const ownKeys = Reflect.ownKeys(value);
+  const exceedsKeyBudget =
+    ownKeys.length > HERO_BUILD_SET_SCHEMA_LIMITS.maxObjectKeys;
+  let valid = !exceedsKeyBudget;
 
-    if (descriptor && !("value" in descriptor)) {
-      addHeroBuildSetSchemaIssue(
-        issues,
-        path ? `${path}.${key}` : key,
-        "must be a plain data property",
-      );
-      invalidDataProperties.add(key);
-      valid = false;
-    }
+  if (exceedsKeyBudget) {
+    addHeroBuildSetSchemaIssue(
+      issues,
+      path || "payload",
+      `must contain at most ${HERO_BUILD_SET_SCHEMA_LIMITS.maxObjectKeys} object keys`,
+    );
   }
 
-  for (const key in value) {
-    if (!Object.prototype.hasOwnProperty.call(value, key)) {
-      continue;
-    }
-
-    inspectedKeys += 1;
-
-    if (inspectedKeys > HERO_BUILD_SET_SCHEMA_LIMITS.maxObjectKeys) {
-      addHeroBuildSetSchemaIssue(
-        issues,
-        path || "payload",
-        `must contain at most ${HERO_BUILD_SET_SCHEMA_LIMITS.maxObjectKeys} object keys`,
-      );
-      return false;
-    }
-
+  for (const key of ownKeys.slice(0, HERO_BUILD_SET_SCHEMA_LIMITS.maxObjectKeys)) {
     if (issues.length >= HERO_BUILD_SET_SCHEMA_LIMITS.maxIssues) {
       return false;
     }
 
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    const printableKey =
+      typeof key === "symbol" ? `[${String(key)}]` : key;
+    const propertyPath = path ? `${path}.${printableKey}` : printableKey;
 
     if (!descriptor || !("value" in descriptor)) {
-      if (!invalidDataProperties.has(key)) {
-        addHeroBuildSetSchemaIssue(
-          issues,
-          path ? `${path}.${key}` : key,
-          "must be a plain data property",
-        );
-      }
-      valid = false;
-      continue;
-    }
-
-    if (!allowed.has(key)) {
       addHeroBuildSetSchemaIssue(
         issues,
-        path ? `${path}.${key}` : key,
+        propertyPath,
+        "must be a plain data property",
+      );
+      valid = false;
+    }
+
+    if (typeof key !== "string" || !allowed.has(key)) {
+      addHeroBuildSetSchemaIssue(
+        issues,
+        propertyPath,
         "is not allowed",
       );
     }
