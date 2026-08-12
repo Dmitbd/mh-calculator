@@ -502,6 +502,202 @@ describe("DivinityBranchBuilderScreen", () => {
     expect(mockFetchDraftHeroBuildSet).toHaveBeenCalledTimes(1);
   });
 
+  it("invalidates an unfinished draft request on logout and allows retry after login", async () => {
+    let resolveFirstDraft!: (draft: HeroBuildSet) => void;
+    const client = { from: jest.fn() };
+
+    mockGetSupabaseClient.mockReturnValue(client);
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: ["bastet"],
+      publishedHeroIds: [],
+    });
+    mockFetchDraftHeroBuildSet
+      .mockImplementationOnce(
+        () =>
+          new Promise<HeroBuildSet>((resolve) => {
+            resolveFirstDraft = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(getValidBastetBuildSet());
+    mockSignOutAdmin.mockResolvedValue(undefined);
+    mockSignInAdmin.mockResolvedValue({ email: "admin@example.com" });
+
+    renderAdminBuilder();
+
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
+    expect(screen.getByText("Загружаем черновик...")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Выйти"));
+    await screen.findByPlaceholderText("Email");
+    await act(async () => {
+      resolveFirstDraft(getValidBastetBuildSet());
+    });
+
+    fireEvent.changeText(screen.getByPlaceholderText("Email"), "admin@example.com");
+    fireEvent.changeText(screen.getByPlaceholderText("Пароль"), "secret");
+    fireEvent.press(screen.getByText("Войти"));
+
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(2),
+    );
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
+
+    await waitFor(() =>
+      expect(mockFetchDraftHeroBuildSet).toHaveBeenCalledTimes(2),
+    );
+    expect(await screen.findAllByText("Черновик загружен.")).not.toHaveLength(0);
+  });
+
+  it("does not consume a draft payload that resolves after unmount", async () => {
+    let resolveDraft!: (draft: HeroBuildSet) => void;
+    let tabsReadCount = 0;
+    const draft = getValidBastetBuildSet();
+    const tabs = draft.tabs;
+    const consoleError = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    Object.defineProperty(draft, "tabs", {
+      configurable: true,
+      get: () => {
+        tabsReadCount += 1;
+        return tabs;
+      },
+    });
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: ["bastet"],
+      publishedHeroIds: [],
+    });
+    mockFetchDraftHeroBuildSet.mockReturnValue(
+      new Promise<HeroBuildSet>((resolve) => {
+        resolveDraft = resolve;
+      }),
+    );
+
+    const view = renderAdminBuilder();
+
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
+    await waitFor(() =>
+      expect(mockFetchDraftHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
+    const renderCountBeforeUnmount = mockHeroBuilderSectionProps.mock.calls.length;
+    view.unmount();
+
+    try {
+      await act(async () => {
+        resolveDraft(draft);
+      });
+
+      expect(tabsReadCount).toBe(0);
+      expect(mockHeroBuilderSectionProps).toHaveBeenCalledTimes(
+        renderCountBeforeUnmount,
+      );
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("does not inspect a draft error that rejects after unmount", async () => {
+    let rejectDraft!: (error: Error) => void;
+    let messageReadCount = 0;
+    const lateError = new Error();
+    const consoleError = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    Object.defineProperty(lateError, "message", {
+      configurable: true,
+      get: () => {
+        messageReadCount += 1;
+        return "late draft failure";
+      },
+    });
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: ["bastet"],
+      publishedHeroIds: [],
+    });
+    mockFetchDraftHeroBuildSet.mockReturnValue(
+      new Promise<HeroBuildSet>((_resolve, reject) => {
+        rejectDraft = reject;
+      }),
+    );
+
+    const view = renderAdminBuilder();
+
+    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
+    await waitFor(() =>
+      expect(mockFetchDraftHeroBuildSet).toHaveBeenCalledTimes(1),
+    );
+    const renderCountBeforeUnmount = mockHeroBuilderSectionProps.mock.calls.length;
+    view.unmount();
+
+    try {
+      await act(async () => {
+        rejectDraft(lateError);
+      });
+
+      expect(messageReadCount).toBe(0);
+      expect(mockHeroBuilderSectionProps).toHaveBeenCalledTimes(
+        renderCountBeforeUnmount,
+      );
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("invalidates a combined catalog request when the screen unmounts", async () => {
+    let rejectCatalog!: (error: Error) => void;
+    let messageReadCount = 0;
+    const lateError = new Error();
+    const consoleError = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    Object.defineProperty(lateError, "message", {
+      configurable: true,
+      get: () => {
+        messageReadCount += 1;
+        return "late catalog failure";
+      },
+    });
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockReturnValue(
+      new Promise<HeroBuildSetStatusIds>((_resolve, reject) => {
+        rejectCatalog = reject;
+      }),
+    );
+
+    const view = renderAdminBuilder();
+
+    await waitFor(() =>
+      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1),
+    );
+    const renderCountBeforeUnmount = mockHeroBuilderSectionProps.mock.calls.length;
+    view.unmount();
+
+    try {
+      await act(async () => {
+        rejectCatalog(lateError);
+      });
+
+      expect(messageReadCount).toBe(0);
+      expect(mockHeroBuilderSectionProps).toHaveBeenCalledTimes(
+        renderCountBeforeUnmount,
+      );
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
   it("renders builder controls and validates an incomplete form", async () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
     const view = renderAdminBuilder();

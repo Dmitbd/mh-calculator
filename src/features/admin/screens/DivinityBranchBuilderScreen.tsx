@@ -110,7 +110,9 @@ export function DivinityBranchBuilderScreen({
   const pendingScrollTarget = useRef<PendingScrollTarget | null>(null);
   const loadedEditHeroId = useRef<string | null>(null);
   const draftLoadInFlight = useRef(false);
+  const draftLoadRequestId = useRef(0);
   const heroListRequestId = useRef(0);
+  const isScreenMounted = useRef(true);
   const {
     addArtifact,
     addRune,
@@ -169,6 +171,22 @@ export function DivinityBranchBuilderScreen({
   const [isHeroListLoading, setIsHeroListLoading] = useState(true);
   const [heroListError, setHeroListError] = useState<string | null>(null);
 
+  useEffect(() => {
+    isScreenMounted.current = true;
+
+    return () => {
+      isScreenMounted.current = false;
+      draftLoadRequestId.current += 1;
+      draftLoadInFlight.current = false;
+    };
+  }, []);
+
+  const resetDraftLoad = useCallback(() => {
+    draftLoadRequestId.current += 1;
+    draftLoadInFlight.current = false;
+    setIsDraftLoadPending(false);
+  }, []);
+
   const resetHeroStatusList = useCallback(() => {
     heroListRequestId.current += 1;
     setHeroStatusIds({ draftHeroIds: [], publishedHeroIds: [] });
@@ -218,20 +236,23 @@ export function DivinityBranchBuilderScreen({
   }, []);
 
   useEffect(() => {
-    if (!isAuthChecked) {
-      return;
+    if (isAuthChecked) {
+      if (!adminSession) {
+        resetDraftLoad();
+        resetHeroStatusList();
+      } else {
+        void loadHeroStatusIds();
+      }
     }
 
-    if (!adminSession) {
-      resetHeroStatusList();
-      return;
-    }
-
-    void loadHeroStatusIds();
+    return () => {
+      heroListRequestId.current += 1;
+    };
   }, [
     adminSession,
     isAuthChecked,
     loadHeroStatusIds,
+    resetDraftLoad,
     resetHeroStatusList,
   ]);
 
@@ -718,6 +739,7 @@ export function DivinityBranchBuilderScreen({
   const handleAdminSignOut = async () => {
     setIsAuthPending(true);
     setToast(null);
+    resetDraftLoad();
 
     const client = getSupabaseClient();
 
@@ -771,8 +793,13 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
+    const requestId = draftLoadRequestId.current + 1;
+    draftLoadRequestId.current = requestId;
     draftLoadInFlight.current = true;
     setIsDraftLoadPending(true);
+
+    const isCurrentRequest = () =>
+      isScreenMounted.current && requestId === draftLoadRequestId.current;
 
     try {
       const draft = await fetchDraftHeroBuildSet(
@@ -780,14 +807,27 @@ export function DivinityBranchBuilderScreen({
         heroId,
       );
 
+      if (!isCurrentRequest()) {
+        return;
+      }
+
       if (!draft || !loadBuildSetForEditing(draft)) {
         await loadHeroStatusIds();
+
+        if (!isCurrentRequest()) {
+          return;
+        }
+
         showBackendMessage("error", "Черновик для выбранного героя не найден.");
         return;
       }
 
       showBackendMessage("success", "Черновик загружен.");
     } catch (error) {
+      if (!isCurrentRequest()) {
+        return;
+      }
+
       showBackendMessage(
         "error",
         error instanceof Error
@@ -795,8 +835,10 @@ export function DivinityBranchBuilderScreen({
           : "Ошибка Supabase.",
       );
     } finally {
-      draftLoadInFlight.current = false;
-      setIsDraftLoadPending(false);
+      if (isCurrentRequest()) {
+        draftLoadInFlight.current = false;
+        setIsDraftLoadPending(false);
+      }
     }
   };
 
