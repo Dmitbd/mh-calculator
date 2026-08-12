@@ -391,6 +391,7 @@ Base и awakened slots редактируются отдельно. Awakened-н�
 - Публичный repository API не содержит операций удаления. Database trigger запрещает удалить published-строку, вернуть её в draft или изменить её `hero_id`.
 - Любой draft/published `payload` читается как недоверенный `jsonb` и проходит `heroBuildSetSchema` до восстановления редактора. Несовместимая версия, неверная hero identity, повреждённые tabs/path, неизвестные catalog IDs или несогласованные build-поля дают типизированную `HeroBuildSetRepositoryError(kind: "invalid-data")`, а не частично восстановленный draft.
 - Сетевой сбой имеет `kind: "network"`, отсутствие строки остаётся отдельным `null`/`no-data` исходом. Публичный loader может сохранить локальный fallback, но сообщает точную причину через диагностический `onFallback` outcome.
+- Загруженный committed leaf обязан быть полным: все major slots и weapon slots заполнены, progress задан для трёх колонок минимум до уровня `18`, major nodes не выше progress, а `activeNodes` точно ему соответствует. Runtime parser ограничен budgets из [Hero Builds Spec](hero-builds-spec.md#backend-payload-boundary), отвергает sparse arrays, лишние поля, non-plain objects и неканонический UTC `createdAt`.
 
 ## Validation And Feedback
 

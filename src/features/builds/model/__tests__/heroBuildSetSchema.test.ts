@@ -1,6 +1,7 @@
 import bastetBuild from "@/features/game-data/heroes/builds/bastet.json";
 import moranaBuild from "@/features/game-data/heroes/builds/morana.json";
 import type { HeroBuildSet } from "@/features/game-data/heroes/types";
+import * as heroBuildTabsModel from "@/features/game-data/heroes/heroBuildTabs";
 
 import {
   HeroBuildSetSchemaError,
@@ -36,6 +37,27 @@ function expectInvalidPayload(
   }
 }
 
+function getSchemaError(value: unknown): HeroBuildSetSchemaError {
+  try {
+    parseHeroBuildSet(value, "bastet");
+  } catch (error) {
+    expect(error).toBeInstanceOf(HeroBuildSetSchemaError);
+    return error as HeroBuildSetSchemaError;
+  }
+
+  throw new Error("Expected parseHeroBuildSet to reject the payload");
+}
+
+function createLeaf(index: number): Record<string, unknown> {
+  const leaf = structuredClone(getPayload().tabs[0]) as unknown as Record<
+    string,
+    unknown
+  >;
+  leaf.id = `leaf-${index}`;
+  leaf.order = index;
+  return leaf;
+}
+
 describe("parseHeroBuildSet", () => {
   it("accepts the current bundled payloads", () => {
     expect(parseHeroBuildSet(getPayload(), "bastet")).toEqual(bastetBuild);
@@ -62,6 +84,178 @@ describe("parseHeroBuildSet", () => {
     expect(parseHeroBuildSet(payload, "bastet").tabs[1].children?.[0].kind).toBe(
       "group",
     );
+  });
+
+  it("rejects tab nesting deeper than the bounded contract", () => {
+    const payload = getPayload() as unknown as {
+      schemaVersion: number;
+      tabs: unknown[];
+    };
+    let nested: unknown = structuredClone(payload.tabs[0]);
+
+    for (let depth = 0; depth < 9; depth += 1) {
+      nested = {
+        id: `group-${depth}`,
+        label: `Group ${depth}`,
+        order: depth,
+        kind: "group",
+        gameMode: "pvp",
+        build: null,
+        children: [nested],
+      };
+    }
+
+    payload.tabs = [nested];
+
+    expect(getSchemaError(payload).issues).toContainEqual({
+      message: expect.stringContaining("depth"),
+      path: "tabs.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children",
+    });
+  });
+
+  it("rejects an oversized tab array before traversing it", () => {
+    const payload = getPayload() as unknown as {
+      schemaVersion: number;
+      tabs: unknown[];
+    };
+    const leaf = structuredClone(payload.tabs[0]) as Record<string, unknown>;
+
+    payload.tabs = Array.from({ length: 33 }, (_, index) => ({
+      ...structuredClone(leaf),
+      id: `leaf-${index}`,
+      order: index,
+    }));
+
+    expect(getSchemaError(payload).issues).toContainEqual({
+      message: expect.stringContaining("at most 32"),
+      path: "tabs",
+    });
+  });
+
+  it("rejects too many leaves across individually bounded groups", () => {
+    const payload = getPayload() as unknown as {
+      schemaVersion: number;
+      tabs: unknown[];
+    };
+    let leafIndex = 0;
+
+    payload.tabs = Array.from({ length: 4 }, (_, groupIndex) => ({
+      id: `group-${groupIndex}`,
+      label: `Group ${groupIndex}`,
+      order: groupIndex,
+      kind: "group",
+      gameMode: "pvp",
+      build: null,
+      children: Array.from({ length: 25 }, () => createLeaf(leafIndex++)),
+    }));
+
+    expect(getSchemaError(payload).issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message: "exceeds the total leaf limit",
+        }),
+      ]),
+    );
+  });
+
+  it("rejects too many build nodes across otherwise valid leaves", () => {
+    const payload = getPayload() as unknown as {
+      schemaVersion: number;
+      tabs: unknown[];
+    };
+    let leafIndex = 0;
+
+    payload.tabs = Array.from({ length: 4 }, (_, groupIndex) => ({
+      id: `group-${groupIndex}`,
+      label: `Group ${groupIndex}`,
+      order: groupIndex,
+      kind: "group",
+      gameMode: "pvp",
+      build: null,
+      children: Array.from({ length: 24 }, () => createLeaf(leafIndex++)),
+    }));
+
+    expect(getSchemaError(payload).issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message: "exceeds the total build-node limit",
+        }),
+      ]),
+    );
+  });
+
+  it("rejects sparse arrays with the exact missing index path", () => {
+    const payload = getPayload() as unknown as {
+      schemaVersion: number;
+      tabs: unknown[];
+    };
+    payload.tabs = new Array(1);
+
+    expect(getSchemaError(payload).issues).toContainEqual({
+      message: "must not contain sparse entries",
+      path: "tabs.0",
+    });
+  });
+
+  it("caps accumulated validation issues", () => {
+    const payload = getPayload() as unknown as Record<string, unknown>;
+    payload.tabs = Array.from({ length: 32 }, () => ({}));
+
+    expect(getSchemaError(payload).issues).toHaveLength(64);
+  });
+
+  it("wraps unexpected property-access failures as schema errors", () => {
+    const payload = getPayload() as unknown as Record<string, unknown>;
+    Object.defineProperty(payload, "schemaVersion", {
+      get() {
+        throw new Error("getter exploded");
+      },
+    });
+
+    const error = getSchemaError(payload);
+
+    expect(error.issues[0]).toEqual({
+      message: "could not be validated",
+      path: "payload",
+    });
+    expect(error.cause).toEqual(new Error("getter exploded"));
+  });
+
+  it("wraps an unexpected domain-helper failure as a schema error", () => {
+    const helper = jest
+      .spyOn(heroBuildTabsModel, "validateHeroBuildTabs")
+      .mockImplementation(() => {
+        throw new Error("helper exploded");
+      });
+
+    try {
+      const error = getSchemaError(getPayload());
+
+      expect(error.issues[0]).toEqual({
+        message: "could not be validated",
+        path: "payload",
+      });
+      expect(error.cause).toEqual(new Error("helper exploded"));
+    } finally {
+      helper.mockRestore();
+    }
+  });
+
+  it("rejects non-plain payload objects", () => {
+    const payload = Object.assign(
+      Object.create({ inherited: true }) as Record<string, unknown>,
+      getPayload(),
+    );
+
+    expect(getSchemaError(payload).issues).toEqual([
+      { message: "must be a plain object", path: "payload" },
+    ]);
+  });
+
+  it("rejects overlong bounded strings", () => {
+    expectInvalidPayload((payload) => {
+      payload.tabs[0].label = "x".repeat(161);
+    }, "tabs.0.label");
   });
 
   it("rejects a non-object payload", () => {
@@ -100,6 +294,34 @@ describe("parseHeroBuildSet", () => {
     }, "majorNodes.0.branchId");
   });
 
+  it("rejects a committed leaf without every major divinity slot", () => {
+    expectInvalidPayload((payload) => {
+      payload.tabs[0].build!.majorNodes = [];
+    }, "tabs.0.build.majorNodes");
+  });
+
+  it("rejects a committed leaf without every weapon awakening slot", () => {
+    expectInvalidPayload((payload) => {
+      payload.tabs[0].build!.weaponAwakening = [];
+    }, "tabs.0.build.weaponAwakening");
+  });
+
+  it("rejects missing or below-minimum progress in every required column", () => {
+    expectInvalidPayload((payload) => {
+      delete payload.tabs[0].build!.progress.left;
+      payload.tabs[0].build!.progress.right = 17;
+    }, "tabs.0.build.progress.left");
+  });
+
+  it("rejects a major divinity node above its column progress", () => {
+    expectInvalidPayload((payload) => {
+      payload.tabs[0].build!.progress.left = 14;
+      payload.tabs[0].build!.activeNodes = payload.tabs[0].build!.activeNodes.filter(
+        (node) => node.columnId !== "left" || node.level <= 14,
+      );
+    }, "tabs.0.build.majorNodes.7.level");
+  });
+
   it("rejects unknown divinity loadout ids", () => {
     expectInvalidPayload((payload) => {
       payload.tabs[0].build!.divinitySkills!.base = ["unknown-skill"];
@@ -133,6 +355,28 @@ describe("parseHeroBuildSet", () => {
     expectInvalidPayload((payload) => {
       Object.assign(payload.tabs[0].build!, { targetTabPath: ["pvp"] });
     }, "targetTabPath");
+  });
+
+  it("rejects unknown schema fields with an exact recursive path", () => {
+    const payload = getPayload();
+    Object.assign(payload.tabs[1].children![0].build!.metadata, {
+      unexpected: true,
+    });
+
+    expect(getSchemaError(payload).issues).toContainEqual({
+      message: "is not allowed",
+      path: "tabs.1.children.0.build.metadata.unexpected",
+    });
+  });
+
+  it.each([
+    "2026-06-16T12:25:14.491+03:00",
+    "2026-02-30T12:25:14.491Z",
+    "2026-06-16 12:25:14Z",
+  ])("rejects a non-canonical UTC createdAt value: %s", (createdAt) => {
+    expectInvalidPayload((payload) => {
+      payload.tabs[0].build!.metadata.createdAt = createdAt;
+    }, "tabs.0.build.metadata.createdAt");
   });
 
   it("rejects invalid stable ids in weapon selections", () => {

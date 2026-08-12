@@ -120,6 +120,26 @@ Runtime-схема проверяет:
 - диапазон `progress`, существование его уровней в tree template и точное соответствие производного `activeNodes`;
 - форму metadata, стабильный `source` и корректную дату `createdAt`.
 
+Непустой committed leaf считается полным только когда содержит все `9` major slots из текущего tree template, все `8` слотов пробуждения, progress для `left`, `center`, `right` не ниже `18`, ни один major node не выше progress своей колонки, а `activeNodes` точно производен от progress. Интерактивный draft формы может быть неполным до сохранения, но Supabase payload с неполным leaf не пересекает repository boundary.
+
+Parser остаётся ограниченным текущим `HeroBuildSet` и имеет конечные resource budgets:
+
+| Ресурс | Лимит |
+| --- | ---: |
+| Глубина дерева вкладок | `8` |
+| Вкладки на одном уровне | `32` |
+| Вкладки во всём payload | `128` |
+| Leaf-вкладки во всём payload | `96` |
+| Build nodes во всём payload (`majorNodes + weaponAwakening + activeNodes`) | `8192` |
+| Major nodes / active nodes в одном leaf | `16` / `128` |
+| Weapon slots / divinity skills в одной полосе | ровно `8` / не более `3` |
+| Варианты одного типа экипировки | `16` |
+| Общий safety ceiling массива | `128` |
+| Длина stable ID / label / прочей строки | `64` / `160` / `256` |
+| Накопленные validation issues | `64` |
+
+Каждый массив обходится по индексам: sparse entry не пропускается и получает точный рекурсивный path. Объекты должны быть plain JSON objects и содержать только поля текущей версии схемы; неизвестное поле отклоняется вместо молчаливого протаскивания. `metadata.createdAt` имеет каноническую форму `YYYY-MM-DDTHH:mm:ss.sssZ` и проходит calendar round-trip. Любое неожиданное исключение при чтении или в доменном helper также преобразуется в `HeroBuildSetSchemaError`, поэтому repository классифицирует его как `invalid-data`, а не как сеть.
+
 Повреждённые данные приводят к `HeroBuildSetRepositoryError` с `kind: "invalid-data"`; ошибка Supabase — к тому же типу с `kind: "network"`; отсутствие строки остаётся отдельным `null`/`no-data` исходом. Невалидный remote не может попасть в Viewer или заменить корректный fallback/будущий last-known-good snapshot.
 
 Порядок и подписи вкладок принадлежат данным комплекта. Компонент просмотра не должен хардкодить режимы `PvP`, `PvE` или их варианты.
@@ -219,6 +239,7 @@ Runtime-схема проверяет:
 - скрывать локальный fallback только из-за недоступного Supabase;
 - импортировать admin-компоненты или admin-типы в пользовательскую feature.
 - принимать `jsonb` как `HeroBuildSet` без runtime-валидации на repository boundary.
+- снимать resource budgets или принимать новые поля текущей schema version без явного изменения контракта и тестов.
 
 ## Verification
 

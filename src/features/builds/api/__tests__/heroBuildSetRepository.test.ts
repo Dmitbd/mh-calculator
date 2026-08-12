@@ -205,6 +205,23 @@ describe("heroBuildSetRepository", () => {
     );
   });
 
+  it("maps unexpected parser property failures to invalid data", async () => {
+    const payload = structuredClone(buildSet) as unknown as Record<string, unknown>;
+    Object.defineProperty(payload, "schemaVersion", {
+      get() {
+        throw new Error("getter exploded");
+      },
+    });
+    const query = createQueryResult({ data: { payload }, error: null });
+
+    await expect(
+      fetchPublishedHeroBuildSet(createClient(query), "bastet"),
+    ).rejects.toMatchObject({
+      kind: "invalid-data",
+      name: "HeroBuildSetRepositoryError",
+    });
+  });
+
   it("rejects a valid payload stored under the wrong hero identity", async () => {
     const query = createQueryResult({
       data: { payload: buildSet },
