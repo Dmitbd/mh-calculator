@@ -90,6 +90,7 @@ grant select on public.hero_build_set_revisions to authenticated;
 drop function if exists public.create_or_update_draft_hero_build_set(text, jsonb);
 drop function if exists public.publish_hero_build_set(text, jsonb);
 drop function if exists public.update_published_hero_build_set(text, jsonb);
+drop function if exists public.restore_published_hero_build_set(bigint, bigint);
 
 create or replace function public.create_or_update_draft_hero_build_set(
   p_hero_id text,
@@ -102,10 +103,15 @@ security definer
 set search_path = ''
 as $$
 declare
+  v_actor uuid := auth.uid();
   previous_row public.hero_build_sets%rowtype;
   resulting_row public.hero_build_sets%rowtype;
   history_event text;
 begin
+  if v_actor is null then
+    raise exception 'Authenticated actor required.' using errcode = '42501';
+  end if;
+
   if (auth.jwt() -> 'app_metadata' ->> 'role') is distinct from 'admin' then
     raise exception 'Admin role required.' using errcode = '42501';
   end if;
@@ -119,7 +125,7 @@ begin
         revision,
         updated_by
       )
-      values (p_hero_id, 'draft', p_payload, 1, auth.uid())
+      values (p_hero_id, 'draft', p_payload, 1, v_actor)
       returning * into resulting_row;
     exception
       when unique_violation then
@@ -145,7 +151,7 @@ begin
     update public.hero_build_sets
     set payload = p_payload,
         revision = revision + 1,
-        updated_by = auth.uid()
+        updated_by = v_actor
     where hero_id = p_hero_id
       and status = 'draft'
       and revision = p_expected_revision
@@ -178,7 +184,7 @@ begin
     previous_row.payload,
     resulting_row.status,
     resulting_row.payload,
-    auth.uid()
+    v_actor
   );
 
   return resulting_row;
@@ -196,9 +202,14 @@ security definer
 set search_path = ''
 as $$
 declare
+  v_actor uuid := auth.uid();
   previous_row public.hero_build_sets%rowtype;
   resulting_row public.hero_build_sets%rowtype;
 begin
+  if v_actor is null then
+    raise exception 'Authenticated actor required.' using errcode = '42501';
+  end if;
+
   if (auth.jwt() -> 'app_metadata' ->> 'role') is distinct from 'admin' then
     raise exception 'Admin role required.' using errcode = '42501';
   end if;
@@ -220,7 +231,7 @@ begin
   set status = 'published',
       payload = p_payload,
       revision = revision + 1,
-      updated_by = auth.uid()
+      updated_by = v_actor
   where hero_id = p_hero_id
     and status = 'draft'
     and revision = p_expected_revision
@@ -250,7 +261,7 @@ begin
     previous_row.payload,
     resulting_row.status,
     resulting_row.payload,
-    auth.uid()
+    v_actor
   );
 
   return resulting_row;
@@ -268,9 +279,14 @@ security definer
 set search_path = ''
 as $$
 declare
+  v_actor uuid := auth.uid();
   previous_row public.hero_build_sets%rowtype;
   resulting_row public.hero_build_sets%rowtype;
 begin
+  if v_actor is null then
+    raise exception 'Authenticated actor required.' using errcode = '42501';
+  end if;
+
   if (auth.jwt() -> 'app_metadata' ->> 'role') is distinct from 'admin' then
     raise exception 'Admin role required.' using errcode = '42501';
   end if;
@@ -291,7 +307,7 @@ begin
   update public.hero_build_sets
   set payload = p_payload,
       revision = revision + 1,
-      updated_by = auth.uid()
+      updated_by = v_actor
   where hero_id = p_hero_id
     and status = 'published'
     and revision = p_expected_revision
@@ -321,7 +337,7 @@ begin
     previous_row.payload,
     resulting_row.status,
     resulting_row.payload,
-    auth.uid()
+    v_actor
   );
 
   return resulting_row;
@@ -329,6 +345,7 @@ end;
 $$;
 
 create or replace function public.restore_published_hero_build_set(
+  p_hero_id text,
   p_history_id bigint,
   p_expected_revision bigint
 )
@@ -338,10 +355,15 @@ security definer
 set search_path = ''
 as $$
 declare
+  v_actor uuid := auth.uid();
   source_revision public.hero_build_set_revisions%rowtype;
   previous_row public.hero_build_sets%rowtype;
   resulting_row public.hero_build_sets%rowtype;
 begin
+  if v_actor is null then
+    raise exception 'Authenticated actor required.' using errcode = '42501';
+  end if;
+
   if (auth.jwt() -> 'app_metadata' ->> 'role') is distinct from 'admin' then
     raise exception 'Admin role required.' using errcode = '42501';
   end if;
@@ -350,6 +372,7 @@ begin
   into source_revision
   from public.hero_build_set_revisions
   where id = p_history_id
+    and hero_id = p_hero_id
     and status = 'published';
 
   if not found then
@@ -360,27 +383,27 @@ begin
   select *
   into previous_row
   from public.hero_build_sets
-  where hero_id = source_revision.hero_id
+  where hero_id = p_hero_id
     and status = 'published'
     and revision = p_expected_revision
   for update;
 
   if not found then
-    raise exception 'Hero build set revision conflict for hero %.', source_revision.hero_id
+    raise exception 'Hero build set revision conflict for hero %.', p_hero_id
       using errcode = 'P4090';
   end if;
 
   update public.hero_build_sets
   set payload = source_revision.payload,
       revision = revision + 1,
-      updated_by = auth.uid()
-  where hero_id = source_revision.hero_id
+      updated_by = v_actor
+  where hero_id = p_hero_id
     and status = 'published'
     and revision = p_expected_revision
   returning * into resulting_row;
 
   if not found then
-    raise exception 'Hero build set revision conflict for hero %.', source_revision.hero_id
+    raise exception 'Hero build set revision conflict for hero %.', p_hero_id
       using errcode = 'P4090';
   end if;
 
@@ -403,7 +426,7 @@ begin
     previous_row.payload,
     resulting_row.status,
     resulting_row.payload,
-    auth.uid()
+    v_actor
   );
 
   return resulting_row;
@@ -416,7 +439,7 @@ revoke all on function public.publish_hero_build_set(text, jsonb, bigint)
   from public, anon, authenticated;
 revoke all on function public.update_published_hero_build_set(text, jsonb, bigint)
   from public, anon, authenticated;
-revoke all on function public.restore_published_hero_build_set(bigint, bigint)
+revoke all on function public.restore_published_hero_build_set(text, bigint, bigint)
   from public, anon, authenticated;
 grant execute on function public.create_or_update_draft_hero_build_set(text, jsonb, bigint)
   to authenticated;
@@ -424,7 +447,7 @@ grant execute on function public.publish_hero_build_set(text, jsonb, bigint)
   to authenticated;
 grant execute on function public.update_published_hero_build_set(text, jsonb, bigint)
   to authenticated;
-grant execute on function public.restore_published_hero_build_set(bigint, bigint)
+grant execute on function public.restore_published_hero_build_set(text, bigint, bigint)
   to authenticated;
 
 commit;

@@ -83,7 +83,11 @@ export type Database = {
         Returns: Database["public"]["Tables"]["hero_build_sets"]["Row"];
       };
       restore_published_hero_build_set: {
-        Args: { p_expected_revision: number; p_history_id: number };
+        Args: {
+          p_expected_revision: number;
+          p_hero_id: string;
+          p_history_id: number;
+        };
         Returns: Database["public"]["Tables"]["hero_build_sets"]["Row"];
       };
       update_published_hero_build_set: {

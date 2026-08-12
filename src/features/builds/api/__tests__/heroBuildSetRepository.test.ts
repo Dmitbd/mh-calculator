@@ -489,6 +489,7 @@ describe("heroBuildSetRepository", () => {
     ).resolves.toMatchObject({ revision: 10 });
     expect(rpc).toHaveBeenCalledWith("restore_published_hero_build_set", {
       p_expected_revision: 9,
+      p_hero_id: "bastet",
       p_history_id: 12,
     });
   });

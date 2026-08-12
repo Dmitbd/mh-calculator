@@ -535,6 +535,81 @@ describe("DivinityBranchBuilderScreen", () => {
     }
   });
 
+  it("ignores a late publication after another hero is selected", async () => {
+    const publication = createDeferred<HeroBuildSetRecord>();
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: [],
+      publishedHeroIds: ["bastet"],
+    });
+    mockUpdatePublishedHeroBuildSet.mockReturnValue(publication.promise);
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByText("Опубликовать"));
+    expect(screen.getByText("Публикуем...")).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Морана"));
+
+    expect(screen.getByLabelText("Изменить героя: Морана")).toBeTruthy();
+    expect(screen.getByText("Опубликовать")).toBeTruthy();
+
+    await act(async () => {
+      publication.resolve(getBuildSetRecord("published", 2));
+    });
+
+    expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Билд обновлён.")).toBeNull();
+    expect(screen.getByLabelText("Изменить героя: Морана")).toBeTruthy();
+    expect(screen.getByText("Опубликовать")).toBeTruthy();
+  });
+
+  it("ignores a late tab save after another hero is selected", async () => {
+    const save = createDeferred<HeroBuildSetRecord>();
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: [],
+      publishedHeroIds: ["bastet"],
+    });
+    mockUpdatePublishedHeroBuildSet.mockReturnValue(save.promise);
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByText("Сохранить вкладку"));
+    expect(screen.getByText("Сохраняем...")).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Морана"));
+
+    expect(screen.getByText("Сохранить вкладку")).toBeTruthy();
+
+    await act(async () => {
+      save.resolve(getBuildSetRecord("published", 2));
+    });
+
+    expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Билд обновлён.")).toBeNull();
+    expect(screen.getByLabelText("Изменить героя: Морана")).toBeTruthy();
+    expect(screen.getByText("Сохранить вкладку")).toBeTruthy();
+  });
+
   it("does not show a publication result after logout during catalog refresh", async () => {
     let resolveRefresh!: (ids: HeroBuildSetStatusIds) => void;
 

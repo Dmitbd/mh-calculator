@@ -118,6 +118,7 @@ export function DivinityBranchBuilderScreen({
   const publishInFlight = useRef(false);
   const publishRequestId = useRef(0);
   const authTransitionInFlight = useRef(false);
+  const activeHeroId = useRef<string | null>(initialHeroId);
   const serverRevisionsByHero = useRef<Record<string, number>>({});
   const authRequestId = useRef(0);
   const isScreenMounted = useRef(true);
@@ -391,6 +392,7 @@ export function DivinityBranchBuilderScreen({
       isScreenMounted.current && requestId === entityLoadRequestId.current;
 
     loadedEditHeroId.current = initialHeroId;
+    activeHeroId.current = initialHeroId;
     initialEditLoadInFlight.current = true;
     setIsEditBuildLoading(true);
 
@@ -656,7 +658,11 @@ export function DivinityBranchBuilderScreen({
     tabSaveRequestId.current = requestId;
     setIsTabSavePending(true);
     const isCurrentRequest = () =>
-      isScreenMounted.current && requestId === tabSaveRequestId.current;
+      isScreenMounted.current &&
+      requestId === tabSaveRequestId.current &&
+      activeHeroId.current === selectedHeroId;
+    const isCurrentEntity = () =>
+      isScreenMounted.current && activeHeroId.current === selectedHeroId;
 
     try {
       let resultingRevision: number;
@@ -690,7 +696,9 @@ export function DivinityBranchBuilderScreen({
           record?.revision ?? (expectedRevision ?? 0) + 1;
       }
 
-      setServerRevision(selectedHeroId, resultingRevision);
+      if (isCurrentEntity()) {
+        setServerRevision(selectedHeroId, resultingRevision);
+      }
       if (!isCurrentRequest()) {
         return;
       }
@@ -845,7 +853,11 @@ export function DivinityBranchBuilderScreen({
     publishRequestId.current = requestId;
     setIsPublishPending(true);
     const isCurrentRequest = () =>
-      isScreenMounted.current && requestId === publishRequestId.current;
+      isScreenMounted.current &&
+      requestId === publishRequestId.current &&
+      activeHeroId.current === heroId;
+    const isCurrentEntity = () =>
+      isScreenMounted.current && activeHeroId.current === heroId;
 
     try {
       let resultingRevision: number;
@@ -897,7 +909,9 @@ export function DivinityBranchBuilderScreen({
           record?.revision ?? expectedRevision + 1;
       }
 
-      setServerRevision(heroId, resultingRevision);
+      if (isCurrentEntity()) {
+        setServerRevision(heroId, resultingRevision);
+      }
       if (!isCurrentRequest()) {
         return;
       }
@@ -1148,6 +1162,10 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
+    const previousHeroId = selectedHeroId;
+    activeHeroId.current = heroId;
+    resetTabSave();
+    resetPublish();
     const requestId = entityLoadRequestId.current + 1;
     entityLoadRequestId.current = requestId;
     initialEditLoadInFlight.current = false;
@@ -1183,6 +1201,7 @@ export function DivinityBranchBuilderScreen({
       }
 
       if (!draftRecord || !loadBuildSetForEditing(draftRecord.buildSet)) {
+        activeHeroId.current = previousHeroId;
         await loadHeroStatusIds();
 
         if (!isCurrentRequest()) {
@@ -1200,6 +1219,7 @@ export function DivinityBranchBuilderScreen({
         return;
       }
 
+      activeHeroId.current = previousHeroId;
       showBackendMessage(
         "error",
         error instanceof Error

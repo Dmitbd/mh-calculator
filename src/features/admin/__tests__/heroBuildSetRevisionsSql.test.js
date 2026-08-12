@@ -63,6 +63,25 @@ describe("hero build set revision migration", () => {
     expect(definition).toContain("public.hero_build_set_revisions");
   });
 
+  it.each([
+    "create_or_update_draft_hero_build_set",
+    "publish_hero_build_set",
+    "update_published_hero_build_set",
+    "restore_published_hero_build_set",
+  ])("requires an authenticated actor in %s", (functionName) => {
+    const definition = readFunction(readSql(), functionName);
+
+    expect(definition).toMatch(/v_actor\s+uuid\s*:=\s*auth\.uid\(\)/i);
+    expect(definition).toMatch(/if\s+v_actor\s+is\s+null/i);
+    expect(definition).toMatch(
+      /raise\s+exception\s+'Authenticated actor required\.'[\s\S]*?errcode\s*=\s*'42501'/i,
+    );
+    expect(definition).toMatch(/updated_by\s*=\s*v_actor/i);
+    expect(definition).not.toMatch(/updated_by\s*=\s*auth\.uid\(\)/i);
+    expect(definition.match(/auth\.uid\(\)/gi)).toHaveLength(1);
+    expect(definition.match(/v_actor/gi).length).toBeGreaterThanOrEqual(4);
+  });
+
   it("uses null expected revision only for atomic draft creation", () => {
     const definition = readFunction(
       readSql(),
@@ -80,9 +99,16 @@ describe("hero build set revision migration", () => {
 
     expect(definition).toMatch(/security\s+definer/i);
     expect(definition).toMatch(/p_history_id\s+bigint/i);
+    expect(definition).toMatch(/p_hero_id\s+text/i);
     expect(definition).toMatch(/p_expected_revision\s+bigint/i);
     expect(definition).toMatch(
-      /from\s+public\.hero_build_set_revisions[\s\S]*?and\s+status\s*=\s*'published'/i,
+      /from\s+public\.hero_build_set_revisions[\s\S]*?id\s*=\s*p_history_id[\s\S]*?hero_id\s*=\s*p_hero_id[\s\S]*?status\s*=\s*'published'/i,
+    );
+    expect(definition).toMatch(
+      /from\s+public\.hero_build_sets[\s\S]*?hero_id\s*=\s*p_hero_id/i,
+    );
+    expect(definition).toMatch(
+      /hero_id\s*=\s*p_hero_id[\s\S]*?if\s+not\s+found[\s\S]*?errcode\s*=\s*'22023'[\s\S]*?update\s+public\.hero_build_sets/i,
     );
     expect(definition).toMatch(/revision\s*=\s*revision\s*\+\s*1/i);
     expect(definition).toMatch(/'restored_published'/i);

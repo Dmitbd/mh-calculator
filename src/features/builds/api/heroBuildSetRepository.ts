@@ -268,6 +268,7 @@ export async function restorePublishedHeroBuildSet(
     "restore_published_hero_build_set",
     {
       p_expected_revision: expectedRevision,
+      p_hero_id: heroId,
       p_history_id: historyId,
     },
   );
