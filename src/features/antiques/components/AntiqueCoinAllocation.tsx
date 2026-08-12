@@ -128,9 +128,7 @@ export function AntiqueCoinAllocation({
           />
         </View>
       </View>
-      <Text style={styles.unusedCoins}>
-        Неиспользовано монет: {allocation.unusedCoins}
-      </Text>
+      <Text style={styles.unusedCoins}>Обменять монеты на карты</Text>
 
       <View style={styles.allocationList}>
         <AllocationRow
@@ -178,7 +176,7 @@ const styles = StyleSheet.create({
   },
   coinField: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     gap: 12,
   },
   inputColumn: {
