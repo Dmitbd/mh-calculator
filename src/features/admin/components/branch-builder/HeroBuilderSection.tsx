@@ -8,39 +8,51 @@ import { ValidationErrorMessages } from "../ValidationErrorMessages";
 type HeroBuilderSectionProps = {
   errors: readonly string[];
   heroListError: string | null;
-  isDraftLoadPending: boolean;
+  heroes?: readonly Hero[];
+  isDraftLoadPending?: boolean;
   isHeroListLoading: boolean;
-  notCreatedHeroes: readonly Hero[];
-  notPublishedHeroes: readonly Hero[];
+  notCreatedHeroes?: readonly Hero[];
+  notPublishedHeroes?: readonly Hero[];
   onRetryHeroList: () => void;
   onSelectHero: (heroId: string) => void;
-  selectedHero: Hero | null;
+  selectedHero?: Hero | null;
   selectedHeroId: string | null;
 };
 
 export function HeroBuilderSection({
   errors,
   heroListError,
-  isDraftLoadPending,
+  heroes,
+  isDraftLoadPending = false,
   isHeroListLoading,
   notCreatedHeroes,
-  notPublishedHeroes,
+  notPublishedHeroes = [],
   onRetryHeroList,
   onSelectHero,
   selectedHero,
   selectedHeroId,
 }: HeroBuilderSectionProps) {
+  const resolvedNotCreatedHeroes = notCreatedHeroes ?? heroes ?? [];
+  const resolvedSelectedHero =
+    selectedHero !== undefined
+      ? selectedHero
+      : selectedHeroId
+      ? [...resolvedNotCreatedHeroes, ...notPublishedHeroes].find(
+          (hero) => hero.id === selectedHeroId,
+        ) ?? null
+      : null;
+
   return (
     <View style={styles.wrapper}>
       <HeroGuideSelector
         error={heroListError}
         isDraftLoadPending={isDraftLoadPending}
         isLoading={isHeroListLoading}
-        notCreatedHeroes={notCreatedHeroes}
+        notCreatedHeroes={resolvedNotCreatedHeroes}
         notPublishedHeroes={notPublishedHeroes}
         onRetry={onRetryHeroList}
         onSelectHero={onSelectHero}
-        selectedHero={selectedHero}
+        selectedHero={resolvedSelectedHero}
         selectedHeroId={selectedHeroId}
       />
       <ValidationErrorMessages messages={errors} />

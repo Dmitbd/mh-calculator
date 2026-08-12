@@ -55,13 +55,22 @@ it("shows an explicit empty state for each empty list", () => {
   expect(screen.getByText("Нет неопубликованных героев")).toBeTruthy();
 });
 
-it("renders UR before SSR after expanding", () => {
-  const view = render(<HeroGuideSelector {...props} />);
+it("renders UR before SSR within the same catalog list", () => {
+  const view = render(
+    <HeroGuideSelector
+      {...props}
+      notCreatedHeroes={[ssrHero, urHero]}
+      notPublishedHeroes={[]}
+    />,
+  );
   fireEvent.press(screen.getByLabelText("Выбрать героя"));
 
   const texts = view.UNSAFE_getAllByType("Text" as never);
   const values = texts.map((node) => node.props.children);
   expect(values.indexOf("UR")).toBeLessThan(values.indexOf("SSR"));
+  expect(values.indexOf(urHero.name.ru)).toBeLessThan(
+    values.indexOf(ssrHero.name.ru),
+  );
 });
 
 it("keeps the narrow chevron when the hero catalog changes state", () => {
