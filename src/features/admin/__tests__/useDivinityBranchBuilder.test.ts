@@ -234,6 +234,60 @@ describe("useDivinityBranchBuilder", () => {
     expect("targetTabPath" in result.current.savedBuildsByPath.pvp).toBe(false);
   });
 
+  it("prepares the current valid tab as a partial build set without committing it", () => {
+    const result = filledBuild();
+
+    let prepared: ReturnType<typeof result.current.prepareCurrentTargetBuild>;
+    act(() => {
+      prepared = result.current.prepareCurrentTargetBuild(
+        "2026-08-12T10:00:00.000Z",
+      );
+    });
+
+    expect(prepared?.nextSavedBuilds.pvp.heroId).toBe("western-queen");
+    expect(prepared?.buildSet.tabs[0].build?.heroId).toBe("western-queen");
+    expect(
+      prepared?.buildSet.tabs[1].children?.every((tab) => tab.build === null),
+    ).toBe(true);
+    expect(result.current.savedBuildsByPath).toEqual({});
+  });
+
+  it("commits a prepared snapshot only when explicitly requested", () => {
+    const result = filledBuild();
+    const prepared = result.current.prepareCurrentTargetBuild(
+      "2026-08-12T10:00:00.000Z",
+    );
+
+    act(() => result.current.commitPreparedTargetBuild(prepared!));
+
+    expect(result.current.savedBuildsByPath.pvp?.heroId).toBe("western-queen");
+    expect(result.current.savedBuildsByPath["pve/bosses"]).toBeUndefined();
+  });
+
+  it("preserves an earlier committed tab in the next prepared snapshot", () => {
+    const result = filledBuild();
+    const pvp = result.current.prepareCurrentTargetBuild(
+      "2026-08-12T10:00:00.000Z",
+    )!;
+    act(() => {
+      result.current.commitPreparedTargetBuild(pvp);
+      result.current.setTargetTopTab("pve");
+    });
+
+    const bosses = result.current.prepareCurrentTargetBuild(
+      "2026-08-12T10:05:00.000Z",
+    )!;
+    expect(bosses.nextSavedBuilds.pvp).toEqual(pvp.nextSavedBuilds.pvp);
+    expect(bosses.nextSavedBuilds["pve/bosses"]).toBeTruthy();
+  });
+
+  it("cannot prepare an incomplete current tab", () => {
+    const { result } = renderHook(() =>
+      useDivinityBranchBuilder(weaponAwakeningCatalog),
+    );
+    expect(result.current.prepareCurrentTargetBuild()).toBeNull();
+  });
+
   it("full export is blocked until every target tab is saved", () => {
     const result = filledBuild();
 

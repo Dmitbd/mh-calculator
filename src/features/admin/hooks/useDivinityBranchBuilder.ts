@@ -60,6 +60,12 @@ type EditableBuildDraft = {
 };
 type DraftsByPath = Record<string, EditableBuildDraft>;
 
+export type PreparedTargetBuildSave = {
+  buildSet: HeroBuildSet;
+  exported: DivinityBranchBuilderExport;
+  nextSavedBuilds: SavedBuildsByPath;
+};
+
 const emptySelectedBranches: DraftBranchColumns = {
   left: null,
   center: null,
@@ -558,25 +564,49 @@ export function useDivinityBranchBuilder(
     ],
   );
 
+  const prepareCurrentTargetBuild = useCallback(
+    (createdAt?: string): PreparedTargetBuildSave | null => {
+      const exported = buildExport(createdAt);
+      if (!exported) return null;
+
+      const nextSavedBuilds = {
+        ...savedBuildsByPath,
+        [getBuildTargetPathKey(targetTabPath)]: toCommittedBuild(exported),
+      };
+
+      return {
+        buildSet: buildHeroBuildSetFromSavedBuilds(
+          buildTargetTabs,
+          nextSavedBuilds,
+        ),
+        exported,
+        nextSavedBuilds,
+      };
+    },
+    [buildExport, savedBuildsByPath, targetTabPath],
+  );
+
+  const commitPreparedTargetBuild = useCallback(
+    (prepared: PreparedTargetBuildSave) => {
+      setSavedBuildsByPath(prepared.nextSavedBuilds);
+      setDraftsByPath((current) => seedEmptyDrafts(current, prepared.exported));
+    },
+    [],
+  );
+
   const saveCurrentTargetBuild = useCallback(
     (createdAt?: string) => {
-      const exported = buildExport(createdAt);
+      const prepared = prepareCurrentTargetBuild(createdAt);
 
-      if (!exported) {
+      if (!prepared) {
         return false;
       }
 
-      const key = getBuildTargetPathKey(targetTabPath);
-
-      setSavedBuildsByPath((current) => ({
-        ...current,
-        [key]: toCommittedBuild(exported),
-      }));
-      setDraftsByPath((current) => seedEmptyDrafts(current, exported));
+      commitPreparedTargetBuild(prepared);
 
       return true;
     },
-    [buildExport, targetTabPath],
+    [commitPreparedTargetBuild, prepareCurrentTargetBuild],
   );
 
   const validateFullExport = useCallback(
@@ -661,6 +691,8 @@ export function useDivinityBranchBuilder(
       buildValidationDraft,
       buildExport,
       loadBuildSetForEditing,
+      prepareCurrentTargetBuild,
+      commitPreparedTargetBuild,
       saveCurrentTargetBuild,
       validateFullExport,
       buildFullExport,
@@ -693,6 +725,8 @@ export function useDivinityBranchBuilder(
       showAwakenedDivinitySkills,
       toggleColumnProgress,
       loadBuildSetForEditing,
+      prepareCurrentTargetBuild,
+      commitPreparedTargetBuild,
       saveCurrentTargetBuild,
       validateFullExport,
       buildFullExport,
