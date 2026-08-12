@@ -24,7 +24,9 @@ type AdminAuthClient = {
       email: string;
       password: string;
     }) => Promise<AuthResult<{ user: AuthUser | null }>>;
-    signOut?: () => Promise<AuthResult<unknown>>;
+    signOut?: (options?: {
+      scope?: "global" | "local" | "others";
+    }) => Promise<AuthResult<unknown>>;
   };
 };
 
@@ -38,6 +40,16 @@ function getAdminSession(user: AuthUser | null | undefined): AdminSession | null
     email: user.email ?? null,
     role: "admin",
   };
+}
+
+async function bestEffortSignOutLocally(client: AdminAuthClient): Promise<void> {
+  // auth-js has no public force-clear API beyond local-scope sign-out.
+  // Cleanup failures must not replace the access-denied result.
+  try {
+    await client.auth.signOut?.({ scope: "local" });
+  } catch {
+    return;
+  }
 }
 
 export async function signInAdmin(
@@ -60,7 +72,7 @@ export async function signInAdmin(
   const session = getAdminSession(data?.user);
 
   if (!session) {
-    await signOutAdmin(client);
+    await bestEffortSignOutLocally(client);
     throw new Error("Недостаточно прав администратора.");
   }
 

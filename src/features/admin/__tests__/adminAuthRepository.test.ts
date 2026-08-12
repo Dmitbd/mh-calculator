@@ -61,9 +61,69 @@ describe("adminAuthRepository", () => {
         email: "user@example.com",
         password: "secret",
       }),
-    ).rejects.toThrow("Недостаточно прав администратора.");
+    ).rejects.toThrow(/^Недостаточно прав администратора\.$/);
 
-    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(signOut).toHaveBeenCalledWith({ scope: "local" });
+  });
+
+  it("keeps the access error when local sign-out returns an error", async () => {
+    const signOut = jest.fn(async () => ({
+      error: { message: "sign-out network error" },
+    }));
+    const client = {
+      auth: {
+        signInWithPassword: jest.fn(async () => ({
+          data: {
+            user: {
+              id: "regular-user-id",
+              email: "user@example.com",
+              app_metadata: { role: "user" },
+            },
+          },
+          error: null,
+        })),
+        signOut,
+      },
+    };
+
+    await expect(
+      signInAdmin(client, {
+        email: "user@example.com",
+        password: "secret",
+      }),
+    ).rejects.toThrow(/^Недостаточно прав администратора\.$/);
+
+    expect(signOut).toHaveBeenCalledWith({ scope: "local" });
+  });
+
+  it("keeps the access error when local sign-out rejects", async () => {
+    const signOut = jest.fn(async () => {
+      throw new Error("storage unavailable");
+    });
+    const client = {
+      auth: {
+        signInWithPassword: jest.fn(async () => ({
+          data: {
+            user: {
+              id: "regular-user-id",
+              email: "user@example.com",
+              app_metadata: { role: "user" },
+            },
+          },
+          error: null,
+        })),
+        signOut,
+      },
+    };
+
+    await expect(
+      signInAdmin(client, {
+        email: "user@example.com",
+        password: "secret",
+      }),
+    ).rejects.toThrow(/^Недостаточно прав администратора\.$/);
+
+    expect(signOut).toHaveBeenCalledWith({ scope: "local" });
   });
 
   it("throws a readable sign-in error", async () => {
