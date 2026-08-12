@@ -190,11 +190,9 @@ test("renders all 16 accessible reward chests in order without visible node numb
 
   expect(chestLabels).toEqual(expectedChestLabels);
   expect(chestUris).toEqual([
-    ...Array(4).fill(
-      "resolved:/img/antiques/rivalry-chest-active.png",
-    ),
-    ...Array(12).fill("resolved:/img/antiques/rivalry-chest.png"),
+    ...Array(16).fill("resolved:/img/antiques/rivalry-chest.png"),
   ]);
+  expect(screen.getAllByLabelText("Открыто")).toHaveLength(4);
   expect(
     chestLabels.filter((label) => label.endsWith("большой сундук")),
   ).toEqual(expectedLargeChestLabels);
@@ -209,12 +207,13 @@ test("renders all 16 accessible reward chests in order without visible node numb
 });
 
 test.each([
-  [0, 0, [false, true, true, true]],
-  [3_600, 4, [false, false, true, true]],
-  [12_000, 16, [false, false, false, false]],
+  [0, 0, [false, true, true, true], [0, 0, 0, 0]],
+  [3_450, 4, [false, false, true, true], [100, 0, 0, 0]],
+  [4_500, 6, [false, false, true, true], [100, 33, 0, 0]],
+  [12_000, 16, [false, false, false, false], [100, 100, 100, 100]],
 ])(
-  "marks reward rows available for a total score of %i",
-  (totalScore, openedNodes, disabledRows) => {
+  "calculates each reward row from its own first chest for %i points",
+  (totalScore, openedNodes, disabledRows, progressValues) => {
     render(
       <AntiqueRewardTrack
         openedNodes={openedNodes}
@@ -228,8 +227,57 @@ test.each([
     expect(
       rows.map((row) => row.props.accessibilityState?.disabled),
     ).toEqual(disabledRows);
+    expect(
+      rows.map((row) => row.props.accessibilityValue?.now),
+    ).toEqual(progressValues);
   },
 );
+
+test("keeps every chest fully colored instead of rendering silhouettes", () => {
+  const view = render(
+    <AntiqueRewardTrack openedNodes={4} totalScore={3_450} />,
+  );
+
+  const chestImages = view
+    .UNSAFE_getAllByType(Image)
+    .filter(
+      (image) =>
+        image.props.source.uri ===
+          "resolved:/img/antiques/rivalry-chest.png" &&
+        image.props.tintColor === undefined,
+    );
+
+  expect(chestImages).toHaveLength(16);
+  for (const image of chestImages) {
+    expect(image.props.source.uri).toBe(
+      "resolved:/img/antiques/rivalry-chest.png",
+    );
+    expect(image.props.tintColor).toBeUndefined();
+    expect(StyleSheet.flatten(image.props.style).opacity).toBeUndefined();
+  }
+});
+
+test("marks opened chests with green checks and lights only completed links", () => {
+  const { rerender } = render(
+    <AntiqueRewardTrack openedNodes={5} totalScore={4_200} />,
+  );
+
+  expect(screen.getAllByLabelText("Открыто")).toHaveLength(5);
+  expect(
+    screen
+      .getAllByLabelText(/^Линия наград /)
+      .map((row) => row.props.accessibilityValue?.now),
+  ).toEqual([100, 0, 0, 0]);
+
+  rerender(<AntiqueRewardTrack openedNodes={6} totalScore={4_500} />);
+
+  expect(screen.getAllByLabelText("Открыто")).toHaveLength(6);
+  expect(
+    screen
+      .getAllByLabelText(/^Линия наград /)
+      .map((row) => row.props.accessibilityValue?.now),
+  ).toEqual([100, 33, 0, 0]);
+});
 
 test.each([
   [0, "0 / 12000", "Очки соревнования: 0 из 12000"],

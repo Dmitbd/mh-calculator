@@ -5,12 +5,8 @@ import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
 
 const REWARDS_PER_ROW = 4;
 const REWARD_ROW_COUNT = 4;
-const SCORE_PER_ROW = 3_000;
 const RIVALRY_CHEST_URI = resolveAssetUri(
   "/img/antiques/rivalry-chest.png",
-);
-const RIVALRY_CHEST_ACTIVE_URI = resolveAssetUri(
-  "/img/antiques/rivalry-chest-active.png",
 );
 
 type AntiqueRewardTrackProps = {
@@ -39,14 +35,17 @@ export function AntiqueRewardTrack({
       <Text style={styles.title}>Шкала наград</Text>
       <View style={styles.track}>
         {rewardRows.map((row, rowIndex) => {
-          const rowStartScore = rowIndex * SCORE_PER_ROW;
-          const rowEndScore = rowStartScore + SCORE_PER_ROW;
-          const rowProgress = clamp(
-            (totalScore - rowStartScore) / (rowEndScore - rowStartScore),
+          const rowStartScore = row[0].score;
+          const openedInRow = clamp(
+            openedNodes - rowIndex * REWARDS_PER_ROW,
             0,
-            1,
+            REWARDS_PER_ROW,
           );
-          const isRowAvailable = totalScore >= rowStartScore;
+          const completedLinks = Math.max(openedInRow - 1, 0);
+          const rowProgress = completedLinks / (REWARDS_PER_ROW - 1);
+          const isRowAvailable =
+            rowIndex === 0 || totalScore >= rewardRows[rowIndex - 1][3].score;
+          const rowProgressPercent = Math.round(rowProgress * 100);
 
           return (
             <View key={rowStartScore} style={styles.row}>
@@ -56,14 +55,14 @@ export function AntiqueRewardTrack({
                   isRowAvailable ? "доступна" : "заблокирована"
                 }`}
                 accessibilityState={{ disabled: !isRowAvailable }}
+                accessibilityValue={{
+                  min: 0,
+                  max: 100,
+                  now: rowProgressPercent,
+                }}
                 style={styles.rowAccessibilityMarker}
               />
-              <View
-                style={[
-                  styles.rowVisual,
-                  !isRowAvailable && styles.unavailableRow,
-                ]}
-              >
+              <View style={styles.rowVisual}>
                 <View style={styles.line}>
                   <View
                     style={[
@@ -93,21 +92,28 @@ export function AntiqueRewardTrack({
                         accessibilityState={{ selected: isOpened }}
                         style={styles.chestNode}
                       >
-                        <Image
-                          accessible={false}
-                          resizeMode="contain"
-                          source={{
-                            uri: isOpened
-                              ? RIVALRY_CHEST_ACTIVE_URI
-                              : RIVALRY_CHEST_URI,
-                          }}
-                          tintColor={isOpened ? undefined : "#81766f"}
+                        <View
                           style={[
-                            styles.chestImage,
-                            !isOpened && styles.closedChestImage,
-                            isLargeChest && styles.largeChestImage,
+                            styles.chestArtwork,
+                            isLargeChest && styles.largeChestArtwork,
                           ]}
-                        />
+                        >
+                          <Image
+                            accessible={false}
+                            resizeMode="contain"
+                            source={{ uri: RIVALRY_CHEST_URI }}
+                            style={styles.chestImage}
+                          />
+                          {isOpened ? (
+                            <View
+                              accessible
+                              accessibilityLabel="Открыто"
+                              style={styles.openedCheck}
+                            >
+                              <Text style={styles.openedCheckText}>✓</Text>
+                            </View>
+                          ) : null}
+                        </View>
                         <Text
                           style={[
                             styles.score,
@@ -160,9 +166,6 @@ const styles = StyleSheet.create({
     minHeight: 88,
     justifyContent: "center",
   },
-  unavailableRow: {
-    opacity: 0.55,
-  },
   line: {
     position: "absolute",
     top: 31,
@@ -177,6 +180,11 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 3,
     backgroundColor: "#d7a843",
+    shadowColor: "#ffd75e",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 5,
+    elevation: 4,
   },
   chestRow: {
     flexDirection: "row",
@@ -189,18 +197,39 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
-  chestImage: {
+  chestArtwork: {
     width: 52,
     height: 52,
+    position: "relative",
   },
-  closedChestImage: {
-    opacity: 0.55,
-  },
-  largeChestImage: {
+  largeChestArtwork: {
     width: 64,
     height: 64,
     marginTop: -5,
     marginBottom: -5,
+  },
+  chestImage: {
+    width: "100%",
+    height: "100%",
+  },
+  openedCheck: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#d7ffd1",
+    backgroundColor: "#38a84b",
+  },
+  openedCheckText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "900",
+    lineHeight: 15,
   },
   score: {
     color: "#9f9288",
