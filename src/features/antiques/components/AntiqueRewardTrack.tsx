@@ -9,6 +9,9 @@ const SCORE_PER_ROW = 3_000;
 const RIVALRY_CHEST_URI = resolveAssetUri(
   "/img/antiques/rivalry-chest.png",
 );
+const RIVALRY_CHEST_ACTIVE_URI = resolveAssetUri(
+  "/img/antiques/rivalry-chest-active.png",
+);
 
 type AntiqueRewardTrackProps = {
   openedNodes: number;
@@ -90,25 +93,21 @@ export function AntiqueRewardTrack({
                         accessibilityState={{ selected: isOpened }}
                         style={styles.chestNode}
                       >
-                        <View
+                        <Image
+                          accessible={false}
+                          resizeMode="contain"
+                          source={{
+                            uri: isOpened
+                              ? RIVALRY_CHEST_ACTIVE_URI
+                              : RIVALRY_CHEST_URI,
+                          }}
+                          tintColor={isOpened ? undefined : "#81766f"}
                           style={[
-                            styles.chestGlow,
-                            isOpened && styles.openedChestGlow,
-                            isLargeChest && styles.largeChestGlow,
+                            styles.chestImage,
+                            !isOpened && styles.closedChestImage,
+                            isLargeChest && styles.largeChestImage,
                           ]}
-                        >
-                          <Image
-                            accessible={false}
-                            resizeMode="contain"
-                            source={{ uri: RIVALRY_CHEST_URI }}
-                            tintColor={isOpened ? undefined : "#81766f"}
-                            style={[
-                              styles.chestImage,
-                              !isOpened && styles.closedChestImage,
-                              isLargeChest && styles.largeChestImage,
-                            ]}
-                          />
-                        </View>
+                        />
                         <Text
                           style={[
                             styles.score,
@@ -190,28 +189,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
-  chestGlow: {
-    width: 58,
-    height: 58,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 29,
-  },
-  openedChestGlow: {
-    backgroundColor: "rgba(243, 190, 70, 0.2)",
-    shadowColor: "#ffd76f",
-    shadowOpacity: 0.8,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 7,
-  },
-  largeChestGlow: {
-    width: 68,
-    height: 68,
-    marginTop: -5,
-    marginBottom: -5,
-    borderRadius: 34,
-  },
   chestImage: {
     width: 52,
     height: 52,
@@ -222,6 +199,8 @@ const styles = StyleSheet.create({
   largeChestImage: {
     width: 64,
     height: 64,
+    marginTop: -5,
+    marginBottom: -5,
   },
   score: {
     color: "#9f9288",
