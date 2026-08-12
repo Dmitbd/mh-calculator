@@ -12,6 +12,7 @@ export type AntiqueCalculatorInput = {
   templeMapAllocation: number;
   ownedTombMaps: number;
   ownedTempleMaps: number;
+  includeCashback: boolean;
 };
 
 export type AntiqueCalculatorRecord = AntiqueCalculatorInput & {
@@ -24,6 +25,7 @@ export function createEmptyAntiqueCalculatorInput(): AntiqueCalculatorInput {
     templeMapAllocation: 0,
     ownedTombMaps: 0,
     ownedTempleMaps: 0,
+    includeCashback: true,
   };
 }
 
@@ -40,6 +42,7 @@ export function normalizeAntiqueCalculatorInput(
     ).templeMapAllocation,
     ownedTombMaps: normalizeAntiqueCount(input.ownedTombMaps),
     ownedTempleMaps: normalizeAntiqueCount(input.ownedTempleMaps),
+    includeCashback: input.includeCashback !== false,
   };
 }
 

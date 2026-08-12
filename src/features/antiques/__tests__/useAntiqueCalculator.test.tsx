@@ -62,6 +62,7 @@ test("finishes loading with empty input when AsyncStorage rejects the read", asy
     templeMapAllocation: 0,
     ownedTombMaps: 0,
     ownedTempleMaps: 0,
+    includeCashback: true,
   });
 });
 
@@ -108,6 +109,7 @@ test("setters persist normalized input and clamp allocation after coins decrease
     templeMapAllocation: 1,
     ownedTombMaps: 0,
     ownedTempleMaps: 2,
+    includeCashback: true,
   });
   expect(readPersistedInput()).toMatchObject(result.current.input);
 });
@@ -127,6 +129,25 @@ test("conversion actions adjust allocation by one in each direction", async () =
     await result.current.convertOneToTombs();
   });
   expect(result.current.input.templeMapAllocation).toBe(0);
+});
+
+test("persists the cashback preference and resets it to enabled", async () => {
+  const { result } = renderHook(() => useAntiqueCalculator());
+
+  await waitFor(() => expect(result.current.isLoaded).toBe(true));
+
+  await act(async () => {
+    await result.current.setIncludeCashback(false);
+  });
+
+  expect(result.current.input.includeCashback).toBe(false);
+  expect(readPersistedInput()).toMatchObject({ includeCashback: false });
+
+  await act(async () => {
+    await result.current.reset();
+  });
+
+  expect(result.current.input.includeCashback).toBe(true);
 });
 
 test("fast consecutive conversion actions retain every update in state and storage", async () => {
@@ -180,6 +201,7 @@ test("reset clears calculator state without waiting for an earlier write", async
     templeMapAllocation: 0,
     ownedTombMaps: 0,
     ownedTempleMaps: 0,
+    includeCashback: true,
   });
   expect(readPersistedInput()).toMatchObject(result.current.input);
 });

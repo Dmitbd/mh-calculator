@@ -25,6 +25,7 @@ const emptyCashback = (): AntiqueCashback => ({
 export function calculateAntiqueRivalry(
   input: AntiqueRivalryInput,
 ): AntiqueRivalryResult {
+  const includeCashback = input.includeCashback !== false;
   const allocation = getCoinAllocation(input.coins, input.templeMapAllocation);
   const spentMaps: AntiqueMapCounts = {
     tombMaps: allocation.tombMaps + normalizeAntiqueCount(input.ownedTombMaps),
@@ -55,9 +56,11 @@ export function calculateAntiqueRivalry(
       current.legendaryChestFragments - previous.legendaryChestFragments;
     cashback.mythicChestFragments +=
       current.mythicChestFragments - previous.mythicChestFragments;
-    spentMaps.tombMaps += tombDelta;
-    spentMaps.templeMaps += templeDelta;
-    totalScore += tombDelta * TOMB_MAP_SCORE + templeDelta * TEMPLE_MAP_SCORE;
+    if (includeCashback) {
+      spentMaps.tombMaps += tombDelta;
+      spentMaps.templeMaps += templeDelta;
+      totalScore += tombDelta * TOMB_MAP_SCORE + templeDelta * TEMPLE_MAP_SCORE;
+    }
     openedNodes += 1;
 
     if (ANTIQUE_MAJOR_THRESHOLDS.includes(current.score)) {

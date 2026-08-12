@@ -14,6 +14,7 @@ const mockSetOwnedTombMaps = jest.fn();
 const mockSetOwnedTempleMaps = jest.fn();
 const mockConvertOneToTemple = jest.fn();
 const mockConvertOneToTombs = jest.fn();
+const mockSetIncludeCashback = jest.fn();
 const mockReset = jest.fn();
 let mockCalculatorState = {
   input: {
@@ -21,6 +22,7 @@ let mockCalculatorState = {
     templeMapAllocation: 0,
     ownedTombMaps: 0,
     ownedTempleMaps: 0,
+    includeCashback: true,
   },
   isLoaded: true,
   storageError: null as string | null,
@@ -29,6 +31,7 @@ let mockCalculatorState = {
   setOwnedTempleMaps: mockSetOwnedTempleMaps,
   convertOneToTemple: mockConvertOneToTemple,
   convertOneToTombs: mockConvertOneToTombs,
+  setIncludeCashback: mockSetIncludeCashback,
   reset: mockReset,
 };
 
@@ -70,6 +73,7 @@ beforeEach(() => {
       templeMapAllocation: 0,
       ownedTombMaps: 0,
       ownedTempleMaps: 0,
+      includeCashback: true,
     },
     isLoaded: true,
     storageError: null,
@@ -91,6 +95,7 @@ test("renders the loaded calculator sections with the plain heading first", () =
   expect(screen.queryByText("Крупные сундуки")).toBeNull();
   expect(screen.getByText("Монеты исследования")).toBeTruthy();
   expect(screen.getByText("Мои карты")).toBeTruthy();
+  expect(screen.getByRole("checkbox", { name: "Учитывать кешбэк" })).toBeTruthy();
   expect(screen.getByText("Очки соревнования")).toBeTruthy();
   expect(screen.getByText("0 / 12000")).toBeTruthy();
   expect(
@@ -109,6 +114,7 @@ test("wires the uncapped total score into rivalry progress", () => {
       templeMapAllocation: 0,
       ownedTombMaps: 400,
       ownedTempleMaps: 0,
+      includeCashback: true,
     },
   };
 
@@ -146,6 +152,7 @@ test("forwards input, conversion, and reset actions to the calculator hook", () 
       templeMapAllocation: 1,
       ownedTombMaps: 2,
       ownedTempleMaps: 3,
+      includeCashback: true,
     },
   };
 
@@ -166,6 +173,7 @@ test("forwards input, conversion, and reset actions to the calculator hook", () 
   fireEvent.press(screen.getByLabelText("Увеличить карты храма"));
   fireEvent.press(screen.getByLabelText("Увеличить карты гробницы"));
   fireEvent.press(screen.getByText("Сбросить расчёт"));
+  fireEvent.press(screen.getByRole("checkbox", { name: "Учитывать кешбэк" }));
 
   expect(mockSetCoins).toHaveBeenCalledWith("2500");
   expect(mockSetOwnedTombMaps).toHaveBeenCalledWith("4");
@@ -173,6 +181,29 @@ test("forwards input, conversion, and reset actions to the calculator hook", () 
   expect(mockConvertOneToTemple).toHaveBeenCalledTimes(1);
   expect(mockConvertOneToTombs).toHaveBeenCalledTimes(1);
   expect(mockReset).toHaveBeenCalledTimes(1);
+  expect(mockSetIncludeCashback).toHaveBeenCalledWith(false);
+});
+
+test("excludes cashback from score while keeping reached rewards visible", () => {
+  mockCalculatorState = {
+    ...mockCalculatorState,
+    input: {
+      coins: 0,
+      templeMapAllocation: 0,
+      ownedTombMaps: 45,
+      ownedTempleMaps: 0,
+      includeCashback: false,
+    },
+  };
+
+  render(<AntiqueScreen />);
+
+  expect(screen.getByText("1350 / 12000")).toBeTruthy();
+  expect(screen.getByLabelText("Кешбэк — Карта гробницы: 5")).toBeTruthy();
+  expect(
+    screen.getByRole("checkbox", { name: "Учитывать кешбэк" }).props
+      .accessibilityState,
+  ).toEqual({ checked: false });
 });
 
 test("falls back to the home route when there is no navigation history", () => {

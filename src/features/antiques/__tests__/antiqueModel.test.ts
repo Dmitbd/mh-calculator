@@ -140,6 +140,27 @@ test("uses cashback to unlock a later node without reapplying earlier deltas", (
   expect(result.openedNodes).toBe(2);
 });
 
+test("shows reached cashback without adding it to score when disabled", () => {
+  const result = calculateAntiqueRivalry({
+    coins: 0,
+    templeMapAllocation: 0,
+    ownedTombMaps: 45,
+    ownedTempleMaps: 0,
+    includeCashback: false,
+  });
+
+  expect(result.baseScore).toBe(1_350);
+  expect(result.totalScore).toBe(1_350);
+  expect(result.openedNodes).toBe(1);
+  expect(result.cashback).toEqual({
+    tombMaps: 5,
+    templeMaps: 0,
+    legendaryChestFragments: 50,
+    mythicChestFragments: 0,
+  });
+  expect(result.spentMaps).toEqual({ tombMaps: 45, templeMaps: 0 });
+});
+
 test("cascades across multiple thresholds in one ascending pass", () => {
   const result = calculateAntiqueRivalry({
     coins: 0,
