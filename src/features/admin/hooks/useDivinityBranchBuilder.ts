@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { getHeroById } from "@/features/game-data/heroes";
 import { compactDivinitySkillIds } from "@/features/game-data/divinity";
@@ -64,6 +64,7 @@ export type PreparedTargetBuildSave = {
   buildSet: HeroBuildSet;
   exported: DivinityBranchBuilderExport;
   nextSavedBuilds: SavedBuildsByPath;
+  revision: number;
 };
 
 const emptySelectedBranches: DraftBranchColumns = {
@@ -160,6 +161,7 @@ export function useDivinityBranchBuilder(
   const heroName = selectedHero?.name.ru ?? "";
   const [draftsByPath, setDraftsByPath] = useState<DraftsByPath>({});
   const [savedBuildsByPath, setSavedBuildsByPath] = useState<SavedBuildsByPath>({});
+  const contentRevisionRef = useRef(0);
   const targetPathKey = getBuildTargetPathKey(targetTabPath);
   const currentDraft = draftsByPath[targetPathKey] ?? emptyDraft;
   const {
@@ -174,6 +176,7 @@ export function useDivinityBranchBuilder(
 
   const updateCurrentDraft = useCallback(
     (update: (current: EditableBuildDraft) => EditableBuildDraft) => {
+      contentRevisionRef.current += 1;
       setSavedBuildsByPath((savedBuilds) => {
         const { [targetPathKey]: _changedBuild, ...remainingBuilds } = savedBuilds;
 
@@ -219,6 +222,7 @@ export function useDivinityBranchBuilder(
     }
 
     if (selectedHeroId !== heroId) {
+      contentRevisionRef.current += 1;
       setSavedBuildsByPath({});
     }
 
@@ -581,6 +585,7 @@ export function useDivinityBranchBuilder(
         ),
         exported,
         nextSavedBuilds,
+        revision: contentRevisionRef.current,
       };
     },
     [buildExport, savedBuildsByPath, targetTabPath],
@@ -588,8 +593,15 @@ export function useDivinityBranchBuilder(
 
   const commitPreparedTargetBuild = useCallback(
     (prepared: PreparedTargetBuildSave) => {
+      if (prepared.revision !== contentRevisionRef.current) {
+        return false;
+      }
+
+      contentRevisionRef.current += 1;
       setSavedBuildsByPath(prepared.nextSavedBuilds);
       setDraftsByPath((current) => seedEmptyDrafts(current, prepared.exported));
+
+      return true;
     },
     [],
   );
@@ -649,6 +661,7 @@ export function useDivinityBranchBuilder(
       };
     }, {});
 
+    contentRevisionRef.current += 1;
     setSelectedHeroId(hero.id);
     setSavedBuildsByPath(loadedBuilds);
     setDraftsByPath(loadedDrafts);

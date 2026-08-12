@@ -264,6 +264,55 @@ describe("useDivinityBranchBuilder", () => {
     expect(result.current.savedBuildsByPath["pve/bosses"]).toBeUndefined();
   });
 
+  it("rejects a prepared snapshot after an intervening draft edit", () => {
+    const completeBuildSet = getHeroBuildSet("bastet");
+
+    if (!completeBuildSet) {
+      throw new Error("Expected complete build set.");
+    }
+
+    const { result } = renderHook(() =>
+      useDivinityBranchBuilder(weaponAwakeningCatalog),
+    );
+    act(() => result.current.loadBuildSetForEditing(completeBuildSet));
+
+    const prepared = result.current.prepareCurrentTargetBuild(
+      "2026-08-12T10:00:00.000Z",
+    )!;
+
+    act(() => result.current.removeRune("air"));
+
+    expect(result.current.savedBuildsByPath.pvp).toBeUndefined();
+    expect(result.current.buildFullExport()).toBeNull();
+
+    let committed: boolean | undefined;
+    act(() => {
+      committed = result.current.commitPreparedTargetBuild(prepared);
+    });
+
+    expect(result.current.savedBuildsByPath.pvp).toBeUndefined();
+    expect(result.current.buildFullExport()).toBeNull();
+    expect(committed).toBe(false);
+  });
+
+  it("rejects a prepared snapshot after the selected hero changes", () => {
+    const result = filledBuild();
+    const prepared = result.current.prepareCurrentTargetBuild(
+      "2026-08-12T10:00:00.000Z",
+    )!;
+
+    act(() => result.current.selectHero("bastet"));
+
+    let committed: boolean | undefined;
+    act(() => {
+      committed = result.current.commitPreparedTargetBuild(prepared);
+    });
+
+    expect(result.current.selectedHeroId).toBe("bastet");
+    expect(result.current.savedBuildsByPath).toEqual({});
+    expect(committed).toBe(false);
+  });
+
   it("preserves an earlier committed tab in the next prepared snapshot", () => {
     const result = filledBuild();
     const pvp = result.current.prepareCurrentTargetBuild(
