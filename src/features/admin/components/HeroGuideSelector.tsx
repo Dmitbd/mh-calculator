@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -16,51 +16,61 @@ import { IconPreview } from "@/shared/ui/IconPreview";
 import {
   getHeroGuideSelectorSections,
   type HeroGuideSelectorGroup,
+  type HeroGuideSelectorSections,
 } from "../model/heroGuideSelector";
 
 type HeroGuideSelectorProps = {
   error: string | null;
-  heroes: readonly Hero[];
+  isDraftLoadPending: boolean;
   isLoading: boolean;
+  notCreatedHeroes: readonly Hero[];
+  notPublishedHeroes: readonly Hero[];
   onRetry: () => void;
   onSelectHero: (heroId: string) => void;
+  selectedHero: Hero | null;
   selectedHeroId: string | null;
 };
 
 export function HeroGuideSelector({
   error,
-  heroes,
+  isDraftLoadPending,
   isLoading,
+  notCreatedHeroes,
+  notPublishedHeroes,
   onRetry,
   onSelectHero,
+  selectedHero,
   selectedHeroId,
 }: HeroGuideSelectorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const sections = useMemo(
-    () => getHeroGuideSelectorSections(heroes, heroFactions),
-    [heroes],
-  );
-  const selectedHero = selectedHeroId
-    ? heroes.find((hero) => hero.id === selectedHeroId) ?? null
-    : null;
 
   return (
     <View style={styles.wrapper}>
       {!error ? (
         <Pressable
           accessibilityLabel={
-            isLoading
+            isDraftLoadPending
+              ? "Загрузка черновика"
+              : isLoading
               ? "Загрузка героев"
               : selectedHero
               ? `Изменить героя: ${selectedHero.name.ru}`
               : "Выбрать героя"
           }
           accessibilityRole="button"
-          accessibilityState={{ expanded: isExpanded }}
+          accessibilityState={{
+            busy: isDraftLoadPending,
+            expanded: isExpanded,
+          }}
           onPress={() => setIsExpanded((current) => !current)}
           style={[styles.toggle, isExpanded ? styles.toggleExpanded : null]}
         >
-          {isLoading ? (
+          {isDraftLoadPending ? (
+            <View style={styles.loadingHeader}>
+              <ActivityIndicator color="#d6c2a4" size="small" />
+              <Text style={styles.toggleText}>Загружаем черновик...</Text>
+            </View>
+          ) : isLoading ? (
             <View style={styles.loadingHeader}>
               <ActivityIndicator
                 accessibilityLabel="Загрузка героев"
@@ -104,6 +114,7 @@ export function HeroGuideSelector({
       {selectedHero && error ? (
         <View style={styles.grid}>
           <HeroOption
+            disabled={isDraftLoadPending}
             hero={selectedHero}
             onSelectHero={onSelectHero}
             selectedHeroId={selectedHeroId}
@@ -134,33 +145,24 @@ export function HeroGuideSelector({
                 size="small"
               />
             </View>
-          ) : heroes.length === 0 ? (
-            <Text accessibilityLiveRegion="polite" style={styles.stateText}>
-              Все герои уже имеют опубликованные гайды
-            </Text>
           ) : (
             <View style={styles.content}>
-              {sections.urHeroes.length > 0 ? (
-                <HeroGrid
-                  heroes={sections.urHeroes}
-                  onSelectHero={onSelectHero}
-                  selectedHeroId={selectedHeroId}
-                  title="UR"
-                />
-              ) : null}
-              {sections.ssrGroups.length > 0 ? (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>SSR</Text>
-                  {sections.ssrGroups.map((group) => (
-                    <FactionHeroGrid
-                      group={group}
-                      key={group.faction.id}
-                      onSelectHero={onSelectHero}
-                      selectedHeroId={selectedHeroId}
-                    />
-                  ))}
-                </View>
-              ) : null}
+              <HeroCatalogList
+                emptyText="Нет героев без черновика"
+                heroes={notCreatedHeroes}
+                isSelectionDisabled={isDraftLoadPending}
+                onSelectHero={onSelectHero}
+                selectedHeroId={selectedHeroId}
+                title="Не созданы"
+              />
+              <HeroCatalogList
+                emptyText="Нет неопубликованных героев"
+                heroes={notPublishedHeroes}
+                isSelectionDisabled={isDraftLoadPending}
+                onSelectHero={onSelectHero}
+                selectedHeroId={selectedHeroId}
+                title="Не опубликованы"
+              />
             </View>
           )}
         </View>
@@ -169,20 +171,104 @@ export function HeroGuideSelector({
   );
 }
 
+function HeroCatalogList({
+  emptyText,
+  heroes,
+  isSelectionDisabled,
+  onSelectHero,
+  selectedHeroId,
+  title,
+}: {
+  emptyText: string;
+  heroes: readonly Hero[];
+  isSelectionDisabled: boolean;
+  onSelectHero: (heroId: string) => void;
+  selectedHeroId: string | null;
+  title: string;
+}) {
+  const sections = getHeroGuideSelectorSections(heroes, heroFactions);
+
+  return (
+    <View style={styles.listSection}>
+      <Text style={styles.listTitle}>{title}</Text>
+      {heroes.length === 0 ? (
+        <Text style={styles.stateText}>{emptyText}</Text>
+      ) : (
+        <HeroCatalogSections
+          isSelectionDisabled={isSelectionDisabled}
+          onSelectHero={onSelectHero}
+          sections={sections}
+          selectedHeroId={selectedHeroId}
+        />
+      )}
+    </View>
+  );
+}
+
+type HeroCatalogSectionsProps = {
+  isSelectionDisabled: boolean;
+  onSelectHero: (heroId: string) => void;
+  sections: HeroGuideSelectorSections;
+  selectedHeroId: string | null;
+};
+
+function HeroCatalogSections({
+  isSelectionDisabled,
+  onSelectHero,
+  sections,
+  selectedHeroId,
+}: HeroCatalogSectionsProps) {
+  return (
+    <View style={styles.catalogSections}>
+      {sections.urHeroes.length > 0 ? (
+        <HeroGrid
+          heroes={sections.urHeroes}
+          isSelectionDisabled={isSelectionDisabled}
+          onSelectHero={onSelectHero}
+          selectedHeroId={selectedHeroId}
+          title="UR"
+        />
+      ) : null}
+      {sections.ssrGroups.length > 0 ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>SSR</Text>
+          {sections.ssrGroups.map((group) => (
+            <FactionHeroGrid
+              group={group}
+              isSelectionDisabled={isSelectionDisabled}
+              key={group.faction.id}
+              onSelectHero={onSelectHero}
+              selectedHeroId={selectedHeroId}
+            />
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 type HeroGridProps = {
   heroes: readonly Hero[];
+  isSelectionDisabled: boolean;
   onSelectHero: (heroId: string) => void;
   selectedHeroId: string | null;
   title: string;
 };
 
-function HeroGrid({ heroes, onSelectHero, selectedHeroId, title }: HeroGridProps) {
+function HeroGrid({
+  heroes,
+  isSelectionDisabled,
+  onSelectHero,
+  selectedHeroId,
+  title,
+}: HeroGridProps) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
       <View style={styles.grid}>
         {heroes.map((hero) => (
           <HeroOption
+            disabled={isSelectionDisabled}
             hero={hero}
             key={hero.id}
             onSelectHero={onSelectHero}
@@ -196,11 +282,17 @@ function HeroGrid({ heroes, onSelectHero, selectedHeroId, title }: HeroGridProps
 
 type FactionHeroGridProps = {
   group: HeroGuideSelectorGroup;
+  isSelectionDisabled: boolean;
   onSelectHero: (heroId: string) => void;
   selectedHeroId: string | null;
 };
 
-function FactionHeroGrid({ group, onSelectHero, selectedHeroId }: FactionHeroGridProps) {
+function FactionHeroGrid({
+  group,
+  isSelectionDisabled,
+  onSelectHero,
+  selectedHeroId,
+}: FactionHeroGridProps) {
   return (
     <View style={styles.factionSection}>
       <View style={styles.factionHeader}>
@@ -214,6 +306,7 @@ function FactionHeroGrid({ group, onSelectHero, selectedHeroId }: FactionHeroGri
       <View style={styles.grid}>
         {group.heroes.map((hero) => (
           <HeroOption
+            disabled={isSelectionDisabled}
             hero={hero}
             key={hero.id}
             onSelectHero={onSelectHero}
@@ -226,12 +319,18 @@ function FactionHeroGrid({ group, onSelectHero, selectedHeroId }: FactionHeroGri
 }
 
 type HeroOptionProps = {
+  disabled: boolean;
   hero: Hero;
   onSelectHero: (heroId: string) => void;
   selectedHeroId: string | null;
 };
 
-function HeroOption({ hero, onSelectHero, selectedHeroId }: HeroOptionProps) {
+function HeroOption({
+  disabled,
+  hero,
+  onSelectHero,
+  selectedHeroId,
+}: HeroOptionProps) {
   const isSelected = hero.id === selectedHeroId;
 
   return (
@@ -240,7 +339,8 @@ function HeroOption({ hero, onSelectHero, selectedHeroId }: HeroOptionProps) {
         isSelected ? `Герой ${hero.name.ru} выбран` : `Выбрать героя ${hero.name.ru}`
       }
       accessibilityRole="button"
-      accessibilityState={{ selected: isSelected }}
+      accessibilityState={{ disabled, selected: isSelected }}
+      disabled={disabled}
       onPress={() => {
         if (!isSelected) {
           onSelectHero(hero.id);
@@ -356,6 +456,9 @@ const styles = StyleSheet.create({
   content: {
     gap: 12,
   },
+  catalogSections: {
+    gap: 12,
+  },
   expandedContent: {
     backgroundColor: "#241610",
     borderBottomLeftRadius: 8,
@@ -371,6 +474,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     minHeight: 72,
+  },
+  listSection: {
+    gap: 10,
+  },
+  listTitle: {
+    color: "#f3d9b3",
+    fontSize: 15,
+    fontWeight: "800",
   },
   section: {
     gap: 8,

@@ -16,18 +16,44 @@ const heroes = heroesData as Hero[];
 const urHero = heroes.find((hero) => hero.rarity === "ur")!;
 const ssrHero = heroes.find((hero) => hero.rarity === "ssr")!;
 const multiwordHero = heroes.find((hero) => hero.name.ru === "Ганьцзян и Мое")!;
-const options = [ssrHero, urHero];
 
 const props = {
   error: null,
-  heroes: options,
+  isDraftLoadPending: false,
   isLoading: false,
+  notCreatedHeroes: [urHero],
+  notPublishedHeroes: [ssrHero],
   onRetry: jest.fn(),
   onSelectHero: jest.fn(),
+  selectedHero: null,
   selectedHeroId: null,
 };
 
 beforeEach(() => jest.clearAllMocks());
+
+it("renders not-created before unfinished heroes", () => {
+  render(<HeroGuideSelector {...props} />);
+  fireEvent.press(screen.getByLabelText("Выбрать героя"));
+
+  const labels = screen.getAllByText(/Не созданы|Не опубликованы/);
+  expect(labels[0].props.children).toBe("Не созданы");
+  expect(labels[1].props.children).toBe("Не опубликованы");
+  expect(screen.getByLabelText(`Выбрать героя ${urHero.name.ru}`)).toBeTruthy();
+  expect(screen.getByLabelText(`Выбрать героя ${ssrHero.name.ru}`)).toBeTruthy();
+});
+
+it("shows an explicit empty state for each empty list", () => {
+  render(
+    <HeroGuideSelector
+      {...props}
+      notCreatedHeroes={[]}
+      notPublishedHeroes={[]}
+    />,
+  );
+  fireEvent.press(screen.getByLabelText("Выбрать героя"));
+  expect(screen.getByText("Нет героев без черновика")).toBeTruthy();
+  expect(screen.getByText("Нет неопубликованных героев")).toBeTruthy();
+});
 
 it("renders UR before SSR after expanding", () => {
   const view = render(<HeroGuideSelector {...props} />);
@@ -51,7 +77,13 @@ it("keeps the narrow chevron when the hero catalog changes state", () => {
 });
 
 it("shows the selected hero portrait and an ellipsized name in the toggle", () => {
-  render(<HeroGuideSelector {...props} selectedHeroId={urHero.id} />);
+  render(
+    <HeroGuideSelector
+      {...props}
+      selectedHero={urHero}
+      selectedHeroId={urHero.id}
+    />,
+  );
 
   expect(
     screen.getByLabelText(`Изменить героя: ${urHero.name.ru}`),
@@ -72,7 +104,13 @@ it("uses the screen label color for the empty and selected toggle text", () => {
     StyleSheet.flatten(screen.getByText("Выбрать героя").props.style).color,
   ).toBe("#d6c2a4");
 
-  view.rerender(<HeroGuideSelector {...props} selectedHeroId={urHero.id} />);
+  view.rerender(
+    <HeroGuideSelector
+      {...props}
+      selectedHero={urHero}
+      selectedHeroId={urHero.id}
+    />,
+  );
 
   expect(
     StyleSheet.flatten(screen.getByText(urHero.name.ru).props.style).color,
@@ -121,7 +159,13 @@ it("renders each SSR faction header with its catalog icon and Russian label", ()
 });
 
 it("renders a compact square portrait and keeps the check inside it", () => {
-  render(<HeroGuideSelector {...props} selectedHeroId={urHero.id} />);
+  render(
+    <HeroGuideSelector
+      {...props}
+      selectedHero={urHero}
+      selectedHeroId={urHero.id}
+    />,
+  );
   fireEvent.press(
     screen.getByLabelText(`Изменить героя: ${urHero.name.ru}`),
   );
@@ -158,7 +202,13 @@ it("uses a 104 by 112 card and allows the hero name to wrap to two lines", () =>
 });
 
 it("wraps a multiword hero name between complete word groups", () => {
-  render(<HeroGuideSelector {...props} heroes={[multiwordHero]} />);
+  render(
+    <HeroGuideSelector
+      {...props}
+      notCreatedHeroes={[multiwordHero]}
+      notPublishedHeroes={[]}
+    />,
+  );
   fireEvent.press(screen.getByLabelText("Выбрать героя"));
 
   expect(screen.getByText("Ганьцзян и Мое").props.children).toBe(
@@ -169,7 +219,13 @@ it("wraps a multiword hero name between complete word groups", () => {
 it("renders a controlled square placeholder when the portrait asset is missing", () => {
   const heroWithoutIcon = { ...urHero, icon: null as never };
 
-  render(<HeroGuideSelector {...props} heroes={[heroWithoutIcon]} />);
+  render(
+    <HeroGuideSelector
+      {...props}
+      notCreatedHeroes={[heroWithoutIcon]}
+      notPublishedHeroes={[]}
+    />,
+  );
   fireEvent.press(screen.getByLabelText("Выбрать героя"));
 
   expect(
@@ -183,7 +239,13 @@ it("selects a hero, keeps the panel open, and shows a check mark", () => {
   fireEvent.press(screen.getByLabelText(`Выбрать героя ${urHero.name.ru}`));
   expect(props.onSelectHero).toHaveBeenCalledWith(urHero.id);
 
-  rerender(<HeroGuideSelector {...props} selectedHeroId={urHero.id} />);
+  rerender(
+    <HeroGuideSelector
+      {...props}
+      selectedHero={urHero}
+      selectedHeroId={urHero.id}
+    />,
+  );
   expect(screen.getByText("UR")).toBeTruthy();
   expect(screen.getByLabelText(`Герой ${urHero.name.ru} выбран`)).toBeTruthy();
 });
@@ -199,7 +261,13 @@ it("collapses the expanded selector on an explicit second toggle press", () => {
 });
 
 it("treats a second press on the selected hero as a no-op", () => {
-  render(<HeroGuideSelector {...props} selectedHeroId={urHero.id} />);
+  render(
+    <HeroGuideSelector
+      {...props}
+      selectedHero={urHero}
+      selectedHeroId={urHero.id}
+    />,
+  );
   fireEvent.press(
     screen.getByLabelText(`Изменить героя: ${urHero.name.ru}`),
   );
@@ -222,9 +290,16 @@ it("shows loading, retryable error, and empty states", () => {
   fireEvent.press(screen.getByText("Повторить"));
   expect(props.onRetry).toHaveBeenCalledTimes(1);
 
-  rerender(<HeroGuideSelector {...props} heroes={[]} />);
+  rerender(
+    <HeroGuideSelector
+      {...props}
+      notCreatedHeroes={[]}
+      notPublishedHeroes={[]}
+    />,
+  );
   fireEvent.press(screen.getByLabelText("Выбрать героя"));
-  expect(screen.getByText("Все герои уже имеют опубликованные гайды")).toBeTruthy();
+  expect(screen.getByText("Нет героев без черновика")).toBeTruthy();
+  expect(screen.getByText("Нет неопубликованных героев")).toBeTruthy();
 });
 
 it("keeps an interactive loading header and restores an open catalog", () => {
@@ -250,6 +325,7 @@ it("does not expose hero options while availability is loading", () => {
     <HeroGuideSelector
       {...props}
       isLoading
+      selectedHero={ssrHero}
       selectedHeroId={ssrHero.id}
     />,
   );
@@ -266,6 +342,7 @@ it("keeps only the selected hero visible when availability loading fails", () =>
     <HeroGuideSelector
       {...props}
       error="failed"
+      selectedHero={ssrHero}
       selectedHeroId={ssrHero.id}
     />,
   );
@@ -275,4 +352,39 @@ it("keeps only the selected hero visible when availability loading fails", () =>
   ).toBeTruthy();
   expect(screen.getByLabelText(`Герой ${ssrHero.name.ru} выбран`)).toBeTruthy();
   expect(screen.queryByLabelText(`Выбрать героя ${urHero.name.ru}`)).toBeNull();
+});
+
+it("keeps an explicit selected hero in the header when it is absent from both lists", () => {
+  render(
+    <HeroGuideSelector
+      {...props}
+      notCreatedHeroes={[]}
+      notPublishedHeroes={[]}
+      selectedHero={urHero}
+      selectedHeroId={urHero.id}
+    />,
+  );
+
+  expect(screen.getByLabelText(`Изменить героя: ${urHero.name.ru}`)).toBeTruthy();
+});
+
+it("blocks hero selection while a draft is loading", () => {
+  const onSelectHero = jest.fn();
+  render(
+    <HeroGuideSelector
+      {...props}
+      isDraftLoadPending
+      onSelectHero={onSelectHero}
+    />,
+  );
+
+  expect(screen.getByText("Загружаем черновик...")).toBeTruthy();
+  const header = screen.getByLabelText("Загрузка черновика");
+  expect(header.props.accessibilityState).toEqual(
+    expect.objectContaining({ busy: true }),
+  );
+
+  fireEvent.press(header);
+  fireEvent.press(screen.getByLabelText(`Выбрать героя ${urHero.name.ru}`));
+  expect(onSelectHero).not.toHaveBeenCalled();
 });
