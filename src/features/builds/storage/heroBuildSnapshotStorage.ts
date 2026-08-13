@@ -10,7 +10,7 @@ import {
 const POINTER_KEY = "hero-build-snapshot:lkg:current";
 const GENERATION_PREFIX = "hero-build-snapshot:lkg:g:";
 const GENERATION_PATTERN = /^hero-build-snapshot:lkg:g:[a-f0-9]{64}$/;
-const MAX_GENERATIONS = 32;
+const MAX_GENERATION_CANDIDATES = 128;
 const RETAINED_VALID_GENERATIONS = 4;
 const MAX_GENERATION_ENVELOPE_BYTES = 8 * 1024 * 1024 + 64 * 1024;
 
@@ -96,7 +96,7 @@ async function scanMaximumGeneration(
   const generationKeys = [
     ...new Set(allKeys.filter((key) => GENERATION_PATTERN.test(key))),
   ];
-  if (generationKeys.length > MAX_GENERATIONS) {
+  if (generationKeys.length > MAX_GENERATION_CANDIDATES) {
     throw new Error("Hero build snapshot generation count exceeds its budget");
   }
 
@@ -104,7 +104,6 @@ async function scanMaximumGeneration(
     ? [pointer, ...generationKeys.filter((key) => key !== pointer)]
     : generationKeys;
   const valid: ValidGeneration[] = [];
-  const corrupt: string[] = [];
   const reads = await Promise.all(
     generations.map(async (generation) => ({
       generation,
@@ -114,8 +113,6 @@ async function scanMaximumGeneration(
   for (const { generation, read } of reads) {
     if (read.status === "valid") {
       valid.push({ generation, snapshot: read.snapshot });
-    } else if (read.status === "corrupt") {
-      corrupt.push(generation);
     }
   }
   valid.sort((left, right) => {
@@ -124,10 +121,9 @@ async function scanMaximumGeneration(
   });
 
   if (storage.removeItem) {
-    const removable = [
-      ...corrupt,
-      ...valid.slice(RETAINED_VALID_GENERATIONS).map(({ generation }) => generation),
-    ];
+    const removable = valid
+      .slice(RETAINED_VALID_GENERATIONS)
+      .map(({ generation }) => generation);
     try {
       await Promise.all(
         removable.map((generation) =>

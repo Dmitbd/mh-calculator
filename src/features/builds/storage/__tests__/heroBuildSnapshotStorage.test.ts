@@ -29,6 +29,13 @@ function generationKey(files: HeroBuildSnapshotFiles) {
   return `hero-build-snapshot:lkg:g:${sha256Hex(files.manifestJson)}`;
 }
 
+function generationEnvelope(files: HeroBuildSnapshotFiles) {
+  return JSON.stringify({
+    manifestJson: files.manifestJson,
+    resourceJson: files.resourceJson,
+  });
+}
+
 function createMemoryStorage() {
   const values = new Map<string, string>();
   const writes: string[] = [];
@@ -96,9 +103,26 @@ describe("hero build last-known-good storage", () => {
     });
   });
 
-  test("fails closed above 32 exact generation keys", async () => {
+  test("scans 40 valid generations, returns the maximum, and retains top four", async () => {
     const memory = createMemoryStorage();
-    for (let index = 0; index < 33; index += 1) {
+    const generations = Array.from({ length: 40 }, (_, index) => snapshot(
+      `2026-06-03T00:00:${String(index).padStart(2, "0")}.000000Z`,
+      `hero-builds:${String(index).padStart(2, "0")}`,
+    ));
+    for (const files of generations) {
+      memory.values.set(generationKey(files), generationEnvelope(files));
+    }
+    await expect(loadLastKnownGoodHeroBuildSnapshot(memory.storage)).resolves.toMatchObject({
+      manifest: { contentVersion: "hero-builds:39" },
+    });
+    expect(
+      [...memory.values.keys()].filter((key) => key.startsWith("hero-build-snapshot:lkg:g:")),
+    ).toHaveLength(4);
+  });
+
+  test("fails closed above 128 exact generation keys", async () => {
+    const memory = createMemoryStorage();
+    for (let index = 0; index < 129; index += 1) {
       memory.values.set(
         `hero-build-snapshot:lkg:g:${index.toString(16).padStart(64, "0")}`,
         "{}",
@@ -107,7 +131,7 @@ describe("hero build last-known-good storage", () => {
     await expect(loadLastKnownGoodHeroBuildSnapshot(memory.storage)).resolves.toBeNull();
   });
 
-  test("recovers from and cleans a corrupt complete generation", async () => {
+  test("recovers from but never removes a corrupt complete generation", async () => {
     const memory = createMemoryStorage();
     await saveLastKnownGoodHeroBuildSnapshot(older, memory.storage);
     await saveLastKnownGoodHeroBuildSnapshot(newer, memory.storage);
@@ -116,7 +140,37 @@ describe("hero build last-known-good storage", () => {
     await expect(loadLastKnownGoodHeroBuildSnapshot(memory.storage)).resolves.toMatchObject({
       manifest: { contentVersion: "hero-builds:older" },
     });
-    expect(memory.values.has(generationKey(newer))).toBe(false);
+    expect(memory.values.has(generationKey(newer))).toBe(true);
+  });
+
+  test("never lets late corrupt cleanup delete the same generation after repair", async () => {
+    jest.useFakeTimers();
+    const memory = createMemoryStorage();
+    memory.values.set(generationKey(older), generationEnvelope(older));
+    memory.values.set(generationKey(newer), "{corrupt");
+    let finishRemove: (() => void) | undefined;
+    const removeItem = jest.fn((key: string) => new Promise<void>((resolve) => {
+      finishRemove = () => {
+        memory.values.delete(key);
+        resolve();
+      };
+    }));
+    const racingStorage: SnapshotKeyValueStorage = {
+      ...memory.storage,
+      removeItem,
+    };
+
+    const load = loadLastKnownGoodHeroBuildSnapshot(racingStorage);
+    await jest.advanceTimersByTimeAsync(HERO_BUILD_SNAPSHOT_STORAGE_TIMEOUT_MS);
+    await expect(load).resolves.toMatchObject({
+      manifest: { contentVersion: "hero-builds:older" },
+    });
+    expect(removeItem).not.toHaveBeenCalled();
+
+    memory.values.set(generationKey(newer), generationEnvelope(newer));
+    finishRemove?.();
+    await Promise.resolve();
+    expect(memory.values.has(generationKey(newer))).toBe(true);
   });
 
   test("uses a total deterministic freshness order", () => {
@@ -247,5 +301,38 @@ describe("hero build last-known-good storage", () => {
     await jest.advanceTimersByTimeAsync(HERO_BUILD_SNAPSHOT_STORAGE_TIMEOUT_MS);
     await expect(load).resolves.toBeNull();
     expect(removeItem).not.toHaveBeenCalled();
+  });
+
+  test("a late timed-out valid-old cleanup cannot remove the top generation", async () => {
+    jest.useFakeTimers();
+    const memory = createMemoryStorage();
+    const generations = Array.from({ length: 5 }, (_, index) => snapshot(
+      `2026-06-04T00:00:0${index}.000000Z`,
+      `hero-builds:cleanup-${index}`,
+    ));
+    for (const files of generations) {
+      memory.values.set(generationKey(files), generationEnvelope(files));
+    }
+    let finishRemove!: () => void;
+    const cleanupStorage: SnapshotKeyValueStorage = {
+      ...memory.storage,
+      removeItem: (key) => new Promise<void>((resolve) => {
+        finishRemove = () => {
+          memory.values.delete(key);
+          resolve();
+        };
+      }),
+    };
+
+    const firstLoad = loadLastKnownGoodHeroBuildSnapshot(cleanupStorage);
+    await jest.advanceTimersByTimeAsync(HERO_BUILD_SNAPSHOT_STORAGE_TIMEOUT_MS);
+    await expect(firstLoad).resolves.toMatchObject({
+      manifest: { contentVersion: "hero-builds:cleanup-4" },
+    });
+    finishRemove();
+    await Promise.resolve();
+    await expect(loadLastKnownGoodHeroBuildSnapshot(memory.storage)).resolves.toMatchObject({
+      manifest: { contentVersion: "hero-builds:cleanup-4" },
+    });
   });
 });
