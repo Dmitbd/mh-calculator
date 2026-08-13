@@ -39,6 +39,8 @@
 
 Главный экран `/` является навигацией к этим функциям и не получает отдельный capability spec. Он также показывает текущую версию и ссылку на последний GitHub Release.
 
+Все маршруты находятся под общим recovery boundary: неожиданный render/runtime-сбой показывает безопасные действия повторной попытки и возврата на главную без backend details. CI проверяет documented raw/gzip web-entry budgets и production Chromium E2E для загрузки каталога, remote/fallback данных, build view, admin denial и dirty edit.
+
 ## Изменения и правила
 
 - [CHANGELOG.md](CHANGELOG.md) — что добавлено и исправлено по версиям.

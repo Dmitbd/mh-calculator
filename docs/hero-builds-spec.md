@@ -86,11 +86,11 @@
 
 Экран `/heroes` выбирает один источник доступности через явное состояние `checking | remote | fallback`:
 
-1. если Supabase настроен, первый render синхронно находится в `checking`, показывает общий `ScreenLoader` и не вычисляет карточки из локального каталога или resource-запрос;
+1. независимо от конфигурации Supabase static render и первый hydration-render синхронно находятся в `checking`, показывают общий `ScreenLoader` и не вычисляют карточки из локального каталога или resource-запрос;
 2. один GET к repository-owned Supabase Edge Function `/bootstrap` с настраиваемым timeout по умолчанию `8` секунд подтверждает backend и manifest: `status: "ok"`, ограниченные `contentVersion`, стабильный server-derived `contentUpdatedAt`, `schemaVersion: 1`, не более `16` resource manifests и обязательный `heroBuilds.version + sha256 etag`;
 3. только после совместимого bootstrap выполняется единственное чтение полного `heroBuilds` snapshot; его успех переводит экран в `remote`, а каталог строится из IDs этого же атомарно принятого набора без отдельного запроса IDs и без примеси `heroesWithBuilds`;
 4. полный remote snapshot проверяет bootstrap metadata, count, уникальные hero IDs, checksum точного SQL-generated UTF-8 текста и каждый payload общей total resource-bounded схемой; timeout, partial/mismatch, network/HTTP error, слишком большой или невалидный JSON выбирают самый новый совместимый LKG, затем generated bundled snapshot;
-5. если Supabase не настроен, `fallback` выбирается синхронно без лишнего промежуточного render.
+5. только после client effect отсутствие конфигурации выбирает `fallback`; это сохраняет одинаковую SSR/hydration-разметку, после которой локальный каталог появляется без network-запроса.
 
 Совместимый bootstrap кэшируется на сессию и дедуплицирует параллельные callers; fallback-результат не кэшируется навсегда, а явный retry выполняет `force`-перепроверку. Каталог и экран билда используют общую машину `sourceSelection` для переходов bootstrap и hero-build resource, поэтому повторная попытка является фоновой: уже показанный remote или fallback каталог остаётся видимым, а встроенный loader не заменяет его пустым состоянием. Полный snapshot loader сам ограничен `8` секундами и отменяет свой streaming fetch через `AbortSignal`; экран дополнительно игнорирует поздний ответ после unmount, смены route или более нового запроса. Неизвестные remote IDs не превращаются в героев.
 
@@ -133,7 +133,7 @@ LKG хранится через AsyncStorage неизменяемыми поко
 5. неизвестный `heroId` показывает `Герой не найден.`;
 6. отсутствие готового билда показывает контролируемое пустое состояние, а не частично собранные секции.
 
-При настроенном Supabase первоначальная загрузка комплекта показывает общий `ScreenLoader` и не раскрывает bundled билд до завершения bootstrap и выбора remote/fallback ресурса. Смена route `heroId` атомарно сбрасывает комплект и active tab path до render нового заголовка и игнорирует поздний ответ прежнего ресурса; принятый комплект и его валидный default path также фиксируются одной state transition без промежуточного empty-state. Без клиента локальный комплект доступен сразу, а `not-configured` диагностируется тем же контролируемым сообщением ровно один раз на загрузку героя. Loader не имеет искусственной минимальной задержки и исчезает при любом контролируемом результате; timeout или неожиданное отклонение promise возвращает локальный fallback без unhandled rejection. Причина контролируемого fallback логируется только как стабильные `heroId` и `kind` (`not-configured | no-data | network | conflict | invalid-data | timeout | http | incompatible-schema | invalid-body`), без сырого backend error или пользовательских данных.
+При настроенном Supabase первоначальная загрузка комплекта показывает общий `ScreenLoader` и не раскрывает bundled билд до завершения bootstrap и выбора remote/fallback ресурса. Смена route `heroId` атомарно сбрасывает комплект и active tab path до render нового заголовка и игнорирует поздний ответ прежнего ресурса; принятый комплект и его валидный default path также фиксируются одной state transition без промежуточного empty-state. Без клиента detail выбирает локальный комплект при инициализации, а каталог — после первого client effect ради SSR/hydration parity; `not-configured` диагностируется ровно один раз на загрузку героя или каталога. Loader не имеет искусственной минимальной задержки и исчезает при любом контролируемом результате; timeout или неожиданное отклонение promise возвращает локальный fallback без unhandled rejection. Причина контролируемого fallback проходит через `MH_DIAGNOSTIC` только с allowlisted `area`, `event`, `reason`, `resource`, `route`, `heroId`; строки ограничены `64` символами, raw backend error, stack, payload и credentials не принимаются API диагностики.
 
 Edge Function использует `SUPABASE_ANON_KEY` и одним вызовом обращается к узкому SQL RPC `get_published_hero_builds_bootstrap_manifest`. `SECURITY INVOKER`, явный `status = 'published'` и действующая публичная RLS policy исключают service-role bypass и draft/private данные. Внутри одного database snapshot RPC агрегирует полный набор `hero_id`, `revision` и UTC `updated_at`; manifest возвращает также стабильный максимум `contentUpdatedAt`. Полный payload выдаёт отдельный RLS-preserving RPC с DB-side лимитом `1000`, а клиент принимает его только при полном совпадении count/version/etag/date с bootstrap. Список IDs или один detail payload не могут создать LKG с global manifest; удалённые герои исчезают только вместе с новым полным snapshot. Bootstrap остаётся единственной проверкой доступности: внешнего ping или `navigator.onLine` нет.
 
@@ -290,6 +290,7 @@ Parser остаётся ограниченным текущим `HeroBuildSet` �
 - связывать артефакты и руны попарно или менять порядок вариантов при чтении;
 - определять класс Iconic Weapon по выбранному оружию или UI-подписи;
 - скрывать локальный fallback только из-за недоступного Supabase;
+- выбирать fallback уже во время SSR: static render и первый hydration-render обязаны показывать одинаковый loader-only state, а client effect затем принимает remote или fallback;
 - импортировать admin-компоненты или admin-типы в пользовательскую feature.
 - принимать `jsonb` как `HeroBuildSet` без runtime-валидации на repository boundary.
 - снимать resource budgets или принимать новые поля текущей schema version без явного изменения контракта и тестов.
@@ -300,6 +301,9 @@ Parser остаётся ограниченным текущим `HeroBuildSet` �
 
 - [HeroSelectScreen.test.tsx](../src/features/heroes/__tests__/HeroSelectScreen.test.tsx)
 - [HeroBuildScreen.test.tsx](../src/features/heroes/__tests__/HeroBuildScreen.test.tsx)
+- [operational-smoke.spec.ts](../e2e/operational-smoke.spec.ts)
+- [runtimeDiagnostics.test.ts](../src/shared/lib/__tests__/runtimeDiagnostics.test.ts)
+- [AppErrorBoundary.test.tsx](../src/shared/ui/__tests__/AppErrorBoundary.test.tsx)
 - [ScreenLoader.test.tsx](../src/shared/ui/__tests__/ScreenLoader.test.tsx)
 - [heroListFilters.test.ts](../src/features/heroes/__tests__/heroListFilters.test.ts)
 - [heroListGrouping.test.ts](../src/features/heroes/__tests__/heroListGrouping.test.ts)

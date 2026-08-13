@@ -377,9 +377,12 @@ describe("HeroBuildScreen", () => {
 
     expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
     expect(mockLoadAndCacheRemoteHeroBuildSnapshot).not.toHaveBeenCalled();
-    expect(diagnostic).toHaveBeenCalledWith("Hero build fallback", {
+    expect(diagnostic).toHaveBeenCalledWith("MH_DIAGNOSTIC", {
+      area: "hero-builds",
+      event: "fallback-selected",
       heroId: "bastet",
-      kind: "timeout",
+      reason: "timeout",
+      resource: "heroBuilds",
     });
     expect(mockRejectBootstrapTransition).toHaveBeenCalledWith(
       expect.any(Object),
@@ -473,9 +476,12 @@ describe("HeroBuildScreen", () => {
     render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
 
     expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
-    expect(diagnostic).toHaveBeenCalledWith("Hero build fallback", {
+    expect(diagnostic).toHaveBeenCalledWith("MH_DIAGNOSTIC", {
+      area: "hero-builds",
+      event: "fallback-selected",
       heroId: "bastet",
-      kind: "network",
+      reason: "network",
+      resource: "heroBuilds",
     });
   });
 
@@ -485,9 +491,12 @@ describe("HeroBuildScreen", () => {
     );
 
     expect(diagnostic).toHaveBeenCalledTimes(1);
-    expect(diagnostic).toHaveBeenLastCalledWith("Hero build fallback", {
+    expect(diagnostic).toHaveBeenLastCalledWith("MH_DIAGNOSTIC", {
+      area: "hero-builds",
+      event: "fallback-selected",
       heroId: "bastet",
-      kind: "not-configured",
+      reason: "not-configured",
+      resource: "heroBuilds",
     });
 
     view.rerender(
@@ -499,9 +508,12 @@ describe("HeroBuildScreen", () => {
       <HeroBuildScreen heroId="morana" initialAdminSession={null} />,
     );
     expect(diagnostic).toHaveBeenCalledTimes(2);
-    expect(diagnostic).toHaveBeenLastCalledWith("Hero build fallback", {
+    expect(diagnostic).toHaveBeenLastCalledWith("MH_DIAGNOSTIC", {
+      area: "hero-builds",
+      event: "fallback-selected",
       heroId: "morana",
-      kind: "not-configured",
+      reason: "not-configured",
+      resource: "heroBuilds",
     });
   });
 });

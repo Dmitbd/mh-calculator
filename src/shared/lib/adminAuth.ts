@@ -1,3 +1,5 @@
+import { reportRuntimeDiagnostic } from "./runtimeDiagnostics";
+
 export type AdminSession = {
   id: string;
   email: string | null;
@@ -72,6 +74,10 @@ export async function signInAdmin(
   const session = getAdminSession(data?.user);
 
   if (!session) {
+    reportRuntimeDiagnostic({
+      area: "admin-auth",
+      event: "access-denied",
+    });
     await bestEffortSignOutLocally(client);
     throw new Error("Недостаточно прав администратора.");
   }

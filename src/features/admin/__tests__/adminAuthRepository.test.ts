@@ -5,6 +5,16 @@ import {
 } from "../api/adminAuthRepository";
 
 describe("adminAuthRepository", () => {
+  let diagnostic: jest.SpyInstance;
+
+  beforeEach(() => {
+    diagnostic = jest.spyOn(console, "info").mockImplementation();
+  });
+
+  afterEach(() => {
+    diagnostic.mockRestore();
+  });
+
   it("signs in with email and password", async () => {
     const client = {
       auth: {
@@ -64,6 +74,10 @@ describe("adminAuthRepository", () => {
     ).rejects.toThrow(/^Недостаточно прав администратора\.$/);
 
     expect(signOut).toHaveBeenCalledWith({ scope: "local" });
+    expect(diagnostic).toHaveBeenCalledWith("MH_DIAGNOSTIC", {
+      area: "admin-auth",
+      event: "access-denied",
+    });
   });
 
   it("keeps the access error when local sign-out returns an error", async () => {

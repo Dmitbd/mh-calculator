@@ -3,7 +3,10 @@ node_modules/
 .expo/
 .expo-shared/
 dist/
+dist-e2e/
 coverage/
+test-results/
+playwright-report/
 *.log
 .env*
 !.env.example

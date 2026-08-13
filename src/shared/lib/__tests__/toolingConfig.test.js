@@ -81,6 +81,9 @@ describe("reproducible project tooling", () => {
     expect(source).toMatch(/deploy:\s*[\s\S]*needs: build/);
     expect(source).toMatch(/verify:\s*[\s\S]*permissions:\s*\n\s+contents: read/);
     expect(source).toMatch(/deploy:\s*[\s\S]*permissions:[\s\S]*pages: write[\s\S]*id-token: write/);
+    expect(source).toMatch(
+      /name: Export web build[\s\S]*run: npm run export:web:clean[\s\S]*name: Check deployed bundle budget[\s\S]*run: npm run budget:web[\s\S]*uses: actions\/upload-pages-artifact/,
+    );
   });
 
   test("pins every third-party action in project workflows to an immutable SHA", () => {

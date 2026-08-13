@@ -6,6 +6,8 @@
 
 ### Added
 
+- Добавлены эксплуатационные gates: documented raw/gzip budget production web-entry, exact Chromium E2E для initial loader, remote/fallback каталога, build view, non-admin denial и dirty edit, а также общий безопасный recovery boundary.
+- Добавлена ограниченная структурированная диагностика выбора fallback и отказа non-admin без raw ошибок, payload, stack или backend credentials.
 - Добавлена единая ограниченная bootstrap-проверка Supabase с детерминированным manifest версий ресурсов; каталог и экран билда читают remote hero-build данные только после совместимого ответа и независимо переходят на bundled fallback при сбое своего ресурса.
 - Добавлены детерминированные bundled snapshots билдов, проверенный last-known-good cache и автоматическое обновление snapshot через отдельную ветку и pull request.
 
@@ -27,6 +29,9 @@
 
 ### Fixed
 
+- Production static export с настроенным Supabase больше не создаёт browser auth storage во время Node SSR; публичные env значения при этом встраиваются в browser bundle для последующей hydration.
+- SSR и первый hydration-render каталога теперь начинают с одинакового loader-only состояния; fallback или remote-контент выбирается только после client effect без несовпадающей разметки.
+- Возврат из общего recovery boundary восстанавливает главную даже при сбое уже на маршруте `/`; диагностический лог строится только из явного allowlist, а deployment artifact проверяется budget после export с реальными env.
 - Последовательные клики по цвету пробуждения оружия больше не теряются при объединённом React update; async-переходы билдера используют единый атомарный controller без параллельных request-latches экрана.
 - Каждое LKG-поколение теперь хранится одним атомарным AsyncStorage blob; все storage-операции имеют deadline, поэтому зависшее чтение выбирает bundled fallback, зависшая запись не блокирует проверенный remote и не ломает очередь следующих сохранений.
 - Автоочистка LKG больше не удаляет повреждённые или недоступные generation keys без CAS; до `128` exact кандидатов проверяются, а очистка затрагивает только валидные поколения за четырьмя наиболее свежими.

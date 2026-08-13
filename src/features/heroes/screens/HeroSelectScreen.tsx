@@ -33,6 +33,7 @@ import {
   type SourceSelectionState,
 } from "@/shared/lib/sourceSelection";
 import { getSupabaseClient } from "@/shared/lib/supabaseClient";
+import { reportRuntimeDiagnostic } from "@/shared/lib/runtimeDiagnostics";
 
 const SCREEN_PADDING = 24;
 type HeroCatalogState = {
@@ -40,14 +41,10 @@ type HeroCatalogState = {
   selection: SourceSelectionState<{ heroBuilds: string[] }>;
 };
 
-function createHeroCatalogState(hasRemoteClient: boolean): HeroCatalogState {
-  let selection = createSourceSelectionState({
+export function createInitialHeroCatalogState(): HeroCatalogState {
+  const selection = createSourceSelectionState({
     heroBuilds: heroesWithBuilds.map((hero) => hero.id),
   });
-  if (!hasRemoteClient) {
-    selection = rejectBootstrap(selection, "not-configured");
-    selection = rejectResource(selection, "heroBuilds", "not-configured");
-  }
   return { error: null, selection };
 }
 
@@ -55,12 +52,18 @@ function createHeroCatalogState(hasRemoteClient: boolean): HeroCatalogState {
 export function HeroSelectScreen() {
   const { top, bottom } = useSafeAreaInsets();
   const [filters, setFilters] = useState(EMPTY_HERO_LIST_FILTERS);
-  const [client] = useState(() => getSupabaseClient());
+  const [client, setClient] = useState<ReturnType<typeof getSupabaseClient> | undefined>(
+    undefined,
+  );
   const isMounted = useRef(true);
   const requestId = useRef(0);
-  const [catalogState, setCatalogState] = useState<HeroCatalogState>(() =>
-    createHeroCatalogState(Boolean(client)),
+  const [catalogState, setCatalogState] = useState<HeroCatalogState>(
+    createInitialHeroCatalogState,
   );
+
+  useEffect(() => {
+    setClient(getSupabaseClient());
+  }, []);
 
   const loadRemoteHeroIds = useCallback(
     async (preserveContent: boolean) => {
@@ -92,6 +95,13 @@ export function HeroSelectScreen() {
         }
 
         if (bootstrap.source === "fallback") {
+          reportRuntimeDiagnostic({
+            area: "hero-builds",
+            event: "fallback-selected",
+            reason: bootstrap.reason,
+            resource: "heroBuilds",
+            route: "/heroes",
+          });
           const fallback = await loadHeroBuildSnapshotFallback();
           const fallbackIds = fallback.snapshot.heroBuilds.map(({ heroId }) => heroId);
           setCatalogState((current) => {
@@ -141,7 +151,6 @@ export function HeroSelectScreen() {
         const acceptedHeroIds = fullRemote.snapshot.heroBuilds.map(
           ({ heroId }) => heroId,
         );
-
         if (!isMounted.current || currentRequestId !== requestId.current) {
           return;
         }
@@ -167,6 +176,13 @@ export function HeroSelectScreen() {
           const reason = isHeroBuildSnapshotRemoteTimeoutError(error)
             ? ("timeout" as const)
             : ("network" as const);
+          reportRuntimeDiagnostic({
+            area: "hero-builds",
+            event: "fallback-selected",
+            reason,
+            resource: "heroBuilds",
+            route: "/heroes",
+          });
           const rejectedResource = rejectResource(
             current.selection,
             "heroBuilds",
@@ -197,13 +213,30 @@ export function HeroSelectScreen() {
 
   useEffect(() => {
     isMounted.current = true;
-    void loadRemoteHeroIds(false);
+    if (client === null) {
+      reportRuntimeDiagnostic({
+        area: "hero-builds",
+        event: "fallback-selected",
+        reason: "not-configured",
+        resource: "heroBuilds",
+        route: "/heroes",
+      });
+      setCatalogState((current) => ({
+        error: null,
+        selection: rejectResource(
+          rejectBootstrap(current.selection, "not-configured"),
+          "heroBuilds",
+          "not-configured",
+        ),
+      }));
+    }
+    if (client) void loadRemoteHeroIds(false);
 
     return () => {
       isMounted.current = false;
       requestId.current += 1;
     };
-  }, [loadRemoteHeroIds]);
+  }, [client, loadRemoteHeroIds]);
 
   const zoneGroups = useMemo(() => {
     const resource = catalogState.selection.resources.heroBuilds;

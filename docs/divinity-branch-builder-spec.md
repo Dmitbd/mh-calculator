@@ -341,6 +341,8 @@ type DivinityBranchBuilderExport = {
 
 Административная сессия признаётся только для Supabase-пользователя, у которого `app_metadata.role === "admin"`. Стабильный контракт сессии содержит `id`, `email` и литеральную роль `admin`. Обычная authenticated-сессия не открывает билдер и не даёт доступ к server draft/published данным. Если password login успешен, но admin claim отсутствует, клиент через публичный `signOut({ scope: "local" })` пытается удалить созданную локальную сессию и независимо от результата показывает `Недостаточно прав администратора.`; восстановленная non-admin сессия считается отсутствующей административной сессией. `auth-js` не предоставляет публичного force-clear API: при ошибке local sign-out клиент всё равно не создаёт `AdminSession`, а RLS не допускает non-admin JWT к защищённым данным.
 
+Отказ non-admin дополнительно фиксируется только bounded событием `MH_DIAGNOSTIC { area: "admin-auth", event: "access-denied" }`. Email, JWT, password, raw auth error и backend response в diagnostic не передаются.
+
 До завершения первоначального восстановления admin-сессии экран показывает общий полноэкранный loader `Проверяем доступ` и не раскрывает форму входа или builder. Если восстановленная admin-сессия открывает валидный `mode=edit&heroId=...`, loader продолжает блокировать editor и hero selector до принятия опубликованного комплекта или контролируемой ошибки; между auth и edit effects нет commit пустого редактора. `AdminAuthPanel` поддерживает вход и выход, состояния pending и видимые success/error toast. Если Supabase не настроен, серверное действие завершается контролируемым `Supabase не настроен.`, а не падением.
 
 Supabase RLS повторяет границу чтения: `draft` доступен только JWT с `app_metadata.role = admin`, без admin claim можно читать только строки `published`. Прямые `insert/update/delete` для `anon` и `authenticated` отозваны; даже admin-клиент выполняет lifecycle-запись только через узкие `SECURITY DEFINER` RPC. Каждая RPC независимо проверяет точный `app_metadata.role === "admin"`, ожидаемое исходное состояние строки, переданную клиентом `expected_revision` и число затронутых строк. Клиентская проверка управляет UI, но не заменяет server boundary; RLS остаётся дополнительной защитой чтения.
@@ -469,6 +471,7 @@ Reducer вычисляет следующий цвет пробуждения и
 ## Verification
 
 Поведение хука и валидации частично покрыто тестами:
+- [operational-smoke.spec.ts](../e2e/operational-smoke.spec.ts) — production-browser отказ non-admin и dirty edit confirmation;
 - [useDivinityBranchBuilder.test.ts](../src/features/admin/__tests__/useDivinityBranchBuilder.test.ts) — пустой драфт и сборка JSON (включая `progress` и `activeNodes`);
 - [validateBranchBuild.test.ts](../src/features/admin/__tests__/validateBranchBuild.test.ts) — валидация и `slugifyFileName`;
 - [heroBuildSetSchema.test.ts](../src/features/builds/model/__tests__/heroBuildSetSchema.test.ts) — версия и полная runtime-целостность загруженного комплекта;

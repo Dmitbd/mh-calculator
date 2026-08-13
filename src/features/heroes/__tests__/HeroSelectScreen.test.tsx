@@ -96,7 +96,10 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { heroes, heroesWithBuilds } from "@/features/game-data/heroes/heroBuilds";
-import { HeroSelectScreen } from "@/features/heroes/screens/HeroSelectScreen";
+import {
+  createInitialHeroCatalogState,
+  HeroSelectScreen,
+} from "@/features/heroes/screens/HeroSelectScreen";
 import { HERO_BUILD_SNAPSHOT_STORAGE_TIMEOUT_MS } from "@/features/builds/storage/heroBuildSnapshotStorage";
 
 function remoteSnapshot(heroIds: string[]) {
@@ -108,6 +111,7 @@ function remoteSnapshot(heroIds: string[]) {
 
 describe("HeroSelectScreen", () => {
   beforeEach(() => {
+    jest.spyOn(console, "info").mockImplementation();
     mockRouter.push.mockClear();
     mockGetSupabaseClient.mockReset();
     mockGetSupabaseClient.mockReturnValue(null);
@@ -135,10 +139,22 @@ describe("HeroSelectScreen", () => {
     jest.restoreAllMocks();
   });
 
-  test("shows Bastet when she has a build", () => {
+  test("uses a loader-only state for both static render and initial hydration", async () => {
+    expect(
+      createInitialHeroCatalogState().selection.resources.heroBuilds.source,
+    ).toBe("checking");
+
+    const diagnostic = jest.spyOn(console, "info");
     render(<HeroSelectScreen />);
 
-    expect(screen.getByText("Бастет")).toBeTruthy();
+    expect(await screen.findByText("Бастет")).toBeTruthy();
+    expect(diagnostic).toHaveBeenCalledWith("MH_DIAGNOSTIC", {
+      area: "hero-builds",
+      event: "fallback-selected",
+      reason: "not-configured",
+      resource: "heroBuilds",
+      route: "/heroes",
+    });
   });
 
   test("waits for initial critical images before showing fallback cards", () => {
@@ -238,6 +254,7 @@ describe("HeroSelectScreen", () => {
   });
 
   test("uses only bundled hero builds when bootstrap selects fallback", async () => {
+    const diagnostic = jest.spyOn(console, "info").mockImplementation();
     mockGetSupabaseClient.mockReturnValue({});
     mockLoadDataBootstrap.mockResolvedValue({
       manifest: null,
@@ -259,6 +276,14 @@ describe("HeroSelectScreen", () => {
       "heroBuilds",
       "incompatible-schema",
     );
+    expect(diagnostic).toHaveBeenCalledWith("MH_DIAGNOSTIC", {
+      area: "hero-builds",
+      event: "fallback-selected",
+      reason: "incompatible-schema",
+      resource: "heroBuilds",
+      route: "/heroes",
+    });
+    diagnostic.mockRestore();
   });
 
   test("rechecks bootstrap on retry before reading the hero resource", async () => {

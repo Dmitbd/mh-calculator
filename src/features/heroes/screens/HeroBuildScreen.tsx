@@ -36,6 +36,7 @@ import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 import { ScreenLoader } from "@/shared/ui/ScreenLoader";
 import { loadDataBootstrap } from "@/shared/lib/dataBootstrap";
 import { useCriticalImagePreload } from "@/shared/lib/imagePreload";
+import { reportRuntimeDiagnostic } from "@/shared/lib/runtimeDiagnostics";
 import {
   acceptBootstrap,
   acceptResource,
@@ -117,9 +118,12 @@ export function HeroBuildScreen({
     if (!client) {
       if (noClientDiagnosticHeroId.current !== heroId) {
         noClientDiagnosticHeroId.current = heroId;
-        console.info("Hero build fallback", {
+        reportRuntimeDiagnostic({
+          area: "hero-builds",
+          event: "fallback-selected",
           heroId,
-          kind: "not-configured",
+          reason: "not-configured",
+          resource: "heroBuilds",
         });
       }
 
@@ -137,9 +141,12 @@ export function HeroBuildScreen({
         }
 
         if (bootstrap.source === "fallback") {
-          console.info("Hero build fallback", {
+          reportRuntimeDiagnostic({
+            area: "hero-builds",
+            event: "fallback-selected",
             heroId,
-            kind: bootstrap.reason,
+            reason: bootstrap.reason,
+            resource: "heroBuilds",
           });
           const fallback = await loadHeroBuildSnapshotFallback();
           sourceSelection = rejectBootstrap(sourceSelection, bootstrap.reason);
@@ -193,9 +200,12 @@ export function HeroBuildScreen({
           const reason = isHeroBuildSnapshotRemoteTimeoutError(error)
             ? ("timeout" as const)
             : ("network" as const);
-          console.info("Hero build fallback", {
+          reportRuntimeDiagnostic({
+            area: "hero-builds",
+            event: "fallback-selected",
             heroId,
-            kind: reason,
+            reason,
+            resource: "heroBuilds",
           });
           const fallback = await loadHeroBuildSnapshotFallback();
           sourceSelection = rejectResource(

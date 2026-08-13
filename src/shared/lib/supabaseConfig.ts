@@ -9,11 +9,14 @@ export function readSupabaseConfig(
   env?: SupabaseEnv,
 ): SupabaseConfig | null {
   const url = (
-    env?.EXPO_PUBLIC_SUPABASE_URL ?? process.env.EXPO_PUBLIC_SUPABASE_URL
+    env
+      ? env.EXPO_PUBLIC_SUPABASE_URL
+      : process.env.EXPO_PUBLIC_SUPABASE_URL
   )?.trim();
   const anonKey = (
-    env?.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
-    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+    env
+      ? env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+      : process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
   )?.trim();
 
   if (!url || !anonKey) {
