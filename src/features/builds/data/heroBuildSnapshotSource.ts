@@ -42,12 +42,8 @@ export async function loadAndCacheRemoteHeroBuildSnapshot(
   const key = `${manifest.contentVersion}\n${manifest.contentUpdatedAt}\n${manifest.resources.heroBuilds.etag}`;
   if (remoteInFlight?.key !== key) {
     const promise = loadRemoteHeroBuildSnapshot({ config, manifest })
-      .then(async ({ files, parsed }) => {
-        try {
-          await saveLastKnownGoodHeroBuildSnapshot(files);
-        } catch {
-          // A persistence failure must not hide a fully validated remote resource.
-        }
+      .then(({ files, parsed }) => {
+        persistLastKnownGoodInBackground(files);
         return { snapshot: parsed, source: "remote" as const };
       })
       .finally(() => {
@@ -56,6 +52,18 @@ export async function loadAndCacheRemoteHeroBuildSnapshot(
     remoteInFlight = { key, promise };
   }
   return remoteInFlight.promise;
+}
+
+function persistLastKnownGoodInBackground(
+  files: Parameters<typeof saveLastKnownGoodHeroBuildSnapshot>[0],
+): void {
+  try {
+    void saveLastKnownGoodHeroBuildSnapshot(files).catch(() => {
+      // A persistence failure must not hide a fully validated remote resource.
+    });
+  } catch {
+    // Injectable adapters may fail synchronously before returning a promise.
+  }
 }
 
 export function getBuildSetFromSnapshot(

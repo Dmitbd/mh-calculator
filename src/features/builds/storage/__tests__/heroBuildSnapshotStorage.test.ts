@@ -1,6 +1,9 @@
 import bastetBuild from "@/features/game-data/heroes/builds/bastet.json";
 
-import { createHeroBuildSnapshot } from "../../data/heroBuildSnapshot";
+import {
+  createHeroBuildSnapshot,
+  sha256Hex,
+} from "../../data/heroBuildSnapshot";
 import {
   compareHeroBuildSnapshotFreshness,
   loadLastKnownGoodHeroBuildSnapshot,
@@ -45,8 +48,9 @@ describe("hero build last-known-good storage", () => {
 
     await saveLastKnownGoodHeroBuildSnapshot(newer, memory.storage);
 
-    expect(memory.writes).toHaveLength(3);
-    expect(memory.writes[2]).toBe("hero-build-snapshot:lkg:current");
+    expect(memory.writes).toHaveLength(4);
+    expect(memory.writes[2]).toMatch(/:committed$/);
+    expect(memory.writes[3]).toBe("hero-build-snapshot:lkg:current");
     await expect(
       loadLastKnownGoodHeroBuildSnapshot(memory.storage),
     ).resolves.toMatchObject({
@@ -81,6 +85,59 @@ describe("hero build last-known-good storage", () => {
       loadLastKnownGoodHeroBuildSnapshot(memory.storage),
     ).resolves.toMatchObject({
       manifest: { contentVersion: "hero-builds:older" },
+    });
+  });
+
+  test("never loads a complete pair without its committed marker", async () => {
+    const memory = createMemoryStorage();
+    await saveLastKnownGoodHeroBuildSnapshot(newer, memory.storage);
+    const pointer = memory.values.get("hero-build-snapshot:lkg:current")!;
+    memory.values.delete(`${pointer}:committed`);
+
+    await expect(
+      loadLastKnownGoodHeroBuildSnapshot(memory.storage),
+    ).resolves.toBeNull();
+    expect(memory.values.has(`${pointer}:manifest`)).toBe(true);
+    expect(memory.values.has(`${pointer}:resource`)).toBe(true);
+  });
+
+  test("a scan cannot delete an active writer paused after its resource write", async () => {
+    const memory = createMemoryStorage();
+    await saveLastKnownGoodHeroBuildSnapshot(older, memory.storage);
+    let reachedResource!: () => void;
+    const resourceWritten = new Promise<void>((resolve) => {
+      reachedResource = resolve;
+    });
+    let releaseResource!: () => void;
+    const resourceGate = new Promise<void>((resolve) => {
+      releaseResource = resolve;
+    });
+    const writerContext: SnapshotKeyValueStorage = {
+      ...memory.storage,
+      setItem: async (key, value) => {
+        await memory.storage.setItem(key, value);
+        if (key.endsWith(":resource")) {
+          reachedResource();
+          await resourceGate;
+        }
+      },
+    };
+
+    const write = saveLastKnownGoodHeroBuildSnapshot(newer, writerContext);
+    await resourceWritten;
+    const stagedResource = `hero-build-snapshot:lkg:g:${sha256Hex(
+      newer.manifestJson,
+    )}:resource`;
+
+    await loadLastKnownGoodHeroBuildSnapshot(memory.storage);
+    expect(memory.values.has(stagedResource)).toBe(true);
+
+    releaseResource();
+    await expect(write).resolves.toBe(true);
+    await expect(
+      loadLastKnownGoodHeroBuildSnapshot(memory.storage),
+    ).resolves.toMatchObject({
+      manifest: { contentVersion: "hero-builds:newer" },
     });
   });
 

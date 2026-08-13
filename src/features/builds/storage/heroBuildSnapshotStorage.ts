@@ -10,6 +10,7 @@ import {
 const POINTER_KEY = "hero-build-snapshot:lkg:current";
 const GENERATION_PREFIX = "hero-build-snapshot:lkg:g:";
 const GENERATION_PATTERN = /^hero-build-snapshot:lkg:g:[a-f0-9]{64}$/;
+const COMMITTED_SUFFIX = ":committed";
 const MAX_ENUMERATED_KEYS = 512;
 const MAX_GENERATIONS = 32;
 const RETAINED_VALID_GENERATIONS = 4;
@@ -58,10 +59,11 @@ export function saveLastKnownGoodHeroBuildSnapshot(
     await storage.setItem(`${generation}:resource`, files.resourceJson);
     await storage.setItem(`${generation}:manifest`, files.manifestJson);
 
-    const stored = await readGeneration(storage, generation);
+    const stored = await readGeneration(storage, generation, false);
     if (!stored) {
       throw new Error("Hero build snapshot generation is incomplete");
     }
+    await storage.setItem(`${generation}${COMMITTED_SUFFIX}`, "1");
 
     const maximum = await scanMaximumGeneration(storage);
     if (!maximum) {
@@ -93,7 +95,11 @@ async function scanMaximumGeneration(
   }
 
   const generations = new Set<string>();
-  if (pointer && GENERATION_PATTERN.test(pointer)) {
+  if (
+    pointer &&
+    GENERATION_PATTERN.test(pointer) &&
+    (await storage.getItem(`${pointer}${COMMITTED_SUFFIX}`)) === "1"
+  ) {
     generations.add(pointer);
   }
   for (const key of allKeys) {
@@ -131,6 +137,7 @@ async function scanMaximumGeneration(
         removable.flatMap((generation) => [
           storage.removeItem!(`${generation}:manifest`),
           storage.removeItem!(`${generation}:resource`),
+          storage.removeItem!(`${generation}${COMMITTED_SUFFIX}`),
         ]),
       );
     } catch {
@@ -144,8 +151,15 @@ async function scanMaximumGeneration(
 async function readGeneration(
   storage: SnapshotKeyValueStorage,
   generation: string,
+  requireCommitted = true,
 ): Promise<ParsedHeroBuildSnapshot | null> {
   try {
+    if (
+      requireCommitted &&
+      (await storage.getItem(`${generation}${COMMITTED_SUFFIX}`)) !== "1"
+    ) {
+      return null;
+    }
     const [manifestJson, resourceJson] = await Promise.all([
       storage.getItem(`${generation}:manifest`),
       storage.getItem(`${generation}:resource`),
@@ -193,13 +207,9 @@ function compareStrings(left: string, right: string): number {
 }
 
 function getGenerationFromKey(key: string): string | null {
-  for (const suffix of [":manifest", ":resource"] as const) {
-    if (key.endsWith(suffix)) {
-      const generation = key.slice(0, -suffix.length);
-      return GENERATION_PATTERN.test(generation) ? generation : null;
-    }
-  }
-  return null;
+  if (!key.endsWith(COMMITTED_SUFFIX)) return null;
+  const generation = key.slice(0, -COMMITTED_SUFFIX.length);
+  return GENERATION_PATTERN.test(generation) ? generation : null;
 }
 
 function toParsed(
