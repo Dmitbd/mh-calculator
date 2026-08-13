@@ -256,6 +256,17 @@ export function useDivinityBranchBuilder(
     setSelectedHeroId(heroId);
   }, []);
 
+  const resetBuilderSession = useCallback(() => {
+    contentRevisionRef.current += 1;
+    selectedHeroIdRef.current = null;
+    setSelectedHeroId(null);
+    setDraftsByPath({});
+    setSavedBuildsByPath({});
+    setPublishedBaselineBuildsByPath(null);
+    setPublishedTargetTabs(null);
+    setTargetTabPath(defaultTargetTabPath);
+  }, []);
+
   const setColumnBranch = useCallback(
     (columnId: BranchColumnId, branchId: DivinityBranchId | null) => {
       updateCurrentDraft((current) => {
@@ -771,6 +782,7 @@ export function useDivinityBranchBuilder(
       setTargetChildTab,
       selectTargetTabPath,
       selectHero,
+      resetBuilderSession,
       cycleWeaponAwakeningSlot,
       addArtifact,
       removeArtifact,
@@ -820,6 +832,7 @@ export function useDivinityBranchBuilder(
       setTargetTopTab,
       setTargetChildTab,
       selectTargetTabPath,
+      resetBuilderSession,
       setMajorSkill,
       setDivinitySkill,
       showAwakenedDivinitySkills,

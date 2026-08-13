@@ -121,6 +121,8 @@ export function DivinityBranchBuilderScreen({
   const publishInFlight = useRef(false);
   const publishRequestId = useRef(0);
   const authTransitionInFlight = useRef(false);
+  const discardTransitionInFlight = useRef(false);
+  const discardTransitionRequestId = useRef(0);
   const activeHeroId = useRef<string | null>(null);
   const serverRevisionsByHero = useRef<Record<string, number>>({});
   const authRequestId = useRef(0);
@@ -141,6 +143,7 @@ export function DivinityBranchBuilderScreen({
     removeArtifact,
     removeRune,
     rollbackColumnProgress,
+    resetBuilderSession,
     selectHero,
     selectedArtifactIds,
     selectedBranches,
@@ -262,6 +265,39 @@ export function DivinityBranchBuilderScreen({
     });
   }, [hasUnsavedPublishedEdits]);
 
+  const confirmDiscardTransition = useCallback(async (): Promise<boolean> => {
+    if (!hasUnsavedPublishedEdits) {
+      return isScreenMounted.current;
+    }
+
+    if (discardTransitionInFlight.current || !isScreenMounted.current) {
+      return false;
+    }
+
+    discardTransitionInFlight.current = true;
+    const requestId = discardTransitionRequestId.current + 1;
+    discardTransitionRequestId.current = requestId;
+
+    try {
+      const isConfirmed = await confirmDiscardChanges();
+
+      return (
+        isConfirmed &&
+        isScreenMounted.current &&
+        requestId === discardTransitionRequestId.current
+      );
+    } catch {
+      return false;
+    } finally {
+      if (
+        isScreenMounted.current &&
+        requestId === discardTransitionRequestId.current
+      ) {
+        discardTransitionInFlight.current = false;
+      }
+    }
+  }, [confirmDiscardChanges, hasUnsavedPublishedEdits]);
+
   useEffect(() => {
     if (
       Platform.OS !== "web" ||
@@ -296,6 +332,7 @@ export function DivinityBranchBuilderScreen({
       publishInFlight.current = false;
       authRequestId.current += 1;
       authTransitionInFlight.current = false;
+      discardTransitionRequestId.current += 1;
     };
   }, []);
 
@@ -1192,7 +1229,14 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
-    if (hasUnsavedPublishedEdits && !(await confirmDiscardChanges())) {
+    if (
+      hasUnsavedPublishedEdits &&
+      !(await confirmDiscardTransition())
+    ) {
+      return;
+    }
+
+    if (!isScreenMounted.current || authTransitionInFlight.current) {
       return;
     }
 
@@ -1211,11 +1255,20 @@ export function DivinityBranchBuilderScreen({
 
     const client = getSupabaseClient();
 
+    const resetSuccessfulEditSession = () => {
+      if (initialMode !== "edit") {
+        return;
+      }
+
+      loadedEditHeroId.current = null;
+      activeHeroId.current = null;
+      serverRevisionsByHero.current = {};
+      resetBuilderSession();
+    };
+
     if (!client) {
       if (isCurrentRequest()) {
-        if (shouldRetryInitialEditLoad) {
-          loadedEditHeroId.current = null;
-        }
+        resetSuccessfulEditSession();
         resetHeroStatusList();
         setAdminSession(null);
         setToast({ kind: "success", message: "Выход выполнен." });
@@ -1232,9 +1285,7 @@ export function DivinityBranchBuilderScreen({
         return;
       }
 
-      if (shouldRetryInitialEditLoad) {
-        loadedEditHeroId.current = null;
-      }
+      resetSuccessfulEditSession();
       resetHeroStatusList();
       setAdminSession(null);
       setToast({ kind: "success", message: "Выход выполнен." });
@@ -1288,7 +1339,14 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
-    if (hasUnsavedPublishedEdits && !(await confirmDiscardChanges())) {
+    if (
+      hasUnsavedPublishedEdits &&
+      !(await confirmDiscardTransition())
+    ) {
+      return;
+    }
+
+    if (!isScreenMounted.current || isHeroSelectionBlocked()) {
       return;
     }
 

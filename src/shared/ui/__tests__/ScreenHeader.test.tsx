@@ -78,4 +78,45 @@ describe("ScreenHeader", () => {
 
     expect(mockRouter.back).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    ["synchronous", () => {
+      throw new Error("confirmation failed");
+    }],
+    ["asynchronous", async () => {
+      throw new Error("confirmation failed");
+    }],
+  ])("fails closed when the %s back interceptor rejects", async (_kind, interceptor) => {
+    render(<ScreenHeader onBeforeBack={interceptor} title="Builder" />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText("Назад"));
+    });
+
+    expect(mockRouter.back).not.toHaveBeenCalled();
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+  });
+
+  it("does not navigate when an allowed interception resolves after unmount", async () => {
+    let resolveConfirmation!: (allowed: boolean) => void;
+    const onBeforeBack = jest.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveConfirmation = resolve;
+        }),
+    );
+    const view = render(
+      <ScreenHeader onBeforeBack={onBeforeBack} title="Builder" />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Назад"));
+    view.unmount();
+
+    await act(async () => {
+      resolveConfirmation(true);
+    });
+
+    expect(mockRouter.back).not.toHaveBeenCalled();
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+  });
 });

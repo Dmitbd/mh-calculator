@@ -1,5 +1,5 @@
 import { type Href, router } from "expo-router";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -25,6 +25,15 @@ export function ScreenHeader({
 }: ScreenHeaderProps) {
   const { top } = useSafeAreaInsets();
   const isBackPending = useRef(false);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const handleBack = async () => {
     if (isBackPending.current) {
@@ -38,14 +47,22 @@ export function ScreenHeader({
         return;
       }
 
+      if (!isMounted.current) {
+        return;
+      }
+
       if (router.canGoBack()) {
         router.back();
         return;
       }
 
       router.replace(fallbackHref);
+    } catch {
+      // Перехватчик ухода может зависеть от нативного диалога: ошибка запрещает уход.
     } finally {
-      isBackPending.current = false;
+      if (isMounted.current) {
+        isBackPending.current = false;
+      }
     }
   };
 

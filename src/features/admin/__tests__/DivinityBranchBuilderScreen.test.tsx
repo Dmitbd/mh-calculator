@@ -514,6 +514,134 @@ describe("DivinityBranchBuilderScreen", () => {
     await waitFor(() => expect(mockSignOutAdmin).toHaveBeenCalledTimes(1));
   });
 
+  it("reloads a clean published edit session with a fresh revision after logout and sign in", async () => {
+    Object.defineProperty(Platform, "OS", { value: "web" });
+    const firstRecord = {
+      ...getBuildSetRecord("published", 3),
+      buildSet: getValidBastetBuildSet(),
+    };
+    const reloadedRecord = {
+      ...getBuildSetRecord("published", 8),
+      buildSet: getValidBastetBuildSet(),
+    };
+
+    mockGetSupabaseClient.mockReturnValue({ auth: {}, from: jest.fn() });
+    mockFetchPublishedHeroBuildSetRecord
+      .mockResolvedValueOnce(firstRecord)
+      .mockResolvedValueOnce(reloadedRecord);
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: [],
+      publishedHeroIds: ["bastet"],
+    });
+    mockSignOutAdmin.mockResolvedValue(undefined);
+    mockSignInAdmin.mockResolvedValue(ADMIN_SESSION);
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await waitFor(() =>
+      expect(mockFetchPublishedHeroBuildSetRecord).toHaveBeenCalledTimes(1),
+    );
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    expect(screen.getByText("Обновить")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Выйти"));
+    await screen.findByPlaceholderText("Email");
+    fireEvent.changeText(screen.getByPlaceholderText("Email"), "admin@example.com");
+    fireEvent.changeText(screen.getByPlaceholderText("Пароль"), "secret");
+    fireEvent.press(screen.getByText("Войти"));
+
+    await waitFor(() =>
+      expect(mockFetchPublishedHeroBuildSetRecord).toHaveBeenCalledTimes(2),
+    );
+    await screen.findByLabelText("Изменить героя: Бастет");
+    expect(screen.queryByText("Обновить")).toBeNull();
+
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Обновить"));
+
+    await waitFor(() =>
+      expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          expectedRevision: 8,
+          heroId: "bastet",
+        }),
+      ),
+    );
+  });
+
+  it("serializes duplicate dirty logout confirmations and actions", async () => {
+    Object.defineProperty(Platform, "OS", { value: "ios" });
+    let confirmExit!: () => void;
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(
+      (_title, _message, buttons) => {
+        confirmExit = () =>
+          buttons?.find((button) => button.text === "Выйти")?.onPress?.();
+      },
+    );
+
+    mockGetSupabaseClient.mockReturnValue({ auth: {}, from: jest.fn() });
+    mockSignOutAdmin.mockResolvedValue(undefined);
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Выйти"));
+    fireEvent.press(screen.getByText("Выйти"));
+
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      confirmExit();
+    });
+
+    expect(mockSignOutAdmin).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not continue a confirmed logout after the builder unmounts", async () => {
+    Object.defineProperty(Platform, "OS", { value: "ios" });
+    let confirmExit!: () => void;
+    jest.spyOn(Alert, "alert").mockImplementation((_title, _message, buttons) => {
+      confirmExit = () =>
+        buttons?.find((button) => button.text === "Выйти")?.onPress?.();
+    });
+
+    mockGetSupabaseClient.mockReturnValue({ auth: {}, from: jest.fn() });
+    mockSignOutAdmin.mockResolvedValue(undefined);
+
+    const view = render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Выйти"));
+    view.unmount();
+
+    await act(async () => {
+      confirmExit();
+    });
+
+    expect(mockSignOutAdmin).not.toHaveBeenCalled();
+  });
+
   it("asks before switching heroes with dirty edits", async () => {
     Object.defineProperty(Platform, "OS", { value: "web" });
     const confirmSpy = jest.mocked(window.confirm);
@@ -544,6 +672,46 @@ describe("DivinityBranchBuilderScreen", () => {
     confirmSpy.mockReturnValue(true);
     fireEvent.press(screen.getByLabelText("Выбрать героя Морана"));
     expect(await screen.findByLabelText("Изменить героя: Морана")).toBeTruthy();
+  });
+
+  it("keeps the first hero intent while a dirty switch confirmation is pending", async () => {
+    Object.defineProperty(Platform, "OS", { value: "ios" });
+    let confirmExit!: () => void;
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(
+      (_title, _message, buttons) => {
+        confirmExit = () =>
+          buttons?.find((button) => button.text === "Выйти")?.onPress?.();
+      },
+    );
+
+    mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: [],
+      publishedHeroIds: ["bastet"],
+    });
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByLabelText("Изменить героя: Бастет"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Морана"));
+    fireEvent.press(screen.getByLabelText("Выбрать героя Королева запада"));
+
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      confirmExit();
+    });
+
+    expect(await screen.findByLabelText("Изменить героя: Морана")).toBeTruthy();
+    expect(screen.queryByLabelText("Изменить героя: Королева запада")).toBeNull();
   });
 
   it("update opens the first invalid published leaf and maps its inline error", async () => {
