@@ -1,3 +1,14 @@
+const mockUseImageLoadingTransition = jest.fn(() => ({
+    handleError: jest.fn(),
+    handleLoad: jest.fn(),
+    phase: "pending",
+    prefersReducedMotion: true,
+}));
+
+jest.mock("@/shared/ui/useImageLoadingTransition", () => ({
+  useImageLoadingTransition: () => mockUseImageLoadingTransition(),
+}));
+
 const mockUseSafeAreaInsets = jest.fn(() => ({
   top: 0,
   right: 0,
@@ -148,6 +159,12 @@ describe("HeroBuildScreen", () => {
   afterEach(() => {
     expect(consoleError).not.toHaveBeenCalled();
     jest.restoreAllMocks();
+  });
+
+  test("isolates child icon transitions from screen behavior", () => {
+    render(<HeroBuildScreen heroId="bastet" />);
+
+    expect(mockUseImageLoadingTransition).toHaveBeenCalled();
   });
 
   test("renders only tabs with ready builds for bastet", () => {
