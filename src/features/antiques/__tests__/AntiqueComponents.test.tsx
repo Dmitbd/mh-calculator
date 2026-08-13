@@ -192,6 +192,7 @@ test("renders all 16 accessible reward chests in order without visible node numb
   expect(chestUris).toEqual([
     ...Array(16).fill("resolved:/img/antiques/rivalry-chest.png"),
   ]);
+  expect(screen.getAllByTestId(/antique-reward-chest-\d+-placeholder/)).toHaveLength(16);
   expect(screen.getAllByLabelText("Открыто")).toHaveLength(4);
   expect(
     chestLabels.filter((label) => label.endsWith("большой сундук")),
@@ -249,11 +250,14 @@ test("keeps every chest fully colored instead of rendering silhouettes", () => {
 
   expect(chestImages).toHaveLength(16);
   for (const image of chestImages) {
+    fireEvent(image, "load");
+  }
+  for (const image of chestImages) {
     expect(image.props.source.uri).toBe(
       "resolved:/img/antiques/rivalry-chest.png",
     );
     expect(image.props.tintColor).toBeUndefined();
-    expect(StyleSheet.flatten(image.props.style).opacity).toBeUndefined();
+    expect(StyleSheet.flatten(image.props.style).opacity).not.toBe(0);
   }
 });
 

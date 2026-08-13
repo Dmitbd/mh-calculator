@@ -1,11 +1,11 @@
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type {
   WeaponAwakeningColor,
   WeaponAwakeningColorId,
   WeaponAwakeningSlot,
 } from "@/features/game-data/weapon-awakening/types";
-import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
+import { AppImage } from "@/shared/ui/AppImage";
 import { builderTheme } from "@/shared/ui/builderTheme";
 
 type WeaponAwakeningPickerProps = {
@@ -54,10 +54,14 @@ export function WeaponAwakeningPicker({
             color ? `, ${color.label}` : ", empty"
           }`;
           const content = color?.icon ? (
-            <Image
-              accessibilityIgnoresInvertColors
-              source={{ uri: resolveAssetUri(color.icon) }}
-              style={styles.circleIcon}
+            <AppImage
+              accessible={false}
+              accessibilityLabel={`${color.label} — цвет пробуждения оружия`}
+              borderRadius={999}
+              height="100%"
+              source={color.icon}
+              testID={`weapon-awakening-slot-icon-${slot.slot}`}
+              width="100%"
             />
           ) : null;
 
@@ -120,10 +124,6 @@ const styles = StyleSheet.create({
   },
   circleFilled: {
     borderColor: "#644932",
-  },
-  circleIcon: {
-    width: "100%",
-    height: "100%",
   },
   circleEmpty: {
     backgroundColor: "#1c110d",

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 import { divinityGemChests } from "@/features/game-data/divinity";
@@ -8,7 +8,7 @@ import type {
   DivinityGemChestId,
   DivinityGemLevel,
 } from "@/features/game-data/divinity";
-import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
+import { AppImage } from "@/shared/ui/AppImage";
 
 import {
   divinityGemLevels,
@@ -178,11 +178,13 @@ export function DivinityResourcesPanel({
               key={`${chest.id}-${resetVersion}`}
               clearLabel={`Очистить сундуки ${chest.id}`}
               icon={
-                <Image
+                <AppImage
                   accessibilityLabel={chest.name}
+                  height={42}
                   resizeMode="contain"
-                  source={{ uri: resolveAssetUri(chest.icon) }}
-                  style={styles.chestIcon}
+                  source={chest.icon}
+                  testID={`divinity-chest-icon-${chest.id}`}
+                  width={42}
                 />
               }
               inputLabel={`Количество сундуков ${chest.id}`}
@@ -297,10 +299,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
     color: "#f4ddb0",
-  },
-  chestIcon: {
-    width: 42,
-    height: 42,
   },
   countEditor: {
     flex: 1,

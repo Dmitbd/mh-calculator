@@ -1,8 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  type DimensionValue,
   Easing,
   type ImageResizeMode,
+  type LayoutChangeEvent,
   StyleSheet,
   View,
 } from "react-native";
@@ -16,13 +18,14 @@ import {
 } from "./useImageLoadingTransition";
 
 type AppImageProps = {
+  accessible?: boolean;
   accessibilityLabel: string;
   borderRadius?: number;
-  height: number;
+  height: DimensionValue;
   resizeMode?: ImageResizeMode;
   source: string | null | undefined;
   testID?: string;
-  width: number;
+  width: DimensionValue;
 };
 
 /**
@@ -30,6 +33,7 @@ type AppImageProps = {
  * remains unchanged when loading fails.
  */
 export function AppImage({
+  accessible = true,
   accessibilityLabel,
   borderRadius = 0,
   height,
@@ -39,6 +43,10 @@ export function AppImage({
   width,
 }: AppImageProps) {
   const uri = source ? resolveAssetUri(source) : null;
+  const [measuredSize, setMeasuredSize] = useState(() => ({
+    height: typeof height === "number" ? height : 0,
+    width: typeof width === "number" ? width : 0,
+  }));
   const { handleError, handleLoad, phase, prefersReducedMotion } =
     useImageLoadingTransition(uri);
   const revealProgress = useRef(new Animated.Value(0)).current;
@@ -69,7 +77,19 @@ export function AppImage({
     };
   }, [phase, prefersReducedMotion, revealProgress]);
 
+  const handleLayout = (event: LayoutChangeEvent) => {
+    const { height: measuredHeight, width: measuredWidth } =
+      event.nativeEvent.layout;
+
+    setMeasuredSize((current) =>
+      current.height === measuredHeight && current.width === measuredWidth
+        ? current
+        : { height: measuredHeight, width: measuredWidth },
+    );
+  };
+
   const geometry = { borderRadius, height, width };
+  const hasMeasuredSize = measuredSize.height > 0 && measuredSize.width > 0;
   const isRevealing = phase === "finishing-loaded" && !prefersReducedMotion;
   const isVisible = phase === "loaded" || isRevealing;
   const showsPlainFallback = phase === "missing" || phase === "pending";
@@ -81,8 +101,10 @@ export function AppImage({
 
   return (
     <View
+      accessible={accessible}
       accessibilityLabel={accessibilityLabel}
-      accessibilityRole="image"
+      accessibilityRole={accessible ? "image" : undefined}
+      onLayout={handleLayout}
       style={[styles.container, geometry]}
       testID={testID}
     >
@@ -102,7 +124,7 @@ export function AppImage({
         />
       ) : null}
 
-      {showsPixelLoader ? (
+      {showsPixelLoader && hasMeasuredSize ? (
         <View
           pointerEvents="none"
           style={[styles.pixelLayer, geometry]}
@@ -110,11 +132,11 @@ export function AppImage({
         >
           <PixelIconLoader
             borderRadius={borderRadius}
-            height={height}
+            height={measuredSize.height}
             phase={phase}
             prefersReducedMotion={prefersReducedMotion}
             testID={testID}
-            width={width}
+            width={measuredSize.width}
           />
         </View>
       ) : null}

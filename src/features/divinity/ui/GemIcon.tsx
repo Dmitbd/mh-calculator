@@ -1,6 +1,4 @@
-import { Image } from "react-native";
-
-import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
+import { AppImage } from "@/shared/ui/AppImage";
 
 type GemIconProps = {
   level: 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -19,11 +17,13 @@ const iconPathByLevel: Record<GemIconProps["level"], string> = {
 
 export function GemIcon({ level, size = 18 }: GemIconProps) {
   return (
-    <Image
+    <AppImage
       accessibilityLabel={`Самоцвет божественности ${level} ур.`}
+      height={size}
       resizeMode="contain"
-      source={{ uri: resolveAssetUri(iconPathByLevel[level]) }}
-      style={{ width: size, height: size }}
+      source={iconPathByLevel[level]}
+      testID={`divinity-gem-icon-${level}`}
+      width={size}
     />
   );
 }

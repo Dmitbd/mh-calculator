@@ -1,13 +1,11 @@
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { antiqueRivalryRewards } from "@/features/game-data/antiques";
-import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
+import { AppImage } from "@/shared/ui/AppImage";
 
 const REWARDS_PER_ROW = 4;
 const REWARD_ROW_COUNT = 4;
-const RIVALRY_CHEST_URI = resolveAssetUri(
-  "/img/antiques/rivalry-chest.png",
-);
+const RIVALRY_CHEST_SOURCE = "/img/antiques/rivalry-chest.png";
 
 type AntiqueRewardTrackProps = {
   openedNodes: number;
@@ -98,11 +96,14 @@ export function AntiqueRewardTrack({
                             isLargeChest && styles.largeChestArtwork,
                           ]}
                         >
-                          <Image
+                          <AppImage
                             accessible={false}
+                            accessibilityLabel="Сундук награды"
+                            height="100%"
                             resizeMode="contain"
-                            source={{ uri: RIVALRY_CHEST_URI }}
-                            style={styles.chestImage}
+                            source={RIVALRY_CHEST_SOURCE}
+                            testID={`antique-reward-chest-${nodeNumber}`}
+                            width="100%"
                           />
                           {isOpened ? (
                             <View
@@ -207,10 +208,6 @@ const styles = StyleSheet.create({
     height: 64,
     marginTop: -5,
     marginBottom: -5,
-  },
-  chestImage: {
-    width: "100%",
-    height: "100%",
   },
   openedCheck: {
     position: "absolute",

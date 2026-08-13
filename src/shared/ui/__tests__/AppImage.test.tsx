@@ -63,6 +63,52 @@ test("reserves its final geometry while the image is loading", () => {
   expect(StyleSheet.flatten(image.props.style).opacity).toBe(0);
 });
 
+test("can stay decorative inside an already accessible parent", () => {
+  render(
+    <AppImage
+      accessible={false}
+      accessibilityLabel="Decorative reward chest"
+      height={52}
+      source="/img/antiques/rivalry-chest.png"
+      testID="reward-chest"
+      width={52}
+    />,
+  );
+
+  expect(screen.getByTestId("reward-chest").props.accessible).toBe(false);
+  expect(screen.getByTestId("reward-chest").props.accessibilityRole).toBeUndefined();
+});
+
+test("measures a responsive image before drawing its pixel loader", () => {
+  render(
+    <AppImage
+      accessible={false}
+      accessibilityLabel="Responsive weapon color"
+      height="100%"
+      source="/img/weapon-awakening/red.png"
+      testID="responsive-color"
+      width="100%"
+    />,
+  );
+
+  fireEvent(screen.getByTestId("responsive-color"), "layout", {
+    nativeEvent: { layout: { height: 34, width: 34, x: 0, y: 0 } },
+  });
+  act(() => {
+    jest.advanceTimersByTime(ICON_LOADER_DELAY_MS);
+  });
+
+  expect(
+    StyleSheet.flatten(screen.getByTestId("responsive-color").props.style),
+  ).toMatchObject({ height: "100%", width: "100%" });
+  expect(screen.getByTestId("responsive-color-pixel-loader")).toBeTruthy();
+  expect(
+    StyleSheet.flatten(
+      screen.getByTestId("responsive-color-pixel-loader").props.style,
+    ),
+  ).toMatchObject({ height: 34, width: 34 });
+});
+
 test("reveals a cached-like image before the pixel loader delay", () => {
   render(
     <AppImage

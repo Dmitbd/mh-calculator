@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -10,7 +9,7 @@ import {
 
 import { heroFactions } from "@/features/game-data/heroes/heroDictionaries";
 import type { Hero } from "@/features/game-data/heroes/types";
-import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
+import { AppImage } from "@/shared/ui/AppImage";
 import { IconPreview } from "@/shared/ui/IconPreview";
 import { ScreenLoader } from "@/shared/ui/ScreenLoader";
 
@@ -73,10 +72,13 @@ export function HeroGuideSelector({
             </View>
           ) : selectedHero ? (
             <View style={styles.toggleHero}>
-              <Image
+              <AppImage
                 accessibilityLabel={`${selectedHero.name.ru} selected hero`}
-                source={{ uri: resolveAssetUri(selectedHero.icon) }}
-                style={styles.toggleHeroPortrait}
+                borderRadius={4}
+                height={32}
+                source={selectedHero.icon}
+                testID={`selected-hero-image-${selectedHero.id}`}
+                width={32}
               />
               <Text
                 ellipsizeMode="tail"
@@ -345,10 +347,13 @@ function HeroOption({
     >
       <View style={styles.portrait} testID={`hero-portrait-${hero.id}`}>
         {hero.icon ? (
-          <Image
+          <AppImage
             accessibilityLabel={`${hero.name.ru} portrait`}
-            source={{ uri: resolveAssetUri(hero.icon) }}
-            style={styles.portraitImage}
+            borderRadius={6}
+            height={56}
+            source={hero.icon}
+            testID={`hero-portrait-image-${hero.id}`}
+            width={56}
           />
         ) : (
           <View
@@ -422,12 +427,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     gap: 8,
-  },
-  toggleHeroPortrait: {
-    backgroundColor: "#271610",
-    borderRadius: 4,
-    height: 32,
-    width: 32,
   },
   chevron: {
     color: "#f3d9b3",
@@ -525,12 +524,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     height: 56,
     position: "relative",
-    width: 56,
-  },
-  portraitImage: {
-    backgroundColor: "#271610",
-    borderRadius: 6,
-    height: 56,
     width: 56,
   },
   portraitPlaceholder: {

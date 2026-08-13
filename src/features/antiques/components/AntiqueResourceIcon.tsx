@@ -1,7 +1,7 @@
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import type { AntiqueResourceMetadata } from "@/features/game-data/antiques";
-import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
+import { AppImage } from "@/shared/ui/AppImage";
 
 type AntiqueResourceIconProps = {
   resource: AntiqueResourceMetadata;
@@ -14,11 +14,13 @@ export function AntiqueResourceIcon({
 }: AntiqueResourceIconProps) {
   if (resource.icon) {
     return (
-      <Image
+      <AppImage
         accessibilityLabel={resource.label}
+        height={size}
         resizeMode="contain"
-        source={{ uri: resolveAssetUri(resource.icon) }}
-        style={{ width: size, height: size }}
+        source={resource.icon}
+        testID={`antique-resource-icon-${resource.kind}`}
+        width={size}
       />
     );
   }

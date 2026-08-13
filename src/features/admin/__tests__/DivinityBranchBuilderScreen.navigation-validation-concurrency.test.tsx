@@ -1,5 +1,21 @@
+jest.mock("@/shared/ui/useImageLoadingTransition", () => {
+  const actual = jest.requireActual(
+    "@/shared/ui/useImageLoadingTransition",
+  );
+
+  return {
+    ...actual,
+    useImageLoadingTransition: () => ({
+      handleError: jest.fn(),
+      handleLoad: jest.fn(),
+      phase: "pending",
+      prefersReducedMotion: true,
+    }),
+  };
+});
+
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react-native";
-import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { HeroBuildSetRepositoryError, type HeroBuildSetRecord, type HeroBuildSetStatusIds } from "@/features/builds";
 import type { HeroBuildSet } from "@/features/game-data/heroes";
 
@@ -1034,15 +1050,24 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
     ).toBeTruthy();
   });
 
-  it("prefixes web branch header image paths with the configured base URL", () => {
+  it("loads web branch picker icons from the configured base URL", () => {
     Object.defineProperty(Platform, "OS", { value: "web" });
     process.env.NODE_ENV = "production";
 
     const view = renderAdminBuilder();
 
-    const images = view.UNSAFE_getAllByType("img" as never);
+    const images = view.UNSAFE_getAllByType(Image);
 
-    expect(images[0].props.src).toBe("/mh-calculator/img/branches/asterial.png");
+    expect(
+      images.some(
+        (image) =>
+          image.props.source.uri ===
+          "/mh-calculator/img/branches/asterial.png",
+      ),
+    ).toBe(true);
+    expect(
+      screen.getByTestId("branch-option-icon-left-asterial-placeholder"),
+    ).toBeTruthy();
   });
 
   it("shows active weapon bonus when hero is selected and two nodes share a color", async () => {

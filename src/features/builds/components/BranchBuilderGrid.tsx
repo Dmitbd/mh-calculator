@@ -2,7 +2,6 @@ import React, { useMemo, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { filterSkillsForSlot } from "@/features/game-data/divinity/filterSkillsForSlot";
-import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
 
 import type {
   BranchColumn,
@@ -15,6 +14,7 @@ import type {
 } from "@/features/game-data/divinity/types";
 import { MajorNodeCard, MinorStatCard } from "./BranchNodeCard";
 import { IconPreview } from "@/shared/ui/IconPreview";
+import { AppImage } from "@/shared/ui/AppImage";
 
 // Отступы сетки: по X (между колонками) и по Y (между уровнями)
 const COLUMN_GAP = 16;
@@ -466,17 +466,20 @@ function WebBranchHeaderPicker({
         style: summaryStyle,
       },
       React.createElement(
-        "span",
+        "div",
         { style: webStyles.summaryContent },
         selectedBranch
           ? React.createElement(
               React.Fragment,
               null,
-              React.createElement("img", {
-                "aria-label": `${selectedBranch.title} icon`,
-                alt: "",
-                src: resolveAssetUri(selectedBranch.icon),
-                style: webStyles.icon,
+              React.createElement(AppImage, {
+                accessible: false,
+                accessibilityLabel: `${selectedBranch.title} icon`,
+                borderRadius: 6,
+                height: 24,
+                source: selectedBranch.icon,
+                testID: `branch-header-icon-${column.id}`,
+                width: 24,
               }),
               React.createElement(
                 "span",
@@ -516,10 +519,14 @@ function WebBranchHeaderPicker({
             style: webStyles.option,
             type: "button",
           },
-          React.createElement("img", {
-            alt: "",
-            src: resolveAssetUri(branch.icon),
-            style: webStyles.icon,
+          React.createElement(AppImage, {
+            accessible: false,
+            accessibilityLabel: `${branch.title} icon`,
+            borderRadius: 6,
+            height: 24,
+            source: branch.icon,
+            testID: `branch-option-icon-${column.id}-${branch.id}`,
+            width: 24,
           }),
           React.createElement("span", { style: webStyles.optionText }, branch.title),
         ),
@@ -649,13 +656,6 @@ const webStyles = {
     WebkitBoxOrient: "vertical",
     WebkitLineClamp: 2,
     width: "100%",
-  },
-  icon: {
-    backgroundColor: "#271610",
-    borderRadius: 6,
-    height: 24,
-    objectFit: "cover",
-    width: 24,
   },
 } as const;
 

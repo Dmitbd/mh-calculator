@@ -1,8 +1,8 @@
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import type { WeaponAwakeningColor } from "@/features/game-data/weapon-awakening/types";
 import type { WeaponAwakeningActiveBonus } from "@/features/game-data/weapon-awakening/types";
-import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
+import { AppImage } from "@/shared/ui/AppImage";
 
 type WeaponAwakeningBonusListProps = {
   /** Активные бонусы, вычисленные из выбранных цветов */
@@ -36,10 +36,14 @@ export function WeaponAwakeningBonusList({
           <View key={bonus.color} style={styles.row}>
             <View style={styles.metaRow}>
               {color?.icon ? (
-                <Image
-                  accessibilityIgnoresInvertColors
-                  source={{ uri: resolveAssetUri(color.icon) }}
-                  style={styles.icon}
+                <AppImage
+                  accessible={false}
+                  accessibilityLabel={`${color.label} — цвет пробуждения оружия`}
+                  borderRadius={10}
+                  height={20}
+                  source={color.icon}
+                  testID={`weapon-awakening-bonus-${bonus.color}`}
+                  width={20}
                 />
               ) : (
                 <View
@@ -79,11 +83,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-  },
-  icon: {
-    width: 20,
-    height: 20,
-    borderRadius: 999,
   },
   iconFallback: {
     width: 20,

@@ -3,6 +3,7 @@ jest.mock("@/shared/lib/resolveAssetUri", () => ({
 }));
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import { Image } from "react-native";
 
 import { createEmptyDivinityOwnedResources } from "../model/divinityOwnedResources";
 import { DivinityResourcesPanel } from "../ui/DivinityResourcesPanel";
@@ -30,19 +31,18 @@ test("reveals real chest assets and resource controls", () => {
   expect(screen.getByText("Самоцветы")).toBeTruthy();
   expect(screen.getByText("1–5 ур.")).toBeTruthy();
   expect(screen.getByText("6–7 ур.")).toBeTruthy();
+  const imageUris = screen
+    .UNSAFE_getAllByType(Image)
+    .map((image) => image.props.source.uri);
+  expect(imageUris).toContain(
+    "resolved:/img/divinity/chests/chest-600001.png",
+  );
+  expect(imageUris).toContain(
+    "resolved:/img/divinity/chests/chest-600076.png",
+  );
   expect(
-    screen.getByLabelText("Персон. сундук с самоцветом божественности").props
-      .source,
-  ).toEqual({
-    uri: "resolved:/img/divinity/chests/chest-600001.png",
-  });
-  expect(
-    screen.getByLabelText(
-      "Большой персонализированный сундук с самоцветом божественности",
-    ).props.source,
-  ).toEqual({
-    uri: "resolved:/img/divinity/chests/chest-600076.png",
-  });
+    screen.getByTestId("divinity-chest-icon-600001-placeholder"),
+  ).toBeTruthy();
 
   fireEvent.press(screen.getByLabelText("Сбросить мои ресурсы"));
 

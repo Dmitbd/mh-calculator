@@ -54,6 +54,9 @@ describe("WeaponAwakeningBonusList", () => {
         "Whenever this Hero's Health is below 50%, their Lifesteal increases by 4.5%.",
       ),
     ).toBeTruthy();
+    expect(
+      screen.getByTestId("weapon-awakening-bonus-red-placeholder"),
+    ).toBeTruthy();
   });
 
   test("renders several bonuses when supplied", () => {

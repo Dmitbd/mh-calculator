@@ -4,6 +4,7 @@ jest.mock("@/shared/lib/resolveAssetUri", () => ({
 }));
 
 import { render, screen } from "@testing-library/react-native";
+import { Image } from "react-native";
 
 import {
   antiqueResourceCatalog,
@@ -31,9 +32,13 @@ test("resolves the image branch for explicitly synthetic metadata", () => {
   render(<AntiqueResourceIcon resource={syntheticIconResource} />);
 
   expect(resolveAssetUri).toHaveBeenCalledWith(syntheticIconResource.icon);
-  expect(screen.getByLabelText("Синтетический ресурс").props.source).toEqual({
+  expect(screen.UNSAFE_getByType(Image).props.source).toEqual({
+    cache: "force-cache",
     uri: "resolved:https://example.test/synthetic-icon.png",
   });
+  expect(
+    screen.getByTestId("antique-resource-icon-researchCoins-placeholder"),
+  ).toBeTruthy();
 });
 
 test.each(Object.values(antiqueResourceCatalog))(
@@ -43,7 +48,8 @@ test.each(Object.values(antiqueResourceCatalog))(
 
     if ("icon" in resource && resource.icon) {
       expect(resolveAssetUri).toHaveBeenCalledWith(resource.icon);
-      expect(screen.getByLabelText(resource.label).props.source).toEqual({
+      expect(screen.UNSAFE_getByType(Image).props.source).toEqual({
+        cache: "force-cache",
         uri: `resolved:${resource.icon}`,
       });
       expect(screen.queryByText(resource.fallbackLabel)).toBeNull();

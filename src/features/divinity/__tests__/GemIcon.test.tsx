@@ -4,7 +4,7 @@ jest.mock("@/shared/lib/resolveAssetUri", () => ({
 }));
 
 import { render, screen } from "@testing-library/react-native";
-import { StyleSheet } from "react-native";
+import { Image, StyleSheet } from "react-native";
 
 import { GemIcon } from "../ui/GemIcon";
 
@@ -28,9 +28,13 @@ test.each(gemCases)("renders the level %s game icon", (level, iconPath) => {
   const icon = screen.getByLabelText(
     `Самоцвет божественности ${level} ур.`,
   );
+  const image = screen.UNSAFE_getByType(Image);
 
-  expect(icon.props.source).toEqual({ uri: `resolved:${iconPath}` });
-  expect(icon.props.resizeMode).toBe("contain");
+  expect(image.props.source).toEqual({
+    cache: "force-cache",
+    uri: `resolved:${iconPath}`,
+  });
+  expect(image.props.resizeMode).toBe("contain");
   expect(StyleSheet.flatten(icon.props.style)).toMatchObject({
     width: 28,
     height: 28,
@@ -38,6 +42,9 @@ test.each(gemCases)("renders the level %s game icon", (level, iconPath) => {
   expect(
     fs.existsSync(`${process.cwd()}/public${iconPath}`),
   ).toBe(true);
+  expect(
+    screen.getByTestId(`divinity-gem-icon-${level}-placeholder`),
+  ).toBeTruthy();
 });
 
 test("uses the default icon size", () => {

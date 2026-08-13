@@ -113,6 +113,9 @@ it("shows the selected hero portrait and an ellipsized name in the toggle", () =
   expect(
     screen.getByLabelText(`${urHero.name.ru} selected hero`),
   ).toBeTruthy();
+  expect(
+    screen.getByTestId(`selected-hero-image-${urHero.id}-placeholder`),
+  ).toBeTruthy();
   const selectedName = screen.getByText(urHero.name.ru);
   expect(selectedName.props.ellipsizeMode).toBe("tail");
   expect(selectedName.props.numberOfLines).toBe(1);
@@ -209,6 +212,9 @@ it("renders a compact square portrait and keeps the check inside it", () => {
     width: 56,
   });
   expect(within(portrait).getByText("✓")).toBeTruthy();
+  expect(
+    screen.getByTestId(`hero-portrait-image-${urHero.id}-placeholder`),
+  ).toBeTruthy();
 });
 
 it("uses a 104 by 112 card and allows the hero name to wrap to two lines", () => {
