@@ -16,6 +16,7 @@ export default function RootLayout() {
         <Stack.Screen name="divinity" options={{ headerShown: false }} />
         <Stack.Screen name="divinity/manual" options={{ headerShown: false }} />
         <Stack.Screen name="antiques" options={{ headerShown: false }} />
+        <Stack.Screen name="antiques/manual" options={{ headerShown: false }} />
         <Stack.Screen name="heroes/index" options={{ headerShown: false }} />
         <Stack.Screen name="heroes/[heroId]" options={{ headerShown: false }} />
         <Stack.Screen
