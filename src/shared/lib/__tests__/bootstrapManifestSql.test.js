@@ -5,6 +5,18 @@ const MIGRATION_PATH = path.resolve(
   __dirname,
   "../../../../supabase/migrations/20260813180000_add_atomic_bootstrap_manifest_rpc.sql",
 );
+const CREATE_TABLE_MIGRATION_PATH = path.resolve(
+  __dirname,
+  "../../../../supabase/migrations/20260702170000_create_hero_build_sets.sql",
+);
+const PUBLIC_READ_GRANT_MIGRATION_PATH = path.resolve(
+  __dirname,
+  "../../../../supabase/migrations/20260813190000_grant_hero_build_sets_read.sql",
+);
+const LIFECYCLE_MIGRATION_PATH = path.resolve(
+  __dirname,
+  "../../../../supabase/migrations/20260812231000_enforce_hero_build_set_lifecycle.sql",
+);
 
 function readMigration() {
   expect(fs.existsSync(MIGRATION_PATH)).toBe(true);
@@ -64,5 +76,27 @@ describe("atomic bootstrap manifest migration", () => {
     );
     expect(sql).not.toMatch(/grant\s+execute[\s\S]*?service_role/i);
     expect(sql).not.toMatch(/row_security\s*=\s*off/i);
+  });
+
+  test("fresh migrations grant public reads while RLS keeps drafts and writes closed", () => {
+    expect(fs.existsSync(PUBLIC_READ_GRANT_MIGRATION_PATH)).toBe(true);
+    const tableSql = fs.readFileSync(CREATE_TABLE_MIGRATION_PATH, "utf8");
+    const grantSql = fs.readFileSync(PUBLIC_READ_GRANT_MIGRATION_PATH, "utf8");
+    const lifecycleSql = fs.readFileSync(LIFECYCLE_MIGRATION_PATH, "utf8");
+
+    expect(tableSql).toMatch(
+      /alter\s+table\s+public\.hero_build_sets\s+enable\s+row\s+level\s+security/i,
+    );
+    expect(tableSql).toMatch(
+      /create\s+policy\s+"Anyone can read published hero build sets"[\s\S]*?for\s+select[\s\S]*?using\s*\(status\s*=\s*'published'\)/i,
+    );
+    expect(grantSql).toMatch(
+      /grant\s+select\s+on\s+table\s+public\.hero_build_sets\s+to\s+anon\s*,\s*authenticated\s*;/i,
+    );
+    expect(grantSql).not.toMatch(/grant\s+(?:insert|update|delete|all)\b/i);
+    expect(grantSql).not.toMatch(/disable\s+row\s+level\s+security/i);
+    expect(lifecycleSql).toMatch(
+      /revoke\s+insert\s*,\s*update\s*,\s*delete\s+on\s+public\.hero_build_sets\s+from\s+anon\s*,\s*authenticated/i,
+    );
   });
 });
