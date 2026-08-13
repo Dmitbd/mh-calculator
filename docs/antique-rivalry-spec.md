@@ -15,19 +15,22 @@
 - состояния сундуков соперничества;
 - локальное сохранение нормализованного ввода;
 - опциональный учёт кешбэка.
+- внутреннюю инструкцию по использованию калькулятора.
 
 Калькулятор не обещает live-синхронизацию с сервером игры, несколько профилей или гарантии для серверных hotfix-данных. Он использует проверенный локальный snapshot каталогов.
 
 ## Route And Navigation
 
-- маршрут: `/antiques`;
+- маршруты: `/antiques`, `/antiques/manual`;
 - вход с главного экрана: `Калькуляторы → Антиквариат`;
 - возврат: через общий `ScreenHeader`, fallback `/`.
 
 Основные файлы:
 
 - [app/antiques.tsx](../app/antiques.tsx)
+- [app/antiques/manual.tsx](../app/antiques/manual.tsx)
 - [AntiqueScreen.tsx](../src/features/antiques/screens/AntiqueScreen.tsx)
+- [AntiqueManualScreen.tsx](../src/features/antiques/screens/AntiqueManualScreen.tsx)
 - [useAntiqueCalculator.ts](../src/features/antiques/hooks/useAntiqueCalculator.ts)
 - [calculateAntiqueRivalry.ts](../src/features/antiques/model/calculateAntiqueRivalry.ts)
 - [allocateAntiqueCoins.ts](../src/features/antiques/model/allocateAntiqueCoins.ts)
@@ -35,6 +38,8 @@
 - [antiqueCalculatorStorage.ts](../src/features/antiques/storage/antiqueCalculatorStorage.ts)
 - [game-data/antiques/index.ts](../src/features/game-data/antiques/index.ts)
 - [antique-rivalry-rewards.json](../src/features/game-data/antiques/antique-rivalry-rewards.json)
+- [InstructionButton.tsx](../src/shared/ui/InstructionButton.tsx)
+- [CalculatorManualScreen.tsx](../src/shared/ui/CalculatorManualScreen.tsx)
 
 ## Input Model
 
@@ -91,6 +96,19 @@ type AntiqueRivalryInput = {
 Кнопки и поля должны иметь доступные названия. Нажатия `+/-` и прямой ввод проходят через одну нормализацию. Нельзя показывать отрицательные карты, монеты или остаток очков.
 
 Reward track показывает открытые, активный следующий и будущие узлы разными состояниями. Сундук крупного порога становится открытым только после фактического достижения порога; активный сундук не должен одновременно выглядеть уже полученным.
+
+### Instruction Route
+
+Перед содержимым калькулятора находится общая кнопка `? Инструкция` с доступным названием «Открыть инструкцию по антиквариату». Она открывает `/antiques/manual` и использует тот же переиспользуемый паттерн инструкции, что и `/divinity/manual`: прокручиваемые карточки с безопасными отступами и общий заголовок `Инструкция`. Кнопка `Назад` возвращает по истории, а если истории нет — заменяет маршрут на `/antiques`.
+
+Инструкция `Антиквариата` обязана объяснять:
+
+- быстрый расчёт из введённых монет и карт, включая `30` очков за карту гробницы и `60` за карту храма;
+- распределение монет: `500` на карту гробницы, `1000` на карту храма, неизменность исходного ввода и сохранение остатка меньше `500`;
+- кешбэк как последовательный каскад уже открытых наград без использования будущих узлов и возможность отключить его без потери введённых ресурсов;
+- шкалу обычных узлов `750`, крупные сундуки `3000/6000/9000/12000`, максимум `12000` и правило фактического получения сундука после порога;
+- автоматическое сохранение и восстановление между посещениями нормализованных монет, собственных карт, распределения монет и настройки кешбэка;
+- сброс расчёта: сохранённые значения очищаются до нулевых монет и карт, а кешбэк включается.
 
 ## Persistence
 
@@ -149,7 +167,7 @@ type AntiqueCalculatorRecord = AntiqueCalculatorInput & {
 - заменять unresolved игровые IDs догадками;
 - хранить вычисленный result вместо минимального нормализованного input;
 - делать внешний сайт runtime-источником наград;
-- плодить отдельные specs для кешбэка, сундука или новых полей этого экрана.
+- плодить отдельные specs для кешбэка, сундука, инструкции или новых полей этого экрана.
 
 ## Verification
 
@@ -159,6 +177,7 @@ type AntiqueCalculatorRecord = AntiqueCalculatorInput & {
 - [antiqueCalculatorStorage.test.ts](../src/features/antiques/__tests__/antiqueCalculatorStorage.test.ts)
 - [useAntiqueCalculator.test.tsx](../src/features/antiques/__tests__/useAntiqueCalculator.test.tsx)
 - [AntiqueScreen.test.tsx](../src/features/antiques/__tests__/AntiqueScreen.test.tsx)
+- [AntiqueManualScreen.test.tsx](../src/features/antiques/__tests__/AntiqueManualScreen.test.tsx)
 - [AntiqueComponents.test.tsx](../src/features/antiques/__tests__/AntiqueComponents.test.tsx)
 - [AntiqueResourceIcon.test.tsx](../src/features/antiques/__tests__/AntiqueResourceIcon.test.tsx)
 - [antiqueRivalryCatalog.test.ts](../src/features/game-data/antiques/__tests__/antiqueRivalryCatalog.test.ts)

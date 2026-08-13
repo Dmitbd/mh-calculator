@@ -2,6 +2,8 @@ import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { InstructionButton } from "@/shared/ui/InstructionButton";
+
 import { AntiqueCashback } from "../components/AntiqueCashback";
 import { AntiqueCashbackToggle } from "../components/AntiqueCashbackToggle";
 import { AntiqueCoinAllocation } from "../components/AntiqueCoinAllocation";
@@ -88,6 +90,10 @@ export default function AntiqueScreen() {
         ]}
       >
         <View style={styles.contentSection}>
+          <InstructionButton
+            accessibilityLabel="Открыть инструкцию по антиквариату"
+            onPress={() => router.push("/antiques/manual")}
+          />
           {storageError ? (
             <View accessibilityRole="alert" style={styles.storageWarning}>
               <Text style={styles.storageWarningText}>{storageError}</Text>

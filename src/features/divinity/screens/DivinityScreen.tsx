@@ -12,6 +12,7 @@ import { DivinityRing } from "@/features/divinity/ui/DivinityRing";
 import { DivinityRangeSelector } from "@/features/divinity/ui/DivinityRangeSelector";
 import { DivinityResourcesPanel } from "@/features/divinity/ui/DivinityResourcesPanel";
 import { DivinitySummary } from "@/features/divinity/ui/DivinitySummary";
+import { InstructionButton } from "@/shared/ui/InstructionButton";
 
 const SCREEN_PADDING = 24;
 const HEADER_HEIGHT = 76;
@@ -128,17 +129,10 @@ export default function DivinityScreen() {
         ]}
       >
         <View style={styles.contentSection}>
-          <Pressable
+          <InstructionButton
             accessibilityLabel="Открыть инструкцию"
-            accessibilityRole="button"
             onPress={() => router.push("/divinity/manual")}
-            style={styles.instructionButton}
-          >
-            <View style={styles.instructionIcon}>
-              <Text style={styles.instructionIconText}>?</Text>
-            </View>
-            <Text style={styles.instructionButtonText}>Инструкция</Text>
-          </Pressable>
+          />
           <DivinityRangeSelector
             startLevel={startLevel}
             endLevel={endLevel}
@@ -247,35 +241,6 @@ const styles = StyleSheet.create({
   contentSection: {
     gap: 16,
     marginTop: 10,
-  },
-  instructionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderWidth: 1,
-    borderColor: "#734227",
-    borderRadius: 18,
-    backgroundColor: "#2a160e",
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-  },
-  instructionIcon: {
-    width: 28,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 14,
-    backgroundColor: "#5a321c",
-  },
-  instructionIconText: {
-    fontSize: 18,
-    fontWeight: "900",
-    color: "#fff3d1",
-  },
-  instructionButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#ffd8b0",
   },
   headerTitle: {
     flex: 1,

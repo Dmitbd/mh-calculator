@@ -15,6 +15,7 @@
 - кольцо прогресса по делениям текущего уровня;
 - расчет суммарного расхода ресурсов только по выбранному диапазону;
 - ограничение прогресса правой границей диапазона.
+- внутреннюю инструкцию по маршруту `/divinity/manual`.
 
 Экран не реализует:
 - ручной текстовый ввод уровня или числа заполненных делений (число собственных ресурсов вводится отдельно);
@@ -43,6 +44,9 @@
 - [src/features/divinity/storage/divinityResourcesStorage.ts](../src/features/divinity/storage/divinityResourcesStorage.ts)
 - [src/features/game-data/divinity/divinity-gem-chests.json](../src/features/game-data/divinity/divinity-gem-chests.json)
 - [app/divinity/manual.tsx](../app/divinity/manual.tsx)
+- [src/features/divinity/screens/DivinityManualScreen.tsx](../src/features/divinity/screens/DivinityManualScreen.tsx)
+- [src/shared/ui/InstructionButton.tsx](../src/shared/ui/InstructionButton.tsx)
+- [src/shared/ui/CalculatorManualScreen.tsx](../src/shared/ui/CalculatorManualScreen.tsx)
 
 ## Data Model
 
@@ -323,7 +327,9 @@ type DivinityProgressRecord = {
 
 ## Manual Route
 
-`/divinity/manual` — инструкция внутри функции `Божественность`. Она объясняет диапазон, кольцо, автозаполнение, блок `Мои ресурсы`, остаток стоимости и раздельные сбросы. Изменение поведения калькулятора, влияющее на использование, должно обновлять и инструкцию, и этот spec.
+`/divinity/manual` — сохранённая инструкция внутри функции `Божественность`. Она объясняет диапазон, кольцо, автозаполнение, блок `Мои ресурсы`, остаток стоимости и раздельные сбросы. Изменение поведения калькулятора, влияющее на использование, должно обновлять и инструкцию, и этот spec.
+
+Главный экран показывает перед расчётом общую кнопку `? Инструкция` с доступным названием «Открыть инструкцию»; она открывает этот маршрут. Экран инструкции использует общий с `Антиквариатом` паттерн: прокручиваемые карточки с безопасными отступами и заголовок `Инструкция`. Кнопка `Назад` возвращает по истории, а при её отсутствии заменяет маршрут на `/divinity`.
 
 ## Divinity Data And Assets
 
@@ -381,6 +387,8 @@ type DivinityProgressRecord = {
 - [divinityResourcesStorage.test.ts](../src/features/divinity/__tests__/divinityResourcesStorage.test.ts)
 - [useDivinityResources.test.tsx](../src/features/divinity/__tests__/useDivinityResources.test.tsx)
 - [DivinityManualScreen.test.tsx](../src/features/divinity/__tests__/DivinityManualScreen.test.tsx)
+- [InstructionButton.test.tsx](../src/shared/ui/__tests__/InstructionButton.test.tsx)
+- [CalculatorManualScreen.test.tsx](../src/shared/ui/__tests__/CalculatorManualScreen.test.tsx)
 - [divinityCatalogDataIntegrity.test.ts](../src/features/game-data/divinity/__tests__/divinityCatalogDataIntegrity.test.ts)
 - [divinityGemChests.test.ts](../src/features/game-data/divinity/__tests__/divinityGemChests.test.ts)
 

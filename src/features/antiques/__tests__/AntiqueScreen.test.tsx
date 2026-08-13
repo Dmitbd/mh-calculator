@@ -7,6 +7,7 @@ const mockUseSafeAreaInsets = jest.fn(() => ({
 const mockRouter = {
   canGoBack: jest.fn(() => false),
   back: jest.fn(),
+  push: jest.fn(),
   replace: jest.fn(),
 };
 const mockSetCoins = jest.fn();
@@ -45,6 +46,7 @@ jest.mock("expo-router", () => ({
   router: {
     canGoBack: () => mockRouter.canGoBack(),
     back: () => mockRouter.back(),
+    push: (href: string) => mockRouter.push(href),
     replace: (href: string) => mockRouter.replace(href),
   },
 }));
@@ -214,6 +216,16 @@ test("falls back to the home route when there is no navigation history", () => {
   expect(mockRouter.canGoBack).toHaveBeenCalledTimes(1);
   expect(mockRouter.back).not.toHaveBeenCalled();
   expect(mockRouter.replace).toHaveBeenCalledWith("/");
+});
+
+test("opens the antique instruction", () => {
+  render(<AntiqueScreen />);
+
+  fireEvent.press(
+    screen.getByRole("button", { name: "Открыть инструкцию по антиквариату" }),
+  );
+
+  expect(mockRouter.push).toHaveBeenCalledWith("/antiques/manual");
 });
 
 test("keeps the fixed header and bottom content clear of safe areas", () => {
