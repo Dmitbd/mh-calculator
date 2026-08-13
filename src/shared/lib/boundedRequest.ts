@@ -7,10 +7,25 @@ export class BoundedRequestCancelledError extends Error {
   }
 }
 
+export class BoundedRequestTimeoutError extends Error {
+  readonly code = "BOUNDED_REQUEST_TIMEOUT" as const;
+
+  constructor() {
+    super("Bounded request timed out.");
+    this.name = "BoundedRequestTimeoutError";
+  }
+}
+
 export function isBoundedRequestCancelledError(
   error: unknown,
 ): error is BoundedRequestCancelledError {
   return error instanceof BoundedRequestCancelledError;
+}
+
+export function isBoundedRequestTimeoutError(
+  error: unknown,
+): error is BoundedRequestTimeoutError {
+  return error instanceof BoundedRequestTimeoutError;
 }
 
 type BoundedRequestOutcome<T> =
@@ -70,7 +85,7 @@ export function createBoundedRequest<T>(
   observeRequest(request, requestObserver);
 
   timeoutId = setTimeout(() => {
-    settle({ kind: "reject", reason: new Error("Request timed out.") });
+    settle({ kind: "reject", reason: new BoundedRequestTimeoutError() });
   }, timeoutMs);
 
   return {

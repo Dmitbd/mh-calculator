@@ -23,6 +23,7 @@ import {
   createBoundedRequest,
   isBoundedRequestCancelledError,
 } from "@/shared/lib/boundedRequest";
+import { loadDataBootstrap } from "@/shared/lib/dataBootstrap";
 import { getSupabaseClient } from "@/shared/lib/supabaseClient";
 
 const SCREEN_PADDING = 24;
@@ -76,6 +77,29 @@ export function HeroSelectScreen() {
       } | null = null;
 
       try {
+        const bootstrap = await loadDataBootstrap(
+          preserveContent ? { force: true } : {},
+        );
+
+        if (!isMounted.current || currentRequestId !== requestId.current) {
+          return;
+        }
+
+        if (bootstrap.source === "fallback") {
+          setCatalogState((current) => ({
+            ...current,
+            error:
+              current.source === "checking"
+                ? "Показаны локальные билды."
+                : "Не удалось обновить список билдов.",
+            isRefreshing: false,
+            remoteHeroIds:
+              current.source === "checking" ? [] : current.remoteHeroIds,
+            source: current.source === "checking" ? "fallback" : current.source,
+          }));
+          return;
+        }
+
         currentBoundedRequest = createBoundedRequest(
           fetchPublishedHeroIds(client),
           HERO_CATALOG_REQUEST_TIMEOUT_MS,

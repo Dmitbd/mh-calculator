@@ -11,6 +11,19 @@ const mockRouter = {
 const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
 const mockFetchPublishedHeroIds = jest.fn<Promise<string[]>, [unknown]>();
 const mockUseCriticalImagePreload = jest.fn(() => true);
+const mockLoadDataBootstrap = jest.fn();
+const remoteBootstrap = {
+  manifest: {
+    status: "ok",
+    contentVersion: "v1",
+    schemaVersion: 1,
+    resources: {
+      heroBuilds: { version: "v1", etag: `sha256:${"a".repeat(64)}` },
+    },
+  },
+  reason: null,
+  source: "remote",
+} as const;
 
 jest.mock("react-native-safe-area-context", () => ({
   __esModule: true,
@@ -34,6 +47,10 @@ jest.mock("@/shared/lib/imagePreload", () => ({
   useCriticalImagePreload: () => mockUseCriticalImagePreload(),
 }));
 
+jest.mock("@/shared/lib/dataBootstrap", () => ({
+  loadDataBootstrap: (...args: unknown[]) => mockLoadDataBootstrap(...args),
+}));
+
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { AccessibilityInfo } from "react-native";
 
@@ -51,6 +68,8 @@ describe("HeroSelectScreen", () => {
     mockGetSupabaseClient.mockReturnValue(null);
     mockFetchPublishedHeroIds.mockReset();
     mockFetchPublishedHeroIds.mockResolvedValue([]);
+    mockLoadDataBootstrap.mockReset();
+    mockLoadDataBootstrap.mockResolvedValue(remoteBootstrap);
     mockUseCriticalImagePreload.mockReturnValue(true);
   });
 
@@ -137,6 +156,62 @@ describe("HeroSelectScreen", () => {
     expect(
       screen.getByText("Нет героев с готовыми билдами по выбранным фильтрам."),
     ).toBeTruthy();
+  });
+
+  test("does not read the hero resource before compatible bootstrap", async () => {
+    let resolveBootstrap!: (decision: typeof remoteBootstrap) => void;
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadDataBootstrap.mockReturnValue(
+      new Promise((resolve) => {
+        resolveBootstrap = resolve;
+      }),
+    );
+
+    render(<HeroSelectScreen />);
+
+    expect(mockLoadDataBootstrap).toHaveBeenCalledTimes(1);
+    expect(mockFetchPublishedHeroIds).not.toHaveBeenCalled();
+    expect(screen.getByRole("progressbar", { name: "Загружаем билды" })).toBeTruthy();
+
+    await act(async () => {
+      resolveBootstrap(remoteBootstrap);
+    });
+
+    expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1);
+  });
+
+  test("uses only bundled hero builds when bootstrap selects fallback", async () => {
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadDataBootstrap.mockResolvedValue({
+      manifest: null,
+      reason: "incompatible-schema",
+      source: "fallback",
+    });
+
+    render(<HeroSelectScreen />);
+
+    expect(await screen.findByText("Показаны локальные билды.")).toBeTruthy();
+    expect(screen.getByText("Бастет")).toBeTruthy();
+    expect(mockFetchPublishedHeroIds).not.toHaveBeenCalled();
+  });
+
+  test("rechecks bootstrap on retry before reading the hero resource", async () => {
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadDataBootstrap
+      .mockResolvedValueOnce({
+        manifest: null,
+        reason: "network",
+        source: "fallback",
+      })
+      .mockResolvedValueOnce(remoteBootstrap);
+    mockFetchPublishedHeroIds.mockResolvedValue(["zeus"]);
+
+    render(<HeroSelectScreen />);
+    fireEvent.press(await screen.findByText("Повторить"));
+
+    expect(await screen.findByText("Зевс")).toBeTruthy();
+    expect(mockLoadDataBootstrap).toHaveBeenLastCalledWith({ force: true });
+    expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1);
   });
 
   test("shows only confirmed remote heroes after the initial check", async () => {
@@ -226,7 +301,8 @@ describe("HeroSelectScreen", () => {
     render(<HeroSelectScreen />);
 
     await act(async () => {
-      jest.advanceTimersByTime(HERO_CATALOG_REQUEST_TIMEOUT_MS);
+      await Promise.resolve();
+      await jest.advanceTimersByTimeAsync(HERO_CATALOG_REQUEST_TIMEOUT_MS);
     });
 
     expect(screen.getByText("Показаны локальные билды.")).toBeTruthy();
@@ -272,6 +348,7 @@ describe("HeroSelectScreen", () => {
 
     await act(async () => {
       retryRequest?.();
+      await Promise.resolve();
       retryRequest?.();
     });
 
@@ -341,6 +418,9 @@ describe("HeroSelectScreen", () => {
     );
 
     const view = render(<HeroSelectScreen />);
+    await act(async () => {
+      await Promise.resolve();
+    });
     const catalogTimerCallIndex = setTimeoutSpy.mock.calls.findIndex(
       (call) => call[1] === HERO_CATALOG_REQUEST_TIMEOUT_MS,
     );

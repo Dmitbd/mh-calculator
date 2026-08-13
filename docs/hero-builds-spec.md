@@ -46,6 +46,9 @@
 - [imagePreload.ts](../src/shared/lib/imagePreload.ts)
 - [heroCriticalImages.ts](../src/features/heroes/utils/heroCriticalImages.ts)
 - [boundedRequest.ts](../src/shared/lib/boundedRequest.ts)
+- [dataBootstrap.ts](../src/shared/lib/dataBootstrap.ts)
+- [sourceSelection.ts](../src/shared/lib/sourceSelection.ts)
+- [bootstrap/index.ts](../supabase/functions/bootstrap/index.ts)
 - [heroes.json](../src/features/game-data/heroes/heroes.json)
 - [heroBuilds.ts](../src/features/game-data/heroes/heroBuilds.ts)
 - [heroBuildTabs.ts](../src/features/game-data/heroes/heroBuildTabs.ts)
@@ -73,12 +76,13 @@
 
 Экран `/heroes` выбирает один источник доступности через явное состояние `checking | remote | fallback`:
 
-1. если Supabase настроен, первый render синхронно находится в `checking`, показывает общий `ScreenLoader` и не вычисляет карточки из локального каталога;
-2. успешный `fetchPublishedHeroIds` переводит экран в `remote`: показываются только подтверждённые backend IDs без примеси `heroesWithBuilds`;
-3. ошибка или превышение жёсткого timeout `8` секунд переводит экран в `fallback`, показывает локальные `heroesWithBuilds`, пояснение и действие `Повторить`;
-4. если Supabase не настроен, `fallback` выбирается синхронно без лишнего промежуточного render.
+1. если Supabase настроен, первый render синхронно находится в `checking`, показывает общий `ScreenLoader` и не вычисляет карточки из локального каталога или resource-запрос;
+2. один GET к repository-owned Supabase Edge Function `/bootstrap` с настраиваемым timeout по умолчанию `8` секунд подтверждает backend и manifest: `status: "ok"`, ограниченные `contentVersion`, `schemaVersion: 1`, не более `16` resource manifests и обязательный `heroBuilds.version + sha256 etag`;
+3. только после совместимого bootstrap вызывается `fetchPublishedHeroIds`, и его успех переводит экран в `remote`: показываются только подтверждённые backend IDs без примеси `heroesWithBuilds`;
+4. timeout, network/HTTP error, слишком большой или невалидный JSON и несовместимая schema bootstrap, а также ошибка hero-build resource переводят только этот ресурс в `fallback`, показывают локальные `heroesWithBuilds`, пояснение и действие `Повторить`;
+5. если Supabase не настроен, `fallback` выбирается синхронно без лишнего промежуточного render.
 
-Повторная попытка является фоновой: уже показанный remote или fallback каталог остаётся видимым, а встроенный loader не заменяет его пустым состоянием. Timer снимается при завершении, повторе и unmount; отмена немедленно и идемпотентно завершает wrapper типизированным `BoundedRequestCancelledError` и не включает fallback/error UI. Текущий Supabase wrapper не принимает `AbortSignal`, поэтому underlying transport может физически продолжаться, но он отсоединён: его поздний resolve/reject обработан и не меняет UI или не создаёт unhandled rejection. Поздний ответ после timeout, unmount или более нового запроса также игнорируется. Неизвестные remote IDs не превращаются в героев.
+Совместимый bootstrap кэшируется на сессию и дедуплицирует параллельные callers; fallback-результат не кэшируется навсегда, а явный retry выполняет `force`-перепроверку. Повторная попытка является фоновой: уже показанный remote или fallback каталог остаётся видимым, а встроенный loader не заменяет его пустым состоянием. Timer снимается при завершении, повторе и unmount; отмена немедленно и идемпотентно завершает wrapper типизированным `BoundedRequestCancelledError` и не включает fallback/error UI. Текущий Supabase wrapper не принимает `AbortSignal`, поэтому underlying resource transport может физически продолжаться, но он отсоединён: его поздний resolve/reject обработан и не меняет UI или не создаёт unhandled rejection. Поздний ответ после timeout, unmount или более нового запроса также игнорируется. Неизвестные remote IDs не превращаются в героев.
 
 После выбора источника мастер-каталог фильтруется по выбранным признакам и группируется по зонам. Пустой результат показывает `Нет героев с готовыми билдами по выбранным фильтрам.`
 
@@ -100,12 +104,14 @@
 
 1. герой ищется в мастер-каталоге;
 2. локальный `getHeroBuildSet(heroId)` становится fallback;
-3. при настроенном Supabase `loadPublishedHeroBuildSet` пытается получить опубликованный комплект;
+3. при настроенном Supabase экран сначала принимает совместимый bootstrap, и только затем ограниченный `8` секундами `loadPublishedHeroBuildSet` пытается получить опубликованный комплект;
 4. отсутствие удалённой строки сохраняет локальный fallback;
 5. неизвестный `heroId` показывает `Герой не найден.`;
 6. отсутствие готового билда показывает контролируемое пустое состояние, а не частично собранные секции.
 
-При настроенном Supabase первоначальная загрузка комплекта показывает общий `ScreenLoader` и не раскрывает bundled билд до завершения выбора remote/fallback. Смена route `heroId` атомарно сбрасывает комплект и active tab path до render нового заголовка; принятый комплект и его валидный default path также фиксируются одной state transition без промежуточного empty-state. Без клиента локальный комплект доступен сразу, а `not-configured` диагностируется тем же контролируемым сообщением ровно один раз на загрузку героя. Loader не имеет искусственной минимальной задержки и исчезает при любом контролируемом результате; неожиданное отклонение promise также возвращает локальный fallback без unhandled rejection. Причина контролируемого fallback логируется только как стабильные `heroId` и `kind` (`not-configured | no-data | network | invalid-data`), без сырого backend error или пользовательских данных.
+При настроенном Supabase первоначальная загрузка комплекта показывает общий `ScreenLoader` и не раскрывает bundled билд до завершения bootstrap и выбора remote/fallback ресурса. Смена route `heroId` атомарно сбрасывает комплект и active tab path до render нового заголовка, отменяет bounded wrapper прежнего ресурса и игнорирует его поздний transport-ответ; принятый комплект и его валидный default path также фиксируются одной state transition без промежуточного empty-state. Без клиента локальный комплект доступен сразу, а `not-configured` диагностируется тем же контролируемым сообщением ровно один раз на загрузку героя. Loader не имеет искусственной минимальной задержки и исчезает при любом контролируемом результате; timeout или неожиданное отклонение promise возвращает локальный fallback без unhandled rejection. Причина контролируемого fallback логируется только как стабильные `heroId` и `kind` (`not-configured | no-data | network | invalid-data | timeout | http | incompatible-schema | invalid-body`), без сырого backend error или пользовательских данных.
+
+Edge Function формирует детерминированный manifest по отсортированным опубликованным `hero_id`, `revision` и `updated_at`: SHA-256 одновременно задаёт resource etag и стабильную версию содержимого. Service-role key читается только server-side и не попадает в ответ или client bundle. Bootstrap является единственной проверкой доступности: внешнего ping, `navigator.onLine` или другого platform connectivity truth нет. Версионированный last-known-good cache и generated bundled snapshots остаются отдельной задачей; текущий fallback использует существующие bundled данные.
 
 Удалённые данные не должны мутировать локальные каталоги. Сетевые и Supabase-ошибки не должны скрывать корректный локальный комплект. Невалидный удалённый payload также не принимается: loader возвращает локальный fallback и через `onFallback` различает `no-data`, `network` и `invalid-data`, чтобы причина оставалась доступной для диагностики.
 
@@ -277,6 +283,9 @@ Parser остаётся ограниченным текущим `HeroBuildSet` �
 - [heroCatalogDataIntegrity.test.ts](../src/features/game-data/heroes/__tests__/heroCatalogDataIntegrity.test.ts)
 - [heroBuildSetRepository.test.ts](../src/features/builds/api/__tests__/heroBuildSetRepository.test.ts)
 - [heroBuildSetSchema.test.ts](../src/features/builds/model/__tests__/heroBuildSetSchema.test.ts)
+- [dataBootstrap.test.ts](../src/shared/lib/__tests__/dataBootstrap.test.ts)
+- [sourceSelection.test.ts](../src/shared/lib/__tests__/sourceSelection.test.ts)
+- [bootstrapEdgeFunction.test.js](../src/shared/lib/__tests__/bootstrapEdgeFunction.test.js)
 - [EquipmentVariantTabs.test.tsx](../src/features/builds/__tests__/EquipmentVariantTabs.test.tsx)
 - [WeaponAwakeningBonusList.test.tsx](../src/features/builds/__tests__/WeaponAwakeningBonusList.test.tsx)
 - [weaponAwakeningBonuses.test.ts](../src/features/game-data/weapon-awakening/__tests__/weaponAwakeningBonuses.test.ts)

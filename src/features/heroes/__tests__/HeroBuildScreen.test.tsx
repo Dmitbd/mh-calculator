@@ -13,7 +13,20 @@ const mockRouter = {
 };
 const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
 const mockLoadPublishedHeroBuildSet = jest.fn();
+const mockLoadDataBootstrap = jest.fn();
 const mockUseCriticalImagePreload = jest.fn(() => true);
+const remoteBootstrap = {
+  manifest: {
+    status: "ok",
+    contentVersion: "v1",
+    schemaVersion: 1,
+    resources: {
+      heroBuilds: { version: "v1", etag: `sha256:${"a".repeat(64)}` },
+    },
+  },
+  reason: null,
+  source: "remote",
+} as const;
 const ADMIN_SESSION = {
   id: "admin-user-id",
   email: "admin@example.com",
@@ -50,11 +63,18 @@ jest.mock("@/shared/lib/imagePreload", () => ({
   useCriticalImagePreload: () => mockUseCriticalImagePreload(),
 }));
 
+jest.mock("@/shared/lib/dataBootstrap", () => ({
+  loadDataBootstrap: (...args: unknown[]) => mockLoadDataBootstrap(...args),
+}));
+
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { AccessibilityInfo } from "react-native";
 
 import { getHeroBuildSet } from "@/features/game-data/heroes/heroBuilds";
-import { HeroBuildScreen } from "@/features/heroes/screens/HeroBuildScreen";
+import {
+  HERO_BUILD_REQUEST_TIMEOUT_MS,
+  HeroBuildScreen,
+} from "@/features/heroes/screens/HeroBuildScreen";
 import {
   createHeroBuildLoadState,
   resolveHeroBuildLoadState,
@@ -78,6 +98,8 @@ describe("HeroBuildScreen", () => {
     mockGetSupabaseClient.mockReturnValue(null);
     mockLoadPublishedHeroBuildSet.mockReset();
     mockLoadPublishedHeroBuildSet.mockResolvedValue(getHeroBuildSet("bastet"));
+    mockLoadDataBootstrap.mockReset();
+    mockLoadDataBootstrap.mockResolvedValue(remoteBootstrap);
     mockUseCriticalImagePreload.mockReturnValue(true);
   });
 
@@ -269,6 +291,74 @@ describe("HeroBuildScreen", () => {
 
     expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
     expect(screen.queryByText("Загружаем билд")).toBeNull();
+  });
+
+  test("does not read a published build before compatible bootstrap", async () => {
+    let resolveBootstrap!: (decision: typeof remoteBootstrap) => void;
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadDataBootstrap.mockReturnValue(
+      new Promise((resolve) => {
+        resolveBootstrap = resolve;
+      }),
+    );
+
+    render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
+
+    expect(mockLoadPublishedHeroBuildSet).not.toHaveBeenCalled();
+    expect(screen.getByRole("progressbar", { name: "Загружаем билд" })).toBeTruthy();
+
+    await act(async () => {
+      resolveBootstrap(remoteBootstrap);
+    });
+
+    expect(mockLoadPublishedHeroBuildSet).toHaveBeenCalledTimes(1);
+  });
+
+  test("keeps the bundled build when bootstrap selects fallback", async () => {
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadDataBootstrap.mockResolvedValue({
+      manifest: null,
+      reason: "timeout",
+      source: "fallback",
+    });
+
+    render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
+
+    expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
+    expect(mockLoadPublishedHeroBuildSet).not.toHaveBeenCalled();
+    expect(diagnostic).toHaveBeenCalledWith("Hero build fallback", {
+      heroId: "bastet",
+      kind: "timeout",
+    });
+  });
+
+  test("bounds a hanging hero resource request and ignores its late result", async () => {
+    jest.useFakeTimers();
+    let resolveRemote!: (buildSet: ReturnType<typeof getHeroBuildSet>) => void;
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadPublishedHeroBuildSet.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRemote = resolve;
+      }),
+    );
+
+    render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
+    await act(async () => {
+      await Promise.resolve();
+      await jest.advanceTimersByTimeAsync(HERO_BUILD_REQUEST_TIMEOUT_MS);
+    });
+
+    expect(screen.getByText("Axe of Pangu")).toBeTruthy();
+    expect(diagnostic).toHaveBeenCalledWith("Hero build fallback", {
+      heroId: "bastet",
+      kind: "timeout",
+    });
+
+    await act(async () => {
+      resolveRemote(getHeroBuildSet("morana"));
+    });
+
+    expect(screen.getByText("Axe of Pangu")).toBeTruthy();
   });
 
   test("uses the local build when an unexpected initial request error occurs", async () => {
