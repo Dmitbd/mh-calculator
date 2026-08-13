@@ -276,7 +276,14 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
 
     fireEvent.press(screen.getByText("Выйти"));
 
-    await screen.findByText("Выходим...");
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText("Загрузка авторизации")).toBeTruthy();
+        expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
+      },
+      { timeout: 5_000 },
+    );
+    expect(screen.getByText("Выходим...")).toBeTruthy();
 
     act(() => {
       fireEvent.press(removeRune);
@@ -328,7 +335,14 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
     await waitFor(() => expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1));
 
     fireEvent.press(screen.getByText("Выйти"));
-    await screen.findByText("Выходим...");
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText("Загрузка авторизации")).toBeTruthy();
+        expect(screen.queryByLabelText("Remove Air Rune")).toBeNull();
+      },
+      { timeout: 5_000 },
+    );
+    expect(screen.getByText("Выходим...")).toBeTruthy();
 
     act(() => {
       fireEvent.press(removeRune);
