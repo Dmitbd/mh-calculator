@@ -29,6 +29,7 @@
 - [app/divinity.tsx](../app/divinity.tsx)
 - [src/features/divinity/data/divinity-levels.json](../src/features/divinity/data/divinity-levels.json)
 - [src/features/divinity/hooks/useDivinityProgress.ts](../src/features/divinity/hooks/useDivinityProgress.ts)
+- [src/features/divinity/model/types.ts](../src/features/divinity/model/types.ts)
 - [src/features/divinity/model/calculateDivinityTotals.ts](../src/features/divinity/model/calculateDivinityTotals.ts)
 - [src/features/divinity/model/getCurrentDivinityStep.ts](../src/features/divinity/model/getCurrentDivinityStep.ts)
 - [src/features/divinity/storage/divinityProgressStorage.ts](../src/features/divinity/storage/divinityProgressStorage.ts)
@@ -85,7 +86,7 @@ type StoneCosts = {
 - уровни `6` и `7` уже участвуют в реальных расчетах, даже если их иконки пока временные;
 - пустое значение камня выражается `0`, а не `null` и не отсутствующим полем.
 
-### DivinityProgress
+### Progress state and persistence
 
 ```ts
 type DivinityProgress = {
@@ -93,7 +94,15 @@ type DivinityProgress = {
   endLevel: number;
   currentLevel: number;
   filledSegments: number;
+};
+
+type DivinityProgressRecord = {
+  startLevel: number;
+  endLevel: number;
+  currentLevel: number;
+  filledSegments: number;
   autofillEnabled: boolean;
+  updatedAt: string;
 };
 ```
 
@@ -101,8 +110,11 @@ type DivinityProgress = {
 - `startLevel` — левая граница диапазона расчета;
 - `endLevel` — правая граница диапазона расчета;
 - `currentLevel` — текущий активный уровень внутри диапазона;
-- `filledSegments` — сколько делений уже заполнено у `currentLevel`.
-- `autofillEnabled` — включен ли режим полного расчета без ручной прокачки круга.
+- `filledSegments` — сколько делений уже заполнено у `currentLevel`;
+- `autofillEnabled` — включен ли режим полного расчета без ручной прокачки круга;
+- `updatedAt` — ISO-время записи persisted record.
+
+Чистые расчёты принимают `DivinityProgress` без UI-режима автозаполнения. Hook хранит `autofillEnabled` отдельно, а AsyncStorage использует полный `DivinityProgressRecord`.
 
 ## Range Logic
 

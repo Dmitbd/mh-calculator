@@ -31,6 +31,7 @@
 - [useAntiqueCalculator.ts](../src/features/antiques/hooks/useAntiqueCalculator.ts)
 - [calculateAntiqueRivalry.ts](../src/features/antiques/model/calculateAntiqueRivalry.ts)
 - [allocateAntiqueCoins.ts](../src/features/antiques/model/allocateAntiqueCoins.ts)
+- [types.ts](../src/features/antiques/model/types.ts)
 - [antiqueCalculatorStorage.ts](../src/features/antiques/storage/antiqueCalculatorStorage.ts)
 - [game-data/antiques/index.ts](../src/features/game-data/antiques/index.ts)
 - [antique-rivalry-rewards.json](../src/features/game-data/antiques/antique-rivalry-rewards.json)
@@ -39,15 +40,15 @@
 
 ```ts
 type AntiqueRivalryInput = {
-  coins: number;
-  templeMapAllocation: number;
-  ownedTombMaps: number;
-  ownedTempleMaps: number;
-  includeCashback: boolean;
+  coins: unknown;
+  templeMapAllocation: unknown;
+  ownedTombMaps: unknown;
+  ownedTempleMaps: unknown;
+  includeCashback?: boolean;
 };
 ```
 
-Числовые значения нормализуются в неотрицательные целые числа. `NaN`, отрицательные, дробные и нечисловые значения не попадают в расчёт как есть. `includeCashback` по умолчанию равен `true`; только явное `false` отключает каскадный возврат.
+Это тип входной границы нормализации, поэтому числовые поля намеренно принимаются как `unknown`, а `includeCashback` может отсутствовать. Перед расчётом и сохранением он преобразуется в `AntiqueCalculatorInput` с обязательными числовыми полями и boolean. Числовые значения нормализуются в неотрицательные целые числа. `NaN`, отрицательные, дробные и нечисловые значения не попадают в расчёт как есть. `includeCashback` по умолчанию равен `true`; только явное `false` отключает каскадный возврат.
 
 Монеты тратятся только полными блоками:
 
@@ -98,7 +99,15 @@ AsyncStorage key: `antique-rivalry-calculator`.
 Сохраняются только нормализованные входы и `updatedAt`:
 
 ```ts
-type AntiqueCalculatorRecord = AntiqueRivalryInput & {
+type AntiqueCalculatorInput = {
+  coins: number;
+  templeMapAllocation: number;
+  ownedTombMaps: number;
+  ownedTempleMaps: number;
+  includeCashback: boolean;
+};
+
+type AntiqueCalculatorRecord = AntiqueCalculatorInput & {
   updatedAt: string;
 };
 ```

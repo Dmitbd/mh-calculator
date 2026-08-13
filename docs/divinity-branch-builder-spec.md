@@ -54,6 +54,8 @@
 - [src/features/builds/api/heroBuildSetRepository.ts](../src/features/builds/api/heroBuildSetRepository.ts) — типизированная граница чтения и lifecycle RPC
 - [src/shared/lib/dataBootstrap.ts](../src/shared/lib/dataBootstrap.ts) — публичный bootstrap-контракт совместимости viewer-данных
 - [src/features/admin/types/admin.types.ts](../src/features/admin/types/admin.types.ts) — типы
+- [src/features/game-data/builds/types.ts](../src/features/game-data/builds/types.ts) — committed и standalone export contracts
+- [src/features/game-data/divinity/types.ts](../src/features/game-data/divinity/types.ts) — ветки, ноды, скиллы и прогресс дерева
 - [src/features/game-data/divinity/tree-template.json](../src/features/game-data/divinity/tree-template.json) — структура дерева
 - [src/features/game-data/divinity/divinity-branches.json](../src/features/game-data/divinity/divinity-branches.json) — ветки
 - [src/features/game-data/divinity/divinity-skills.json](../src/features/game-data/divinity/divinity-skills.json) — мажорные скиллы
@@ -136,13 +138,24 @@ type TreeTemplateMajorSkillNode = {
 ```ts
 type DivinityMajorSkill = {
   id: string;
-  branchId: DivinityBranchId; // к какой ветке относится скилл
-  tier?: 1 | 2 | 3;
+  branchId: DivinityBranchId;
+  tier: 1 | 2 | 3;
+  nodeCost: 1 | 2 | 3;
   name: string;
   icon: string;
-  description?: string;       // в карточке дерева НЕ отображается
+  levels: {
+    level: 1 | 2 | 3 | 4;
+    description: string;
+  }[];
+  source?: {
+    type: string;
+    url?: string;
+    status?: string;
+  };
 };
 ```
+
+`tier` распознаёт слот дерева, `nodeCost` задаёт стоимость установки в узлах божественной энергии, а `levels` хранит описания эффекта по уровням прокачки. Текст описания не выводится в карточке дерева независимо от его наличия в каталоге.
 
 ### Progress (прогресс / активные ноды)
 
@@ -255,15 +268,14 @@ type ActiveBranchNode = {
 - заполнены не все мажорные слоты (`majorNodes.length !== число majorSkill-нод`), ИЛИ
 - выбраны не все слоты пробуждения оружия.
 
-Форма выгрузки (поля, относящиеся к дереву, выделены):
+Source contract разделяет committed leaf и standalone-выгрузку билдера:
 
 ```ts
-type DivinityBranchBuilderExport = {
+type DivinityBranchBuildExport = {
   schemaVersion: 1;
   gameMode: "pvp" | "pve";
   heroId: string;
   heroName: string;
-  targetTabPath: string[];
   columns: Record<BranchColumnId, DivinityBranchId>;
   majorNodes: {
     level: number;
@@ -283,6 +295,12 @@ type DivinityBranchBuilderExport = {
   progress: BranchProgressLevels;
   activeNodes: { columnId: BranchColumnId; level: number }[];
   metadata: { createdAt: string; source: "manual-branch-builder" };
+};
+
+type HeroBuildTargetTabPath = string[];
+
+type DivinityBranchBuilderExport = DivinityBranchBuildExport & {
+  targetTabPath: HeroBuildTargetTabPath;
 };
 ```
 
