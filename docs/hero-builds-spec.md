@@ -42,6 +42,9 @@
 - [mapBuildToView.ts](../src/features/heroes/utils/mapBuildToView.ts)
 - [heroBuildSetRepository.ts](../src/features/builds/api/heroBuildSetRepository.ts)
 - [ScreenLoader.tsx](../src/shared/ui/ScreenLoader.tsx)
+- [AppImage.tsx](../src/shared/ui/AppImage.tsx)
+- [imagePreload.ts](../src/shared/lib/imagePreload.ts)
+- [heroCriticalImages.ts](../src/features/heroes/utils/heroCriticalImages.ts)
 - [boundedRequest.ts](../src/shared/lib/boundedRequest.ts)
 - [heroes.json](../src/features/game-data/heroes/heroes.json)
 - [heroBuilds.ts](../src/features/game-data/heroes/heroBuilds.ts)
@@ -79,6 +82,8 @@
 
 После выбора источника мастер-каталог фильтруется по выбранным признакам и группируется по зонам. Пустой результат показывает `Нет героев с готовыми билдами по выбранным фильтрам.`
 
+Иконки фильтров и metadata только первых четырёх видимых карточек образуют ограниченный above-fold preload-набор. После дедупликации он укладывается в общий лимит `24`; реестр ограничен по размеру, не вытесняет незавершённые запросы и не загружает весь мастер-каталог. При первом принятом источнике каталог показывает общий loader до завершения попытки preload критического набора, но не дольше `3` секунд; below-fold изображения в gate не входят. Смена фильтров, retry или фоновая смена remote/fallback-источника обновляет preload-набор, но не скрывает уже показанный контент.
+
 ## Filters And Grouping
 
 Фильтры используют стабильные IDs словарей:
@@ -105,6 +110,10 @@
 Удалённые данные не должны мутировать локальные каталоги. Сетевые и Supabase-ошибки не должны скрывать корректный локальный комплект. Невалидный удалённый payload также не принимается: loader возвращает локальный fallback и через `onFallback` различает `no-data`, `network` и `invalid-data`, чтобы причина оставалась доступной для диагностики.
 
 `ScreenLoader` имеет полноэкранный и встроенный режимы с зарезервированной высотой, ролью `progressbar` и видимой подписью. Анимация построена на React Native `Animated`, останавливается при unmount, а при системном reduced motion остаётся статичной.
+
+После выбора `heroId` экран отдельно предзагружает только portrait, rarity, role, factions и element выбранного героя и до завершения этой ограниченной попытки, но не дольше `3` секунд, показывает общий loader вместо основного содержимого нового героя. Все эти URL проходят через `resolveAssetUri`, поэтому production web использует `/mh-calculator/img/...`, а native — настроенный `assetOrigin`.
+
+`AppImage` сохраняет конечные `width`, `height` и `borderRadius` до завершения fetch/decode, использует platform cache (`force-cache`, где он поддерживается), раскрывает изображение через `onLoad` и оставляет контролируемую заглушку через `onError`. `IconPreview` сохраняет прежние accessibility labels поверх этого boundary; ошибка и отсутствие source не заменяются текстом и не меняют геометрию строки или карточки.
 
 ## Build Set And Tabs
 

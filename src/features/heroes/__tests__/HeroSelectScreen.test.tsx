@@ -10,6 +10,7 @@ const mockRouter = {
 };
 const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
 const mockFetchPublishedHeroIds = jest.fn<Promise<string[]>, [unknown]>();
+const mockUseCriticalImagePreload = jest.fn(() => true);
 
 jest.mock("react-native-safe-area-context", () => ({
   __esModule: true,
@@ -29,6 +30,10 @@ jest.mock("@/features/builds", () => ({
   fetchPublishedHeroIds: (...args: [unknown]) => mockFetchPublishedHeroIds(...args),
 }));
 
+jest.mock("@/shared/lib/imagePreload", () => ({
+  useCriticalImagePreload: () => mockUseCriticalImagePreload(),
+}));
+
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { AccessibilityInfo } from "react-native";
 
@@ -46,6 +51,7 @@ describe("HeroSelectScreen", () => {
     mockGetSupabaseClient.mockReturnValue(null);
     mockFetchPublishedHeroIds.mockReset();
     mockFetchPublishedHeroIds.mockResolvedValue([]);
+    mockUseCriticalImagePreload.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -55,6 +61,22 @@ describe("HeroSelectScreen", () => {
 
   test("shows Bastet when she has a build", () => {
     render(<HeroSelectScreen />);
+
+    expect(screen.getByText("Бастет")).toBeTruthy();
+  });
+
+  test("waits for initial critical images before showing fallback cards", () => {
+    mockUseCriticalImagePreload.mockReturnValue(false);
+
+    const view = render(<HeroSelectScreen />);
+
+    expect(
+      screen.getByRole("progressbar", { name: "Подготавливаем иконки" }),
+    ).toBeTruthy();
+    expect(screen.queryByText("Бастет")).toBeNull();
+
+    mockUseCriticalImagePreload.mockReturnValue(true);
+    view.rerender(<HeroSelectScreen />);
 
     expect(screen.getByText("Бастет")).toBeTruthy();
   });
@@ -89,7 +111,7 @@ describe("HeroSelectScreen", () => {
     ).toBeTruthy();
   });
 
-  test("keeps the screen controls visible and replaces the hero list with a loader while builds load", async () => {
+  test("keeps catalog controls and cards hidden until the initial source is accepted", async () => {
     let resolveHeroIds!: (heroIds: string[]) => void;
     const loadingHeroIds = new Promise<string[]>((resolve) => {
       resolveHeroIds = resolve;
@@ -99,8 +121,8 @@ describe("HeroSelectScreen", () => {
 
     render(<HeroSelectScreen />);
 
-    expect(screen.getByLabelText("Поиск героя")).toBeTruthy();
-    expect(screen.getByText("Роль")).toBeTruthy();
+    expect(screen.queryByLabelText("Поиск героя")).toBeNull();
+    expect(screen.queryByText("Роль")).toBeNull();
     expect(
       screen.getByRole("progressbar", { name: "Загружаем билды" }),
     ).toBeTruthy();

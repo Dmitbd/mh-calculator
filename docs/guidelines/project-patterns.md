@@ -43,6 +43,7 @@
 
 - Data files MUST store asset paths as `/img/...`.
 - Runtime rendering MUST resolve local assets through `resolveAssetUri` or an approved shared replacement.
+- URL images that need stable loading/error UI SHOULD use shared `AppImage`; round icons SHOULD remain on `IconPreview`, which delegates loading to that boundary.
 - An approved shared replacement MUST live in `src/shared` and MUST be named in a guideline, product spec, or refactor plan before feature code adopts it.
 - Missing optional icons MUST render a controlled placeholder or omit the icon without crashing.
 - Asset paths MUST NOT use unstable relative filesystem paths in game data.

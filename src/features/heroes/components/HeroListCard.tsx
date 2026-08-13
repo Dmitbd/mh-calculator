@@ -1,5 +1,6 @@
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { AppImage } from "@/shared/ui/AppImage";
 import { IconPreview } from "@/shared/ui/IconPreview";
 import {
   getDictionaryEntry,
@@ -9,7 +10,6 @@ import {
   heroRoles,
 } from "@/features/game-data/heroes/heroDictionaries";
 import type { Hero, HeroRarity } from "@/features/game-data/heroes/types";
-import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
 
 /** Высота бейджа редкости в карточке */
 const RARITY_BADGE_HEIGHT = 20;
@@ -51,14 +51,12 @@ export function HeroListCard({ hero, onPress }: HeroListCardProps) {
 
       <View style={styles.rarityBlock}>
         {rarity ? (
-          <Image
+          <AppImage
             accessibilityLabel={`${rarity.name.ru} icon`}
+            height={RARITY_BADGE_HEIGHT}
             resizeMode="contain"
-            source={{ uri: resolveAssetUri(rarity.icon) }}
-            style={{
-              height: RARITY_BADGE_HEIGHT,
-              width: RARITY_BADGE_HEIGHT * RARITY_ASPECT_RATIO[hero.rarity],
-            }}
+            source={rarity.icon}
+            width={RARITY_BADGE_HEIGHT * RARITY_ASPECT_RATIO[hero.rarity]}
           />
         ) : null}
       </View>

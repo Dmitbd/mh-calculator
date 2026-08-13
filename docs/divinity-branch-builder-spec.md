@@ -40,6 +40,7 @@
 - [src/features/builds/components/BranchNodeCard.tsx](../src/features/builds/components/BranchNodeCard.tsx) — `MinorStatCard` и `MajorNodeCard`
 - [src/features/builds/components/MajorSkillPicker.tsx](../src/features/builds/components/MajorSkillPicker.tsx) — список выбора скилла
 - [src/shared/ui/IconPreview.tsx](../src/shared/ui/IconPreview.tsx) — иконка или пунктирный плейсхолдер
+- [src/shared/ui/AppImage.tsx](../src/shared/ui/AppImage.tsx) — общий фиксированный loading/error-контейнер URL-изображения
 - [src/shared/ui/ScreenLoader.tsx](../src/shared/ui/ScreenLoader.tsx) — общий полноэкранный и встроенный loader
 - [src/features/admin/hooks/useDivinityBranchBuilder.ts](../src/features/admin/hooks/useDivinityBranchBuilder.ts) — состояние и экспорт
 - [src/features/admin/utils/validateBranchBuild.ts](../src/features/admin/utils/validateBranchBuild.ts) — валидация
@@ -184,6 +185,7 @@ type ActiveBranchNode = {
 
 - если `source` задан — рисует изображение;
 - если иконки нет — пустой круг с пунктирной обводкой (без буквы).
+- если URL ещё загружается или завершился ошибкой, внешний размер круга не меняется; `AppImage` сохраняет доступную подпись, loading placeholder и контролируемый error fallback.
 
 ## Major Skill Logic
 

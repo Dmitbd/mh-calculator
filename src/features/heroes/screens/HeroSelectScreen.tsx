@@ -14,7 +14,9 @@ import {
   filterHeroes,
 } from "@/features/heroes/utils/heroListFilters";
 import { groupHeroesByZone } from "@/features/heroes/utils/heroListGrouping";
+import { getHeroCatalogCriticalImageSources } from "@/features/heroes/utils/heroCriticalImages";
 
+import { useCriticalImagePreload } from "@/shared/lib/imagePreload";
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 import { ScreenLoader } from "@/shared/ui/ScreenLoader";
 import {
@@ -147,6 +149,21 @@ export function HeroSelectScreen() {
     const filtered = filterHeroes(buildReadyHeroes, filters);
     return groupHeroesByZone(filtered);
   }, [catalogState.remoteHeroIds, catalogState.source, filters]);
+  const criticalImageSources = useMemo(
+    () =>
+      getHeroCatalogCriticalImageSources(
+        zoneGroups.flatMap((group) => group.heroes),
+      ),
+    [zoneGroups],
+  );
+
+  const criticalImagesReady = useCriticalImagePreload(criticalImageSources, {
+    enabled: catalogState.source !== "checking",
+    readinessKey: catalogState.source,
+    resetOnReadinessKeyChange: false,
+  });
+  const isInitialContentLoading =
+    catalogState.source === "checking" || !criticalImagesReady;
 
   const openHero = (heroId: string) => {
     router.push({ pathname: "/heroes/[heroId]", params: { heroId } });
@@ -164,13 +181,21 @@ export function HeroSelectScreen() {
           },
         ]}
       >
-        <HeroListFiltersPanel filters={filters} onChange={setFilters} />
+        {isInitialContentLoading ? null : (
+          <HeroListFiltersPanel filters={filters} onChange={setFilters} />
+        )}
 
-        {catalogState.source === "checking" ? (
-          <ScreenLoader label="Загружаем билды" />
+        {isInitialContentLoading ? (
+          <ScreenLoader
+            label={
+              catalogState.source === "checking"
+                ? "Загружаем билды"
+                : "Подготавливаем иконки"
+            }
+          />
         ) : null}
 
-        {catalogState.source !== "checking" &&
+        {!isInitialContentLoading &&
         (catalogState.error || catalogState.isRefreshing) ? (
           <View style={styles.sourceStatus}>
             {catalogState.error ? (
@@ -194,7 +219,7 @@ export function HeroSelectScreen() {
           </View>
         ) : null}
 
-        {catalogState.source === "checking" ? null : zoneGroups.length > 0 ? (
+        {isInitialContentLoading ? null : zoneGroups.length > 0 ? (
           zoneGroups.map((group) => (
             <View key={group.zoneId} style={styles.zone}>
               <Text style={styles.zoneTitle}>{group.title}</Text>

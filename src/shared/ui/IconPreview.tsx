@@ -1,6 +1,4 @@
-import { Image, StyleSheet, View } from "react-native";
-
-import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
+import { AppImage } from "@/shared/ui/AppImage";
 
 type IconPreviewProps = {
   source: string | null;
@@ -9,36 +7,13 @@ type IconPreviewProps = {
 };
 
 export function IconPreview({ source, label, size = 34 }: IconPreviewProps) {
-  if (!source) {
-    return (
-      <View
-        accessibilityLabel={`${label} icon placeholder`}
-        style={[
-          styles.placeholder,
-          { width: size, height: size, borderRadius: size / 2 },
-        ]}
-      />
-    );
-  }
-
   return (
-    <Image
-      accessibilityLabel={`${label} icon`}
-      source={{ uri: resolveAssetUri(source) }}
-      style={[styles.image, { width: size, height: size, borderRadius: size / 2 }]}
+    <AppImage
+      accessibilityLabel={source ? `${label} icon` : `${label} icon placeholder`}
+      borderRadius={size / 2}
+      height={size}
+      source={source}
+      width={size}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  image: {
-    backgroundColor: "#271610",
-    overflow: "hidden",
-  },
-  placeholder: {
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "#6b5645",
-    backgroundColor: "transparent",
-  },
-});

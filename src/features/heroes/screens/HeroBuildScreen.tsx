@@ -29,6 +29,7 @@ import {
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 import { ScreenLoader } from "@/shared/ui/ScreenLoader";
+import { useCriticalImagePreload } from "@/shared/lib/imagePreload";
 
 import { HeroMetadataRow } from "../components/HeroMetadataRow";
 import { HeroBuildBranchSection } from "../components/hero-build/HeroBuildBranchSection";
@@ -41,6 +42,7 @@ import {
 } from "../model/heroBuildLoading";
 import { getHeroBuildTabViewModel } from "../model/heroBuildTabs";
 import { mapBuildToView } from "../utils/mapBuildToView";
+import { getHeroMetadataImageSources } from "../utils/heroCriticalImages";
 
 const SCREEN_PADDING = 20;
 
@@ -59,6 +61,14 @@ export function HeroBuildScreen({
   const router = useRouter();
 
   const hero = getHeroById(heroId);
+  const criticalImageSources = useMemo(
+    () => (hero ? getHeroMetadataImageSources(hero) : []),
+    [hero],
+  );
+  const criticalImagesReady = useCriticalImagePreload(criticalImageSources, {
+    enabled: Boolean(hero),
+    readinessKey: heroId,
+  });
   const fallbackBuildSet = getHeroBuildSet(heroId);
   const [client] = useState(() => getSupabaseClient());
   const noClientDiagnosticHeroId = useRef<string | null>(null);
@@ -261,11 +271,15 @@ export function HeroBuildScreen({
       <ScrollView
         contentContainerStyle={[styles.container, contentPadding]}
       >
-        <View style={styles.section}>
-          <HeroMetadataRow hero={hero} />
-        </View>
+        {!criticalImagesReady ? (
+          <ScreenLoader label="Подготавливаем иконки" />
+        ) : (
+          <View style={styles.section}>
+            <HeroMetadataRow hero={hero} />
+          </View>
+        )}
 
-        {isAuthChecked && adminSession ? (
+        {criticalImagesReady && isAuthChecked && adminSession ? (
           <View style={[styles.section, styles.adminActions]}>
             <Pressable
               accessibilityRole="button"
@@ -284,11 +298,11 @@ export function HeroBuildScreen({
           </View>
         ) : null}
 
-        {isBuildLoading ? (
+        {criticalImagesReady && isBuildLoading ? (
           <ScreenLoader label="Загружаем билд" />
         ) : null}
 
-        {sortedTabs.length > 0 ? (
+        {criticalImagesReady && sortedTabs.length > 0 ? (
           <View style={styles.section}>
             <HeroBuildTabsSection
               childTabs={childFolderTabs}
@@ -301,7 +315,7 @@ export function HeroBuildScreen({
           </View>
         ) : null}
 
-        {view ? (
+        {criticalImagesReady && view ? (
           <>
             <View style={styles.section}>
               <HeroBuildEquipmentSection
@@ -338,7 +352,7 @@ export function HeroBuildScreen({
               <HeroBuildBranchSection view={view} />
             </View>
           </>
-        ) : isBuildLoading ? null : (
+        ) : isBuildLoading || !criticalImagesReady ? null : (
           <View style={styles.placeholderCard}>
             <Text style={styles.placeholderText}>
               Билд для этого режима ещё не готов.

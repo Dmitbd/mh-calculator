@@ -13,6 +13,7 @@ const mockRouter = {
 };
 const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
 const mockLoadPublishedHeroBuildSet = jest.fn();
+const mockUseCriticalImagePreload = jest.fn(() => true);
 const ADMIN_SESSION = {
   id: "admin-user-id",
   email: "admin@example.com",
@@ -45,7 +46,11 @@ jest.mock("@/features/builds", () => {
   };
 });
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+jest.mock("@/shared/lib/imagePreload", () => ({
+  useCriticalImagePreload: () => mockUseCriticalImagePreload(),
+}));
+
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { AccessibilityInfo } from "react-native";
 
 import { getHeroBuildSet } from "@/features/game-data/heroes/heroBuilds";
@@ -73,6 +78,7 @@ describe("HeroBuildScreen", () => {
     mockGetSupabaseClient.mockReturnValue(null);
     mockLoadPublishedHeroBuildSet.mockReset();
     mockLoadPublishedHeroBuildSet.mockResolvedValue(getHeroBuildSet("bastet"));
+    mockUseCriticalImagePreload.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -92,6 +98,26 @@ describe("HeroBuildScreen", () => {
 
     expect(screen.getByLabelText("Select Кампания build tab")).toBeTruthy();
     expect(screen.getByLabelText("Select Боссы build tab")).toBeTruthy();
+  });
+
+  test("waits for selected hero metadata before showing the initial build", () => {
+    mockUseCriticalImagePreload.mockReturnValue(false);
+
+    const view = render(
+      <HeroBuildScreen heroId="bastet" initialAdminSession={null} />,
+    );
+
+    expect(
+      screen.getByRole("progressbar", { name: "Подготавливаем иконки" }),
+    ).toBeTruthy();
+    expect(screen.queryByText("Axe of Pangu")).toBeNull();
+
+    mockUseCriticalImagePreload.mockReturnValue(true);
+    view.rerender(
+      <HeroBuildScreen heroId="bastet" initialAdminSession={null} />,
+    );
+
+    expect(screen.getByText("Axe of Pangu")).toBeTruthy();
   });
 
   test("defaults to the first ready build path", () => {
