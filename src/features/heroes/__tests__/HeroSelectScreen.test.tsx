@@ -13,6 +13,7 @@ const mockUseCriticalImagePreload = jest.fn(() => true);
 const mockLoadDataBootstrap = jest.fn();
 const mockLoadAndCacheRemoteHeroBuildSnapshot = jest.fn();
 const mockLoadHeroBuildSnapshotFallback = jest.fn();
+let mockUseActualHeroBuildSnapshotFallback = false;
 const mockAcceptBootstrapTransition = jest.fn();
 const mockAcceptResourceTransition = jest.fn();
 const mockRejectBootstrapTransition = jest.fn();
@@ -45,12 +46,20 @@ jest.mock("@/shared/lib/supabaseClient", () => ({
   getSupabaseClient: () => mockGetSupabaseClient(),
 }));
 
-jest.mock("@/features/builds/data/heroBuildSnapshotSource", () => ({
-  loadAndCacheRemoteHeroBuildSnapshot: (...args: unknown[]) =>
-    mockLoadAndCacheRemoteHeroBuildSnapshot(...args),
-  loadHeroBuildSnapshotFallback: (...args: unknown[]) =>
-    mockLoadHeroBuildSnapshotFallback(...args),
-}));
+jest.mock("@/features/builds/data/heroBuildSnapshotSource", () => {
+  const actual = jest.requireActual(
+    "@/features/builds/data/heroBuildSnapshotSource",
+  );
+  return {
+    ...actual,
+    loadAndCacheRemoteHeroBuildSnapshot: (...args: unknown[]) =>
+      mockLoadAndCacheRemoteHeroBuildSnapshot(...args),
+    loadHeroBuildSnapshotFallback: (...args: unknown[]) =>
+      mockUseActualHeroBuildSnapshotFallback
+        ? actual.loadHeroBuildSnapshotFallback(...args)
+        : mockLoadHeroBuildSnapshotFallback(...args),
+  };
+});
 
 jest.mock("@/shared/lib/imagePreload", () => ({
   useCriticalImagePreload: () => mockUseCriticalImagePreload(),
@@ -84,9 +93,11 @@ jest.mock("@/shared/lib/sourceSelection", () => {
 });
 
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { heroes, heroesWithBuilds } from "@/features/game-data/heroes/heroBuilds";
 import { HeroSelectScreen } from "@/features/heroes/screens/HeroSelectScreen";
+import { HERO_BUILD_SNAPSHOT_STORAGE_TIMEOUT_MS } from "@/features/builds/storage/heroBuildSnapshotStorage";
 
 function remoteSnapshot(heroIds: string[]) {
   return {
@@ -103,6 +114,7 @@ describe("HeroSelectScreen", () => {
     mockLoadAndCacheRemoteHeroBuildSnapshot.mockReset();
     mockLoadAndCacheRemoteHeroBuildSnapshot.mockResolvedValue(remoteSnapshot([]));
     mockLoadHeroBuildSnapshotFallback.mockReset();
+    mockUseActualHeroBuildSnapshotFallback = false;
     mockLoadHeroBuildSnapshotFallback.mockResolvedValue({
       source: "bundled",
       snapshot: {
@@ -317,6 +329,28 @@ describe("HeroSelectScreen", () => {
 
     expect(await screen.findByText("Морана")).toBeTruthy();
     expect(screen.queryByText("Бастет")).toBeNull();
+  });
+
+  test("configured bootstrap failure leaves the loader after bounded storage fallback", async () => {
+    jest.useFakeTimers();
+    mockUseActualHeroBuildSnapshotFallback = true;
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadDataBootstrap.mockResolvedValue({
+      manifest: null,
+      reason: "network",
+      source: "fallback",
+    });
+    jest.spyOn(AsyncStorage, "getAllKeys").mockReturnValue(
+      new Promise(() => undefined),
+    );
+
+    render(<HeroSelectScreen />);
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(HERO_BUILD_SNAPSHOT_STORAGE_TIMEOUT_MS);
+    });
+
+    expect(screen.getByText("Бастет")).toBeTruthy();
+    expect(screen.queryByRole("progressbar")).toBeNull();
   });
 
   test("falls back after a timeout and keeps fallback cards visible during retry", async () => {

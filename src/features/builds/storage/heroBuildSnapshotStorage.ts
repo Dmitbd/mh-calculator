@@ -10,10 +10,11 @@ import {
 const POINTER_KEY = "hero-build-snapshot:lkg:current";
 const GENERATION_PREFIX = "hero-build-snapshot:lkg:g:";
 const GENERATION_PATTERN = /^hero-build-snapshot:lkg:g:[a-f0-9]{64}$/;
-const COMMITTED_SUFFIX = ":committed";
-const MAX_ENUMERATED_KEYS = 512;
 const MAX_GENERATIONS = 32;
 const RETAINED_VALID_GENERATIONS = 4;
+const MAX_GENERATION_ENVELOPE_BYTES = 8 * 1024 * 1024 + 64 * 1024;
+
+export const HERO_BUILD_SNAPSHOT_STORAGE_TIMEOUT_MS = 1_500;
 
 export type SnapshotKeyValueStorage = {
   getAllKeys(): Promise<readonly string[]>;
@@ -27,6 +28,12 @@ type ValidGeneration = {
   snapshot: ParsedHeroBuildSnapshot;
 };
 
+type GenerationRead =
+  | { snapshot: ParsedHeroBuildSnapshot; status: "valid" }
+  | { status: "corrupt" | "unavailable" };
+
+class SnapshotStorageTimeoutError extends Error {}
+
 const saveQueues = new WeakMap<object, Promise<void>>();
 
 export async function loadLastKnownGoodHeroBuildSnapshot(
@@ -34,13 +41,10 @@ export async function loadLastKnownGoodHeroBuildSnapshot(
 ): Promise<ParsedHeroBuildSnapshot | null> {
   try {
     const maximum = await scanMaximumGeneration(storage);
-    if (!maximum) {
-      return null;
-    }
+    if (!maximum) return null;
     await repairPointer(storage, maximum.generation);
     return maximum.snapshot;
   } catch {
-    // Enumeration overflow or adapter failure fails closed to bundled data.
     return null;
   }
 }
@@ -56,14 +60,13 @@ export function saveLastKnownGoodHeroBuildSnapshot(
       files.resourceJson,
     );
     const generation = `${GENERATION_PREFIX}${sha256Hex(files.manifestJson)}`;
-    await storage.setItem(`${generation}:resource`, files.resourceJson);
-    await storage.setItem(`${generation}:manifest`, files.manifestJson);
+    const envelope = encodeGeneration(files);
 
-    const stored = await readGeneration(storage, generation, false);
-    if (!stored) {
-      throw new Error("Hero build snapshot generation is incomplete");
+    await boundedStorageOperation(() => storage.setItem(generation, envelope));
+    const stored = await readGeneration(storage, generation);
+    if (stored.status !== "valid") {
+      throw new Error("Hero build snapshot generation is invalid after write");
     }
-    await storage.setItem(`${generation}${COMMITTED_SUFFIX}`, "1");
 
     const maximum = await scanMaximumGeneration(storage);
     if (!maximum) {
@@ -87,39 +90,32 @@ async function scanMaximumGeneration(
   storage: SnapshotKeyValueStorage,
 ): Promise<ValidGeneration | null> {
   const [allKeys, pointer] = await Promise.all([
-    storage.getAllKeys(),
-    storage.getItem(POINTER_KEY),
+    boundedStorageOperation(() => storage.getAllKeys()),
+    boundedStorageOperation(() => storage.getItem(POINTER_KEY)),
   ]);
-  if (allKeys.length > MAX_ENUMERATED_KEYS) {
-    throw new Error("Hero build snapshot key enumeration exceeds its budget");
-  }
-
-  const generations = new Set<string>();
-  if (
-    pointer &&
-    GENERATION_PATTERN.test(pointer) &&
-    (await storage.getItem(`${pointer}${COMMITTED_SUFFIX}`)) === "1"
-  ) {
-    generations.add(pointer);
-  }
-  for (const key of allKeys) {
-    const generation = getGenerationFromKey(key);
-    if (generation) {
-      generations.add(generation);
-    }
-  }
-  if (generations.size > MAX_GENERATIONS) {
+  const generationKeys = [
+    ...new Set(allKeys.filter((key) => GENERATION_PATTERN.test(key))),
+  ];
+  if (generationKeys.length > MAX_GENERATIONS) {
     throw new Error("Hero build snapshot generation count exceeds its budget");
   }
 
+  const generations = pointer && generationKeys.includes(pointer)
+    ? [pointer, ...generationKeys.filter((key) => key !== pointer)]
+    : generationKeys;
   const valid: ValidGeneration[] = [];
-  const invalid: string[] = [];
-  for (const generation of generations) {
-    const snapshot = await readGeneration(storage, generation);
-    if (snapshot) {
-      valid.push({ generation, snapshot });
-    } else {
-      invalid.push(generation);
+  const corrupt: string[] = [];
+  const reads = await Promise.all(
+    generations.map(async (generation) => ({
+      generation,
+      read: await readGeneration(storage, generation),
+    })),
+  );
+  for (const { generation, read } of reads) {
+    if (read.status === "valid") {
+      valid.push({ generation, snapshot: read.snapshot });
+    } else if (read.status === "corrupt") {
+      corrupt.push(generation);
     }
   }
   valid.sort((left, right) => {
@@ -129,16 +125,14 @@ async function scanMaximumGeneration(
 
   if (storage.removeItem) {
     const removable = [
-      ...invalid,
+      ...corrupt,
       ...valid.slice(RETAINED_VALID_GENERATIONS).map(({ generation }) => generation),
     ];
     try {
       await Promise.all(
-        removable.flatMap((generation) => [
-          storage.removeItem!(`${generation}:manifest`),
-          storage.removeItem!(`${generation}:resource`),
-          storage.removeItem!(`${generation}${COMMITTED_SUFFIX}`),
-        ]),
+        removable.map((generation) =>
+          boundedStorageOperation(() => storage.removeItem!(generation)),
+        ),
       );
     } catch {
       // Cleanup is best-effort; a valid generation must remain readable.
@@ -151,25 +145,20 @@ async function scanMaximumGeneration(
 async function readGeneration(
   storage: SnapshotKeyValueStorage,
   generation: string,
-  requireCommitted = true,
-): Promise<ParsedHeroBuildSnapshot | null> {
+): Promise<GenerationRead> {
+  let envelope: string | null;
   try {
-    if (
-      requireCommitted &&
-      (await storage.getItem(`${generation}${COMMITTED_SUFFIX}`)) !== "1"
-    ) {
-      return null;
-    }
-    const [manifestJson, resourceJson] = await Promise.all([
-      storage.getItem(`${generation}:manifest`),
-      storage.getItem(`${generation}:resource`),
-    ]);
-    if (!manifestJson || !resourceJson) {
-      return null;
-    }
-    return parseHeroBuildSnapshot(manifestJson, resourceJson);
+    envelope = await boundedStorageOperation(() =>
+      storage.getItem(generation),
+    );
   } catch {
-    return null;
+    return { status: "unavailable" };
+  }
+  if (!envelope) return { status: "corrupt" };
+  try {
+    return { snapshot: parseGeneration(envelope), status: "valid" };
+  } catch {
+    return { status: "corrupt" };
   }
 }
 
@@ -178,12 +167,92 @@ async function repairPointer(
   generation: string,
 ): Promise<void> {
   try {
-    if ((await storage.getItem(POINTER_KEY)) !== generation) {
-      await storage.setItem(POINTER_KEY, generation);
+    if (
+      (await boundedStorageOperation(() => storage.getItem(POINTER_KEY))) !==
+      generation
+    ) {
+      await boundedStorageOperation(() =>
+        storage.setItem(POINTER_KEY, generation),
+      );
     }
   } catch {
-    // Immutable generations remain authoritative when pointer repair fails.
+    // The immutable generation remains authoritative when pointer repair fails.
   }
+}
+
+function encodeGeneration(files: HeroBuildSnapshotFiles): string {
+  const envelope = JSON.stringify({
+    manifestJson: files.manifestJson,
+    resourceJson: files.resourceJson,
+  });
+  ensureEnvelopeBudget(envelope);
+  return envelope;
+}
+
+function parseGeneration(envelope: string): ParsedHeroBuildSnapshot {
+  ensureEnvelopeBudget(envelope);
+  const value = JSON.parse(envelope) as unknown;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("Hero build snapshot generation envelope is invalid");
+  }
+  const keys = Object.keys(value);
+  if (
+    keys.length !== 2 ||
+    !keys.includes("manifestJson") ||
+    !keys.includes("resourceJson")
+  ) {
+    throw new Error("Hero build snapshot generation fields are invalid");
+  }
+  const { manifestJson, resourceJson } = value as Record<string, unknown>;
+  if (typeof manifestJson !== "string" || typeof resourceJson !== "string") {
+    throw new Error("Hero build snapshot generation payload is invalid");
+  }
+  return parseHeroBuildSnapshot(manifestJson, resourceJson);
+}
+
+function ensureEnvelopeBudget(envelope: string): void {
+  if (new TextEncoder().encode(envelope).byteLength > MAX_GENERATION_ENVELOPE_BYTES) {
+    throw new Error("Hero build snapshot generation envelope exceeds its budget");
+  }
+}
+
+function boundedStorageOperation<T>(operation: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(
+        new SnapshotStorageTimeoutError(
+          "Hero build snapshot storage operation timed out",
+        ),
+      );
+    }, HERO_BUILD_SNAPSHOT_STORAGE_TIMEOUT_MS);
+
+    let pending: Promise<T>;
+    try {
+      pending = operation();
+    } catch (error) {
+      settled = true;
+      clearTimeout(timer);
+      reject(error);
+      return;
+    }
+    void pending.then(
+      (value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
 }
 
 function compareParsedFreshness(
@@ -204,12 +273,6 @@ function compareParsedFreshness(
 
 function compareStrings(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
-}
-
-function getGenerationFromKey(key: string): string | null {
-  if (!key.endsWith(COMMITTED_SUFFIX)) return null;
-  const generation = key.slice(0, -COMMITTED_SUFFIX.length);
-  return GENERATION_PATTERN.test(generation) ? generation : null;
 }
 
 function toParsed(
