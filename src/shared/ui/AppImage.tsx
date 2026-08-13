@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef } from "react";
 import {
-  Image,
+  Animated,
+  Easing,
   type ImageResizeMode,
   StyleSheet,
   View,
@@ -8,7 +9,11 @@ import {
 
 import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
 
-type AppImageStatus = "error" | "loaded" | "loading";
+import { PixelIconLoader } from "./PixelIconLoader";
+import {
+  ICON_LOADER_FINISH_MS,
+  useImageLoadingTransition,
+} from "./useImageLoadingTransition";
 
 type AppImageProps = {
   accessibilityLabel: string;
@@ -34,17 +39,45 @@ export function AppImage({
   width,
 }: AppImageProps) {
   const uri = source ? resolveAssetUri(source) : null;
-  const [imageState, setImageState] = useState<{
-    status: AppImageStatus;
-    uri: string | null;
-  }>({
-    status: "loading",
-    uri,
-  });
-  const status = imageState.uri === uri ? imageState.status : "loading";
+  const { handleError, handleLoad, phase, prefersReducedMotion } =
+    useImageLoadingTransition(uri);
+  const revealProgress = useRef(new Animated.Value(0)).current;
+  const revealAnimation = useRef<Animated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    revealAnimation.current?.stop();
+    revealAnimation.current = null;
+
+    if (phase === "finishing-loaded" && !prefersReducedMotion) {
+      revealProgress.setValue(0);
+      revealAnimation.current = Animated.timing(revealProgress, {
+        duration: ICON_LOADER_FINISH_MS,
+        easing: Easing.out(Easing.cubic),
+        toValue: 1,
+        useNativeDriver: true,
+      });
+      revealAnimation.current.start();
+    } else if (phase === "loaded") {
+      revealProgress.setValue(1);
+    } else {
+      revealProgress.setValue(0);
+    }
+
+    return () => {
+      revealAnimation.current?.stop();
+      revealAnimation.current = null;
+    };
+  }, [phase, prefersReducedMotion, revealProgress]);
 
   const geometry = { borderRadius, height, width };
-  const fallbackStatus = source ? status : "loading";
+  const isRevealing = phase === "finishing-loaded" && !prefersReducedMotion;
+  const isVisible = phase === "loaded" || isRevealing;
+  const showsPlainFallback = phase === "missing" || phase === "pending";
+  const showsPixelLoader =
+    phase === "animating" ||
+    phase === "finishing-loaded" ||
+    phase === "finishing-error" ||
+    phase === "error";
 
   return (
     <View
@@ -53,33 +86,65 @@ export function AppImage({
       style={[styles.container, geometry]}
       testID={testID}
     >
-      {status !== "loaded" ? (
+      {showsPlainFallback ? (
         <View
           pointerEvents="none"
           style={[
             styles.fallback,
             !source && styles.missingFallback,
-            fallbackStatus === "error" && styles.errorFallback,
             geometry,
           ]}
           testID={
             testID
-              ? fallbackStatus === "error"
-                ? `${testID}-error`
-                : `${testID}-placeholder`
+              ? `${testID}-placeholder`
               : undefined
           }
         />
       ) : null}
 
+      {showsPixelLoader ? (
+        <View
+          pointerEvents="none"
+          style={[styles.pixelLayer, geometry]}
+          testID={phase === "error" && testID ? `${testID}-error` : undefined}
+        >
+          <PixelIconLoader
+            borderRadius={borderRadius}
+            height={height}
+            phase={phase}
+            prefersReducedMotion={prefersReducedMotion}
+            testID={testID}
+            width={width}
+          />
+        </View>
+      ) : null}
+
       {uri ? (
-        <Image
+        <Animated.Image
           accessible={false}
-          onError={() => setImageState({ status: "error", uri })}
-          onLoad={() => setImageState({ status: "loaded", uri })}
+          onError={() => handleError(uri)}
+          onLoad={() => handleLoad(uri)}
           resizeMode={resizeMode}
           source={{ cache: "force-cache", uri }}
-          style={[styles.image, geometry, status !== "loaded" && styles.hidden]}
+          style={[
+            styles.image,
+            geometry,
+            isVisible
+              ? {
+                  opacity: revealProgress,
+                  transform: prefersReducedMotion
+                    ? undefined
+                    : [
+                        {
+                          scale: revealProgress.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.94, 1],
+                          }),
+                        },
+                      ],
+                }
+              : styles.hidden,
+          ]}
         />
       ) : null}
     </View>
@@ -109,8 +174,8 @@ const styles = StyleSheet.create({
     borderColor: "#6b5645",
     backgroundColor: "transparent",
   },
-  errorFallback: {
-    borderColor: "#8f4f45",
-    backgroundColor: "#321914",
+  pixelLayer: {
+    position: "absolute",
+    inset: 0,
   },
 });
