@@ -40,6 +40,7 @@ export function useImageLoadingTransition(
   const showTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finishTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasReceivedMotionEvent = useRef(false);
+  const reducedMotionValue = useRef(true);
   const [state, setState] = useState<ImageLoadingState>(() =>
     createInitialState(uri),
   );
@@ -63,7 +64,12 @@ export function useImageLoadingTransition(
 
     void AccessibilityInfo.isReduceMotionEnabled()
       .then((isEnabled) => {
-        if (isMounted && !hasReceivedMotionEvent.current) {
+        if (
+          isMounted &&
+          !hasReceivedMotionEvent.current &&
+          reducedMotionValue.current !== isEnabled
+        ) {
+          reducedMotionValue.current = isEnabled;
           setPrefersReducedMotion(isEnabled);
         }
       })
@@ -76,7 +82,8 @@ export function useImageLoadingTransition(
       (isEnabled) => {
         hasReceivedMotionEvent.current = true;
 
-        if (isMounted) {
+        if (isMounted && reducedMotionValue.current !== isEnabled) {
+          reducedMotionValue.current = isEnabled;
           setPrefersReducedMotion(isEnabled);
         }
       },

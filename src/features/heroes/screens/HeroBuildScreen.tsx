@@ -344,6 +344,7 @@ export function HeroBuildScreen({
     paddingTop: SCREEN_HEADER_HEIGHT + top + 10,
     paddingBottom: SCREEN_PADDING + bottom,
   };
+  const isInitialContentLoading = isBuildLoading || !criticalImagesReady;
 
   if (!hero) {
     return (
@@ -362,93 +363,95 @@ export function HeroBuildScreen({
       <ScrollView
         contentContainerStyle={[styles.container, contentPadding]}
       >
-        {!criticalImagesReady ? (
-          <ScreenLoader label="Подготавливаем иконки" />
+        {isInitialContentLoading ? (
+          <ScreenLoader
+            label={
+              isBuildLoading ? "Загружаем билд" : "Подготавливаем иконки"
+            }
+          />
         ) : (
-          <View style={styles.section}>
-            <HeroMetadataRow hero={hero} />
-          </View>
-        )}
-
-        {criticalImagesReady && isAuthChecked && adminSession ? (
-          <View style={[styles.section, styles.adminActions]}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={handleEditBuild}
-              style={[styles.adminButton, styles.secondaryAdminButton]}
-            >
-              <Text
-                style={[
-                  styles.adminButtonText,
-                  styles.secondaryAdminButtonText,
-                ]}
-              >
-                Редактировать
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {criticalImagesReady && isBuildLoading ? (
-          <ScreenLoader label="Загружаем билд" />
-        ) : null}
-
-        {criticalImagesReady && sortedTabs.length > 0 ? (
-          <View style={styles.section}>
-            <HeroBuildTabsSection
-              childTabs={childFolderTabs}
-              onSelectChildTab={handleSelectChildTab}
-              onSelectTab={handleSelectTopTab}
-              selectedChildTabId={activeChildId}
-              selectedTabId={activeTopId}
-              tabs={topFolderTabs}
-            />
-          </View>
-        ) : null}
-
-        {criticalImagesReady && view ? (
           <>
             <View style={styles.section}>
-              <HeroBuildEquipmentSection
-                artifactIds={view.artifactIds}
-                runeIds={view.runeIds}
-              />
+              <HeroMetadataRow hero={hero} />
             </View>
 
-            <View style={styles.section}>
-              <HeroBuildWeaponAwakeningSection
-                bonuses={weaponAwakeningBonuses}
-                selections={view.weaponAwakeningSelections}
-              />
-            </View>
+            {isAuthChecked && adminSession ? (
+              <View style={[styles.section, styles.adminActions]}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={handleEditBuild}
+                  style={[styles.adminButton, styles.secondaryAdminButton]}
+                >
+                  <Text
+                    style={[
+                      styles.adminButtonText,
+                      styles.secondaryAdminButtonText,
+                    ]}
+                  >
+                    Редактировать
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
 
-            <View style={styles.section}>
-              <DivinitySkillLoadoutSection
-                awakenedEnabled={hasVisibleAwakenedSkills(
-                  view.divinitySkills.awakened,
-                )}
-                awakenedSkillIds={
-                  hasVisibleAwakenedSkills(view.divinitySkills.awakened)
-                    ? view.divinitySkills.awakened
-                    : []
-                }
-                baseSkillIds={view.divinitySkills.base}
-                branches={divinityBranches}
-                readOnly
-                skills={divinitySkills}
-              />
-            </View>
+            {sortedTabs.length > 0 ? (
+              <View style={styles.section}>
+                <HeroBuildTabsSection
+                  childTabs={childFolderTabs}
+                  onSelectChildTab={handleSelectChildTab}
+                  onSelectTab={handleSelectTopTab}
+                  selectedChildTabId={activeChildId}
+                  selectedTabId={activeTopId}
+                  tabs={topFolderTabs}
+                />
+              </View>
+            ) : null}
 
-            <View style={styles.section}>
-              <HeroBuildBranchSection view={view} />
-            </View>
+            {view ? (
+              <>
+                <View style={styles.section}>
+                  <HeroBuildEquipmentSection
+                    artifactIds={view.artifactIds}
+                    runeIds={view.runeIds}
+                  />
+                </View>
+
+                <View style={styles.section}>
+                  <HeroBuildWeaponAwakeningSection
+                    bonuses={weaponAwakeningBonuses}
+                    selections={view.weaponAwakeningSelections}
+                  />
+                </View>
+
+                <View style={styles.section}>
+                  <DivinitySkillLoadoutSection
+                    awakenedEnabled={hasVisibleAwakenedSkills(
+                      view.divinitySkills.awakened,
+                    )}
+                    awakenedSkillIds={
+                      hasVisibleAwakenedSkills(view.divinitySkills.awakened)
+                        ? view.divinitySkills.awakened
+                        : []
+                    }
+                    baseSkillIds={view.divinitySkills.base}
+                    branches={divinityBranches}
+                    readOnly
+                    skills={divinitySkills}
+                  />
+                </View>
+
+                <View style={styles.section}>
+                  <HeroBuildBranchSection view={view} />
+                </View>
+              </>
+            ) : (
+              <View style={styles.placeholderCard}>
+                <Text style={styles.placeholderText}>
+                  Билд для этого режима ещё не готов.
+                </Text>
+              </View>
+            )}
           </>
-        ) : isBuildLoading || !criticalImagesReady ? null : (
-          <View style={styles.placeholderCard}>
-            <Text style={styles.placeholderText}>
-              Билд для этого режима ещё не готов.
-            </Text>
-          </View>
         )}
       </ScrollView>
     </View>

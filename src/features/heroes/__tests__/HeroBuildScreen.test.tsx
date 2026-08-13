@@ -184,6 +184,50 @@ describe("HeroBuildScreen", () => {
     expect(screen.getByText("Axe of Pangu")).toBeTruthy();
   });
 
+  test("keeps one loader mounted across backend and critical image phases", async () => {
+    let resolveBuild!: (source: unknown) => void;
+    mockGetSupabaseClient.mockReturnValue({});
+    mockUseCriticalImagePreload.mockReturnValue(false);
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockReturnValue(
+      new Promise((resolve) => {
+        resolveBuild = resolve;
+      }),
+    );
+
+    const view = render(
+      <HeroBuildScreen heroId="bastet" initialAdminSession={null} />,
+    );
+    const initialLoaderMark = screen.getByTestId("screen-loader-mark");
+
+    expect(
+      screen.getByRole("progressbar", { name: "Загружаем билд" }),
+    ).toBeTruthy();
+
+    await act(async () => {
+      resolveBuild({
+        source: "remote",
+        snapshot: {
+          heroBuilds: [
+            { buildSet: getHeroBuildSet("bastet"), heroId: "bastet" },
+          ],
+        },
+      });
+    });
+
+    expect(
+      screen.getByRole("progressbar", { name: "Подготавливаем иконки" }),
+    ).toBeTruthy();
+    expect(screen.getByTestId("screen-loader-mark")).toBe(initialLoaderMark);
+    expect(screen.queryByText("Axe of Pangu")).toBeNull();
+
+    mockUseCriticalImagePreload.mockReturnValue(true);
+    view.rerender(
+      <HeroBuildScreen heroId="bastet" initialAdminSession={null} />,
+    );
+
+    expect(screen.getByText("Axe of Pangu")).toBeTruthy();
+  });
+
   test("defaults to the first ready build path", () => {
     render(<HeroBuildScreen heroId="bastet" />);
 
