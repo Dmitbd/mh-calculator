@@ -40,6 +40,8 @@
 - [antique-rivalry-rewards.json](../src/features/game-data/antiques/antique-rivalry-rewards.json)
 - [InstructionButton.tsx](../src/shared/ui/InstructionButton.tsx)
 - [CalculatorManualScreen.tsx](../src/shared/ui/CalculatorManualScreen.tsx)
+- [AppImage.tsx](../src/shared/ui/AppImage.tsx)
+- [PixelIconLoader.tsx](../src/shared/ui/PixelIconLoader.tsx)
 
 ## Input Model
 
@@ -145,7 +147,7 @@ type AntiqueCalculatorRecord = AntiqueCalculatorInput & {
 
 Монеты исследования и сундук соперничества остаются `unresolved`, даже если для UI есть локальный PNG. Это разделяет визуальный ассет и доказанный игровой ID.
 
-Если `resource.icon` задан, [AntiqueResourceIcon](../src/features/antiques/components/AntiqueResourceIcon.tsx) использует `resolveAssetUri`. Если иконки нет, показывается контролируемая текстовая заглушка с accessibility label. Broken URI и молчаливое использование чужого ID запрещены.
+Если `resource.icon` задан, [AntiqueResourceIcon](../src/features/antiques/components/AntiqueResourceIcon.tsx) использует общий `AppImage`. Он сохраняет размер, после `120` мс заметной загрузки показывает локальный пиксельный ряд и даёт уже видимому движению не более `400` мс на завершение перед плавным раскрытием. Сундуки reward track проходят через тот же boundary, но остаются декоративными внутри доступной карточки сундука. Ошибка становится статичной пиксельной заглушкой, reduced motion не запускает движение. Если иконки нет, сохраняется контролируемая текстовая заглушка с accessibility label. Broken URI и молчаливое использование чужого ID запрещены.
 
 ## Failure And Boundary Behavior
 

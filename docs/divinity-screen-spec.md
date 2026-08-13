@@ -47,6 +47,8 @@
 - [src/features/divinity/screens/DivinityManualScreen.tsx](../src/features/divinity/screens/DivinityManualScreen.tsx)
 - [src/shared/ui/InstructionButton.tsx](../src/shared/ui/InstructionButton.tsx)
 - [src/shared/ui/CalculatorManualScreen.tsx](../src/shared/ui/CalculatorManualScreen.tsx)
+- [src/shared/ui/AppImage.tsx](../src/shared/ui/AppImage.tsx)
+- [src/shared/ui/PixelIconLoader.tsx](../src/shared/ui/PixelIconLoader.tsx)
 
 ## Data Model
 
@@ -291,6 +293,7 @@ type DivinityProgressRecord = {
 - `1` и `2` уровни не должны выглядеть как квадратная плоскость;
 - фигуры должны читаться как отдельные геометрические типы.
 - все семь уровней используют отдельные PNG из `public/img/divinity/gems` через стабильные `/img/...` пути и `resolveAssetUri`.
+- самоцветы и сундуки используют общий `AppImage`: фиксируют конечный размер, после `120` мс заметной загрузки показывают локальный пиксельный ряд, завершают уже видимое движение не дольше `400` мс и плавно раскрывают изображение; ошибка остаётся контролируемой пиксельной заглушкой, reduced motion — статичным состоянием.
 
 ## Owned Resources
 

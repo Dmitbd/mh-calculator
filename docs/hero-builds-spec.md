@@ -43,6 +43,8 @@
 - [heroBuildSetRepository.ts](../src/features/builds/api/heroBuildSetRepository.ts)
 - [ScreenLoader.tsx](../src/shared/ui/ScreenLoader.tsx)
 - [AppImage.tsx](../src/shared/ui/AppImage.tsx)
+- [PixelIconLoader.tsx](../src/shared/ui/PixelIconLoader.tsx)
+- [useImageLoadingTransition.ts](../src/shared/ui/useImageLoadingTransition.ts)
 - [imagePreload.ts](../src/shared/lib/imagePreload.ts)
 - [heroCriticalImages.ts](../src/features/heroes/utils/heroCriticalImages.ts)
 - [boundedRequest.ts](../src/shared/lib/boundedRequest.ts)
@@ -143,9 +145,9 @@ Fresh migration chain явно выдаёт table-level `SELECT` на `hero_buil
 
 `ScreenLoader` имеет полноэкранный и встроенный режимы с зарезервированной высотой, ролью `progressbar` и видимой подписью. Общая композиция использует emoji-молнию с мягким пульсом, расходящееся кольцо и две круглые искры на вращающейся орбите. Две независимые анимации построены на React Native `Animated`, останавливаются при unmount, а при системном reduced motion вся композиция остаётся видимой и статичной.
 
-После выбора `heroId` экран отдельно предзагружает только portrait, rarity, role, factions и element выбранного героя и до завершения этой ограниченной попытки, но не дольше `3` секунд, показывает общий loader вместо основного содержимого нового героя. Все эти URL проходят через `resolveAssetUri`, поэтому production web использует `/mh-calculator/img/...`, а native — настроенный `assetOrigin`.
+После выбора `heroId` экран отдельно предзагружает только portrait, rarity, role, factions и element выбранного героя и до завершения этой ограниченной попытки, но не дольше `3` секунд, показывает общий loader вместо основного содержимого нового героя. Backend и critical-image gate являются одним непрерывным блокирующим состоянием: `ScreenLoader` не размонтируется между ними, меняется только подпись. Все эти URL проходят через `resolveAssetUri`, поэтому production web использует `/mh-calculator/img/...`, а native — настроенный `assetOrigin`.
 
-`AppImage` сохраняет конечные `width`, `height` и `borderRadius` до завершения fetch/decode, использует platform cache (`force-cache`, где он поддерживается), раскрывает изображение через `onLoad` и оставляет контролируемую заглушку через `onError`. `IconPreview` сохраняет прежние accessibility labels поверх этого boundary; ошибка и отсутствие source не заменяются текстом и не меняют геометрию строки или карточки.
+`AppImage` — общий boundary остальных иконок приложения. Он сохраняет конечные `width`, `height` и `borderRadius` до завершения fetch/decode и использует platform cache (`force-cache`, где он поддерживается). Если `onLoad` приходит раньше `120` мс, изображение раскрывается без анимации. Иначе появляется локальный `PixelIconLoader`: четыре кубика падают в ряд как в «Тетрисе», а после `onLoad` или `onError` уже видимое движение получает не более `400` мс на завершение. Затем изображение плавно проявляется; ошибка остаётся статичной пиксельной заглушкой, а отсутствие source — отдельным пунктирным placeholder. При reduced motion анимации не запускаются. Responsive-иконки сначала измеряют реальный layout, декоративные изображения могут быть исключены из accessibility дерева, не дублируя подпись родительской карточки. `IconPreview` сохраняет прежние accessibility labels поверх этого boundary.
 
 ## Build Set And Tabs
 
@@ -305,6 +307,8 @@ Parser остаётся ограниченным текущим `HeroBuildSet` �
 - [runtimeDiagnostics.test.ts](../src/shared/lib/__tests__/runtimeDiagnostics.test.ts)
 - [AppErrorBoundary.test.tsx](../src/shared/ui/__tests__/AppErrorBoundary.test.tsx)
 - [ScreenLoader.test.tsx](../src/shared/ui/__tests__/ScreenLoader.test.tsx)
+- [AppImage.test.tsx](../src/shared/ui/__tests__/AppImage.test.tsx)
+- [useImageLoadingTransition.test.tsx](../src/shared/ui/__tests__/useImageLoadingTransition.test.tsx)
 - [heroListFilters.test.ts](../src/features/heroes/__tests__/heroListFilters.test.ts)
 - [heroListGrouping.test.ts](../src/features/heroes/__tests__/heroListGrouping.test.ts)
 - [heroBuildTabsModel.test.ts](../src/features/heroes/__tests__/heroBuildTabsModel.test.ts)

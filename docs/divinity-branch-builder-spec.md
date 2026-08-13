@@ -41,6 +41,8 @@
 - [src/features/builds/components/MajorSkillPicker.tsx](../src/features/builds/components/MajorSkillPicker.tsx) — список выбора скилла
 - [src/shared/ui/IconPreview.tsx](../src/shared/ui/IconPreview.tsx) — иконка или пунктирный плейсхолдер
 - [src/shared/ui/AppImage.tsx](../src/shared/ui/AppImage.tsx) — общий фиксированный loading/error-контейнер URL-изображения
+- [src/shared/ui/PixelIconLoader.tsx](../src/shared/ui/PixelIconLoader.tsx) — локальная пиксельная анимация «Тетрис-ряд» для иконок
+- [src/shared/ui/useImageLoadingTransition.ts](../src/shared/ui/useImageLoadingTransition.ts) — anti-flicker, завершение движения, error и reduced-motion состояния
 - [src/shared/ui/ScreenLoader.tsx](../src/shared/ui/ScreenLoader.tsx) — общий полноэкранный и встроенный loader
 - [src/features/admin/hooks/useDivinityBranchBuilder.ts](../src/features/admin/hooks/useDivinityBranchBuilder.ts) — состояние и экспорт
 - [src/features/admin/model/builderEditorReducer.ts](../src/features/admin/model/builderEditorReducer.ts) — чистые переходы редактируемого draft
@@ -205,7 +207,8 @@ type ActiveBranchNode = {
 
 - если `source` задан — рисует изображение;
 - если иконки нет — пустой круг с пунктирной обводкой (без буквы).
-- если URL ещё загружается или завершился ошибкой, внешний размер круга не меняется; `AppImage` сохраняет доступную подпись, loading placeholder и контролируемый error fallback.
+- если URL ещё загружается или завершился ошибкой, внешний размер круга не меняется; после `120` мс `AppImage` показывает пиксельный ряд, даёт видимому движению до `400` мс на завершение и сохраняет доступную подпись либо декоративный статус родительского элемента;
+- этот же boundary используется портретами селектора героя, web/native иконками веток, цветами пробуждения и активными бонусами; он не включает полноэкранный loader и в reduced-motion режиме остаётся статичным.
 
 ## Major Skill Logic
 
@@ -505,6 +508,8 @@ Reducer вычисляет следующий цвет пробуждения и
 - [heroGuideSelectorModel.test.ts](../src/features/admin/__tests__/heroGuideSelectorModel.test.ts) — взаимоисключающие списки героев;
 - [HeroGuideSelector.test.tsx](../src/features/admin/__tests__/HeroGuideSelector.test.tsx) — loading/error/группы селектора;
 - [ScreenLoader.test.tsx](../src/shared/ui/__tests__/ScreenLoader.test.tsx) — режимы, accessibility, reduced motion и cleanup анимации;
+- [AppImage.test.tsx](../src/shared/ui/__tests__/AppImage.test.tsx) и [useImageLoadingTransition.test.tsx](../src/shared/ui/__tests__/useImageLoadingTransition.test.tsx) — пиксельный loader, anti-flicker, responsive layout, завершение, ошибка и reduced motion;
+- [WeaponAwakeningPicker.test.tsx](../src/features/builds/__tests__/WeaponAwakeningPicker.test.tsx) и [WeaponAwakeningBonusList.test.tsx](../src/features/builds/__tests__/WeaponAwakeningBonusList.test.tsx) — иконки цветов внутри уже доступных элементов;
 - [EquipmentVariantBuilder.test.tsx](../src/features/admin/__tests__/EquipmentVariantBuilder.test.tsx) — варианты экипировки;
 - [weaponAwakening.test.ts](../src/features/admin/__tests__/weaponAwakening.test.ts) — selections пробуждения;
 
