@@ -4,7 +4,7 @@ import {
   screen,
   within,
 } from "@testing-library/react-native";
-import { StyleSheet } from "react-native";
+import { AccessibilityInfo, StyleSheet } from "react-native";
 
 import heroesData from "@/features/game-data/heroes/heroes.json";
 import { heroFactions } from "@/features/game-data/heroes/heroDictionaries";
@@ -29,7 +29,20 @@ const props = {
   selectedHeroId: null,
 };
 
-beforeEach(() => jest.clearAllMocks());
+let consoleError: jest.SpyInstance;
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  consoleError = jest.spyOn(console, "error");
+  jest
+    .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
+    .mockResolvedValue(true);
+});
+
+afterEach(() => {
+  expect(consoleError).not.toHaveBeenCalled();
+  jest.restoreAllMocks();
+});
 
 it("renders not-created before unfinished heroes", () => {
   render(<HeroGuideSelector {...props} />);

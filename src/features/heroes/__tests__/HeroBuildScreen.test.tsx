@@ -46,6 +46,7 @@ jest.mock("@/features/builds", () => {
 });
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { AccessibilityInfo } from "react-native";
 
 import { getHeroBuildSet } from "@/features/game-data/heroes/heroBuilds";
 import { HeroBuildScreen } from "@/features/heroes/screens/HeroBuildScreen";
@@ -56,10 +57,15 @@ import {
 
 describe("HeroBuildScreen", () => {
   let diagnostic: jest.SpyInstance;
+  let consoleError: jest.SpyInstance;
 
   beforeEach(() => {
     jest.useRealTimers();
     diagnostic = jest.spyOn(console, "info").mockImplementation();
+    consoleError = jest.spyOn(console, "error");
+    jest
+      .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
+      .mockResolvedValue(true);
     mockRouter.back.mockClear();
     mockRouter.canGoBack.mockClear();
     mockRouter.push.mockClear();
@@ -70,6 +76,7 @@ describe("HeroBuildScreen", () => {
   });
 
   afterEach(() => {
+    expect(consoleError).not.toHaveBeenCalled();
     jest.restoreAllMocks();
   });
 
