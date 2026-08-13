@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export type InstructionButtonProps = {
   accessibilityLabel: string;
-  onPress: () => void;
+  onPress(): void;
   title?: string;
 };
 
