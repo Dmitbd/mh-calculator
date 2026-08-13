@@ -1,18 +1,11 @@
-jest.mock("@/shared/ui/useImageLoadingTransition", () => {
-  const actual = jest.requireActual(
-    "@/shared/ui/useImageLoadingTransition",
-  );
-
-  return {
-    ...actual,
-    useImageLoadingTransition: () => ({
-      handleError: jest.fn(),
-      handleLoad: jest.fn(),
-      phase: "pending",
-      prefersReducedMotion: true,
-    }),
-  };
-});
+jest.mock("@/shared/ui/useImageLoadingTransition", () => ({
+  useImageLoadingTransition: () => ({
+    handleError: jest.fn(),
+    handleLoad: jest.fn(),
+    phase: "pending",
+    prefersReducedMotion: true,
+  }),
+}));
 
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react-native";
 import { Image, Platform, ScrollView, StyleSheet, Text, View } from "react-native";

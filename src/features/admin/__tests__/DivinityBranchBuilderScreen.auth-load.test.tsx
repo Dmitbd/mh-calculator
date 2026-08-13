@@ -1,3 +1,12 @@
+jest.mock("@/shared/ui/useImageLoadingTransition", () => ({
+  useImageLoadingTransition: () => ({
+    handleError: jest.fn(),
+    handleLoad: jest.fn(),
+    phase: "pending",
+    prefersReducedMotion: true,
+  }),
+}));
+
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react-native";
 import { Alert, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { HeroBuildSetRepositoryError, type HeroBuildSetRecord, type HeroBuildSetStatusIds } from "@/features/builds";
