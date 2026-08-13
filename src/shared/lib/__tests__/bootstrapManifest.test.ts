@@ -1,89 +1,63 @@
 import {
-  BOOTSTRAP_MAX_PAGES,
-  BOOTSTRAP_PAGE_SIZE,
   BootstrapManifestError,
-  createHeroBuildsBootstrapManifest,
-  loadPublishedHeroBuildMetadata,
-  type PublishedHeroBuildMetadata,
+  parseBootstrapManifestRpcResponse,
 } from "../../../../supabase/functions/bootstrap/manifest";
 
-async function digestSha256(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(value),
-  );
-  return Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, "0"),
-  ).join("");
-}
+const ZERO_ROWS_ETAG = `sha256:${
+  "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+}`;
 
-function row(index: number): PublishedHeroBuildMetadata {
+function rpcRow(overrides: Record<string, unknown> = {}) {
   return {
-    hero_id: `hero-${String(index).padStart(5, "0")}`,
-    revision: 1,
-    updated_at: "2026-08-13T00:00:00.000Z",
+    published_count: 0,
+    version: "hero-builds:4f53cda18c2baa0c",
+    etag: ZERO_ROWS_ETAG,
+    ...overrides,
   };
 }
 
-describe("bootstrap Edge manifest", () => {
-  test("paginates beyond 1000 and a tail mutation changes the etag", async () => {
-    const rows = Array.from({ length: 1_205 }, (_, index) => row(index));
-    const fetchPage = jest.fn(async (from: number, to: number) => ({
-      data: rows.slice(from, to + 1),
-      error: null,
-    }));
-    const loaded = await loadPublishedHeroBuildMetadata(fetchPage);
-    const first = await createHeroBuildsBootstrapManifest(loaded, digestSha256);
-    const changed = await createHeroBuildsBootstrapManifest(
-      loaded.map((item, index) =>
-        index === loaded.length - 1 ? { ...item, revision: 2 } : item,
-      ),
-      digestSha256,
-    );
-
-    expect(fetchPage).toHaveBeenNthCalledWith(1, 0, BOOTSTRAP_PAGE_SIZE - 1);
-    expect(fetchPage).toHaveBeenNthCalledWith(
-      2,
-      BOOTSTRAP_PAGE_SIZE,
-      BOOTSTRAP_PAGE_SIZE * 2 - 1,
-    );
-    expect(loaded).toHaveLength(1_205);
-    expect(changed.resources.heroBuilds.etag).not.toBe(
-      first.resources.heroBuilds.etag,
-    );
-  });
-
-  test("fails closed on a page error", async () => {
-    await expect(
-      loadPublishedHeroBuildMetadata(async () => ({
-        data: null,
-        error: { message: "database unavailable" },
-      })),
-    ).rejects.toBeInstanceOf(BootstrapManifestError);
-  });
-
-  test("fails closed when page ordering makes no unique progress", async () => {
-    const fullPage = Array.from({ length: BOOTSTRAP_PAGE_SIZE }, (_, index) =>
-      row(index),
-    );
-    await expect(
-      loadPublishedHeroBuildMetadata(async () => ({
-        data: fullPage,
-        error: null,
-      })),
-    ).rejects.toBeInstanceOf(BootstrapManifestError);
-  });
-
-  test("fails closed at the total page budget instead of hashing a partial manifest", async () => {
-    await expect(
-      loadPublishedHeroBuildMetadata(async (from) => ({
-        data: Array.from({ length: BOOTSTRAP_PAGE_SIZE }, (_, index) =>
-          row(from + index),
-        ),
-        error: null,
-      })),
-    ).rejects.toMatchObject({
-      message: expect.stringContaining(String(BOOTSTRAP_MAX_PAGES)),
+describe("bootstrap Edge manifest RPC response", () => {
+  test("accepts the deterministic zero-row manifest", () => {
+    expect(parseBootstrapManifestRpcResponse([rpcRow()])).toEqual({
+      publishedCount: 0,
+      version: "hero-builds:4f53cda18c2baa0c",
+      etag: ZERO_ROWS_ETAG,
     });
+  });
+
+  test("accepts a complete count beyond the Data API row cap", () => {
+    expect(
+      parseBootstrapManifestRpcResponse([
+        rpcRow({ published_count: 1_205 }),
+      ]).publishedCount,
+    ).toBe(1_205);
+  });
+
+  test.each([
+    ["not an array", rpcRow()],
+    ["no rows", []],
+    ["multiple rows", [rpcRow(), rpcRow()]],
+    ["missing field", [{ version: rpcRow().version, etag: ZERO_ROWS_ETAG }]],
+    ["extra field", [rpcRow({ payload: {} })]],
+    ["negative count", [rpcRow({ published_count: -1 })]],
+    ["fractional count", [rpcRow({ published_count: 1.5 })]],
+    ["oversized count", [rpcRow({ published_count: 100_001 })]],
+    ["invalid etag", [rpcRow({ etag: "sha256:not-a-digest" })]],
+    ["mismatched version", [rpcRow({ version: "hero-builds:ffffffffffffffff" })]],
+  ])("rejects malformed response: %s", (_label, value) => {
+    expect(() => parseBootstrapManifestRpcResponse(value)).toThrow(
+      BootstrapManifestError,
+    );
+  });
+
+  test("rejects accessor-backed fields without invoking them", () => {
+    const getter = jest.fn(() => 0);
+    const value = rpcRow();
+    Object.defineProperty(value, "published_count", { get: getter });
+
+    expect(() => parseBootstrapManifestRpcResponse([value])).toThrow(
+      BootstrapManifestError,
+    );
+    expect(getter).not.toHaveBeenCalled();
   });
 });

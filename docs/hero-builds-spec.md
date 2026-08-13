@@ -50,6 +50,7 @@
 - [sourceSelection.ts](../src/shared/lib/sourceSelection.ts)
 - [bootstrap/index.ts](../supabase/functions/bootstrap/index.ts)
 - [bootstrap/manifest.ts](../supabase/functions/bootstrap/manifest.ts)
+- [atomic bootstrap manifest migration](../supabase/migrations/20260813180000_add_atomic_bootstrap_manifest_rpc.sql)
 - [heroes.json](../src/features/game-data/heroes/heroes.json)
 - [heroBuilds.ts](../src/features/game-data/heroes/heroBuilds.ts)
 - [heroBuildTabs.ts](../src/features/game-data/heroes/heroBuildTabs.ts)
@@ -114,7 +115,7 @@ Bootstrap body ограничен по фактическим UTF-8 байтам
 
 При настроенном Supabase первоначальная загрузка комплекта показывает общий `ScreenLoader` и не раскрывает bundled билд до завершения bootstrap и выбора remote/fallback ресурса. Смена route `heroId` атомарно сбрасывает комплект и active tab path до render нового заголовка, отменяет bounded wrapper прежнего ресурса и игнорирует его поздний transport-ответ; принятый комплект и его валидный default path также фиксируются одной state transition без промежуточного empty-state. Без клиента локальный комплект доступен сразу, а `not-configured` диагностируется тем же контролируемым сообщением ровно один раз на загрузку героя. Loader не имеет искусственной минимальной задержки и исчезает при любом контролируемом результате; timeout или неожиданное отклонение promise возвращает локальный fallback без unhandled rejection. Причина контролируемого fallback логируется только как стабильные `heroId` и `kind` (`not-configured | no-data | network | conflict | invalid-data | timeout | http | incompatible-schema | invalid-body`), без сырого backend error или пользовательских данных.
 
-Edge Function читает опубликованные строки через `SUPABASE_ANON_KEY` и действующую публичную RLS policy, без service-role bypass. Метаданные запрашиваются детерминированными страницами по `500` строк в уникальном порядке `hero_id`; ошибка, повтор/нарушение порядка, чрезмерная страница или достижение общего лимита `20` страниц закрывают bootstrap ошибкой, а не частичным manifest. По полному отсортированному набору `hero_id`, `revision` и `updated_at` SHA-256 одновременно задаёт resource etag и стабильную версию содержимого. Bootstrap является единственной проверкой доступности: внешнего ping, `navigator.onLine` или другого platform connectivity truth нет. Версионированный last-known-good cache и generated bundled snapshots остаются отдельной задачей; текущий fallback использует существующие bundled данные.
+Edge Function использует `SUPABASE_ANON_KEY` и одним вызовом обращается к узкому SQL RPC `get_published_hero_builds_bootstrap_manifest`. `SECURITY INVOKER`, явный `status = 'published'` и действующая публичная RLS policy исключают service-role bypass и draft/private данные. Внутри одного SQL statement и одного database snapshot RPC агрегирует полный набор `hero_id`, `revision` и UTC `updated_at` в стабильном порядке `hero_id`; поэтому лимит строк Data API и изменение между страницами не создают частичный или смешанный manifest. SHA-256 полного ordered aggregate одновременно задаёт resource etag и стабильную версию содержимого; RPC возвращает только `published_count`, `version`, `etag`, а Edge строго проверяет одну bounded строку до формирования публичного bootstrap. Пустой набор имеет детерминированный digest `[]`. Bootstrap является единственной проверкой доступности: внешнего ping, `navigator.onLine` или другого platform connectivity truth нет. Версионированный last-known-good cache и generated bundled snapshots остаются отдельной задачей; текущий fallback использует существующие bundled данные.
 
 Удалённые данные не должны мутировать локальные каталоги. Сетевые и Supabase-ошибки не должны скрывать корректный локальный комплект. Невалидный удалённый payload также не принимается: loader возвращает локальный fallback и через `onFallback` различает `no-data`, `network` и `invalid-data`, чтобы причина оставалась доступной для диагностики.
 
@@ -290,6 +291,7 @@ Parser остаётся ограниченным текущим `HeroBuildSet` �
 - [sourceSelection.test.ts](../src/shared/lib/__tests__/sourceSelection.test.ts)
 - [bootstrapEdgeFunction.test.js](../src/shared/lib/__tests__/bootstrapEdgeFunction.test.js)
 - [bootstrapManifest.test.ts](../src/shared/lib/__tests__/bootstrapManifest.test.ts)
+- [bootstrapManifestSql.test.js](../src/shared/lib/__tests__/bootstrapManifestSql.test.js)
 - [EquipmentVariantTabs.test.tsx](../src/features/builds/__tests__/EquipmentVariantTabs.test.tsx)
 - [WeaponAwakeningBonusList.test.tsx](../src/features/builds/__tests__/WeaponAwakeningBonusList.test.tsx)
 - [weaponAwakeningBonuses.test.ts](../src/features/game-data/weapon-awakening/__tests__/weaponAwakeningBonuses.test.ts)

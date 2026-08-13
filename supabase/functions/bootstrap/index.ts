@@ -1,9 +1,6 @@
 // @ts-nocheck -- Supabase Edge Functions are checked by the Deno runtime, not app tsc.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import {
-  createHeroBuildsBootstrapManifest,
-  loadPublishedHeroBuildMetadata,
-} from "./manifest.ts";
+import { parseBootstrapManifestRpcResponse } from "./manifest.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "authorization, apikey, content-type",
@@ -30,15 +27,21 @@ Deno.serve(async (request) => {
     auth: { persistSession: false },
   });
   try {
-    const rows = await loadPublishedHeroBuildMetadata(async (from, to) =>
-      await client
-        .from("hero_build_sets")
-        .select("hero_id,revision,updated_at")
-        .eq("status", "published")
-        .order("hero_id", { ascending: true })
-        .range(from, to)
+    const { data, error } = await client.rpc(
+      "get_published_hero_builds_bootstrap_manifest",
     );
-    return jsonResponse(await createHeroBuildsBootstrapManifest(rows));
+    if (error) {
+      throw error;
+    }
+    const manifest = parseBootstrapManifestRpcResponse(data);
+    return jsonResponse({
+      status: "ok",
+      contentVersion: manifest.version,
+      schemaVersion: 1,
+      resources: {
+        heroBuilds: { version: manifest.version, etag: manifest.etag },
+      },
+    });
   } catch {
     return jsonResponse({ status: "error" }, 503);
   }
