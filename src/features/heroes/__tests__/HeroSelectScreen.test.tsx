@@ -29,7 +29,7 @@ jest.mock("@/features/builds", () => ({
   fetchPublishedHeroIds: (...args: [unknown]) => mockFetchPublishedHeroIds(...args),
 }));
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
 import { heroes, heroesWithBuilds } from "@/features/game-data/heroes/heroBuilds";
 import { HeroSelectScreen } from "@/features/heroes/screens/HeroSelectScreen";
@@ -91,14 +91,88 @@ describe("HeroSelectScreen", () => {
 
     expect(screen.getByLabelText("Поиск героя")).toBeTruthy();
     expect(screen.getByText("Роль")).toBeTruthy();
-    expect(screen.getByText("Загружаем билды...")).toBeTruthy();
+    expect(
+      screen.getByRole("progressbar", { name: "Загружаем билды" }),
+    ).toBeTruthy();
     expect(screen.queryByText("Бастет")).toBeNull();
 
     resolveHeroIds([]);
 
     await waitFor(() => {
-      expect(screen.queryByText("Загружаем билды...")).toBeNull();
+      expect(screen.queryByText("Загружаем билды")).toBeNull();
     });
+    expect(screen.queryByText("Бастет")).toBeNull();
+    expect(
+      screen.getByText("Нет героев с готовыми билдами по выбранным фильтрам."),
+    ).toBeTruthy();
+  });
+
+  test("shows only confirmed remote heroes after the initial check", async () => {
+    const remoteOnlyHero = heroes.find(
+      (hero) => !heroesWithBuilds.some((withBuild) => withBuild.id === hero.id),
+    );
+    expect(remoteOnlyHero).toBeDefined();
+    mockGetSupabaseClient.mockReturnValue({});
+    mockFetchPublishedHeroIds.mockResolvedValue([remoteOnlyHero!.id]);
+
+    render(<HeroSelectScreen />);
+
+    expect(await screen.findByText(remoteOnlyHero!.name.ru)).toBeTruthy();
+    expect(screen.queryByText("Бастет")).toBeNull();
+  });
+
+  test("falls back after a timeout and keeps fallback cards visible during retry", async () => {
+    const remoteOnlyHero = heroes.find(
+      (hero) => !heroesWithBuilds.some((withBuild) => withBuild.id === hero.id),
+    );
+    expect(remoteOnlyHero).toBeDefined();
+    let resolveRetry!: (heroIds: string[]) => void;
+    const retry = new Promise<string[]>((resolve) => {
+      resolveRetry = resolve;
+    });
+    mockGetSupabaseClient.mockReturnValue({});
+    mockFetchPublishedHeroIds
+      .mockRejectedValueOnce(new Error("timeout"))
+      .mockReturnValueOnce(retry);
+
+    render(<HeroSelectScreen />);
+
+    expect(await screen.findByText("Показаны локальные билды.")).toBeTruthy();
     expect(screen.getByText("Бастет")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Повторить"));
+
+    expect(screen.getByText("Бастет")).toBeTruthy();
+    expect(
+      screen.getByRole("progressbar", { name: "Обновляем список билдов" }),
+    ).toBeTruthy();
+
+    await act(async () => {
+      resolveRetry([remoteOnlyHero!.id]);
+    });
+
+    expect(await screen.findByText(remoteOnlyHero!.name.ru)).toBeTruthy();
+    expect(screen.queryByText("Бастет")).toBeNull();
+    expect(screen.queryByText("Показаны локальные билды.")).toBeNull();
+  });
+
+  test("does not update state after an initial request resolves post-unmount", async () => {
+    let resolveHeroIds!: (heroIds: string[]) => void;
+    mockGetSupabaseClient.mockReturnValue({});
+    mockFetchPublishedHeroIds.mockReturnValue(
+      new Promise<string[]>((resolve) => {
+        resolveHeroIds = resolve;
+      }),
+    );
+    const consoleError = jest.spyOn(console, "error").mockImplementation();
+
+    const view = render(<HeroSelectScreen />);
+    view.unmount();
+
+    await act(async () => {
+      resolveHeroIds(["bastet"]);
+    });
+
+    expect(consoleError).not.toHaveBeenCalled();
   });
 });

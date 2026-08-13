@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { router } from "expo-router";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -16,56 +16,105 @@ import {
 import { groupHeroesByZone } from "@/features/heroes/utils/heroListGrouping";
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
+import { ScreenLoader } from "@/shared/ui/ScreenLoader";
 import { getSupabaseClient } from "@/shared/lib/supabaseClient";
 
 const SCREEN_PADDING = 24;
+
+type HeroCatalogState = {
+  error: string | null;
+  isRefreshing: boolean;
+  remoteHeroIds: string[];
+  source: "checking" | "remote" | "fallback";
+};
 
 /** Экран выбора героя — фильтруемый список героев с готовыми билдами */
 export function HeroSelectScreen() {
   const { top, bottom } = useSafeAreaInsets();
   const [filters, setFilters] = useState(EMPTY_HERO_LIST_FILTERS);
-  const [remoteHeroIds, setRemoteHeroIds] = useState<string[]>([]);
-  const [isRemoteBuildsLoading, setIsRemoteBuildsLoading] = useState(false);
+  const [client] = useState(() => getSupabaseClient());
+  const isMounted = useRef(true);
+  const requestId = useRef(0);
+  const [catalogState, setCatalogState] = useState<HeroCatalogState>(() => ({
+    error: null,
+    isRefreshing: false,
+    remoteHeroIds: [],
+    source: client ? "checking" : "fallback",
+  }));
+
+  const loadRemoteHeroIds = useCallback(
+    async (preserveContent: boolean) => {
+      if (!client || !isMounted.current) {
+        return;
+      }
+
+      const currentRequestId = requestId.current + 1;
+      requestId.current = currentRequestId;
+
+      if (preserveContent) {
+        setCatalogState((current) => ({
+          ...current,
+          error: null,
+          isRefreshing: true,
+        }));
+      }
+
+      try {
+        const heroIds = await fetchPublishedHeroIds(client);
+
+        if (!isMounted.current || currentRequestId !== requestId.current) {
+          return;
+        }
+
+        setCatalogState({
+          error: null,
+          isRefreshing: false,
+          remoteHeroIds: heroIds,
+          source: "remote",
+        });
+      } catch {
+        if (!isMounted.current || currentRequestId !== requestId.current) {
+          return;
+        }
+
+        setCatalogState((current) => ({
+          ...current,
+          error:
+            current.source === "checking"
+              ? "Показаны локальные билды."
+              : "Не удалось обновить список билдов.",
+          isRefreshing: false,
+          remoteHeroIds:
+            current.source === "checking" ? [] : current.remoteHeroIds,
+          source: current.source === "checking" ? "fallback" : current.source,
+        }));
+      }
+    },
+    [client],
+  );
 
   useEffect(() => {
-    const client = getSupabaseClient();
-
-    if (!client) {
-      setIsRemoteBuildsLoading(false);
-      return;
-    }
-
-    let isMounted = true;
-
-    setIsRemoteBuildsLoading(true);
-    void fetchPublishedHeroIds(
-      client,
-    )
-      .then((heroIds) => {
-        if (isMounted) {
-          setRemoteHeroIds(heroIds);
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsRemoteBuildsLoading(false);
-        }
-      });
+    isMounted.current = true;
+    void loadRemoteHeroIds(false);
 
     return () => {
-      isMounted = false;
+      isMounted.current = false;
+      requestId.current += 1;
     };
-  }, []);
+  }, [loadRemoteHeroIds]);
 
   const zoneGroups = useMemo(() => {
-    const buildReadyHeroIds = new Set([
-      ...heroesWithBuilds.map((hero) => hero.id),
-      ...remoteHeroIds,
-    ]);
+    const buildReadyHeroIds = new Set(
+      catalogState.source === "remote"
+        ? catalogState.remoteHeroIds
+        : catalogState.source === "fallback"
+        ? heroesWithBuilds.map((hero) => hero.id)
+        : [],
+    );
     const buildReadyHeroes = heroes.filter((hero) => buildReadyHeroIds.has(hero.id));
     const filtered = filterHeroes(buildReadyHeroes, filters);
     return groupHeroesByZone(filtered);
-  }, [filters, remoteHeroIds]);
+  }, [catalogState.remoteHeroIds, catalogState.source, filters]);
 
   const openHero = (heroId: string) => {
     router.push({ pathname: "/heroes/[heroId]", params: { heroId } });
@@ -85,11 +134,35 @@ export function HeroSelectScreen() {
       >
         <HeroListFiltersPanel filters={filters} onChange={setFilters} />
 
-        {isRemoteBuildsLoading ? (
-          <View style={styles.loadingCard}>
-            <Text style={styles.loadingText}>Загружаем билды...</Text>
+        {catalogState.source === "checking" ? (
+          <ScreenLoader label="Загружаем билды" />
+        ) : null}
+
+        {catalogState.source !== "checking" &&
+        (catalogState.error || catalogState.isRefreshing) ? (
+          <View style={styles.sourceStatus}>
+            {catalogState.error ? (
+              <Text accessibilityLiveRegion="polite" style={styles.sourceStatusText}>
+                {catalogState.error}
+              </Text>
+            ) : null}
+            {catalogState.isRefreshing ? (
+              <ScreenLoader label="Обновляем список билдов" mode="inline" />
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  void loadRemoteHeroIds(true);
+                }}
+                style={styles.retryButton}
+              >
+                <Text style={styles.retryText}>Повторить</Text>
+              </Pressable>
+            )}
           </View>
-        ) : zoneGroups.length > 0 ? (
+        ) : null}
+
+        {catalogState.source === "checking" ? null : zoneGroups.length > 0 ? (
           zoneGroups.map((group) => (
             <View key={group.zoneId} style={styles.zone}>
               <Text style={styles.zoneTitle}>{group.title}</Text>
@@ -148,17 +221,35 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
   },
-  loadingCard: {
-    borderRadius: 8,
+  sourceStatus: {
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#5a412b",
     backgroundColor: "#1d130f",
-    padding: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  loadingText: {
+  sourceStatusText: {
+    color: "#d7c19a",
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  retryButton: {
+    minHeight: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#8a6a44",
+    backgroundColor: "#2c2118",
+    paddingHorizontal: 18,
+  },
+  retryText: {
     color: "#f6d59a",
     fontSize: 14,
-    fontWeight: "800",
-    textAlign: "center",
+    fontWeight: "900",
   },
 });

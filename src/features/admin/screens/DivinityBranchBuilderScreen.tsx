@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { getSupabaseClient } from "@/shared/lib/supabaseClient";
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
+import { ScreenLoader } from "@/shared/ui/ScreenLoader";
 import { StatusToast } from "@/shared/ui/StatusToast";
 import {
   createOrUpdateDraftHeroBuildSet,
@@ -1596,6 +1597,22 @@ export function DivinityBranchBuilderScreen({
     }
   };
 
+  if (!isAuthChecked) {
+    return (
+      <View style={styles.screen}>
+        <ScreenHeader title="Builder" fallbackHref="/" />
+        <View
+          style={[
+            styles.initialLoader,
+            { paddingTop: SCREEN_HEADER_HEIGHT + top + 10 },
+          ]}
+        >
+          <ScreenLoader label="Проверяем доступ" />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.screen}>
       <ScreenHeader
@@ -1678,19 +1695,16 @@ export function DivinityBranchBuilderScreen({
           ) : null}
 
           {isBuilderTransitionPending ? (
-            <View
-              accessibilityRole="progressbar"
-              style={styles.loadingCard}
-              testID="branch-builder-transition-loading"
-            >
-              <Text style={styles.loadingText}>
-                {isEditBuildLoading
+            <ScreenLoader
+              label={
+                isEditBuildLoading
                   ? "Загружаем билд..."
                   : isDraftLoadPending
                   ? "Загружаем черновик..."
-                  : "Завершаем авторизацию..."}
-              </Text>
-            </View>
+                  : "Завершаем авторизацию..."
+              }
+              mode="inline"
+            />
           ) : (
             <>
               <View
@@ -1839,18 +1853,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
-  loadingCard: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#5a412b",
-    backgroundColor: "#1d130f",
-    padding: 12,
-  },
-  loadingText: {
-    color: "#f6d59a",
-    fontSize: 14,
-    fontWeight: "800",
-    textAlign: "center",
+  initialLoader: {
+    flex: 1,
   },
   divinitySkillErrors: {
     width: "100%",

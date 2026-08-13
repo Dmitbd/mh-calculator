@@ -12,6 +12,7 @@ const mockRouter = {
   replace: jest.fn(),
 };
 const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
+const mockLoadPublishedHeroBuildSet = jest.fn();
 const ADMIN_SESSION = {
   id: "admin-user-id",
   email: "admin@example.com",
@@ -34,6 +35,16 @@ jest.mock("@/shared/lib/supabaseClient", () => ({
   getSupabaseClient: () => mockGetSupabaseClient(),
 }));
 
+jest.mock("@/features/builds", () => {
+  const actual = jest.requireActual("@/features/builds");
+
+  return {
+    ...actual,
+    loadPublishedHeroBuildSet: (...args: unknown[]) =>
+      mockLoadPublishedHeroBuildSet(...args),
+  };
+});
+
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
 import { getHeroBuildSet } from "@/features/game-data/heroes/heroBuilds";
@@ -47,6 +58,8 @@ describe("HeroBuildScreen", () => {
     mockRouter.push.mockClear();
     mockRouter.replace.mockClear();
     mockGetSupabaseClient.mockReturnValue(null);
+    mockLoadPublishedHeroBuildSet.mockReset();
+    mockLoadPublishedHeroBuildSet.mockResolvedValue(getHeroBuildSet("bastet"));
   });
 
   test("renders only tabs with ready builds for bastet", () => {
@@ -189,5 +202,38 @@ describe("HeroBuildScreen", () => {
     expect(screen.queryByText("7 узлов")).toBeNull();
 
     spy.mockRestore();
+  });
+
+  test("shows the shared loader until the initial remote build resolves", async () => {
+    let resolveBuild!: (buildSet: ReturnType<typeof getHeroBuildSet>) => void;
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadPublishedHeroBuildSet.mockReturnValue(
+      new Promise((resolve) => {
+        resolveBuild = resolve;
+      }),
+    );
+
+    render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
+
+    expect(
+      screen.getByRole("progressbar", { name: "Загружаем билд" }),
+    ).toBeTruthy();
+    expect(screen.queryByText("Axe of Pangu")).toBeNull();
+    expect(screen.queryByText("Билд для этого режима ещё не готов.")).toBeNull();
+
+    resolveBuild(getHeroBuildSet("bastet"));
+
+    expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
+    expect(screen.queryByText("Загружаем билд")).toBeNull();
+  });
+
+  test("uses the local build when an unexpected initial request error occurs", async () => {
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadPublishedHeroBuildSet.mockRejectedValue(new Error("unexpected"));
+
+    render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
+
+    expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
+    expect(screen.queryByText("Загружаем билд")).toBeNull();
   });
 });

@@ -40,6 +40,7 @@
 - [heroBuildTabs.ts](../src/features/heroes/model/heroBuildTabs.ts)
 - [mapBuildToView.ts](../src/features/heroes/utils/mapBuildToView.ts)
 - [heroBuildSetRepository.ts](../src/features/builds/api/heroBuildSetRepository.ts)
+- [ScreenLoader.tsx](../src/shared/ui/ScreenLoader.tsx)
 - [heroes.json](../src/features/game-data/heroes/heroes.json)
 - [heroBuilds.ts](../src/features/game-data/heroes/heroBuilds.ts)
 - [heroBuildTabs.ts](../src/features/game-data/heroes/heroBuildTabs.ts)
@@ -65,14 +66,16 @@
 
 ## Catalog Availability And Loading
 
-Экран `/heroes` строит множество доступных героев из:
+Экран `/heroes` выбирает один источник доступности через явное состояние `checking | remote | fallback`:
 
-1. локальных `heroesWithBuilds` как offline/fallback источника;
-2. ID опубликованных строк Supabase через `fetchPublishedHeroIds`.
+1. если Supabase настроен, первый render синхронно находится в `checking`, показывает общий `ScreenLoader` и не вычисляет карточки из локального каталога;
+2. успешный `fetchPublishedHeroIds` переводит экран в `remote`: показываются только подтверждённые backend IDs без примеси `heroesWithBuilds`;
+3. ошибка запроса переводит экран в `fallback`, показывает локальные `heroesWithBuilds`, пояснение и действие `Повторить`;
+4. если Supabase не настроен, `fallback` выбирается синхронно без лишнего промежуточного render.
 
-Если Supabase не настроен, экран работает по локальным данным. Во время запроса показывается `Загружаем билды...`; карточки строятся после завершения загрузки. Ошибка получения удалённого списка не должна превращать неизвестные IDs в героев и не должна ломать локальный fallback.
+Повторная попытка является фоновой: уже показанный remote или fallback каталог остаётся видимым, а встроенный loader не заменяет его пустым состоянием. Поздний ответ после unmount или более нового запроса игнорируется. Неизвестные remote IDs не превращаются в героев.
 
-После объединения ID мастер-каталог фильтруется по выбранным признакам и группируется по зонам. Пустой результат показывает `Нет героев с готовыми билдами по выбранным фильтрам.`
+После выбора источника мастер-каталог фильтруется по выбранным признакам и группируется по зонам. Пустой результат показывает `Нет героев с готовыми билдами по выбранным фильтрам.`
 
 ## Filters And Grouping
 
@@ -95,7 +98,11 @@
 5. неизвестный `heroId` показывает `Герой не найден.`;
 6. отсутствие готового билда показывает контролируемое пустое состояние, а не частично собранные секции.
 
+При настроенном Supabase первоначальная загрузка комплекта показывает общий `ScreenLoader` и не раскрывает bundled билд до завершения выбора remote/fallback. Без клиента локальный комплект доступен сразу. Loader не имеет искусственной минимальной задержки и исчезает при любом контролируемом результате; неожиданное отклонение promise также возвращает локальный fallback без unhandled rejection.
+
 Удалённые данные не должны мутировать локальные каталоги. Сетевые и Supabase-ошибки не должны скрывать корректный локальный комплект. Невалидный удалённый payload также не принимается: loader возвращает локальный fallback и через `onFallback` различает `no-data`, `network` и `invalid-data`, чтобы причина оставалась доступной для диагностики.
+
+`ScreenLoader` имеет полноэкранный и встроенный режимы с зарезервированной высотой, ролью `progressbar` и видимой подписью. Анимация построена на React Native `Animated`, останавливается при unmount, а при системном reduced motion остаётся статичной.
 
 ## Build Set And Tabs
 
@@ -250,6 +257,7 @@ Parser остаётся ограниченным текущим `HeroBuildSet` �
 
 - [HeroSelectScreen.test.tsx](../src/features/heroes/__tests__/HeroSelectScreen.test.tsx)
 - [HeroBuildScreen.test.tsx](../src/features/heroes/__tests__/HeroBuildScreen.test.tsx)
+- [ScreenLoader.test.tsx](../src/shared/ui/__tests__/ScreenLoader.test.tsx)
 - [heroListFilters.test.ts](../src/features/heroes/__tests__/heroListFilters.test.ts)
 - [heroListGrouping.test.ts](../src/features/heroes/__tests__/heroListGrouping.test.ts)
 - [heroBuildTabsModel.test.ts](../src/features/heroes/__tests__/heroBuildTabsModel.test.ts)

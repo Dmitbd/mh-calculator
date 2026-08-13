@@ -34,6 +34,7 @@ const mockUpdatePublishedHeroBuildSet = jest.fn();
 const mockHeroBuilderSectionProps = jest.fn<void, [Record<string, unknown>]>();
 const mockSignInAdmin = jest.fn();
 const mockSignOutAdmin = jest.fn();
+const mockGetCurrentAdminSession = jest.fn();
 const mockRouter = {
   back: jest.fn(),
   canGoBack: jest.fn(() => true),
@@ -181,7 +182,8 @@ jest.mock("@/shared/lib/supabaseClient", () => ({
 }));
 
 jest.mock("../api/adminAuthRepository", () => ({
-  getCurrentAdminSession: jest.fn(async () => null),
+  getCurrentAdminSession: (...args: unknown[]) =>
+    mockGetCurrentAdminSession(...args),
   signInAdmin: (...args: unknown[]) => mockSignInAdmin(...args),
   signOutAdmin: (...args: unknown[]) => mockSignOutAdmin(...args),
 }));
@@ -254,6 +256,8 @@ describe("DivinityBranchBuilderScreen", () => {
     mockHeroBuilderSectionProps.mockReset();
     mockSignInAdmin.mockReset();
     mockSignOutAdmin.mockReset();
+    mockGetCurrentAdminSession.mockReset();
+    mockGetCurrentAdminSession.mockResolvedValue(null);
     mockRouter.back.mockClear();
     mockRouter.canGoBack.mockClear();
     mockRouter.canGoBack.mockReturnValue(true);
@@ -286,6 +290,24 @@ describe("DivinityBranchBuilderScreen", () => {
       isHeroListLoading: true,
     });
     expect(screen.queryByLabelText("Выбрать героя Бастет")).toBeNull();
+  });
+
+  it("shows the shared loader while the initial admin session is checked", async () => {
+    const session = createDeferred<null>();
+    mockGetSupabaseClient.mockReturnValue({ auth: {} });
+    mockGetCurrentAdminSession.mockReturnValue(session.promise);
+
+    render(<DivinityBranchBuilderScreen />);
+
+    expect(
+      screen.getByRole("progressbar", { name: "Проверяем доступ" }),
+    ).toBeTruthy();
+    expect(screen.queryByPlaceholderText("Email")).toBeNull();
+
+    session.resolve(null);
+
+    expect(await screen.findByPlaceholderText("Email")).toBeTruthy();
+    expect(screen.queryByText("Проверяем доступ")).toBeNull();
   });
 
   it("loads published ids after authentication and excludes those heroes", async () => {

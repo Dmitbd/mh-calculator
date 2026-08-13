@@ -32,6 +32,7 @@ import {
 import type { HeroBuildTabPath } from "@/features/game-data/heroes/types";
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
+import { ScreenLoader } from "@/shared/ui/ScreenLoader";
 
 import { HeroMetadataRow } from "../components/HeroMetadataRow";
 import { HeroBuildBranchSection } from "../components/hero-build/HeroBuildBranchSection";
@@ -59,8 +60,9 @@ export function HeroBuildScreen({
 
   const hero = getHeroById(heroId);
   const fallbackBuildSet = getHeroBuildSet(heroId);
-  const [buildSet, setBuildSet] = useState(fallbackBuildSet);
-  const [isBuildLoading, setIsBuildLoading] = useState(false);
+  const [client] = useState(() => getSupabaseClient());
+  const [buildSet, setBuildSet] = useState(client ? null : fallbackBuildSet);
+  const [isBuildLoading, setIsBuildLoading] = useState(Boolean(client));
   const [adminSession, setAdminSession] = useState<AdminSession | null>(
     initialAdminSession ?? null,
   );
@@ -69,34 +71,43 @@ export function HeroBuildScreen({
   );
 
   useEffect(() => {
-    const client = getSupabaseClient();
     let isMounted = true;
 
-    setBuildSet(fallbackBuildSet);
-
     if (!client) {
+      setBuildSet(fallbackBuildSet);
       setIsBuildLoading(false);
       return () => {
         isMounted = false;
       };
     }
 
+    setBuildSet(null);
     setIsBuildLoading(true);
     void loadPublishedHeroBuildSet({
       client,
       fallbackBuildSet,
       heroId,
-    }).then((loadedBuildSet) => {
-      if (isMounted) {
-        setBuildSet(loadedBuildSet);
-        setIsBuildLoading(false);
-      }
-    });
+    })
+      .then((loadedBuildSet) => {
+        if (isMounted) {
+          setBuildSet(loadedBuildSet);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setBuildSet(fallbackBuildSet);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsBuildLoading(false);
+        }
+      });
 
     return () => {
       isMounted = false;
     };
-  }, [fallbackBuildSet, heroId]);
+  }, [client, fallbackBuildSet, heroId]);
 
   useEffect(() => {
     if (initialAdminSession !== undefined) {
@@ -246,9 +257,7 @@ export function HeroBuildScreen({
         ) : null}
 
         {isBuildLoading ? (
-          <View style={styles.loadingCard}>
-            <Text style={styles.loadingText}>Загружаем билд...</Text>
-          </View>
+          <ScreenLoader label="Загружаем билд" />
         ) : null}
 
         {sortedTabs.length > 0 ? (
@@ -301,7 +310,7 @@ export function HeroBuildScreen({
               <HeroBuildBranchSection view={view} />
             </View>
           </>
-        ) : (
+        ) : isBuildLoading ? null : (
           <View style={styles.placeholderCard}>
             <Text style={styles.placeholderText}>
               Билд для этого режима ещё не готов.
@@ -356,19 +365,6 @@ const styles = StyleSheet.create({
   },
   secondaryAdminButtonText: {
     color: "#f6d59a",
-  },
-  loadingCard: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#5a412b",
-    backgroundColor: "#1d130f",
-    padding: 12,
-  },
-  loadingText: {
-    color: "#f6d59a",
-    fontSize: 14,
-    fontWeight: "800",
-    textAlign: "center",
   },
   placeholderWrapper: {
     flexGrow: 1,

@@ -40,6 +40,7 @@
 - [src/features/builds/components/BranchNodeCard.tsx](../src/features/builds/components/BranchNodeCard.tsx) — `MinorStatCard` и `MajorNodeCard`
 - [src/features/builds/components/MajorSkillPicker.tsx](../src/features/builds/components/MajorSkillPicker.tsx) — список выбора скилла
 - [src/shared/ui/IconPreview.tsx](../src/shared/ui/IconPreview.tsx) — иконка или пунктирный плейсхолдер
+- [src/shared/ui/ScreenLoader.tsx](../src/shared/ui/ScreenLoader.tsx) — общий полноэкранный и встроенный loader
 - [src/features/admin/hooks/useDivinityBranchBuilder.ts](../src/features/admin/hooks/useDivinityBranchBuilder.ts) — состояние и экспорт
 - [src/features/admin/utils/validateBranchBuild.ts](../src/features/admin/utils/validateBranchBuild.ts) — валидация
 - [src/features/builds/model/heroBuildSetSchema.ts](../src/features/builds/model/heroBuildSetSchema.ts) — runtime-валидация загруженных Supabase payload
@@ -331,7 +332,7 @@ type DivinityBranchBuilderExport = {
 
 Административная сессия признаётся только для Supabase-пользователя, у которого `app_metadata.role === "admin"`. Стабильный контракт сессии содержит `id`, `email` и литеральную роль `admin`. Обычная authenticated-сессия не открывает билдер и не даёт доступ к server draft/published данным. Если password login успешен, но admin claim отсутствует, клиент через публичный `signOut({ scope: "local" })` пытается удалить созданную локальную сессию и независимо от результата показывает `Недостаточно прав администратора.`; восстановленная non-admin сессия считается отсутствующей административной сессией. `auth-js` не предоставляет публичного force-clear API: при ошибке local sign-out клиент всё равно не создаёт `AdminSession`, а RLS не допускает non-admin JWT к защищённым данным.
 
-`AdminAuthPanel` поддерживает вход и выход, состояния pending и видимые success/error toast. Если Supabase не настроен, серверное действие завершается контролируемым `Supabase не настроен.`, а не падением.
+До завершения первоначального восстановления admin-сессии экран показывает общий полноэкранный loader `Проверяем доступ` и не раскрывает форму входа или builder. `AdminAuthPanel` поддерживает вход и выход, состояния pending и видимые success/error toast. Если Supabase не настроен, серверное действие завершается контролируемым `Supabase не настроен.`, а не падением.
 
 Supabase RLS повторяет границу чтения: `draft` доступен только JWT с `app_metadata.role = admin`, без admin claim можно читать только строки `published`. Прямые `insert/update/delete` для `anon` и `authenticated` отозваны; даже admin-клиент выполняет lifecycle-запись только через узкие `SECURITY DEFINER` RPC. Каждая RPC независимо проверяет точный `app_metadata.role === "admin"`, ожидаемое исходное состояние строки, переданную клиентом `expected_revision` и число затронутых строк. Клиентская проверка управляет UI, но не заменяет server boundary; RLS остаётся дополнительной защитой чтения.
 
@@ -347,7 +348,7 @@ Supabase возвращает ID отдельно по статусам `draft` 
 - `Не опубликованы` — существует draft, но нет published строки;
 - опубликованные герои доступны для редактирования опубликованного билда.
 
-Опубликованный герой не должен одновременно оставаться в `Не опубликованы`. Загрузка каталога имеет request identity: поздний ответ закрытого или устаревшего запроса не обновляет экран. Во время загрузки селектор остаётся управляемым, показывает loading, ошибки и повторную попытку.
+Опубликованный герой не должен одновременно оставаться в `Не опубликованы`. Загрузка каталога имеет request identity: поздний ответ закрытого или устаревшего запроса не обновляет экран. Во время первоначальной загрузки раскрытый селектор использует встроенный общий loader. При фоновом обновлении выбранный герой остаётся в заголовке, а каталог не подменяется неотфильтрованными данными; ошибка оставляет контролируемую повторную попытку.
 
 ## Tabs And Local Drafts
 
@@ -466,6 +467,7 @@ Backend success не должен жить дольше актуальной о�
 - [heroBuildSetRevisionsSql.test.js](../src/features/admin/__tests__/heroBuildSetRevisionsSql.test.js) — revision/history immutability, optimistic predicates и restore RPC;
 - [heroGuideSelectorModel.test.ts](../src/features/admin/__tests__/heroGuideSelectorModel.test.ts) — взаимоисключающие списки героев;
 - [HeroGuideSelector.test.tsx](../src/features/admin/__tests__/HeroGuideSelector.test.tsx) — loading/error/группы селектора;
+- [ScreenLoader.test.tsx](../src/shared/ui/__tests__/ScreenLoader.test.tsx) — режимы, accessibility, reduced motion и cleanup анимации;
 - [EquipmentVariantBuilder.test.tsx](../src/features/admin/__tests__/EquipmentVariantBuilder.test.tsx) — варианты экипировки;
 - [weaponAwakening.test.ts](../src/features/admin/__tests__/weaponAwakening.test.ts) — selections пробуждения;
 

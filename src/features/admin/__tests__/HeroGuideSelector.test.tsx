@@ -322,7 +322,9 @@ it("keeps an interactive loading header and restores an open catalog", () => {
   );
 
   expect(screen.getByTestId("hero-selector-content")).toBeTruthy();
-  expect(screen.getByLabelText("Загрузка списка героев")).toBeTruthy();
+  expect(
+    screen.getByRole("progressbar", { name: "Загрузка списка героев" }),
+  ).toBeTruthy();
   expect(screen.queryByText("UR")).toBeNull();
 
   view.rerender(<HeroGuideSelector {...props} />);
