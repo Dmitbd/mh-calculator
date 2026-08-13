@@ -24,6 +24,7 @@ jest.mock("expo-router", () => ({
 import { render, screen, within } from "@testing-library/react-native";
 import type React from "react";
 
+import { APP_VERSION } from "../../../shared/lib/appVersion";
 import HomeScreen from "../screens/HomeScreen";
 
 test("renders calculator and build entry points", () => {
@@ -46,6 +47,6 @@ test("shows the current version in a footer linked to the latest release", () =>
     "link-https://github.com/Dmitbd/mh-calculator/releases/latest",
   );
 
-  expect(within(releaseLink).getByText("Версия 1.2.0")).toBeTruthy();
+  expect(within(releaseLink).getByText(`Версия ${APP_VERSION}`)).toBeTruthy();
   expect(within(releaseLink).getByText("Что нового")).toBeTruthy();
 });
