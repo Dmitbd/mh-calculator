@@ -220,7 +220,13 @@ describe("HeroSelectScreen", () => {
     ).toBeTruthy();
     expect(screen.queryByText("Бастет")).toBeNull();
 
-    resolveSnapshot(remoteSnapshot([]));
+    await waitFor(() => {
+      expect(mockLoadAndCacheRemoteHeroBuildSnapshot).toHaveBeenCalledTimes(1);
+    });
+    await act(async () => {
+      resolveSnapshot(remoteSnapshot([]));
+      await loadingSnapshot;
+    });
 
     await waitFor(() => {
       expect(screen.queryByText("Загружаем билды")).toBeNull();
