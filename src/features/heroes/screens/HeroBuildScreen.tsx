@@ -3,9 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import {
-  loadPublishedHeroBuildSet,
-} from "@/features/builds";
+import { loadPublishedHeroBuildSet } from "@/features/builds";
 import {
   getCurrentAdminSession,
   type AdminSession,
@@ -25,11 +23,9 @@ import {
   getHeroBuildSet,
   filterTabsWithReadyBuilds,
   getBuildAtPath,
-  getDefaultTabPath,
   getTabByPath,
   sortBuildTabs,
 } from "@/features/game-data/heroes";
-import type { HeroBuildTabPath } from "@/features/game-data/heroes/types";
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 import { ScreenLoader } from "@/shared/ui/ScreenLoader";
@@ -39,6 +35,10 @@ import { HeroBuildBranchSection } from "../components/hero-build/HeroBuildBranch
 import { HeroBuildEquipmentSection } from "../components/hero-build/HeroBuildEquipmentSection";
 import { HeroBuildTabsSection } from "../components/hero-build/HeroBuildTabsSection";
 import { HeroBuildWeaponAwakeningSection } from "../components/hero-build/HeroBuildWeaponAwakeningSection";
+import {
+  createHeroBuildLoadState,
+  resolveHeroBuildLoadState,
+} from "../model/heroBuildLoading";
 import { getHeroBuildTabViewModel } from "../model/heroBuildTabs";
 import { mapBuildToView } from "../utils/mapBuildToView";
 
@@ -61,8 +61,26 @@ export function HeroBuildScreen({
   const hero = getHeroById(heroId);
   const fallbackBuildSet = getHeroBuildSet(heroId);
   const [client] = useState(() => getSupabaseClient());
-  const [buildSet, setBuildSet] = useState(client ? null : fallbackBuildSet);
-  const [isBuildLoading, setIsBuildLoading] = useState(Boolean(client));
+  const [loadState, setLoadState] = useState(() =>
+    createHeroBuildLoadState({
+      fallbackBuildSet,
+      hasRemoteClient: Boolean(client),
+      heroId,
+    }),
+  );
+  const currentLoadState =
+    loadState.heroId === heroId
+      ? loadState
+      : createHeroBuildLoadState({
+          fallbackBuildSet,
+          hasRemoteClient: Boolean(client),
+          heroId,
+        });
+
+  if (currentLoadState !== loadState) {
+    setLoadState(currentLoadState);
+  }
+
   const [adminSession, setAdminSession] = useState<AdminSession | null>(
     initialAdminSession ?? null,
   );
@@ -74,33 +92,36 @@ export function HeroBuildScreen({
     let isMounted = true;
 
     if (!client) {
-      setBuildSet(fallbackBuildSet);
-      setIsBuildLoading(false);
       return () => {
         isMounted = false;
       };
     }
 
-    setBuildSet(null);
-    setIsBuildLoading(true);
     void loadPublishedHeroBuildSet({
       client,
       fallbackBuildSet,
       heroId,
+      onFallback: (outcome) => {
+        console.info("Hero build fallback", { heroId, kind: outcome.kind });
+      },
     })
       .then((loadedBuildSet) => {
         if (isMounted) {
-          setBuildSet(loadedBuildSet);
+          setLoadState((current) =>
+            current.heroId === heroId
+              ? resolveHeroBuildLoadState(current, loadedBuildSet)
+              : current,
+          );
         }
       })
       .catch(() => {
         if (isMounted) {
-          setBuildSet(fallbackBuildSet);
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsBuildLoading(false);
+          console.info("Hero build fallback", { heroId, kind: "network" });
+          setLoadState((current) =>
+            current.heroId === heroId
+              ? resolveHeroBuildLoadState(current, fallbackBuildSet)
+              : current,
+          );
         }
       });
 
@@ -142,19 +163,11 @@ export function HeroBuildScreen({
     };
   }, [initialAdminSession]);
 
+  const { activePath, buildSet, isLoading: isBuildLoading } = currentLoadState;
   const sortedTabs = useMemo(
     () => (buildSet ? filterTabsWithReadyBuilds(buildSet.tabs) : []),
     [buildSet],
   );
-  const defaultPath = useMemo(
-    () => (sortedTabs.length > 0 ? getDefaultTabPath(sortedTabs) : []),
-    [sortedTabs],
-  );
-  const [activePath, setActivePath] = useState<HeroBuildTabPath>(defaultPath);
-
-  useEffect(() => {
-    setActivePath(defaultPath);
-  }, [defaultPath]);
 
   const build = getBuildAtPath(sortedTabs, activePath);
   const view = useMemo(() => (build ? mapBuildToView(build) : null), [build]);
@@ -189,11 +202,14 @@ export function HeroBuildScreen({
 
     if (tab.kind === "group" && tab.children && tab.children.length > 0) {
       const firstChild = sortBuildTabs(tab.children)[0];
-      setActivePath([tabId, firstChild.id]);
+      setLoadState((current) => ({
+        ...current,
+        activePath: [tabId, firstChild.id],
+      }));
       return;
     }
 
-    setActivePath([tabId]);
+    setLoadState((current) => ({ ...current, activePath: [tabId] }));
   };
 
   const handleSelectChildTab = (tabId: string) => {
@@ -201,7 +217,10 @@ export function HeroBuildScreen({
       return;
     }
 
-    setActivePath([activeTopId, tabId]);
+    setLoadState((current) => ({
+      ...current,
+      activePath: [activeTopId, tabId],
+    }));
   };
 
   const handleEditBuild = () => {

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { act, render, screen, waitFor } from "@testing-library/react-native";
 import { AccessibilityInfo, Animated, StyleSheet } from "react-native";
 
 import { ScreenLoader } from "../ScreenLoader";
@@ -69,5 +69,38 @@ describe("ScreenLoader", () => {
     view.unmount();
 
     expect(stop).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not let a stale snapshot override a newer reduced-motion event", async () => {
+    let resolveSnapshot!: (isEnabled: boolean) => void;
+    let handleMotionChange!: (isEnabled: boolean) => void;
+    jest.spyOn(AccessibilityInfo, "isReduceMotionEnabled").mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        resolveSnapshot = resolve;
+      }),
+    );
+    jest
+      .spyOn(AccessibilityInfo, "addEventListener")
+      .mockImplementation(
+        ((
+          _event: "reduceMotionChanged",
+          listener: (isEnabled: boolean) => void,
+        ) => {
+          handleMotionChange = listener;
+          return { remove: jest.fn() } as never;
+        }) as unknown as typeof AccessibilityInfo.addEventListener,
+      );
+    const loop = jest.spyOn(Animated, "loop");
+
+    render(<ScreenLoader label="Загрузка" />);
+
+    act(() => {
+      handleMotionChange(true);
+    });
+    await act(async () => {
+      resolveSnapshot(false);
+    });
+
+    expect(loop).not.toHaveBeenCalled();
   });
 });

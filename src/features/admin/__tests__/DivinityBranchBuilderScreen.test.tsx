@@ -32,6 +32,7 @@ const mockCreateOrUpdateDraftHeroBuildSet = jest.fn();
 const mockPublishDraftHeroBuildSet = jest.fn();
 const mockUpdatePublishedHeroBuildSet = jest.fn();
 const mockHeroBuilderSectionProps = jest.fn<void, [Record<string, unknown>]>();
+const mockEquipmentBuilderSectionRender = jest.fn();
 const mockSignInAdmin = jest.fn();
 const mockSignOutAdmin = jest.fn();
 const mockGetCurrentAdminSession = jest.fn();
@@ -177,6 +178,20 @@ jest.mock("../components/branch-builder/HeroBuilderSection", () => {
   };
 });
 
+jest.mock("../components/branch-builder/EquipmentBuilderSection", () => {
+  const actual = jest.requireActual(
+    "../components/branch-builder/EquipmentBuilderSection",
+  );
+
+  return {
+    ...actual,
+    EquipmentBuilderSection: (props: Record<string, unknown>) => {
+      mockEquipmentBuilderSectionRender();
+      return actual.EquipmentBuilderSection(props as never);
+    },
+  };
+});
+
 jest.mock("@/shared/lib/supabaseClient", () => ({
   getSupabaseClient: () => mockGetSupabaseClient(),
 }));
@@ -254,6 +269,7 @@ describe("DivinityBranchBuilderScreen", () => {
     mockUpdatePublishedHeroBuildSet.mockReset();
     mockUpdatePublishedHeroBuildSet.mockResolvedValue(undefined);
     mockHeroBuilderSectionProps.mockReset();
+    mockEquipmentBuilderSectionRender.mockReset();
     mockSignInAdmin.mockReset();
     mockSignOutAdmin.mockReset();
     mockGetCurrentAdminSession.mockReset();
@@ -308,6 +324,33 @@ describe("DivinityBranchBuilderScreen", () => {
 
     expect(await screen.findByPlaceholderText("Email")).toBeTruthy();
     expect(screen.queryByText("Проверяем доступ")).toBeNull();
+  });
+
+  it("keeps edit controls blocked from session restore until the build load starts", async () => {
+    const session = createDeferred<typeof ADMIN_SESSION>();
+    mockGetSupabaseClient.mockReturnValue({ auth: {}, from: jest.fn() });
+    mockGetCurrentAdminSession.mockReturnValue(session.promise);
+    mockLoadPublishedHeroBuildSet.mockReturnValue(
+      new Promise(() => undefined),
+    );
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await act(async () => {
+      session.resolve(ADMIN_SESSION);
+    });
+
+    expect(
+      screen.getByRole("progressbar", { name: "Загружаем билд..." }),
+    ).toBeTruthy();
+    expect(mockEquipmentBuilderSectionRender).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText("Выбрать героя")).toBeNull();
+    expect(screen.queryByTestId("branch-builder-target-tabs-section")).toBeNull();
   });
 
   it("loads published ids after authentication and excludes those heroes", async () => {

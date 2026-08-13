@@ -49,6 +49,10 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react-nativ
 
 import { getHeroBuildSet } from "@/features/game-data/heroes/heroBuilds";
 import { HeroBuildScreen } from "@/features/heroes/screens/HeroBuildScreen";
+import {
+  createHeroBuildLoadState,
+  resolveHeroBuildLoadState,
+} from "@/features/heroes/model/heroBuildLoading";
 
 describe("HeroBuildScreen", () => {
   beforeEach(() => {
@@ -235,5 +239,63 @@ describe("HeroBuildScreen", () => {
 
     expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
     expect(screen.queryByText("Загружаем билд")).toBeNull();
+  });
+
+  test("resets build content synchronously when the route hero changes", async () => {
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadPublishedHeroBuildSet
+      .mockResolvedValueOnce(getHeroBuildSet("bastet"))
+      .mockReturnValueOnce(new Promise(() => undefined));
+    const view = render(
+      <HeroBuildScreen heroId="bastet" initialAdminSession={null} />,
+    );
+    expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
+
+    view.rerender(
+      <HeroBuildScreen heroId="morana" initialAdminSession={null} />,
+    );
+
+    expect(screen.getByText("Морана")).toBeTruthy();
+    expect(screen.queryByText("Axe of Pangu")).toBeNull();
+    expect(
+      screen.getByRole("progressbar", { name: "Загружаем билд" }),
+    ).toBeTruthy();
+  });
+
+  test("resolves a build and its valid active path in one state transition", () => {
+    const initialState = createHeroBuildLoadState({
+      fallbackBuildSet: getHeroBuildSet("bastet"),
+      hasRemoteClient: true,
+      heroId: "bastet",
+    });
+    const buildSet = getHeroBuildSet("bastet");
+
+    const resolvedState = resolveHeroBuildLoadState(initialState, buildSet);
+
+    expect(resolvedState).toEqual(
+      expect.objectContaining({
+        activePath: expect.arrayContaining([expect.any(String)]),
+        buildSet,
+        heroId: "bastet",
+        isLoading: false,
+      }),
+    );
+  });
+
+  test("reports a controlled remote fallback kind for diagnostics", async () => {
+    const diagnostic = jest.spyOn(console, "info").mockImplementation();
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadPublishedHeroBuildSet.mockImplementation(async (params) => {
+      params.onFallback?.({ kind: "network" });
+      return getHeroBuildSet("bastet");
+    });
+
+    render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
+
+    expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
+    expect(diagnostic).toHaveBeenCalledWith("Hero build fallback", {
+      heroId: "bastet",
+      kind: "network",
+    });
   });
 });

@@ -199,17 +199,43 @@ export function DivinityBranchBuilderScreen({
   const [isHeroListLoading, setIsHeroListLoading] = useState(true);
   const [heroListError, setHeroListError] = useState<string | null>(null);
   const hasUnsavedPublishedEdits = initialMode === "edit" && isDirty;
+  const isValidInitialEditHero = Boolean(
+    initialMode === "edit" &&
+      initialHeroId &&
+      branchBuilderHeroes.some((hero) => hero.id === initialHeroId),
+  );
+  const isInitialEditTransitionPending = Boolean(
+    isValidInitialEditHero &&
+      isAuthChecked &&
+      adminSession &&
+      activeHeroId.current !== initialHeroId &&
+      (loadedEditHeroId.current !== initialHeroId || isEditBuildLoading),
+  );
+  const shouldHideHeroDuringRestoredEdit = Boolean(
+    initialAdminSession === undefined &&
+      isInitialEditTransitionPending &&
+      activeHeroId.current === null,
+  );
   const isBuilderTransitionPending =
-    isEditBuildLoading || isDraftLoadPending || isAuthPending;
+    isInitialEditTransitionPending ||
+    isEditBuildLoading ||
+    isDraftLoadPending ||
+    isAuthPending;
   const isBuilderActionBlocked = useCallback(
     () =>
+      isInitialEditTransitionPending ||
       isEditBuildLoading ||
       isDraftLoadPending ||
       isAuthPending ||
       initialEditLoadInFlight.current ||
       draftLoadInFlight.current ||
       authTransitionInFlight.current,
-    [isAuthPending, isDraftLoadPending, isEditBuildLoading],
+    [
+      isAuthPending,
+      isDraftLoadPending,
+      isEditBuildLoading,
+      isInitialEditTransitionPending,
+    ],
   );
   const isHeroSelectionBlocked = useCallback(
     () =>
@@ -1669,7 +1695,7 @@ export function DivinityBranchBuilderScreen({
             </View>
           ) : null}
 
-          {!isAuthPending ? (
+          {!isAuthPending && !shouldHideHeroDuringRestoredEdit ? (
             <View
               onLayout={handleSectionLayout("hero")}
               style={styles.section}
@@ -1697,7 +1723,7 @@ export function DivinityBranchBuilderScreen({
           {isBuilderTransitionPending ? (
             <ScreenLoader
               label={
-                isEditBuildLoading
+                isEditBuildLoading || isInitialEditTransitionPending
                   ? "Загружаем билд..."
                   : isDraftLoadPending
                   ? "Загружаем черновик..."

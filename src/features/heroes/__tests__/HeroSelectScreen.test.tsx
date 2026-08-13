@@ -30,9 +30,14 @@ jest.mock("@/features/builds", () => ({
 }));
 
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { AccessibilityInfo } from "react-native";
 
 import { heroes, heroesWithBuilds } from "@/features/game-data/heroes/heroBuilds";
-import { HeroSelectScreen } from "@/features/heroes/screens/HeroSelectScreen";
+import {
+  HERO_CATALOG_REQUEST_TIMEOUT_MS,
+  HeroSelectScreen,
+} from "@/features/heroes/screens/HeroSelectScreen";
+import { createBoundedRequest } from "@/shared/lib/boundedRequest";
 
 describe("HeroSelectScreen", () => {
   beforeEach(() => {
@@ -41,6 +46,11 @@ describe("HeroSelectScreen", () => {
     mockGetSupabaseClient.mockReturnValue(null);
     mockFetchPublishedHeroIds.mockReset();
     mockFetchPublishedHeroIds.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
   });
 
   test("shows Bastet when she has a build", () => {
@@ -174,5 +184,69 @@ describe("HeroSelectScreen", () => {
     });
 
     expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  test("falls back after the bounded request timeout and can retry", async () => {
+    jest.useFakeTimers();
+    jest
+      .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
+      .mockResolvedValue(true);
+    mockGetSupabaseClient.mockReturnValue({});
+    mockFetchPublishedHeroIds
+      .mockReturnValueOnce(new Promise(() => undefined))
+      .mockResolvedValueOnce(["zeus"]);
+
+    render(<HeroSelectScreen />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(HERO_CATALOG_REQUEST_TIMEOUT_MS);
+    });
+
+    expect(screen.getByText("Показаны локальные билды.")).toBeTruthy();
+    expect(screen.getByText("Бастет")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Повторить"));
+
+    expect(await screen.findByText("Зевс")).toBeTruthy();
+    expect(screen.queryByText("Бастет")).toBeNull();
+  });
+
+  test("cancels a bounded request timer explicitly", () => {
+    jest.useFakeTimers();
+    const boundedRequest = createBoundedRequest(
+      new Promise<string[]>(() => undefined),
+      HERO_CATALOG_REQUEST_TIMEOUT_MS,
+    );
+
+    expect(jest.getTimerCount()).toBe(1);
+
+    boundedRequest.cancel();
+
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  test("clears the active catalog timeout on unmount", () => {
+    jest.useFakeTimers();
+    const setTimeoutSpy = jest.spyOn(globalThis, "setTimeout");
+    const clearTimeoutSpy = jest.spyOn(globalThis, "clearTimeout");
+    jest
+      .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
+      .mockResolvedValue(true);
+    mockGetSupabaseClient.mockReturnValue({});
+    mockFetchPublishedHeroIds.mockReturnValue(
+      new Promise(() => undefined),
+    );
+
+    const view = render(<HeroSelectScreen />);
+    const catalogTimerCallIndex = setTimeoutSpy.mock.calls.findIndex(
+      (call) => call[1] === HERO_CATALOG_REQUEST_TIMEOUT_MS,
+    );
+    const catalogTimerId = setTimeoutSpy.mock.results[catalogTimerCallIndex]?.value;
+
+    expect(catalogTimerCallIndex).toBeGreaterThanOrEqual(0);
+
+    view.unmount();
+
+    expect(clearTimeoutSpy).toHaveBeenCalledWith(catalogTimerId);
   });
 });

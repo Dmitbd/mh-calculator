@@ -15,6 +15,7 @@ type ScreenLoaderProps = {
 
 export function ScreenLoader({ label, mode = "full" }: ScreenLoaderProps) {
   const animationProgress = useRef(new Animated.Value(0)).current;
+  const hasReceivedMotionEvent = useRef(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
 
   useEffect(() => {
@@ -22,7 +23,7 @@ export function ScreenLoader({ label, mode = "full" }: ScreenLoaderProps) {
 
     void AccessibilityInfo.isReduceMotionEnabled()
       .then((isEnabled) => {
-        if (isMounted) {
+        if (isMounted && !hasReceivedMotionEvent.current) {
           setPrefersReducedMotion(isEnabled);
         }
       })
@@ -32,7 +33,13 @@ export function ScreenLoader({ label, mode = "full" }: ScreenLoaderProps) {
 
     const subscription = AccessibilityInfo.addEventListener(
       "reduceMotionChanged",
-      setPrefersReducedMotion,
+      (isEnabled) => {
+        hasReceivedMotionEvent.current = true;
+
+        if (isMounted) {
+          setPrefersReducedMotion(isEnabled);
+        }
+      },
     );
 
     return () => {

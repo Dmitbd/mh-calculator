@@ -38,9 +38,11 @@
 - [heroListFilters.ts](../src/features/heroes/utils/heroListFilters.ts)
 - [heroListGrouping.ts](../src/features/heroes/utils/heroListGrouping.ts)
 - [heroBuildTabs.ts](../src/features/heroes/model/heroBuildTabs.ts)
+- [heroBuildLoading.ts](../src/features/heroes/model/heroBuildLoading.ts)
 - [mapBuildToView.ts](../src/features/heroes/utils/mapBuildToView.ts)
 - [heroBuildSetRepository.ts](../src/features/builds/api/heroBuildSetRepository.ts)
 - [ScreenLoader.tsx](../src/shared/ui/ScreenLoader.tsx)
+- [boundedRequest.ts](../src/shared/lib/boundedRequest.ts)
 - [heroes.json](../src/features/game-data/heroes/heroes.json)
 - [heroBuilds.ts](../src/features/game-data/heroes/heroBuilds.ts)
 - [heroBuildTabs.ts](../src/features/game-data/heroes/heroBuildTabs.ts)
@@ -70,10 +72,10 @@
 
 1. если Supabase настроен, первый render синхронно находится в `checking`, показывает общий `ScreenLoader` и не вычисляет карточки из локального каталога;
 2. успешный `fetchPublishedHeroIds` переводит экран в `remote`: показываются только подтверждённые backend IDs без примеси `heroesWithBuilds`;
-3. ошибка запроса переводит экран в `fallback`, показывает локальные `heroesWithBuilds`, пояснение и действие `Повторить`;
+3. ошибка или превышение жёсткого timeout `8` секунд переводит экран в `fallback`, показывает локальные `heroesWithBuilds`, пояснение и действие `Повторить`;
 4. если Supabase не настроен, `fallback` выбирается синхронно без лишнего промежуточного render.
 
-Повторная попытка является фоновой: уже показанный remote или fallback каталог остаётся видимым, а встроенный loader не заменяет его пустым состоянием. Поздний ответ после unmount или более нового запроса игнорируется. Неизвестные remote IDs не превращаются в героев.
+Повторная попытка является фоновой: уже показанный remote или fallback каталог остаётся видимым, а встроенный loader не заменяет его пустым состоянием. Timer снимается при завершении, повторе и unmount; поздний ответ после timeout, unmount или более нового запроса игнорируется. Неизвестные remote IDs не превращаются в героев.
 
 После выбора источника мастер-каталог фильтруется по выбранным признакам и группируется по зонам. Пустой результат показывает `Нет героев с готовыми билдами по выбранным фильтрам.`
 
@@ -98,7 +100,7 @@
 5. неизвестный `heroId` показывает `Герой не найден.`;
 6. отсутствие готового билда показывает контролируемое пустое состояние, а не частично собранные секции.
 
-При настроенном Supabase первоначальная загрузка комплекта показывает общий `ScreenLoader` и не раскрывает bundled билд до завершения выбора remote/fallback. Без клиента локальный комплект доступен сразу. Loader не имеет искусственной минимальной задержки и исчезает при любом контролируемом результате; неожиданное отклонение promise также возвращает локальный fallback без unhandled rejection.
+При настроенном Supabase первоначальная загрузка комплекта показывает общий `ScreenLoader` и не раскрывает bundled билд до завершения выбора remote/fallback. Смена route `heroId` атомарно сбрасывает комплект и active tab path до render нового заголовка; принятый комплект и его валидный default path также фиксируются одной state transition без промежуточного empty-state. Без клиента локальный комплект доступен сразу. Loader не имеет искусственной минимальной задержки и исчезает при любом контролируемом результате; неожиданное отклонение promise также возвращает локальный fallback без unhandled rejection. Причина контролируемого fallback логируется только как стабильные `heroId` и `kind` (`not-configured | no-data | network | invalid-data`), без сырого backend error или пользовательских данных.
 
 Удалённые данные не должны мутировать локальные каталоги. Сетевые и Supabase-ошибки не должны скрывать корректный локальный комплект. Невалидный удалённый payload также не принимается: loader возвращает локальный fallback и через `onFallback` различает `no-data`, `network` и `invalid-data`, чтобы причина оставалась доступной для диагностики.
 
