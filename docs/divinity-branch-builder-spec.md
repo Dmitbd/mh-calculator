@@ -40,9 +40,22 @@
 - [src/features/builds/components/BranchNodeCard.tsx](../src/features/builds/components/BranchNodeCard.tsx) — `MinorStatCard` и `MajorNodeCard`
 - [src/features/builds/components/MajorSkillPicker.tsx](../src/features/builds/components/MajorSkillPicker.tsx) — список выбора скилла
 - [src/shared/ui/IconPreview.tsx](../src/shared/ui/IconPreview.tsx) — иконка или пунктирный плейсхолдер
+- [src/shared/ui/AppImage.tsx](../src/shared/ui/AppImage.tsx) — общий фиксированный loading/error-контейнер URL-изображения
+- [src/shared/ui/ScreenLoader.tsx](../src/shared/ui/ScreenLoader.tsx) — общий полноэкранный и встроенный loader
 - [src/features/admin/hooks/useDivinityBranchBuilder.ts](../src/features/admin/hooks/useDivinityBranchBuilder.ts) — состояние и экспорт
+- [src/features/admin/model/builderEditorReducer.ts](../src/features/admin/model/builderEditorReducer.ts) — чистые переходы редактируемого draft
+- [src/features/admin/model/asyncRequestIdentity.ts](../src/features/admin/model/asyncRequestIdentity.ts) — generation identity, атомарные channel-latches и единый controller асинхронных операций screen
+- [src/features/admin/model/validationNavigation.ts](../src/features/admin/model/validationNavigation.ts) — перевод ошибок в leaf/секцию, scroll target и toast
+- [src/features/admin/hooks/useAdminSessionGate.ts](../src/features/admin/hooks/useAdminSessionGate.ts) — восстановление и gate административной сессии
+- [src/features/admin/hooks/useHeroBuildStatusQuery.ts](../src/features/admin/hooks/useHeroBuildStatusQuery.ts) — current-only запрос status-каталога
+- [src/features/admin/api/builderServerCommands.ts](../src/features/admin/api/builderServerCommands.ts) — типизированные исходы server-команд и revision
 - [src/features/admin/utils/validateBranchBuild.ts](../src/features/admin/utils/validateBranchBuild.ts) — валидация
+- [src/features/builds/model/heroBuildSetSchema.ts](../src/features/builds/model/heroBuildSetSchema.ts) — runtime-валидация загруженных Supabase payload
+- [src/features/builds/api/heroBuildSetRepository.ts](../src/features/builds/api/heroBuildSetRepository.ts) — типизированная граница чтения и lifecycle RPC
+- [src/shared/lib/dataBootstrap.ts](../src/shared/lib/dataBootstrap.ts) — публичный bootstrap-контракт совместимости viewer-данных
 - [src/features/admin/types/admin.types.ts](../src/features/admin/types/admin.types.ts) — типы
+- [src/features/game-data/builds/types.ts](../src/features/game-data/builds/types.ts) — committed и standalone export contracts
+- [src/features/game-data/divinity/types.ts](../src/features/game-data/divinity/types.ts) — ветки, ноды, скиллы и прогресс дерева
 - [src/features/game-data/divinity/tree-template.json](../src/features/game-data/divinity/tree-template.json) — структура дерева
 - [src/features/game-data/divinity/divinity-branches.json](../src/features/game-data/divinity/divinity-branches.json) — ветки
 - [src/features/game-data/divinity/divinity-skills.json](../src/features/game-data/divinity/divinity-skills.json) — мажорные скиллы
@@ -125,13 +138,24 @@ type TreeTemplateMajorSkillNode = {
 ```ts
 type DivinityMajorSkill = {
   id: string;
-  branchId: DivinityBranchId; // к какой ветке относится скилл
-  tier?: 1 | 2 | 3;
+  branchId: DivinityBranchId;
+  tier: 1 | 2 | 3;
+  nodeCost: 1 | 2 | 3;
   name: string;
   icon: string;
-  description?: string;       // в карточке дерева НЕ отображается
+  levels: {
+    level: 1 | 2 | 3 | 4;
+    description: string;
+  }[];
+  source?: {
+    type: string;
+    url?: string;
+    status?: string;
+  };
 };
 ```
+
+`tier` распознаёт слот дерева, `nodeCost` задаёт стоимость установки в узлах божественной энергии, а `levels` хранит описания эффекта по уровням прокачки. Текст описания не выводится в карточке дерева независимо от его наличия в каталоге.
 
 ### Progress (прогресс / активные ноды)
 
@@ -181,6 +205,7 @@ type ActiveBranchNode = {
 
 - если `source` задан — рисует изображение;
 - если иконки нет — пустой круг с пунктирной обводкой (без буквы).
+- если URL ещё загружается или завершился ошибкой, внешний размер круга не меняется; `AppImage` сохраняет доступную подпись, loading placeholder и контролируемый error fallback.
 
 ## Major Skill Logic
 
@@ -243,15 +268,14 @@ type ActiveBranchNode = {
 - заполнены не все мажорные слоты (`majorNodes.length !== число majorSkill-нод`), ИЛИ
 - выбраны не все слоты пробуждения оружия.
 
-Форма выгрузки (поля, относящиеся к дереву, выделены):
+Source contract разделяет committed leaf и standalone-выгрузку билдера:
 
 ```ts
-type DivinityBranchBuilderExport = {
+type DivinityBranchBuildExport = {
   schemaVersion: 1;
   gameMode: "pvp" | "pve";
   heroId: string;
   heroName: string;
-  targetTabPath: string[];
   columns: Record<BranchColumnId, DivinityBranchId>;
   majorNodes: {
     level: number;
@@ -272,11 +296,17 @@ type DivinityBranchBuilderExport = {
   activeNodes: { columnId: BranchColumnId; level: number }[];
   metadata: { createdAt: string; source: "manual-branch-builder" };
 };
+
+type HeroBuildTargetTabPath = string[];
+
+type DivinityBranchBuilderExport = DivinityBranchBuildExport & {
+  targetTabPath: HeroBuildTargetTabPath;
+};
 ```
 
 Важно:
 - standalone-выгрузка билдера содержит `targetTabPath`; после размещения в `HeroBuildSet` committed leaf хранит вложенный `DivinityBranchBuildExport` без этого поля;
-- `progress` и `activeNodes` сохраняются в JSON, но НЕ участвуют в валидации;
+- `progress` и `activeNodes` сохраняются в JSON и не участвуют в интерактивной проверке незавершённой формы; при чтении готового Supabase payload runtime-схема проверяет диапазоны, tree-template paths и точное соответствие производного `activeNodes` значению `progress`;
 - `activeNodes` — производное от `progress` (все ноды столбца с `level <= progress`).
 
 ## Validation
@@ -321,41 +351,51 @@ type DivinityBranchBuilderExport = {
 - пробуждение оружия и вычисленные бонусы;
 - base/awakened loadout скиллов божественности;
 - локальное сохранение валидной вкладки в комплект;
-- загрузку, серверный черновик, публикацию, удаление и полный JSON-экспорт.
+- загрузку, серверный черновик, атомарную публикацию и полный JSON-экспорт.
 
 Новые секции этого экрана дописываются сюда и не получают отдельный постоянный spec.
 
 ## Authentication And Backend Boundary
 
-Пока auth-проверка не завершена, backend-действия не должны ошибочно считаться доступными. Без admin-сессии экран может показывать локальный билдер, но серверные save/load/publish/delete защищены существующим Supabase boundary.
+Административная сессия признаётся только для Supabase-пользователя, у которого `app_metadata.role === "admin"`. Стабильный контракт сессии содержит `id`, `email` и литеральную роль `admin`. Обычная authenticated-сессия не открывает билдер и не даёт доступ к server draft/published данным. Если password login успешен, но admin claim отсутствует, клиент через публичный `signOut({ scope: "local" })` пытается удалить созданную локальную сессию и независимо от результата показывает `Недостаточно прав администратора.`; восстановленная non-admin сессия считается отсутствующей административной сессией. `auth-js` не предоставляет публичного force-clear API: при ошибке local sign-out клиент всё равно не создаёт `AdminSession`, а RLS не допускает non-admin JWT к защищённым данным.
 
-`AdminAuthPanel` поддерживает вход и выход, состояния pending и видимые success/error toast. Если Supabase не настроен, серверное действие завершается контролируемым `Supabase не настроен.`, а не падением.
+Отказ non-admin дополнительно фиксируется только bounded событием `MH_DIAGNOSTIC { area: "admin-auth", event: "access-denied" }`. Email, JWT, password, raw auth error и backend response в diagnostic не передаются.
+
+До завершения первоначального восстановления admin-сессии экран показывает общий полноэкранный loader `Проверяем доступ` и не раскрывает форму входа или builder. Если восстановленная admin-сессия открывает валидный `mode=edit&heroId=...`, loader продолжает блокировать editor и hero selector до принятия опубликованного комплекта или контролируемой ошибки; между auth и edit effects нет commit пустого редактора. `AdminAuthPanel` поддерживает вход и выход, состояния pending и видимые success/error toast. Если Supabase не настроен, серверное действие завершается контролируемым `Supabase не настроен.`, а не падением.
+
+Supabase RLS повторяет границу чтения: `draft` доступен только JWT с `app_metadata.role = admin`, без admin claim можно читать только строки `published`. Прямые `insert/update/delete` для `anon` и `authenticated` отозваны; даже admin-клиент выполняет lifecycle-запись только через узкие `SECURITY DEFINER` RPC. Каждая RPC независимо проверяет точный `app_metadata.role === "admin"`, ожидаемое исходное состояние строки, переданную клиентом `expected_revision` и число затронутых строк. Клиентская проверка управляет UI, но не заменяет server boundary; RLS остаётся дополнительной защитой чтения.
+
+Публичные viewer-экраны допускают чтение published resource только после совместимого `/bootstrap`. Этот gate не заменяет admin authentication/RLS и намеренно не оборачивает lifecycle-записи билдера: административные операции продолжают использовать собственную авторизованную repository-границу, revision и conflict semantics. Edge Function с публичным `SUPABASE_ANON_KEY` вызывает один `SECURITY INVOKER` SQL RPC: явный published-фильтр и RLS сохраняются, а наружу возвращается только детерминированный manifest без draft/private metadata, service-role bypass или секретов в клиенте.
+
+Каждая server-строка имеет монотонный `revision` (существующие и впервые созданные строки начинают с `1`) и `updated_by`, равный один раз захваченному `auth.uid()`. Каждая write RPC отклоняет запрос без authenticated actor даже при наличии admin role claim. Успешное изменение увеличивает revision ровно один раз и в той же транзакции добавляет immutable history event с тем же автором, предыдущими и новыми status/payload snapshots. Создание draft передаёт `expected_revision = null` как явное ожидание отсутствующей строки; последующие сохранение, публикация и редактирование требуют загруженную текущую revision. Несовпадение revision, отсутствие строки или неверное исходное состояние возвращаются repository как `HeroBuildSetRepositoryError` с `kind: "conflict"`, отдельно от `network` и `invalid-data`.
+
+История опубликованных snapshot доступна только администратору. Восстановление не изменяет и не удаляет старые history rows: узкая admin RPC требует одновременно `hero_id`, history ID этого же героя и ожидаемую текущую revision, после чего создаёт более новую published revision с событием `restored_published`. Чужая или несовпадающая history-запись отклоняется до изменения текущей строки.
 
 ## Hero States And Selector
 
-Supabase возвращает ID отдельно по статусам `draft` и `published`. Селектор делит мастер-каталог на взаимоисключающие группы:
+Supabase возвращает ID отдельно по статусам `draft` и `published`, но на каждого героя существует не более одной server-строки. Селектор делит мастер-каталог на взаимоисключающие группы:
 
 - `Не созданы` — нет ни draft, ни published строки;
 - `Не опубликованы` — существует draft, но нет published строки;
 - опубликованные герои доступны для редактирования опубликованного билда.
 
-Опубликованный герой не должен одновременно оставаться в `Не опубликованы`. Загрузка каталога имеет request identity: поздний ответ закрытого или устаревшего запроса не обновляет экран. Во время загрузки селектор остаётся управляемым, показывает loading, ошибки и повторную попытку.
+Опубликованный герой не должен одновременно оставаться в `Не опубликованы`. Загрузка каталога имеет request identity: поздний ответ закрытого или устаревшего запроса не обновляет экран. Во время первоначальной загрузки раскрытый селектор использует встроенный общий loader. При фоновом обновлении выбранный герой остаётся в заголовке, а каталог не подменяется неотфильтрованными данными; ошибка оставляет контролируемую повторную попытку.
 
 ## Tabs And Local Drafts
 
-Тип и helpers комплекта рекурсивно поддерживают группы вкладок, но текущий UI билдера создаёт и показывает только корневой уровень и один уровень дочерних leaf-вкладок. Каждому leaf соответствует независимый editable draft, индексируемый полным path. Переключение вкладки не переносит значения соседнего leaf.
+Тип и helpers комплекта рекурсивно поддерживают группы вкладок, но текущий UI билдера создаёт и показывает только корневой уровень и один уровень дочерних leaf-вкладок. Каждому leaf соответствует независимый editable draft, индексируемый полным path. Переключение вкладки не переносит значения соседнего leaf, не запускает валидацию и не теряет локальные изменения.
 
-`Сохранить вкладку`:
+`Сохранить вкладку` в create/draft workflow:
 
 1. валидирует только текущий leaf;
 2. собирает partial `HeroBuildSet` с текущей вкладкой и устойчивыми `heroId`, path и build contract;
-3. upsert-ит этот комплект в Supabase как `status: "draft"`;
+3. создаёт или обновляет строку героя в Supabase только как `status: "draft"`; существующую published-строку эта операция не понижает;
 4. только после успешного server save фиксирует подготовленный snapshot в локальном собираемом комплекте и обновляет status-каталог;
 5. не публикует данные: `published`-строка меняется только отдельным действием публикации.
 
-Повторное сохранение блокируется, пока запрос текущей вкладки не завершён. Устаревший ответ после смены героя/вкладки или закрытия экрана не должен применить snapshot или показать ложный success. Ошибка Supabase сохраняет текущие поля редактирования и показывает backend error, но не выдаёт вкладку за сохранённую.
+Повторное сохранение блокируется, пока запрос текущей вкладки не завершён. Выбор другого героя синхронно инвалидирует pending tab-save и publication: поздний ответ предыдущего героя не меняет revision, status-каталог, toast или loading нового героя. Identity формы меняется только после успешного принятия загруженного билда; ошибка, отсутствие строки или недоступный Supabase оставляют прежнюю форму активной и пригодной для повторного сохранения. Устаревший ответ после смены героя/вкладки или закрытия экрана не должен применить snapshot или показать ложный success. Ошибка Supabase сохраняет текущие поля редактирования и показывает backend error, но не выдаёт вкладку за сохранённую. Optimistic conflict также не коммитит подготовленный snapshot и не сбрасывает локальные правки: экран показывает `Билд изменён в другой сессии. Ваши правки сохранены в форме; загрузите актуальную версию.`
 
-Полный export собирается только из сохранённых leaf-вкладок. Пустые группы и незавершённые drafts не должны маскироваться как готовый комплект.
+В create/draft workflow полный export собирается только из сохранённых leaf-вкладок. Пустые группы и незавершённые drafts не должны маскироваться как готовый комплект. В `mode=edit` полный комплект собирается из текущего локального draft каждого leaf, включая ещё не сохранённые изменения открытой и остальных вкладок.
 
 ## Equipment And Weapon Awakening
 
@@ -372,28 +412,43 @@ Base и awakened slots редактируются отдельно. Awakened-н�
 
 ## Server Drafts And Publication
 
-Таблица `hero_build_sets` различает строки `status: "draft" | "published"` по одному `hero_id`.
+Таблица `hero_build_sets` хранит для каждого `hero_id` не более одной строки со статусом `draft` или `published`.
 
-- `Сохранить черновик` валидирует полный текущий комплект и upsert-ит status `draft`.
+- `Сохранить черновик` валидирует полный текущий комплект и создаёт либо обновляет только status `draft`.
 - Выбор героя из `Не опубликованы` загружает только его draft через `fetchDraftHeroBuildSet` и восстанавливает редактируемые вкладки.
 - Повторная загрузка блокируется, пока предыдущая draft-load операция не завершена.
-- Устаревший ответ после выбора другого героя или закрытия селектора не должен менять текущий draft или показывать ложный успех.
-- `Опубликовать` сначала сохраняет status `published`, затем удаляет draft этого героя.
-- Если публикация успешна, а cleanup draft не удался, published-состояние сохраняется и пользователь получает отдельное предупреждение; нельзя сообщать, что публикация провалилась полностью.
+- Устаревший ответ после выбора другого героя или закрытия селектора не должен менять текущий draft или показывать ложный успех; неуспешный выбор draft не меняет identity уже принятой формы.
+- `Опубликовать` вызывает один RPC, который атомарно обновляет payload существующего draft и переводит ту же строку в status `published`.
+- Если draft отсутствует, RPC завершает публикацию ошибкой и не создаёт отдельную published-строку.
 - После успешной публикации status-каталог обновляется: герой удаляется из draft IDs и добавляется в published IDs.
-- `Удалить билд` удаляет серверные данные через подтверждённый backend flow; pending защищает от повторного запуска.
+- В `mode=edit` действия создания скрыты: нет `Сохранить вкладку`, `Сохранить черновик`, `Опубликовать`, загрузки, JSON-экспорта и удаления. После семантического изменения показывается единственная кнопка `Обновить`, во время запроса — `Обновляем...`; у чистой формы action отсутствует.
+- Загрузка `mode=edit` сохраняет неизменяемый опубликованный baseline и отдельный локальный editable draft для каждого leaf. Структурный `isDirty` сравнивает пользовательские поля всех leaf, сбрасывается при полном возврате значений к baseline и не реагирует на служебные timestamps. Только успешное обновление опубликованного payload принимает текущую форму как новый baseline; revision остаётся отдельным server-конкурентным контрактом.
+- `Обновить` валидирует полный локальный комплект, открывает вкладку и секцию первой ошибки и не выполняет запись при ошибках. Успех принимает отправленный snapshot как новый baseline и скрывает action; конфликт или сетевой сбой сохраняет локальные правки и возможность повторить обновление. Если форма меняется во время запроса, server snapshot принимается как baseline без потери более новых правок, а action остаётся доступным.
+- При несохранённых изменениях кнопка назад в шапке, выход администратора и выбор другого героя требуют подтверждения. Параллельные подтверждения выхода и выбора героя сериализуются по правилу «первое намерение побеждает»: повторное действие игнорируется до завершения текущего диалога, а после размонтирования продолжение запрещено. Ошибка перехватчика ухода закрывает переход, а не выполняет его. На web перезагрузка и закрытие вкладки защищены `beforeunload`; обработчик существует только у dirty-формы и снимается при очистке или размонтировании. Переключение вкладок одного билда остаётся свободным, не запускает валидацию и не требует подтверждения.
+- Начало выхода из `mode=edit` инвалидирует identity pending load/save/update requests, но до подтверждённого server-выхода сохраняет принятую форму и её revision; поздние ответы отменённых запросов не меняют revision или baseline. При ошибке выхода dirty-форму можно немедленно обновить с той же expected revision. Только успешный выход очищает identity загруженной формы, активного героя и revision. После следующего входа опубликованная строка обязательно загружается заново и формирует чистый baseline с актуальной revision.
+- Опубликованный payload обновляется только отдельной repository-операцией, которая требует исходный status `published` и не меняет его.
+- Все три lifecycle-операции repository вызывают отдельные RPC: create/update draft, draft-to-published и update published. Прямой table DML недоступен `anon` и `authenticated`.
+- Публичный repository API не содержит операций удаления. Database trigger запрещает удалить published-строку, вернуть её в draft или изменить её `hero_id`.
+- Любой draft/published `payload` читается как недоверенный `jsonb` и проходит `heroBuildSetSchema` до восстановления редактора. Несовместимая версия, неверная hero identity, повреждённые tabs/path, неизвестные catalog IDs или несогласованные build-поля дают типизированную `HeroBuildSetRepositoryError(kind: "invalid-data")`, а не частично восстановленный draft.
+- Сетевой сбой имеет `kind: "network"`, только отсутствие самой строки остаётся отдельным `null`/`no-data` исходом. Непустая строка без собственного data-property `payload` или с унаследованным/accessor `payload` считается `invalid-data`. Публичный loader может сохранить локальный fallback, но сообщает точную причину через диагностический `onFallback` outcome.
+- Загруженный committed leaf обязан быть полным: все major slots и weapon slots заполнены, progress задан для трёх колонок минимум до уровня `18`, major nodes не выше progress, а `activeNodes` точно ему соответствует. Runtime parser ограничен budgets из [Hero Builds Spec](hero-builds-spec.md#backend-payload-boundary), одним рекурсивным проходом проверяет унаследованный `gameMode`, отвергает sparse/accessor arrays, accessor properties, лишние или слишком многочисленные поля, non-plain objects и неканонический UTC `createdAt`.
 
 ## Validation And Feedback
 
 Валидация остаётся чистой и возвращает errors с путями. Экран:
 
+- в `mode=edit` проверяет полный текущий комплект из всех локальных leaf-drafts, открывает вкладку первой ошибки и переводит её полный path в относительный field path для inline-подсказки выбранного leaf;
 - группирует ошибки по секциям;
 - показывает не более пяти уникальных сообщений в toast и число скрытых;
-- прокручивает к первой проблемной секции;
+- после открытия проблемной вкладки прокручивает к точной секции первой ошибки;
 - очищает относящиеся к полю ошибки после исправления;
 - блокирует export/save/publish неполного комплекта.
 
 Backend success не должен жить дольше актуальной операции или выбранного героя. Loading, error, empty и retry состояния являются частью контракта, а не временным служебным UI.
+
+Внутренняя ownership-граница также является правилом переноса: screen компонует секции и намерения пользователя, hook хранит editor-session, чистый reducer владеет переходами draft, request identity определяет актуальность async-ответов, status query владеет каталогом server-состояний, server-command boundary возвращает типизированный исход с revision, а validation navigation переводит доменные paths в выбранный leaf и секцию. Эти модули не меняют пользовательский контракт, но не должны снова сливаться в route-level screen.
+
+Reducer вычисляет следующий цвет пробуждения из draft, полученного самим state transition, поэтому несколько кликов, объединённых React в один batch, не теряются и проходят каталог последовательно. Screen не ведёт параллельные request-id/in-flight refs для initial edit, draft, entity, auth, dirty-discard, tab-save или publish: атомарный controller сериализует intent, инвалидирует устаревшие поколения и освобождает только актуальный latch.
 
 ## Porting Rules
 
@@ -408,9 +463,10 @@ Backend success не должен жить дольше актуальной о�
 7. Вертикальная линия идёт только от первой до последней ноды столбца.
 8. Горизонтальные соединители только на уровнях, где у `isMain`-колонки стоит мажорная нода.
 9. JSON содержит `columns`, `majorNodes`, `progress`, `activeNodes`; экспорт неполной сборки запрещён (`null`).
-10. Вкладки независимы по полному path и имеют не более двух уровней.
-11. Server draft и published build — разные status-строки; публикация удаляет draft только после успешного published-save.
+10. Вкладки независимы по полному path; data contract и helpers рекурсивны, а текущий builder UI создаёт не более двух отображаемых уровней.
+11. Server build — одна строка на `hero_id`; публикация атомарно переводит эту строку из draft в published.
 12. Устаревшие async-ответы не меняют выбранного героя и не показывают ложный успех.
+13. Admin-доступ требует `app_metadata.role === "admin"` одновременно на клиентской auth-границе и в Supabase RLS.
 
 ## Change Guardrails
 
@@ -425,22 +481,30 @@ Backend success не должен жить дольше актуальной о�
 - класть ассеты в `public/assets/...` (конфликт с маршрутом `/assets` дев-сервера) — иконки лежат в `public/img/...`.
 - считать сохранение одной вкладки публикацией полного комплекта;
 - смешивать героев со статусами draft и published в одной группе селектора;
-- удалять draft до подтверждённой публикации;
+- создавать для одного героя отдельные draft и published строки;
+- удалять или понижать до draft опубликованную строку;
 - хранить computed-текст бонусов вместо selections и каталогов;
 - создавать отдельные постоянные specs для вкладок, экипировки или server drafts этого билдера.
 
 ## Verification
 
 Поведение хука и валидации частично покрыто тестами:
+- [operational-smoke.spec.ts](../e2e/operational-smoke.spec.ts) — production-browser отказ non-admin и dirty edit confirmation;
 - [useDivinityBranchBuilder.test.ts](../src/features/admin/__tests__/useDivinityBranchBuilder.test.ts) — пустой драфт и сборка JSON (включая `progress` и `activeNodes`);
 - [validateBranchBuild.test.ts](../src/features/admin/__tests__/validateBranchBuild.test.ts) — валидация и `slugifyFileName`;
-- [DivinityBranchBuilderScreen.test.tsx](../src/features/admin/__tests__/DivinityBranchBuilderScreen.test.tsx) — поведение экрана.
-- [heroBuildSetRepository.test.ts](../src/features/builds/api/__tests__/heroBuildSetRepository.test.ts) — draft/published запросы, upsert и удаление;
+- [heroBuildSetSchema.test.ts](../src/features/builds/model/__tests__/heroBuildSetSchema.test.ts) — версия и полная runtime-целостность загруженного комплекта;
+- `DivinityBranchBuilderScreen.*.test.tsx` и [builderScreenFixture.tsx](../src/features/admin/testing/builderScreenFixture.tsx) — auth/load, create/draft/publish, edit/update/conflict, navigation/validation/concurrency через один общий fixture;
+- [builderEditorReducer.test.ts](../src/features/admin/__tests__/builderEditorReducer.test.ts), [asyncRequestIdentity.test.ts](../src/features/admin/__tests__/asyncRequestIdentity.test.ts), [validationNavigation.test.ts](../src/features/admin/__tests__/validationNavigation.test.ts), [useAdminSessionGate.test.ts](../src/features/admin/__tests__/useAdminSessionGate.test.ts), [useHeroBuildStatusQuery.test.ts](../src/features/admin/__tests__/useHeroBuildStatusQuery.test.ts) и [builderServerCommands.test.ts](../src/features/admin/__tests__/builderServerCommands.test.ts) — focused boundaries декомпозированного workflow;
+- [heroBuildSetRepository.test.ts](../src/features/builds/api/__tests__/heroBuildSetRepository.test.ts) — draft/published запросы и явные lifecycle-операции;
 - [branchBuilderTabs.test.ts](../src/features/admin/__tests__/branchBuilderTabs.test.ts) — структура вкладок и path;
 - [multiBuildExport.test.ts](../src/features/admin/__tests__/multiBuildExport.test.ts) — сборка полного комплекта;
-- [saveAdminHeroBuildSet.test.ts](../src/features/admin/__tests__/saveAdminHeroBuildSet.test.ts) — публикация и cleanup черновика;
+- [publishedBuilderEditModel.test.ts](../src/features/admin/__tests__/publishedBuilderEditModel.test.ts) — immutable baseline, полные локальные leaf-drafts, dirty-state и координаты первой ошибки режима редактирования;
+- [saveAdminHeroBuildSet.test.ts](../src/features/admin/__tests__/saveAdminHeroBuildSet.test.ts) — единая атомарная операция публикации черновика;
+- [heroBuildSetsLifecycleSql.test.js](../src/features/admin/__tests__/heroBuildSetsLifecycleSql.test.js) — структура migration, server trigger и publication RPC;
+- [heroBuildSetRevisionsSql.test.js](../src/features/admin/__tests__/heroBuildSetRevisionsSql.test.js) — revision/history immutability, optimistic predicates и restore RPC;
 - [heroGuideSelectorModel.test.ts](../src/features/admin/__tests__/heroGuideSelectorModel.test.ts) — взаимоисключающие списки героев;
 - [HeroGuideSelector.test.tsx](../src/features/admin/__tests__/HeroGuideSelector.test.tsx) — loading/error/группы селектора;
+- [ScreenLoader.test.tsx](../src/shared/ui/__tests__/ScreenLoader.test.tsx) — режимы, accessibility, reduced motion и cleanup анимации;
 - [EquipmentVariantBuilder.test.tsx](../src/features/admin/__tests__/EquipmentVariantBuilder.test.tsx) — варианты экипировки;
 - [weaponAwakening.test.ts](../src/features/admin/__tests__/weaponAwakening.test.ts) — selections пробуждения;
 

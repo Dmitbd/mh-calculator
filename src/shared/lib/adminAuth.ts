@@ -1,5 +1,15 @@
+import { reportRuntimeDiagnostic } from "./runtimeDiagnostics";
+
 export type AdminSession = {
+  id: string;
   email: string | null;
+  role: "admin";
+};
+
+type AuthUser = {
+  id: string;
+  email?: string | null;
+  app_metadata?: Record<string, unknown>;
 };
 
 type AuthResult<T> = {
@@ -10,15 +20,39 @@ type AuthResult<T> = {
 type AdminAuthClient = {
   auth: {
     getSession?: () => Promise<
-      AuthResult<{ session: { user: { email?: string | null } } | null }>
+      AuthResult<{ session: { user: AuthUser } | null }>
     >;
     signInWithPassword?: (credentials: {
       email: string;
       password: string;
-    }) => Promise<AuthResult<{ user: { email?: string | null } | null }>>;
-    signOut?: () => Promise<AuthResult<unknown>>;
+    }) => Promise<AuthResult<{ user: AuthUser | null }>>;
+    signOut?: (options?: {
+      scope?: "global" | "local" | "others";
+    }) => Promise<AuthResult<unknown>>;
   };
 };
+
+function getAdminSession(user: AuthUser | null | undefined): AdminSession | null {
+  if (!user || user.app_metadata?.role !== "admin") {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    email: user.email ?? null,
+    role: "admin",
+  };
+}
+
+async function bestEffortSignOutLocally(client: AdminAuthClient): Promise<void> {
+  // auth-js has no public force-clear API beyond local-scope sign-out.
+  // Cleanup failures must not replace the access-denied result.
+  try {
+    await client.auth.signOut?.({ scope: "local" });
+  } catch {
+    return;
+  }
+}
 
 export async function signInAdmin(
   client: AdminAuthClient,
@@ -37,7 +71,18 @@ export async function signInAdmin(
     throw new Error(error.message);
   }
 
-  return { email: data?.user?.email ?? null };
+  const session = getAdminSession(data?.user);
+
+  if (!session) {
+    reportRuntimeDiagnostic({
+      area: "admin-auth",
+      event: "access-denied",
+    });
+    await bestEffortSignOutLocally(client);
+    throw new Error("Недостаточно прав администратора.");
+  }
+
+  return session;
 }
 
 export async function getCurrentAdminSession(
@@ -53,9 +98,7 @@ export async function getCurrentAdminSession(
     throw new Error(error.message);
   }
 
-  const user = data?.session?.user;
-
-  return user ? { email: user.email ?? null } : null;
+  return getAdminSession(data?.session?.user);
 }
 
 export async function signOutAdmin(client: AdminAuthClient): Promise<void> {

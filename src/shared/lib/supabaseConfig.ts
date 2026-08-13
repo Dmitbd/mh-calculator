@@ -5,16 +5,16 @@ export type SupabaseConfig = {
 
 type SupabaseEnv = Record<string, string | undefined>;
 
+const publicSupabaseEnv: SupabaseEnv = {
+  EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+};
+
 export function readSupabaseConfig(
-  env?: SupabaseEnv,
+  env: SupabaseEnv = publicSupabaseEnv,
 ): SupabaseConfig | null {
-  const url = (
-    env?.EXPO_PUBLIC_SUPABASE_URL ?? process.env.EXPO_PUBLIC_SUPABASE_URL
-  )?.trim();
-  const anonKey = (
-    env?.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
-    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
-  )?.trim();
+  const url = env.EXPO_PUBLIC_SUPABASE_URL?.trim();
+  const anonKey = env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
   if (!url || !anonKey) {
     return null;

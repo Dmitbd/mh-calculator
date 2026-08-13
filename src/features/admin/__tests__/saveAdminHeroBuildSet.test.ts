@@ -1,72 +1,61 @@
 import type { HeroBuildSet } from "@/features/game-data/heroes/types";
 import { getHeroBuildSet } from "@/features/game-data/heroes";
 
-import { deleteDraftHeroBuildSet, saveHeroBuildSet } from "@/features/builds";
+import { publishDraftHeroBuildSet } from "@/features/builds";
 import {
   hasCreatePublicationConflict,
   publishAdminHeroBuildSet,
 } from "../api/saveAdminHeroBuildSet";
 
 jest.mock("@/features/builds", () => ({
-  deleteDraftHeroBuildSet: jest.fn(),
-  saveHeroBuildSet: jest.fn(),
+  publishDraftHeroBuildSet: jest.fn(),
 }));
 
-const mockedSave = jest.mocked(saveHeroBuildSet);
-const mockedDeleteDraft = jest.mocked(deleteDraftHeroBuildSet);
+const mockedPublishDraft = jest.mocked(publishDraftHeroBuildSet);
 const buildSet: HeroBuildSet = { schemaVersion: 2, tabs: [] };
 const client = { from: jest.fn() } as never;
 
 beforeEach(() => {
-  mockedSave.mockReset();
-  mockedDeleteDraft.mockReset();
+  mockedPublishDraft.mockReset();
 });
 
-it("publishes before deleting the matching draft", async () => {
-  let resolveSave!: () => void;
-  mockedSave.mockReturnValue(
-    new Promise<void>((resolve) => {
-      resolveSave = resolve;
-    }),
+it("publishes the matching expected draft revision in one operation", async () => {
+  let resolvePublication!: (value: { revision: number }) => void;
+  mockedPublishDraft.mockReturnValue(
+    new Promise((resolve) => {
+      resolvePublication = resolve;
+    }) as never,
   );
-  mockedDeleteDraft.mockResolvedValue(undefined);
 
   const publication = publishAdminHeroBuildSet({
     buildSet,
     client,
+    expectedRevision: 4,
     heroId: "bastet",
   });
 
-  expect(mockedSave).toHaveBeenCalledWith(client, {
+  expect(mockedPublishDraft).toHaveBeenCalledWith(client, {
     buildSet,
+    expectedRevision: 4,
     heroId: "bastet",
-    status: "published",
   });
-  expect(mockedDeleteDraft).not.toHaveBeenCalled();
 
-  resolveSave();
+  resolvePublication({ revision: 5 });
 
-  await expect(publication).resolves.toEqual({ draftCleanupError: null });
-  expect(mockedDeleteDraft).toHaveBeenCalledWith(client, "bastet");
+  await expect(publication).resolves.toMatchObject({ revision: 5 });
 });
 
-it("preserves the draft when publication fails", async () => {
-  mockedSave.mockRejectedValue(new Error("publish failed"));
+it("surfaces an atomic publication failure", async () => {
+  mockedPublishDraft.mockRejectedValue(new Error("publish failed"));
 
   await expect(
-    publishAdminHeroBuildSet({ buildSet, client, heroId: "bastet" }),
+    publishAdminHeroBuildSet({
+      buildSet,
+      client,
+      expectedRevision: 4,
+      heroId: "bastet",
+    }),
   ).rejects.toThrow("publish failed");
-
-  expect(mockedDeleteDraft).not.toHaveBeenCalled();
-});
-
-it("returns a cleanup error after a successful publication", async () => {
-  mockedSave.mockResolvedValue(undefined);
-  mockedDeleteDraft.mockRejectedValue(new Error("cleanup failed"));
-
-  await expect(
-    publishAdminHeroBuildSet({ buildSet, client, heroId: "bastet" }),
-  ).resolves.toEqual({ draftCleanupError: new Error("cleanup failed") });
 });
 
 it("does not treat a local-only build as a create publication conflict", () => {

@@ -12,6 +12,32 @@ const mockRouter = {
   replace: jest.fn(),
 };
 const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
+const mockLoadDataBootstrap = jest.fn();
+const mockLoadAndCacheRemoteHeroBuildSnapshot = jest.fn();
+const mockLoadHeroBuildSnapshotFallback = jest.fn();
+const mockAcceptBootstrapTransition = jest.fn();
+const mockAcceptResourceTransition = jest.fn();
+const mockRejectBootstrapTransition = jest.fn();
+const mockRejectResourceTransition = jest.fn();
+const mockUseCriticalImagePreload = jest.fn(() => true);
+const remoteBootstrap = {
+  manifest: {
+    status: "ok",
+    contentVersion: "v1",
+    contentUpdatedAt: "1970-01-01T00:00:00.000000Z",
+    schemaVersion: 1,
+    resources: {
+      heroBuilds: { version: "v1", etag: `sha256:${"a".repeat(64)}` },
+    },
+  },
+  reason: null,
+  source: "remote",
+} as const;
+const ADMIN_SESSION = {
+  id: "admin-user-id",
+  email: "admin@example.com",
+  role: "admin",
+} as const;
 
 jest.mock("react-native-safe-area-context", () => ({
   __esModule: true,
@@ -29,19 +55,99 @@ jest.mock("@/shared/lib/supabaseClient", () => ({
   getSupabaseClient: () => mockGetSupabaseClient(),
 }));
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+jest.mock("@/features/builds/data/heroBuildSnapshotSource", () => ({
+  getBuildSetFromSnapshot: (source: { snapshot: { heroBuilds: Array<{ buildSet: unknown; heroId: string }> } }, heroId: string) =>
+    source.snapshot.heroBuilds.find((entry) => entry.heroId === heroId)?.buildSet ?? null,
+  loadAndCacheRemoteHeroBuildSnapshot: (...args: unknown[]) =>
+    mockLoadAndCacheRemoteHeroBuildSnapshot(...args),
+  loadHeroBuildSnapshotFallback: (...args: unknown[]) =>
+    mockLoadHeroBuildSnapshotFallback(...args),
+}));
+
+jest.mock("@/shared/lib/imagePreload", () => ({
+  useCriticalImagePreload: () => mockUseCriticalImagePreload(),
+}));
+
+jest.mock("@/shared/lib/dataBootstrap", () => ({
+  loadDataBootstrap: (...args: unknown[]) => mockLoadDataBootstrap(...args),
+}));
+
+jest.mock("@/shared/lib/sourceSelection", () => {
+  const actual = jest.requireActual("@/shared/lib/sourceSelection");
+  return {
+    ...actual,
+    acceptBootstrap: (...args: unknown[]) => {
+      mockAcceptBootstrapTransition(...args);
+      return actual.acceptBootstrap(...args);
+    },
+    acceptResource: (...args: unknown[]) => {
+      mockAcceptResourceTransition(...args);
+      return actual.acceptResource(...args);
+    },
+    rejectBootstrap: (...args: unknown[]) => {
+      mockRejectBootstrapTransition(...args);
+      return actual.rejectBootstrap(...args);
+    },
+    rejectResource: (...args: unknown[]) => {
+      mockRejectResourceTransition(...args);
+      return actual.rejectResource(...args);
+    },
+  };
+});
+
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { AccessibilityInfo } from "react-native";
 
 import { getHeroBuildSet } from "@/features/game-data/heroes/heroBuilds";
 import { HeroBuildScreen } from "@/features/heroes/screens/HeroBuildScreen";
+import {
+  createHeroBuildLoadState,
+  resolveHeroBuildLoadState,
+} from "@/features/heroes/model/heroBuildLoading";
+import { acceptResource } from "@/shared/lib/sourceSelection";
 
 describe("HeroBuildScreen", () => {
+  let diagnostic: jest.SpyInstance;
+  let consoleError: jest.SpyInstance;
+
   beforeEach(() => {
     jest.useRealTimers();
+    diagnostic = jest.spyOn(console, "info").mockImplementation();
+    consoleError = jest.spyOn(console, "error");
+    jest
+      .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
+      .mockResolvedValue(true);
     mockRouter.back.mockClear();
     mockRouter.canGoBack.mockClear();
     mockRouter.push.mockClear();
     mockRouter.replace.mockClear();
     mockGetSupabaseClient.mockReturnValue(null);
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockReset();
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockResolvedValue({
+      source: "remote",
+      snapshot: {
+        heroBuilds: [{ buildSet: getHeroBuildSet("bastet"), heroId: "bastet" }],
+      },
+    });
+    mockLoadHeroBuildSnapshotFallback.mockReset();
+    mockLoadHeroBuildSnapshotFallback.mockResolvedValue({
+      source: "bundled",
+      snapshot: {
+        heroBuilds: [{ buildSet: getHeroBuildSet("bastet"), heroId: "bastet" }],
+      },
+    });
+    mockLoadDataBootstrap.mockReset();
+    mockLoadDataBootstrap.mockResolvedValue(remoteBootstrap);
+    mockAcceptBootstrapTransition.mockClear();
+    mockAcceptResourceTransition.mockClear();
+    mockRejectBootstrapTransition.mockClear();
+    mockRejectResourceTransition.mockClear();
+    mockUseCriticalImagePreload.mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    expect(consoleError).not.toHaveBeenCalled();
+    jest.restoreAllMocks();
   });
 
   test("renders only tabs with ready builds for bastet", () => {
@@ -56,6 +162,26 @@ describe("HeroBuildScreen", () => {
 
     expect(screen.getByLabelText("Select Кампания build tab")).toBeTruthy();
     expect(screen.getByLabelText("Select Боссы build tab")).toBeTruthy();
+  });
+
+  test("waits for selected hero metadata before showing the initial build", () => {
+    mockUseCriticalImagePreload.mockReturnValue(false);
+
+    const view = render(
+      <HeroBuildScreen heroId="bastet" initialAdminSession={null} />,
+    );
+
+    expect(
+      screen.getByRole("progressbar", { name: "Подготавливаем иконки" }),
+    ).toBeTruthy();
+    expect(screen.queryByText("Axe of Pangu")).toBeNull();
+
+    mockUseCriticalImagePreload.mockReturnValue(true);
+    view.rerender(
+      <HeroBuildScreen heroId="bastet" initialAdminSession={null} />,
+    );
+
+    expect(screen.getByText("Axe of Pangu")).toBeTruthy();
   });
 
   test("defaults to the first ready build path", () => {
@@ -135,7 +261,7 @@ describe("HeroBuildScreen", () => {
     render(
       <HeroBuildScreen
         heroId="bastet"
-        initialAdminSession={{ email: "admin@example.com" }}
+        initialAdminSession={ADMIN_SESSION}
       />,
     );
 
@@ -145,49 +271,7 @@ describe("HeroBuildScreen", () => {
       pathname: "/admin/branch-builder",
       params: { heroId: "bastet", mode: "edit" },
     });
-  });
-
-  test("asks for confirmation, shows delete loading state, and returns to heroes after success", async () => {
-    let resolveDelete!: (value: { data: null; error: null }) => void;
-    const deletePromise = new Promise<{ data: null; error: null }>((resolve) => {
-      resolveDelete = resolve;
-    });
-    const deleteEq = jest.fn(() => deletePromise);
-    const deleteMock = jest.fn(() => ({ eq: deleteEq }));
-    const fromMock = jest.fn(() => ({ delete: deleteMock }));
-
-    mockGetSupabaseClient.mockReturnValue({ from: fromMock });
-
-    render(
-      <HeroBuildScreen
-        heroId="bastet"
-        initialAdminSession={{ email: "admin@example.com" }}
-      />,
-    );
-
-    fireEvent.press(screen.getByText("Удалить"));
-
-    expect(screen.getByText("Удалить билд?")).toBeTruthy();
-    expect(deleteEq).not.toHaveBeenCalled();
-
-    fireEvent.press(screen.getByText("Нет"));
-
-    expect(screen.queryByText("Удалить билд?")).toBeNull();
-
-    fireEvent.press(screen.getByText("Удалить"));
-    fireEvent.press(screen.getByText("Да"));
-
-    expect(screen.getByText("Удаляем...")).toBeTruthy();
-    fireEvent.press(screen.getByText("Удаляем..."));
-    expect(deleteEq).toHaveBeenCalledTimes(1);
-
-    resolveDelete({ data: null, error: null });
-
-    await waitFor(() => {
-      expect(deleteEq).toHaveBeenCalledWith("hero_id", "bastet");
-    });
-    expect(await screen.findByText("Билд удалён.")).toBeTruthy();
-    expect(mockRouter.replace).toHaveBeenCalledWith("/heroes");
+    expect(screen.queryByText("Удалить")).toBeNull();
   });
 
   test("does not show empty 7-node divinity row in read-only builds", () => {
@@ -226,5 +310,210 @@ describe("HeroBuildScreen", () => {
     expect(screen.queryByText("7 узлов")).toBeNull();
 
     spy.mockRestore();
+  });
+
+  test("shows the shared loader until the initial remote build resolves", async () => {
+    let resolveBuild!: (source: unknown) => void;
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockReturnValue(
+      new Promise((resolve) => {
+        resolveBuild = resolve;
+      }),
+    );
+
+    render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
+
+    expect(
+      screen.getByRole("progressbar", { name: "Загружаем билд" }),
+    ).toBeTruthy();
+    expect(screen.queryByText("Axe of Pangu")).toBeNull();
+    expect(screen.queryByText("Билд для этого режима ещё не готов.")).toBeNull();
+
+    resolveBuild({
+      source: "remote",
+      snapshot: { heroBuilds: [{ buildSet: getHeroBuildSet("bastet"), heroId: "bastet" }] },
+    });
+
+    expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
+    expect(screen.queryByText("Загружаем билд")).toBeNull();
+    expect(mockAcceptBootstrapTransition).toHaveBeenCalled();
+    expect(mockAcceptResourceTransition).toHaveBeenCalledWith(
+      expect.any(Object),
+      "heroBuilds",
+      getHeroBuildSet("bastet"),
+    );
+  });
+
+  test("does not read a published build before compatible bootstrap", async () => {
+    let resolveBootstrap!: (decision: typeof remoteBootstrap) => void;
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadDataBootstrap.mockReturnValue(
+      new Promise((resolve) => {
+        resolveBootstrap = resolve;
+      }),
+    );
+
+    render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
+
+    expect(mockLoadAndCacheRemoteHeroBuildSnapshot).not.toHaveBeenCalled();
+    expect(screen.getByRole("progressbar", { name: "Загружаем билд" })).toBeTruthy();
+
+    await act(async () => {
+      resolveBootstrap(remoteBootstrap);
+    });
+
+    expect(mockLoadAndCacheRemoteHeroBuildSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  test("keeps the bundled build when bootstrap selects fallback", async () => {
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadDataBootstrap.mockResolvedValue({
+      manifest: null,
+      reason: "timeout",
+      source: "fallback",
+    });
+
+    render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
+
+    expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
+    expect(mockLoadAndCacheRemoteHeroBuildSnapshot).not.toHaveBeenCalled();
+    expect(diagnostic).toHaveBeenCalledWith("MH_DIAGNOSTIC", {
+      area: "hero-builds",
+      event: "fallback-selected",
+      heroId: "bastet",
+      reason: "timeout",
+      resource: "heroBuilds",
+    });
+    expect(mockRejectBootstrapTransition).toHaveBeenCalledWith(
+      expect.any(Object),
+      "timeout",
+    );
+    expect(mockRejectResourceTransition).toHaveBeenCalledWith(
+      expect.any(Object),
+      "heroBuilds",
+      "timeout",
+    );
+  });
+
+  test("ignores a late full snapshot after route cleanup", async () => {
+    let resolveRemote!: (source: unknown) => void;
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRemote = resolve;
+      }),
+    );
+
+    const view = render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
+    view.unmount();
+
+    await act(async () => {
+      resolveRemote({ source: "remote", snapshot: { heroBuilds: [] } });
+    });
+  });
+
+  test("uses the local build when an unexpected initial request error occurs", async () => {
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockRejectedValue(new Error("unexpected"));
+
+    render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
+
+    expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
+    expect(screen.queryByText("Загружаем билд")).toBeNull();
+  });
+
+  test("resets build content synchronously when the route hero changes", async () => {
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadAndCacheRemoteHeroBuildSnapshot
+      .mockResolvedValueOnce({
+        source: "remote",
+        snapshot: { heroBuilds: [{ buildSet: getHeroBuildSet("bastet"), heroId: "bastet" }] },
+      })
+      .mockReturnValueOnce(new Promise(() => undefined));
+    const view = render(
+      <HeroBuildScreen heroId="bastet" initialAdminSession={null} />,
+    );
+    expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
+
+    view.rerender(
+      <HeroBuildScreen heroId="morana" initialAdminSession={null} />,
+    );
+
+    expect(screen.getByText("Морана")).toBeTruthy();
+    expect(screen.queryByText("Axe of Pangu")).toBeNull();
+    expect(
+      screen.getByRole("progressbar", { name: "Загружаем билд" }),
+    ).toBeTruthy();
+  });
+
+  test("resolves a build and its valid active path in one state transition", () => {
+    const initialState = createHeroBuildLoadState({
+      fallbackBuildSet: getHeroBuildSet("bastet"),
+      hasRemoteClient: true,
+      heroId: "bastet",
+    });
+    const buildSet = getHeroBuildSet("bastet");
+
+    const resolvedState = resolveHeroBuildLoadState(
+      initialState,
+      acceptResource(initialState.sourceSelection, "heroBuilds", buildSet),
+    );
+
+    expect(resolvedState).toEqual(
+      expect.objectContaining({
+        activePath: expect.arrayContaining([expect.any(String)]),
+        buildSet,
+        heroId: "bastet",
+        isLoading: false,
+      }),
+    );
+  });
+
+  test("reports a controlled remote fallback kind for diagnostics", async () => {
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockRejectedValue(new Error("network"));
+
+    render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
+
+    expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
+    expect(diagnostic).toHaveBeenCalledWith("MH_DIAGNOSTIC", {
+      area: "hero-builds",
+      event: "fallback-selected",
+      heroId: "bastet",
+      reason: "network",
+      resource: "heroBuilds",
+    });
+  });
+
+  test("reports the no-client fallback exactly once per hero load", () => {
+    const view = render(
+      <HeroBuildScreen heroId="bastet" initialAdminSession={null} />,
+    );
+
+    expect(diagnostic).toHaveBeenCalledTimes(1);
+    expect(diagnostic).toHaveBeenLastCalledWith("MH_DIAGNOSTIC", {
+      area: "hero-builds",
+      event: "fallback-selected",
+      heroId: "bastet",
+      reason: "not-configured",
+      resource: "heroBuilds",
+    });
+
+    view.rerender(
+      <HeroBuildScreen heroId="bastet" initialAdminSession={null} />,
+    );
+    expect(diagnostic).toHaveBeenCalledTimes(1);
+
+    view.rerender(
+      <HeroBuildScreen heroId="morana" initialAdminSession={null} />,
+    );
+    expect(diagnostic).toHaveBeenCalledTimes(2);
+    expect(diagnostic).toHaveBeenLastCalledWith("MH_DIAGNOSTIC", {
+      area: "hero-builds",
+      event: "fallback-selected",
+      heroId: "morana",
+      reason: "not-configured",
+      resource: "heroBuilds",
+    });
   });
 });

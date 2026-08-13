@@ -1,20 +1,14 @@
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
-  deleteHeroBuildSet,
-  loadPublishedHeroBuildSet,
-  type HeroBuildSetSupabaseClient,
-} from "@/features/builds";
+  getBuildSetFromSnapshot,
+  loadAndCacheRemoteHeroBuildSnapshot,
+  loadHeroBuildSnapshotFallback,
+} from "@/features/builds/data/heroBuildSnapshotSource";
+import { isHeroBuildSnapshotRemoteTimeoutError } from "@/features/builds/data/heroBuildSnapshotRemote";
 import {
   getCurrentAdminSession,
   type AdminSession,
@@ -34,35 +28,42 @@ import {
   getHeroBuildSet,
   filterTabsWithReadyBuilds,
   getBuildAtPath,
-  getDefaultTabPath,
   getTabByPath,
   sortBuildTabs,
 } from "@/features/game-data/heroes";
-import type { HeroBuildTabPath } from "@/features/game-data/heroes/types";
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
-import { StatusToast } from "@/shared/ui/StatusToast";
+import { ScreenLoader } from "@/shared/ui/ScreenLoader";
+import { loadDataBootstrap } from "@/shared/lib/dataBootstrap";
+import { useCriticalImagePreload } from "@/shared/lib/imagePreload";
+import { reportRuntimeDiagnostic } from "@/shared/lib/runtimeDiagnostics";
+import {
+  acceptBootstrap,
+  acceptResource,
+  beginResource,
+  rejectBootstrap,
+  rejectResource,
+} from "@/shared/lib/sourceSelection";
 
 import { HeroMetadataRow } from "../components/HeroMetadataRow";
 import { HeroBuildBranchSection } from "../components/hero-build/HeroBuildBranchSection";
 import { HeroBuildEquipmentSection } from "../components/hero-build/HeroBuildEquipmentSection";
 import { HeroBuildTabsSection } from "../components/hero-build/HeroBuildTabsSection";
 import { HeroBuildWeaponAwakeningSection } from "../components/hero-build/HeroBuildWeaponAwakeningSection";
+import {
+  createHeroBuildLoadState,
+  resolveHeroBuildLoadState,
+} from "../model/heroBuildLoading";
 import { getHeroBuildTabViewModel } from "../model/heroBuildTabs";
 import { mapBuildToView } from "../utils/mapBuildToView";
+import { getHeroMetadataImageSources } from "../utils/heroCriticalImages";
 
 const SCREEN_PADDING = 20;
-
 type HeroBuildScreenProps = {
   /** Id героя из роута */
   heroId: string;
   initialAdminSession?: AdminSession | null;
 };
-
-type StatusToastState = {
-  kind: "success" | "error";
-  message: string;
-} | null;
 
 /** Read-only экран билда героя: вёрстка branch-builder без редактирования */
 export function HeroBuildScreen({
@@ -73,48 +74,171 @@ export function HeroBuildScreen({
   const router = useRouter();
 
   const hero = getHeroById(heroId);
+  const criticalImageSources = useMemo(
+    () => (hero ? getHeroMetadataImageSources(hero) : []),
+    [hero],
+  );
+  const criticalImagesReady = useCriticalImagePreload(criticalImageSources, {
+    enabled: Boolean(hero),
+    readinessKey: heroId,
+  });
   const fallbackBuildSet = getHeroBuildSet(heroId);
-  const [buildSet, setBuildSet] = useState(fallbackBuildSet);
-  const [isBuildLoading, setIsBuildLoading] = useState(false);
+  const [client] = useState(() => getSupabaseClient());
+  const noClientDiagnosticHeroId = useRef<string | null>(null);
+  const [loadState, setLoadState] = useState(() =>
+    createHeroBuildLoadState({
+      fallbackBuildSet,
+      hasRemoteClient: Boolean(client),
+      heroId,
+    }),
+  );
+  const currentLoadState =
+    loadState.heroId === heroId
+      ? loadState
+      : createHeroBuildLoadState({
+          fallbackBuildSet,
+          hasRemoteClient: Boolean(client),
+          heroId,
+        });
+
+  if (currentLoadState !== loadState) {
+    setLoadState(currentLoadState);
+  }
+
   const [adminSession, setAdminSession] = useState<AdminSession | null>(
     initialAdminSession ?? null,
   );
   const [isAuthChecked, setIsAuthChecked] = useState(
     initialAdminSession !== undefined,
   );
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [isDeletePending, setIsDeletePending] = useState(false);
-  const [toast, setToast] = useState<StatusToastState>(null);
 
   useEffect(() => {
-    const client = getSupabaseClient();
     let isMounted = true;
 
-    setBuildSet(fallbackBuildSet);
-
     if (!client) {
-      setIsBuildLoading(false);
+      if (noClientDiagnosticHeroId.current !== heroId) {
+        noClientDiagnosticHeroId.current = heroId;
+        reportRuntimeDiagnostic({
+          area: "hero-builds",
+          event: "fallback-selected",
+          heroId,
+          reason: "not-configured",
+          resource: "heroBuilds",
+        });
+      }
+
       return () => {
         isMounted = false;
       };
     }
 
-    setIsBuildLoading(true);
-    void loadPublishedHeroBuildSet({
-      client: client as unknown as HeroBuildSetSupabaseClient,
-      fallbackBuildSet,
-      heroId,
-    }).then((loadedBuildSet) => {
-      if (isMounted) {
-        setBuildSet(loadedBuildSet);
-        setIsBuildLoading(false);
+    const loadBuild = async () => {
+      let sourceSelection = currentLoadState.sourceSelection;
+      try {
+        const bootstrap = await loadDataBootstrap();
+        if (!isMounted) {
+          return;
+        }
+
+        if (bootstrap.source === "fallback") {
+          reportRuntimeDiagnostic({
+            area: "hero-builds",
+            event: "fallback-selected",
+            heroId,
+            reason: bootstrap.reason,
+            resource: "heroBuilds",
+          });
+          const fallback = await loadHeroBuildSnapshotFallback();
+          sourceSelection = rejectBootstrap(sourceSelection, bootstrap.reason);
+          sourceSelection = rejectResource(
+            sourceSelection,
+            "heroBuilds",
+            bootstrap.reason,
+          );
+          sourceSelection = {
+            ...sourceSelection,
+            resources: {
+              ...sourceSelection.resources,
+              heroBuilds: {
+                ...sourceSelection.resources.heroBuilds,
+                data: getBuildSetFromSnapshot(fallback, heroId),
+              },
+            },
+          };
+          const nextSelection = sourceSelection;
+          setLoadState((current) =>
+            current.heroId === heroId
+              ? resolveHeroBuildLoadState(current, nextSelection)
+              : current,
+          );
+          return;
+        }
+
+        sourceSelection = acceptBootstrap(sourceSelection, bootstrap.manifest);
+        sourceSelection = beginResource(sourceSelection, "heroBuilds");
+
+        const fullRemote = await loadAndCacheRemoteHeroBuildSnapshot(
+          bootstrap.manifest,
+        );
+        const acceptedBuildSet = getBuildSetFromSnapshot(fullRemote, heroId);
+        sourceSelection = acceptResource(
+          sourceSelection,
+          "heroBuilds",
+          acceptedBuildSet,
+        );
+        const acceptedSelection = sourceSelection;
+
+        if (isMounted) {
+          setLoadState((current) =>
+            current.heroId === heroId
+              ? resolveHeroBuildLoadState(current, acceptedSelection)
+              : current,
+          );
+        }
+      } catch (error) {
+        if (isMounted) {
+          const reason = isHeroBuildSnapshotRemoteTimeoutError(error)
+            ? ("timeout" as const)
+            : ("network" as const);
+          reportRuntimeDiagnostic({
+            area: "hero-builds",
+            event: "fallback-selected",
+            heroId,
+            reason,
+            resource: "heroBuilds",
+          });
+          const fallback = await loadHeroBuildSnapshotFallback();
+          sourceSelection = rejectResource(
+            sourceSelection,
+            "heroBuilds",
+            reason,
+          );
+          sourceSelection = {
+            ...sourceSelection,
+            resources: {
+              ...sourceSelection.resources,
+              heroBuilds: {
+                ...sourceSelection.resources.heroBuilds,
+                data: getBuildSetFromSnapshot(fallback, heroId),
+              },
+            },
+          };
+          const failedSelection = sourceSelection;
+          setLoadState((current) =>
+            current.heroId === heroId
+              ? resolveHeroBuildLoadState(current, failedSelection)
+              : current,
+          );
+        }
       }
-    });
+    };
+
+    void loadBuild();
 
     return () => {
       isMounted = false;
     };
-  }, [fallbackBuildSet, heroId]);
+  }, [client, fallbackBuildSet, heroId]);
 
   useEffect(() => {
     if (initialAdminSession !== undefined) {
@@ -149,32 +273,11 @@ export function HeroBuildScreen({
     };
   }, [initialAdminSession]);
 
-  useEffect(() => {
-    if (toast?.kind !== "success") {
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      setToast(null);
-    }, 3000);
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [toast]);
+  const { activePath, buildSet, isLoading: isBuildLoading } = currentLoadState;
   const sortedTabs = useMemo(
     () => (buildSet ? filterTabsWithReadyBuilds(buildSet.tabs) : []),
     [buildSet],
   );
-  const defaultPath = useMemo(
-    () => (sortedTabs.length > 0 ? getDefaultTabPath(sortedTabs) : []),
-    [sortedTabs],
-  );
-  const [activePath, setActivePath] = useState<HeroBuildTabPath>(defaultPath);
-
-  useEffect(() => {
-    setActivePath(defaultPath);
-  }, [defaultPath]);
 
   const build = getBuildAtPath(sortedTabs, activePath);
   const view = useMemo(() => (build ? mapBuildToView(build) : null), [build]);
@@ -209,11 +312,14 @@ export function HeroBuildScreen({
 
     if (tab.kind === "group" && tab.children && tab.children.length > 0) {
       const firstChild = sortBuildTabs(tab.children)[0];
-      setActivePath([tabId, firstChild.id]);
+      setLoadState((current) => ({
+        ...current,
+        activePath: [tabId, firstChild.id],
+      }));
       return;
     }
 
-    setActivePath([tabId]);
+    setLoadState((current) => ({ ...current, activePath: [tabId] }));
   };
 
   const handleSelectChildTab = (tabId: string) => {
@@ -221,7 +327,10 @@ export function HeroBuildScreen({
       return;
     }
 
-    setActivePath([activeTopId, tabId]);
+    setLoadState((current) => ({
+      ...current,
+      activePath: [activeTopId, tabId],
+    }));
   };
 
   const handleEditBuild = () => {
@@ -229,44 +338,6 @@ export function HeroBuildScreen({
       pathname: "/admin/branch-builder",
       params: { heroId, mode: "edit" },
     });
-  };
-
-  const handleConfirmDelete = async () => {
-    if (isDeletePending) {
-      return;
-    }
-
-    const client = getSupabaseClient();
-
-    if (!client) {
-      setIsDeleteConfirmOpen(false);
-      setToast({ kind: "error", message: "Supabase не настроен." });
-      return;
-    }
-
-    setIsDeletePending(true);
-
-    try {
-      await deleteHeroBuildSet(
-        client as unknown as HeroBuildSetSupabaseClient,
-        heroId,
-      );
-      setBuildSet(null);
-      setIsDeleteConfirmOpen(false);
-      setToast({ kind: "success", message: "Билд удалён." });
-      router.replace("/heroes");
-    } catch (error) {
-      setIsDeleteConfirmOpen(false);
-      setToast({
-        kind: "error",
-        message:
-          error instanceof Error
-            ? `Ошибка Supabase: ${error.message}`
-            : "Ошибка Supabase.",
-      });
-    } finally {
-      setIsDeletePending(false);
-    }
   };
 
   const contentPadding = {
@@ -291,11 +362,15 @@ export function HeroBuildScreen({
       <ScrollView
         contentContainerStyle={[styles.container, contentPadding]}
       >
-        <View style={styles.section}>
-          <HeroMetadataRow hero={hero} />
-        </View>
+        {!criticalImagesReady ? (
+          <ScreenLoader label="Подготавливаем иконки" />
+        ) : (
+          <View style={styles.section}>
+            <HeroMetadataRow hero={hero} />
+          </View>
+        )}
 
-        {isAuthChecked && adminSession ? (
+        {criticalImagesReady && isAuthChecked && adminSession ? (
           <View style={[styles.section, styles.adminActions]}>
             <Pressable
               accessibilityRole="button"
@@ -311,23 +386,14 @@ export function HeroBuildScreen({
                 Редактировать
               </Text>
             </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setIsDeleteConfirmOpen(true)}
-              style={[styles.adminButton, styles.dangerButton]}
-            >
-              <Text style={styles.adminButtonText}>Удалить</Text>
-            </Pressable>
           </View>
         ) : null}
 
-        {isBuildLoading ? (
-          <View style={styles.loadingCard}>
-            <Text style={styles.loadingText}>Загружаем билд...</Text>
-          </View>
+        {criticalImagesReady && isBuildLoading ? (
+          <ScreenLoader label="Загружаем билд" />
         ) : null}
 
-        {sortedTabs.length > 0 ? (
+        {criticalImagesReady && sortedTabs.length > 0 ? (
           <View style={styles.section}>
             <HeroBuildTabsSection
               childTabs={childFolderTabs}
@@ -340,7 +406,7 @@ export function HeroBuildScreen({
           </View>
         ) : null}
 
-        {view ? (
+        {criticalImagesReady && view ? (
           <>
             <View style={styles.section}>
               <HeroBuildEquipmentSection
@@ -377,7 +443,7 @@ export function HeroBuildScreen({
               <HeroBuildBranchSection view={view} />
             </View>
           </>
-        ) : (
+        ) : isBuildLoading || !criticalImagesReady ? null : (
           <View style={styles.placeholderCard}>
             <Text style={styles.placeholderText}>
               Билд для этого режима ещё не готов.
@@ -385,73 +451,6 @@ export function HeroBuildScreen({
           </View>
         )}
       </ScrollView>
-      <Modal
-        animationType="fade"
-        onRequestClose={() => {
-          if (!isDeletePending) {
-            setIsDeleteConfirmOpen(false);
-          }
-        }}
-        transparent
-        visible={isDeleteConfirmOpen}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Удалить билд?</Text>
-            <Text style={styles.modalText}>
-              После удаления опубликованный билд героя пропадёт с экрана.
-            </Text>
-            <View style={styles.modalActions}>
-              <Pressable
-                accessibilityRole="button"
-                disabled={isDeletePending}
-                onPress={() => {
-                  if (!isDeletePending) {
-                    setIsDeleteConfirmOpen(false);
-                  }
-                }}
-                style={[
-                  styles.modalButton,
-                  styles.secondaryAdminButton,
-                  isDeletePending && styles.modalButtonDisabled,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.adminButtonText,
-                    styles.secondaryAdminButtonText,
-                  ]}
-                >
-                  Нет
-                </Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                disabled={isDeletePending}
-                onPress={() => {
-                  void handleConfirmDelete();
-                }}
-                style={[
-                  styles.modalButton,
-                  styles.dangerButton,
-                  isDeletePending && styles.modalButtonDisabled,
-                ]}
-              >
-                <Text style={styles.adminButtonText}>
-                  {isDeletePending ? "Удаляем..." : "Да"}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-      {toast ? (
-        <StatusToast
-          kind={toast.kind}
-          message={toast.message}
-          onDismiss={() => setToast(null)}
-        />
-      ) : null}
     </View>
   );
 }
@@ -500,24 +499,6 @@ const styles = StyleSheet.create({
   secondaryAdminButtonText: {
     color: "#f6d59a",
   },
-  dangerButton: {
-    borderWidth: 1,
-    borderColor: "#9c5144",
-    backgroundColor: "#55231c",
-  },
-  loadingCard: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#5a412b",
-    backgroundColor: "#1d130f",
-    padding: 12,
-  },
-  loadingText: {
-    color: "#f6d59a",
-    fontSize: 14,
-    fontWeight: "800",
-    textAlign: "center",
-  },
   placeholderWrapper: {
     flexGrow: 1,
     alignItems: "center",
@@ -537,49 +518,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     textAlign: "center",
-  },
-  modalBackdrop: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.64)",
-    padding: 20,
-  },
-  modalCard: {
-    width: "100%",
-    maxWidth: 360,
-    gap: 14,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#5a412b",
-    backgroundColor: "#1d130f",
-    padding: 18,
-  },
-  modalTitle: {
-    color: "#f6d59a",
-    fontSize: 19,
-    fontWeight: "900",
-    textAlign: "center",
-  },
-  modalText: {
-    color: "#d7c19a",
-    fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  modalActions: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  modalButton: {
-    minHeight: 44,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    paddingHorizontal: 14,
-  },
-  modalButtonDisabled: {
-    opacity: 0.72,
   },
 });

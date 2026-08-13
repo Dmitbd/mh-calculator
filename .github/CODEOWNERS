@@ -1,0 +1,4 @@
+# Snapshot automation changes require repository-owner review before merge.
+/.github/workflows/update-hero-build-snapshot.yml @Dmitbd
+/scripts/export-hero-build-snapshot.cjs @Dmitbd
+/src/features/game-data/snapshots/hero-builds/ @Dmitbd

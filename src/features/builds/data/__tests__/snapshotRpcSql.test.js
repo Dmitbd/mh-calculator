@@ -1,0 +1,31 @@
+const fs = require("node:fs");
+const path = require("node:path");
+
+test("full snapshot RPC is bounded, published-only, and preserves anon RLS", () => {
+  const source = fs.readFileSync(path.join(process.cwd(), "supabase/migrations/20260813200000_add_published_hero_builds_snapshot_rpc.sql"), "utf8");
+  const clientSource = fs.readFileSync(path.join(process.cwd(), "src/features/builds/data/heroBuildSnapshotRemote.ts"), "utf8");
+  expect(source).toMatch(/security\s+invoker/i);
+  expect(source).not.toMatch(/security\s+definer|row_security\s*=\s*off/i);
+  expect(source.match(/where\s+status\s*=\s*'published'/gi)?.length).toBeGreaterThanOrEqual(3);
+  expect(source).toMatch(/row_count\s*>\s*1000[\s\S]*raise\s+exception/i);
+  expect(source).toMatch(/hero_builds_json\s+jsonb\s*;/i);
+  expect(source).toMatch(/into\s+metadata\s*,\s*hero_builds_json/i);
+  expect(source).toMatch(/resource_text\s*:=\s*hero_builds_json::text/i);
+  expect(source).not.toMatch(/into\s+metadata\s*,\s*hero_builds\b/i);
+  expect(source).toMatch(/octet_length\(resource_text\)\s*>\s*1572864/i);
+  expect(source).toMatch(/resource_checksum[\s\S]*digest\(convert_to\(resource_text,\s*'UTF8'\),\s*'sha256'\)/i);
+  expect(source).toMatch(/hero_builds_text\s*:=\s*resource_text/i);
+  expect(source).toMatch(/jsonb_agg\([\s\S]*order\s+by\s+hero_id/i);
+  expect(source).toMatch(/revoke\s+all[\s\S]*from\s+public/i);
+  expect(source).toMatch(/grant\s+execute[\s\S]*to\s+anon\s*,\s*authenticated/i);
+  expect(source).not.toMatch(/service_role/i);
+  const sqlBudget = source.match(/octet_length\(resource_text\)\s*>\s*(\d+)/i)?.[1];
+  const clientBudget = clientSource.match(/HERO_BUILD_SNAPSHOT_INNER_BYTES\s*=\s*([\d_]+)/)?.[1];
+  expect(sqlBudget).toBeDefined();
+  expect(clientBudget).toBeDefined();
+  expect(Number(clientBudget?.replaceAll("_", ""))).toBe(Number(sqlBudget));
+  const block = source.match(/as\s+\$\$([\s\S]*?)\$\$;/i)?.[1] ?? "";
+  expect(block).toMatch(/declare[\s\S]*begin[\s\S]*end\s*;/i);
+  expect((block.match(/\bbegin\b/gi) ?? [])).toHaveLength(1);
+  expect((block.match(/\bend\s*;/gi) ?? [])).toHaveLength(1);
+});

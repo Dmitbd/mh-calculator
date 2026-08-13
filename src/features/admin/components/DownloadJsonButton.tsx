@@ -11,10 +11,11 @@ import type { BranchBuildValidationError } from "../types/admin.types";
 type DownloadJsonButtonProps = {
   backendStatus?: string | null;
   errors: readonly BranchBuildValidationError[];
+  isDirty?: boolean;
   isPublishPending?: boolean;
   isTabSavePending?: boolean;
+  mode?: "create" | "edit";
   onErrorsLayout?: (event: LayoutChangeEvent) => void;
-  onDeleteFull: () => void;
   onDownloadFull: () => void;
   onLoadFull: () => void;
   onPublishFull: () => void;
@@ -25,9 +26,10 @@ type DownloadJsonButtonProps = {
 
 export function DownloadJsonButton({
   backendStatus,
+  isDirty = false,
   isPublishPending = false,
   isTabSavePending = false,
-  onDeleteFull,
+  mode = "create",
   onDownloadFull,
   onLoadFull,
   onPublishFull,
@@ -35,6 +37,33 @@ export function DownloadJsonButton({
   onSaveDraft,
   showAdvancedActions = false,
 }: DownloadJsonButtonProps) {
+  if (mode === "edit") {
+    return (
+      <View style={styles.wrapper}>
+        {isDirty || isPublishPending ? (
+          <View style={styles.actions}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={isPublishPending}
+              onPress={isPublishPending ? undefined : onPublishFull}
+              style={[
+                styles.button,
+                isPublishPending && styles.buttonDisabled,
+              ]}
+            >
+              <Text style={styles.buttonText}>
+                {isPublishPending ? "Обновляем..." : "Обновить"}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {backendStatus ? (
+          <Text style={styles.backendStatus}>{backendStatus}</Text>
+        ) : null}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.actions}>
@@ -98,15 +127,6 @@ export function DownloadJsonButton({
             {isPublishPending ? "Публикуем..." : "Опубликовать"}
           </Text>
         </Pressable>
-        {showAdvancedActions ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={onDeleteFull}
-            style={[styles.button, styles.dangerButton]}
-          >
-            <Text style={styles.buttonText}>Удалить билд</Text>
-          </Pressable>
-        ) : null}
       </View>
       {backendStatus ? (
         <Text style={styles.backendStatus}>{backendStatus}</Text>
@@ -145,11 +165,6 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: "#f6d59a",
-  },
-  dangerButton: {
-    borderWidth: 1,
-    borderColor: "#9c5144",
-    backgroundColor: "#55231c",
   },
   backendStatus: {
     color: "#e8d7b5",

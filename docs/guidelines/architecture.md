@@ -16,7 +16,7 @@ Current violations are refactor targets, not patterns to copy.
 - `src/shared/` MUST contain reusable UI and library code with no game-domain knowledge.
 - `src/types/` MUST be reserved for ambient or truly global types.
 - `public/img/` MUST contain local runtime assets referenced by stable `/img/...` paths.
-- `docs/` MUST contain product specs, plans, guidelines, and other project documentation.
+- `docs/` MUST contain permanent capability specs, guidelines, release history, backlog, and other durable project documentation. Temporary plans remain local and untracked.
 
 ## Import Boundaries
 

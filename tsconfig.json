@@ -5,7 +5,7 @@
     "resolveJsonModule": true,
     "ignoreDeprecations": "6.0",
     "lib": ["DOM", "ESNext"],
-    "types": ["jest", "react", "react-native"],
+    "types": ["jest", "node", "react", "react-native"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],

@@ -12,6 +12,7 @@ import { heroFactions } from "@/features/game-data/heroes/heroDictionaries";
 import type { Hero } from "@/features/game-data/heroes/types";
 import { resolveAssetUri } from "@/shared/lib/resolveAssetUri";
 import { IconPreview } from "@/shared/ui/IconPreview";
+import { ScreenLoader } from "@/shared/ui/ScreenLoader";
 
 import {
   getHeroGuideSelectorSections,
@@ -138,13 +139,7 @@ export function HeroGuideSelector({
       ) : isExpanded ? (
         <View style={styles.expandedContent} testID="hero-selector-content">
           {isLoading ? (
-            <View style={styles.loadingPanel}>
-              <ActivityIndicator
-                accessibilityLabel="Загрузка списка героев"
-                color="#d6c2a4"
-                size="small"
-              />
-            </View>
+            <ScreenLoader label="Загрузка списка героев" mode="inline" />
           ) : (
             <View style={styles.content}>
               <HeroCatalogList
@@ -469,11 +464,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: -9,
     padding: 16,
-  },
-  loadingPanel: {
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 72,
   },
   listSection: {
     gap: 10,

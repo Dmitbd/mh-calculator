@@ -14,7 +14,7 @@
 - показ артефактов, рун, пробуждения оружия и его бонусов;
 - показ базовых и пробуждённых скиллов божественности;
 - read-only дерево выбранных веток и прогресса;
-- действия `Редактировать` и `Удалить` для авторизованного администратора.
+- действие `Редактировать` для авторизованного администратора.
 
 Функция не реализует редактирование непосредственно на пользовательском экране: изменение открывает `/admin/branch-builder`. Пользовательский экран не создаёт новые билды и не записывает локальные черновики.
 
@@ -38,8 +38,27 @@
 - [heroListFilters.ts](../src/features/heroes/utils/heroListFilters.ts)
 - [heroListGrouping.ts](../src/features/heroes/utils/heroListGrouping.ts)
 - [heroBuildTabs.ts](../src/features/heroes/model/heroBuildTabs.ts)
+- [heroBuildLoading.ts](../src/features/heroes/model/heroBuildLoading.ts)
 - [mapBuildToView.ts](../src/features/heroes/utils/mapBuildToView.ts)
 - [heroBuildSetRepository.ts](../src/features/builds/api/heroBuildSetRepository.ts)
+- [ScreenLoader.tsx](../src/shared/ui/ScreenLoader.tsx)
+- [AppImage.tsx](../src/shared/ui/AppImage.tsx)
+- [imagePreload.ts](../src/shared/lib/imagePreload.ts)
+- [heroCriticalImages.ts](../src/features/heroes/utils/heroCriticalImages.ts)
+- [boundedRequest.ts](../src/shared/lib/boundedRequest.ts)
+- [dataBootstrap.ts](../src/shared/lib/dataBootstrap.ts)
+- [sourceSelection.ts](../src/shared/lib/sourceSelection.ts)
+- [heroBuildSnapshot.ts](../src/features/builds/data/heroBuildSnapshot.ts)
+- [heroBuildSnapshotRemote.ts](../src/features/builds/data/heroBuildSnapshotRemote.ts)
+- [heroBuildSnapshotSource.ts](../src/features/builds/data/heroBuildSnapshotSource.ts)
+- [heroBuildSnapshotStorage.ts](../src/features/builds/storage/heroBuildSnapshotStorage.ts)
+- [bundled snapshot manifest](../src/features/game-data/snapshots/hero-builds/manifest.json)
+- [snapshot update workflow](../.github/workflows/update-hero-build-snapshot.yml)
+- [snapshot RPC migration](../supabase/migrations/20260813200000_add_published_hero_builds_snapshot_rpc.sql)
+- [bootstrap/index.ts](../supabase/functions/bootstrap/index.ts)
+- [bootstrap/manifest.ts](../supabase/functions/bootstrap/manifest.ts)
+- [atomic bootstrap manifest migration](../supabase/migrations/20260813180000_add_atomic_bootstrap_manifest_rpc.sql)
+- [public hero-build read grant migration](../supabase/migrations/20260813190000_grant_hero_build_sets_read.sql)
 - [heroes.json](../src/features/game-data/heroes/heroes.json)
 - [heroBuilds.ts](../src/features/game-data/heroes/heroBuilds.ts)
 - [heroBuildTabs.ts](../src/features/game-data/heroes/heroBuildTabs.ts)
@@ -59,20 +78,39 @@
 - в локальных build-файлах;
 - в строках Supabase `hero_build_sets`;
 - в путях портретов `/img/heroes/<hero-id>.png`;
-- при редактировании и удалении.
+- при редактировании.
 
 Отображаемые русские названия и словари не являются идентификаторами. Каноническое исправление `nephyths → nephthys` уже применено к каталогу, ассету и сохранённым payload; совместимый alias не поддерживается.
 
 ## Catalog Availability And Loading
 
-Экран `/heroes` строит множество доступных героев из:
+Экран `/heroes` выбирает один источник доступности через явное состояние `checking | remote | fallback`:
 
-1. локальных `heroesWithBuilds` как offline/fallback источника;
-2. ID опубликованных строк Supabase через `fetchPublishedHeroIds`.
+1. независимо от конфигурации Supabase static render и первый hydration-render синхронно находятся в `checking`, показывают общий `ScreenLoader` и не вычисляют карточки из локального каталога или resource-запрос;
+2. один GET к repository-owned Supabase Edge Function `/bootstrap` с настраиваемым timeout по умолчанию `8` секунд подтверждает backend и manifest: `status: "ok"`, ограниченные `contentVersion`, стабильный server-derived `contentUpdatedAt`, `schemaVersion: 1`, не более `16` resource manifests и обязательный `heroBuilds.version + sha256 etag`;
+3. только после совместимого bootstrap выполняется единственное чтение полного `heroBuilds` snapshot; его успех переводит экран в `remote`, а каталог строится из IDs этого же атомарно принятого набора без отдельного запроса IDs и без примеси `heroesWithBuilds`;
+4. полный remote snapshot проверяет bootstrap metadata, count, уникальные hero IDs, checksum точного SQL-generated UTF-8 текста и каждый payload общей total resource-bounded схемой; timeout, partial/mismatch, network/HTTP error, слишком большой или невалидный JSON выбирают самый новый совместимый LKG, затем generated bundled snapshot;
+5. только после client effect отсутствие конфигурации выбирает `fallback`; это сохраняет одинаковую SSR/hydration-разметку, после которой локальный каталог появляется без network-запроса.
 
-Если Supabase не настроен, экран работает по локальным данным. Во время запроса показывается `Загружаем билды...`; карточки строятся после завершения загрузки. Ошибка получения удалённого списка не должна превращать неизвестные IDs в героев и не должна ломать локальный fallback.
+Совместимый bootstrap кэшируется на сессию и дедуплицирует параллельные callers; fallback-результат не кэшируется навсегда, а явный retry выполняет `force`-перепроверку. Каталог и экран билда используют общую машину `sourceSelection` для переходов bootstrap и hero-build resource, поэтому повторная попытка является фоновой: уже показанный remote или fallback каталог остаётся видимым, а встроенный loader не заменяет его пустым состоянием. Полный snapshot loader сам ограничен `8` секундами и отменяет свой streaming fetch через `AbortSignal`; экран дополнительно игнорирует поздний ответ после unmount, смены route или более нового запроса. Неизвестные remote IDs не превращаются в героев.
 
-После объединения ID мастер-каталог фильтруется по выбранным признакам и группируется по зонам. Пустой результат показывает `Нет героев с готовыми билдами по выбранным фильтрам.`
+Bootstrap body ограничен по фактическим UTF-8 байтам. Streaming-ответ отменяет reader при превышении budget до освобождения lock. Для runtime без streaming body клиент требует корректный ограниченный `Content-Length`, не вызывает `text()` при отсутствующем, нечисловом или чрезмерном значении и после чтения сверяет заявленную длину с фактической. Edge Function явно возвращает этот CORS-доступный заголовок для JSON-ответов.
+
+Полный snapshot также ограничен до JSON parse: внешний PostgREST body — `4 MiB`, внутренний SQL text — `1.5 MiB`, чтобы даже худшее повторное экранирование кавычек и обратных слешей оставалось внутри внешнего budget. Его строгий manifest содержит `schemaVersion: 1`, `contentVersion`, стабильный backend `contentUpdatedAt` и SHA-256 checksum `hero-builds.json`. Canonical JSON сортирует object keys и hero IDs, поэтому одинаковые данные и server date дают byte-identical файлы. Bundled runtime передаёт строгому parser точные JSON-представления импортированных manifest и resource, не восстанавливая доверенный manifest из их полей.
+
+LKG хранится через AsyncStorage неизменяемыми поколениями. Одно поколение — один ограниченный JSON envelope с точными полями `manifestJson` и `resourceJson` под manifest-hash generation key; один `setItem` является атомарной единицей платформенного adapter. Writer сначала валидирует вход, атомарно записывает blob, перечитывает и повторно валидирует его, сканирует максимум и только затем чинит pointer. Совпавший generation hash идемпотентен, потому что checksum manifest связывает точный resource.
+
+На каждом чтении из всех ключей выбираются только exact generation keys; посторонние ключи не входят в budget. Более `128` кандидатов закрывают чтение безопасным переходом к bundled snapshot. Все кандидаты проверяются, максимум выбирается по total order `(contentUpdatedAt, contentVersion, checksum)`, а pointer используется только как порядок чтения существующего generation key и восстанавливается на найденный максимум. Поэтому corrupt/stale pointer и гонка независимых JS contexts не понижают наблюдаемый snapshot, несмотря на отсутствие межпроцессного CAS в AsyncStorage. После проверки сохраняются четыре наиболее свежих валидных поколения; cleanup может удалять только parse-valid поколения строго за top-4. Повреждённые и временно недоступные keys никогда автоматически не удаляются: без CAS позднее завершение удаления нельзя безопасно отличить от удаления уже восстановленного blob с тем же content-addressed key.
+
+Все вызовы storage adapter (`getAllKeys`, `getItem`, `setItem`, `removeItem`) ограничены `1500 ms`. Timeout wrapper подписан и на поздний resolve/reject, поэтому не создаёт unhandled rejection; hung read возвращает bundled fallback, а завершившаяся timeout-ошибкой save-операция освобождает per-adapter очередь для следующей записи. Pointer repair и cleanup остаются best-effort в тех же временных границах.
+
+Полностью проверенный remote возвращается экрану сразу после network/runtime validation. Сохранение LKG запускается как наблюдаемый detached promise: его зависание или ошибка не задерживают remote, не удерживают manifest-keyed in-flight deduplication и не создают unhandled rejection; concurrent callers до завершения network validation по-прежнему разделяют один resource fetch.
+
+`scripts/export-hero-build-snapshot.cjs` получает опубликованный resource только через env-конфигурацию, не печатает URL/key, проверяет payload, IDs и `/img` assets до замены полного staged-комплекта. Manual/scheduled workflow использует actions по immutable SHA, dedicated branch с явным lease на exact fetched remote SHA и только открытый PR `head/base`; закрытый PR не переиспользуется. Workflow никогда не пишет напрямую в `main`, а ownership его кода и generated snapshot закреплён в `.github/CODEOWNERS`.
+
+После выбора источника мастер-каталог фильтруется по выбранным признакам и группируется по зонам. Пустой результат показывает `Нет героев с готовыми билдами по выбранным фильтрам.`
+
+Иконки фильтров и metadata только первых четырёх видимых карточек образуют ограниченный above-fold preload-набор. После дедупликации он укладывается в общий лимит `24`; реестр ограничен по размеру, не вытесняет незавершённые запросы и не загружает весь мастер-каталог. Если все слоты заняты незавершёнными запросами, новый критический URL дедуплицированно ожидает освобождения слота и только после собственной попытки завершает `preload`; параллельные callers не создают повторный fetch. При первом принятом источнике каталог показывает общий loader до завершения попытки preload критического набора, но не дольше `3` секунд; below-fold изображения в gate не входят. Смена фильтров, retry или фоновая смена remote/fallback-источника обновляет preload-набор, но не скрывает уже показанный контент.
 
 ## Filters And Grouping
 
@@ -90,12 +128,24 @@
 
 1. герой ищется в мастер-каталоге;
 2. локальный `getHeroBuildSet(heroId)` становится fallback;
-3. при настроенном Supabase `loadPublishedHeroBuildSet` пытается получить опубликованный комплект;
-4. отсутствие удалённой строки сохраняет локальный fallback;
+3. при настроенном Supabase экран сначала принимает совместимый bootstrap, и только затем через тот же ограниченный `8` секундами full-resource snapshot выбирает комплект героя;
+4. отсутствие героя в полностью принятом удалённом snapshot сохраняет контролируемое пустое значение для него, а failure всего ресурса выбирает LKG или bundled fallback;
 5. неизвестный `heroId` показывает `Герой не найден.`;
 6. отсутствие готового билда показывает контролируемое пустое состояние, а не частично собранные секции.
 
-Удалённые данные не должны мутировать локальные каталоги. Сетевые и Supabase-ошибки не должны скрывать корректный локальный комплект.
+Публичные Supabase URL и anon key читаются через прямые `process.env.EXPO_PUBLIC_*` свойства на module boundary, чтобы Expo гарантированно встроил их в configured browser bundle; чистый no-config export сохраняет `null`-конфигурацию. При настроенном Supabase первоначальная загрузка комплекта показывает общий `ScreenLoader` и не раскрывает bundled билд до завершения bootstrap и выбора remote/fallback ресурса. Смена route `heroId` атомарно сбрасывает комплект и active tab path до render нового заголовка и игнорирует поздний ответ прежнего ресурса; принятый комплект и его валидный default path также фиксируются одной state transition без промежуточного empty-state. Без клиента detail выбирает локальный комплект при инициализации, а каталог — после первого client effect ради SSR/hydration parity; `not-configured` диагностируется ровно один раз на загрузку героя или каталога. Loader не имеет искусственной минимальной задержки и исчезает при любом контролируемом результате; timeout или неожиданное отклонение promise возвращает локальный fallback без unhandled rejection. Причина контролируемого fallback проходит через `MH_DIAGNOSTIC` только с allowlisted `area`, `event`, `reason`, `resource`, `route`, `heroId`; строки ограничены `64` символами, raw backend error, stack, payload и credentials не принимаются API диагностики.
+
+Edge Function использует `SUPABASE_ANON_KEY` и одним вызовом обращается к узкому SQL RPC `get_published_hero_builds_bootstrap_manifest`. `SECURITY INVOKER`, явный `status = 'published'` и действующая публичная RLS policy исключают service-role bypass и draft/private данные. Внутри одного database snapshot RPC агрегирует полный набор `hero_id`, `revision` и UTC `updated_at`; manifest возвращает также стабильный максимум `contentUpdatedAt`. Полный payload выдаёт отдельный RLS-preserving RPC с DB-side лимитом `1000`, а клиент принимает его только при полном совпадении count/version/etag/date с bootstrap. Список IDs или один detail payload не могут создать LKG с global manifest; удалённые герои исчезают только вместе с новым полным snapshot. Bootstrap остаётся единственной проверкой доступности: внешнего ping или `navigator.onLine` нет.
+
+Fresh migration chain явно выдаёт table-level `SELECT` на `hero_build_sets` ролям `anon, authenticated`, чтобы `SECURITY INVOKER` RPC и существующие публичные repository reads были работоспособны независимо от hosted defaults. RLS по-прежнему пропускает им только `published`, а прямые `insert/update/delete` остаются отозваны.
+
+Удалённые данные не должны мутировать локальные каталоги. Сетевые и Supabase-ошибки не должны скрывать корректный LKG или bundled комплект. Невалидный или частичный remote payload не принимается и не сохраняется; viewer различает внутренний deadline snapshot loader как `timeout`, а остальные transport failures как `network`, не логируя сырой backend error.
+
+`ScreenLoader` имеет полноэкранный и встроенный режимы с зарезервированной высотой, ролью `progressbar` и видимой подписью. Анимация построена на React Native `Animated`, останавливается при unmount, а при системном reduced motion остаётся статичной.
+
+После выбора `heroId` экран отдельно предзагружает только portrait, rarity, role, factions и element выбранного героя и до завершения этой ограниченной попытки, но не дольше `3` секунд, показывает общий loader вместо основного содержимого нового героя. Все эти URL проходят через `resolveAssetUri`, поэтому production web использует `/mh-calculator/img/...`, а native — настроенный `assetOrigin`.
+
+`AppImage` сохраняет конечные `width`, `height` и `borderRadius` до завершения fetch/decode, использует platform cache (`force-cache`, где он поддерживается), раскрывает изображение через `onLoad` и оставляет контролируемую заглушку через `onError`. `IconPreview` сохраняет прежние accessibility labels поверх этого boundary; ошибка и отсутствие source не заменяются текстом и не меняют геометрию строки или карточки.
 
 ## Build Set And Tabs
 
@@ -105,6 +155,45 @@
 - группой с `children`, каждый ребёнок которой является leaf-вкладкой.
 
 `HeroBuildTab.children` и model helpers рекурсивны и не ограничивают data contract двумя уровнями. Текущий UI визуализирует верхнюю строку папок и, для активной группы, вторую строку дочерних вкладок; более глубокая навигация пока не представлена. Выбор группы открывает её первый отсортированный leaf. `getDefaultTabPath` выбирает первый доступный готовый билд, а `filterTabsWithReadyBuilds` рекурсивно не показывает пустые вкладки пользователю.
+
+## Backend Payload Boundary
+
+`hero_build_sets.payload` является недоверенным JSON независимо от сгенерированного TypeScript-типа `jsonb`. `fetchPublishedHeroBuildSet` и `fetchDraftHeroBuildSet` передают значение как `unknown` в [heroBuildSetSchema.ts](../src/features/builds/model/heroBuildSetSchema.ts) и возвращают `HeroBuildSet` только после полной проверки.
+
+Runtime-схема проверяет:
+
+- `HeroBuildSet.schemaVersion === 2` и `build.schemaVersion === 1`;
+- совпадение каждого `build.heroId` с `hero_id` строки и существование героя в каталоге;
+- рекурсивную структуру вкладок, уникальность sibling IDs, устойчивые kebab-case path IDs и наследование `gameMode`;
+- отсутствие standalone `targetTabPath` внутри committed leaf;
+- известные и непротиворечивые IDs веток, мажорных скиллов, экипировки, loadout-скиллов и пробуждения оружия;
+- диапазон `progress`, существование его уровней в tree template и точное соответствие производного `activeNodes`;
+- форму metadata, стабильный `source` и корректную дату `createdAt`.
+
+Непустой committed leaf считается полным только когда содержит все `9` major slots из текущего tree template, все `8` слотов пробуждения, progress для `left`, `center`, `right` не ниже `18`, ни один major node не выше progress своей колонки, а `activeNodes` точно производен от progress. Интерактивный draft формы может быть неполным до сохранения, но Supabase payload с неполным leaf не пересекает repository boundary.
+
+Parser остаётся ограниченным текущим `HeroBuildSet` и имеет конечные resource budgets:
+
+| Ресурс | Лимит |
+| --- | ---: |
+| Глубина дерева вкладок | `8` |
+| Вкладки на одном уровне | `32` |
+| Вкладки во всём payload | `128` |
+| Leaf-вкладки во всём payload | `96` |
+| Build nodes во всём payload (`majorNodes + weaponAwakening + activeNodes`) | `8192` |
+| Major nodes / active nodes в одном leaf | `16` / `128` |
+| Weapon slots / divinity skills в одной полосе | ровно `8` / не более `3` |
+| Варианты одного типа экипировки | `16` |
+| Общий safety ceiling массива | `128` |
+| Длина stable ID / label / прочей строки | `64` / `160` / `256` |
+| Собственные keys одного объекта, включая non-enumerable и symbols | `32` |
+| Накопленные validation issues | `64` |
+
+Каждый массив обходится по индексам в пределах своего budget: sparse entry не пропускается, accessor не вызывается, и оба получают точный рекурсивный path. Проверка divinity loadout инспектирует не более трёх entries и не запускает aggregate helper после превышения длины. Объекты должны быть plain JSON objects, иметь не более `32` собственных keys, использовать только data properties и содержать только поля текущей версии схемы; `Reflect.ownKeys` включает в проверку non-enumerable string keys и symbols, после чего descriptor inspection ограничен object/issue budget. Accessor, symbol и неизвестное поле отклоняются вместо чтения или молчаливого протаскивания. Строки сначала проверяются по длине и только затем проходят `trim` или regex; `metadata.createdAt` имеет каноническую форму `YYYY-MM-DDTHH:mm:ss.sssZ` и проходит calendar round-trip.
+
+Рекурсивный parser сам полностью проверяет tab invariants и не запускает второй обход `validateHeroBuildTabs`. Для каждого непустого leaf он требует валидный собственный или унаследованный `gameMode`; отсутствие сообщает точный path `<leaf>.gameMode`. Любое неожиданное исключение внутри parser преобразуется в `HeroBuildSetSchemaError`, а row-level `payload` принимается только как обязательное собственное data property. Только `null`/`undefined` самой строки означает `no-data`; строка без `payload`, с унаследованным или accessor `payload` классифицируется repository как `invalid-data`, а не как сеть.
+
+Повреждённые данные приводят к `HeroBuildSetRepositoryError` с `kind: "invalid-data"`; ошибка Supabase — к тому же типу с `kind: "network"`; конфликт revision при административной записи имеет отдельный `kind: "conflict"`; отсутствие строки остаётся отдельным `null`/`no-data` исходом. Невалидный remote не может попасть в Viewer или заменить корректный fallback/будущий last-known-good snapshot.
 
 Порядок и подписи вкладок принадлежат данным комплекта. Компонент просмотра не должен хардкодить режимы `PvP`, `PvE` или их варианты.
 
@@ -172,12 +261,13 @@
 
 ## Admin Actions
 
-Сессия проверяется через существующий Supabase auth boundary. Только при подтверждённой admin-сессии видны:
+Сессия проверяется через Supabase auth boundary и признаётся административной только при `user.app_metadata.role === "admin"`. Обычный authenticated-пользователь и восстановленная сессия без этого claim считаются неавторизованными для admin-действий. Только при подтверждённой admin-сессии видны:
 
-- `Редактировать` — открывает билдер с `heroId` и `mode=edit`;
-- `Удалить` — сначала открывает подтверждение.
+- `Редактировать` — открывает билдер с `heroId` и `mode=edit`.
 
-Удаление вызывает `deleteHeroBuildSet`. Во время операции повторное действие блокируется. Успех закрывает диалог, показывает `Билд удалён.` и возвращает в `/heroes`. Ошибка показывает видимый toast; отсутствие Supabase даёт `Supabase не настроен.`. Неавторизованный пользователь не должен видеть административные кнопки.
+Опубликованный билд нельзя удалить из пользовательского экрана или через публичный repository API. Неавторизованный пользователь не должен видеть административную кнопку редактирования.
+
+На уровне Supabase RLS все пользователи могут читать только `published`-строки, а JWT с `app_metadata.role = admin` может читать также `draft`. Прямые `insert/update/delete` для `anon` и `authenticated` отозваны: lifecycle-запись выполняют только отдельные `SECURITY DEFINER` RPC, каждая со своей точной проверкой admin claim, ненулевого authenticated actor, исходного состояния строки и ожидаемой revision. Одного статуса `authenticated` недостаточно. На каждого `hero_id` хранится не более одной строки: `draft` атомарно становится `published`, а опубликованную строку нельзя удалить, перевести обратно в `draft` или перенести на другой `hero_id`. В `mode=edit` полный опубликованный payload обновляется отдельной repository-операцией без создания draft и без смены статуса. Каждое успешное изменение создаёт следующую revision и immutable audit event с предыдущим и новым snapshot; администратор может восстановить опубликованный history snapshot этого же героя только как ещё более новую published revision.
 
 ## Asset And Localization Rules
 
@@ -194,12 +284,16 @@
 - показывать в каталоге всех героев вместо героев с готовыми или опубликованными билдами;
 - использовать имя героя как ключ маршрута или Supabase;
 - смешивать admin-редактирование с read-only экраном;
+- возвращать опубликованный билд в черновик или добавлять действие его удаления;
 - добавлять в данные глубину, которую текущий UI не умеет однозначно показать, без одновременного обновления навигации и тестов;
 - хранить вычисленные бонусы оружия вместо исходных selections;
 - связывать артефакты и руны попарно или менять порядок вариантов при чтении;
 - определять класс Iconic Weapon по выбранному оружию или UI-подписи;
 - скрывать локальный fallback только из-за недоступного Supabase;
+- выбирать fallback уже во время SSR: static render и первый hydration-render обязаны показывать одинаковый loader-only state, а client effect затем принимает remote или fallback;
 - импортировать admin-компоненты или admin-типы в пользовательскую feature.
+- принимать `jsonb` как `HeroBuildSet` без runtime-валидации на repository boundary.
+- снимать resource budgets или принимать новые поля текущей schema version без явного изменения контракта и тестов.
 
 ## Verification
 
@@ -207,6 +301,10 @@
 
 - [HeroSelectScreen.test.tsx](../src/features/heroes/__tests__/HeroSelectScreen.test.tsx)
 - [HeroBuildScreen.test.tsx](../src/features/heroes/__tests__/HeroBuildScreen.test.tsx)
+- [operational-smoke.spec.ts](../e2e/operational-smoke.spec.ts)
+- [runtimeDiagnostics.test.ts](../src/shared/lib/__tests__/runtimeDiagnostics.test.ts)
+- [AppErrorBoundary.test.tsx](../src/shared/ui/__tests__/AppErrorBoundary.test.tsx)
+- [ScreenLoader.test.tsx](../src/shared/ui/__tests__/ScreenLoader.test.tsx)
 - [heroListFilters.test.ts](../src/features/heroes/__tests__/heroListFilters.test.ts)
 - [heroListGrouping.test.ts](../src/features/heroes/__tests__/heroListGrouping.test.ts)
 - [heroBuildTabsModel.test.ts](../src/features/heroes/__tests__/heroBuildTabsModel.test.ts)
@@ -214,6 +312,19 @@
 - [heroBuildTabs.test.ts](../src/features/game-data/heroes/__tests__/heroBuildTabs.test.ts)
 - [heroCatalogDataIntegrity.test.ts](../src/features/game-data/heroes/__tests__/heroCatalogDataIntegrity.test.ts)
 - [heroBuildSetRepository.test.ts](../src/features/builds/api/__tests__/heroBuildSetRepository.test.ts)
+- [heroBuildSetSchema.test.ts](../src/features/builds/model/__tests__/heroBuildSetSchema.test.ts)
+- [dataBootstrap.test.ts](../src/shared/lib/__tests__/dataBootstrap.test.ts)
+- [sourceSelection.test.ts](../src/shared/lib/__tests__/sourceSelection.test.ts)
+- [bootstrapEdgeFunction.test.js](../src/shared/lib/__tests__/bootstrapEdgeFunction.test.js)
+- [bootstrapManifest.test.ts](../src/shared/lib/__tests__/bootstrapManifest.test.ts)
+- [bootstrapManifestSql.test.js](../src/shared/lib/__tests__/bootstrapManifestSql.test.js)
+- [heroBuildSnapshot.test.ts](../src/features/builds/data/__tests__/heroBuildSnapshot.test.ts)
+- [heroBuildSnapshotRemote.test.ts](../src/features/builds/data/__tests__/heroBuildSnapshotRemote.test.ts)
+- [snapshotScreenBoundaries.test.js](../src/features/builds/data/__tests__/snapshotScreenBoundaries.test.js)
+- [snapshotRpcSql.test.js](../src/features/builds/data/__tests__/snapshotRpcSql.test.js)
+- [snapshotWorkflow.test.js](../src/features/builds/data/__tests__/snapshotWorkflow.test.js)
+- [heroBuildSnapshotStorage.test.ts](../src/features/builds/storage/__tests__/heroBuildSnapshotStorage.test.ts)
+- [bundledHeroBuildSnapshot.test.ts](../src/features/game-data/snapshots/__tests__/bundledHeroBuildSnapshot.test.ts)
 - [EquipmentVariantTabs.test.tsx](../src/features/builds/__tests__/EquipmentVariantTabs.test.tsx)
 - [WeaponAwakeningBonusList.test.tsx](../src/features/builds/__tests__/WeaponAwakeningBonusList.test.tsx)
 - [weaponAwakeningBonuses.test.ts](../src/features/game-data/weapon-awakening/__tests__/weaponAwakeningBonuses.test.ts)

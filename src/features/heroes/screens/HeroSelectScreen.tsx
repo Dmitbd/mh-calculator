@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { router } from "expo-router";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
-  fetchPublishedHeroIds,
-  type HeroBuildSetSupabaseClient,
-} from "@/features/builds";
+  loadAndCacheRemoteHeroBuildSnapshot,
+  loadHeroBuildSnapshotFallback,
+} from "@/features/builds/data/heroBuildSnapshotSource";
+import { isHeroBuildSnapshotRemoteTimeoutError } from "@/features/builds/data/heroBuildSnapshotRemote";
 import { heroes, heroesWithBuilds } from "@/features/game-data/heroes";
 import { HeroListCard } from "@/features/heroes/components/HeroListCard";
 import { HeroListFiltersPanel } from "@/features/heroes/components/HeroListFiltersPanel";
@@ -15,58 +16,251 @@ import {
   filterHeroes,
 } from "@/features/heroes/utils/heroListFilters";
 import { groupHeroesByZone } from "@/features/heroes/utils/heroListGrouping";
+import { getHeroCatalogCriticalImageSources } from "@/features/heroes/utils/heroCriticalImages";
 
+import { useCriticalImagePreload } from "@/shared/lib/imagePreload";
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
+import { ScreenLoader } from "@/shared/ui/ScreenLoader";
+import { loadDataBootstrap } from "@/shared/lib/dataBootstrap";
+import {
+  acceptBootstrap,
+  acceptResource,
+  beginBootstrap,
+  beginResource,
+  createSourceSelectionState,
+  rejectBootstrap,
+  rejectResource,
+  type SourceSelectionState,
+} from "@/shared/lib/sourceSelection";
 import { getSupabaseClient } from "@/shared/lib/supabaseClient";
+import { reportRuntimeDiagnostic } from "@/shared/lib/runtimeDiagnostics";
 
 const SCREEN_PADDING = 24;
+type HeroCatalogState = {
+  error: string | null;
+  selection: SourceSelectionState<{ heroBuilds: string[] }>;
+};
+
+export function createInitialHeroCatalogState(): HeroCatalogState {
+  const selection = createSourceSelectionState({
+    heroBuilds: heroesWithBuilds.map((hero) => hero.id),
+  });
+  return { error: null, selection };
+}
 
 /** Экран выбора героя — фильтруемый список героев с готовыми билдами */
 export function HeroSelectScreen() {
   const { top, bottom } = useSafeAreaInsets();
   const [filters, setFilters] = useState(EMPTY_HERO_LIST_FILTERS);
-  const [remoteHeroIds, setRemoteHeroIds] = useState<string[]>([]);
-  const [isRemoteBuildsLoading, setIsRemoteBuildsLoading] = useState(false);
+  const [client, setClient] = useState<ReturnType<typeof getSupabaseClient> | undefined>(
+    undefined,
+  );
+  const isMounted = useRef(true);
+  const requestId = useRef(0);
+  const [catalogState, setCatalogState] = useState<HeroCatalogState>(
+    createInitialHeroCatalogState,
+  );
 
   useEffect(() => {
-    const client = getSupabaseClient();
-
-    if (!client) {
-      setIsRemoteBuildsLoading(false);
-      return;
-    }
-
-    let isMounted = true;
-
-    setIsRemoteBuildsLoading(true);
-    void fetchPublishedHeroIds(
-      client as unknown as HeroBuildSetSupabaseClient,
-    )
-      .then((heroIds) => {
-        if (isMounted) {
-          setRemoteHeroIds(heroIds);
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsRemoteBuildsLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
+    setClient(getSupabaseClient());
   }, []);
 
+  const loadRemoteHeroIds = useCallback(
+    async (preserveContent: boolean) => {
+      if (!client || !isMounted.current) {
+        return;
+      }
+
+      const currentRequestId = requestId.current + 1;
+      requestId.current = currentRequestId;
+
+      if (preserveContent) {
+        setCatalogState((current) => ({
+          ...current,
+          error: null,
+          selection: beginResource(
+            beginBootstrap(current.selection),
+            "heroBuilds",
+          ),
+        }));
+      }
+
+      try {
+        const bootstrap = await loadDataBootstrap(
+          preserveContent ? { force: true } : {},
+        );
+
+        if (!isMounted.current || currentRequestId !== requestId.current) {
+          return;
+        }
+
+        if (bootstrap.source === "fallback") {
+          reportRuntimeDiagnostic({
+            area: "hero-builds",
+            event: "fallback-selected",
+            reason: bootstrap.reason,
+            resource: "heroBuilds",
+            route: "/heroes",
+          });
+          const fallback = await loadHeroBuildSnapshotFallback();
+          const fallbackIds = fallback.snapshot.heroBuilds.map(({ heroId }) => heroId);
+          setCatalogState((current) => {
+            const wasChecking =
+              current.selection.resources.heroBuilds.source === "checking";
+            const bootstrapFallback = rejectBootstrap(
+              current.selection,
+              bootstrap.reason,
+            );
+            const rejectedResource = rejectResource(
+              bootstrapFallback,
+              "heroBuilds",
+              bootstrap.reason,
+            );
+            return {
+              error: wasChecking
+                ? "Показаны локальные билды."
+                : "Не удалось обновить список билдов.",
+              selection: {
+                ...rejectedResource,
+                resources: {
+                  ...rejectedResource.resources,
+                  heroBuilds: {
+                    ...rejectedResource.resources.heroBuilds,
+                    data: wasChecking
+                      ? fallbackIds
+                      : rejectedResource.resources.heroBuilds.data,
+                  },
+                },
+              },
+            };
+          });
+          return;
+        }
+
+        setCatalogState((current) => ({
+          ...current,
+          selection: beginResource(
+            acceptBootstrap(current.selection, bootstrap.manifest),
+            "heroBuilds",
+          ),
+        }));
+
+        const fullRemote = await loadAndCacheRemoteHeroBuildSnapshot(
+          bootstrap.manifest,
+        );
+        const acceptedHeroIds = fullRemote.snapshot.heroBuilds.map(
+          ({ heroId }) => heroId,
+        );
+        if (!isMounted.current || currentRequestId !== requestId.current) {
+          return;
+        }
+
+        setCatalogState((current) => ({
+          error: null,
+          selection: acceptResource(
+            current.selection,
+            "heroBuilds",
+            acceptedHeroIds,
+          ),
+        }));
+      } catch (error) {
+        if (!isMounted.current || currentRequestId !== requestId.current) {
+          return;
+        }
+
+        const fallback = await loadHeroBuildSnapshotFallback();
+        const fallbackIds = fallback.snapshot.heroBuilds.map(({ heroId }) => heroId);
+        setCatalogState((current) => {
+          const wasChecking =
+            current.selection.resources.heroBuilds.source === "checking";
+          const reason = isHeroBuildSnapshotRemoteTimeoutError(error)
+            ? ("timeout" as const)
+            : ("network" as const);
+          reportRuntimeDiagnostic({
+            area: "hero-builds",
+            event: "fallback-selected",
+            reason,
+            resource: "heroBuilds",
+            route: "/heroes",
+          });
+          const rejectedResource = rejectResource(
+            current.selection,
+            "heroBuilds",
+            reason,
+          );
+          return {
+            error: wasChecking
+              ? "Показаны локальные билды."
+              : "Не удалось обновить список билдов.",
+            selection: {
+              ...rejectedResource,
+              resources: {
+                ...rejectedResource.resources,
+                heroBuilds: {
+                  ...rejectedResource.resources.heroBuilds,
+                  data: wasChecking
+                    ? fallbackIds
+                    : rejectedResource.resources.heroBuilds.data,
+                },
+              },
+            },
+          };
+        });
+      }
+    },
+    [client],
+  );
+
+  useEffect(() => {
+    isMounted.current = true;
+    if (client === null) {
+      reportRuntimeDiagnostic({
+        area: "hero-builds",
+        event: "fallback-selected",
+        reason: "not-configured",
+        resource: "heroBuilds",
+        route: "/heroes",
+      });
+      setCatalogState((current) => ({
+        error: null,
+        selection: rejectResource(
+          rejectBootstrap(current.selection, "not-configured"),
+          "heroBuilds",
+          "not-configured",
+        ),
+      }));
+    }
+    if (client) void loadRemoteHeroIds(false);
+
+    return () => {
+      isMounted.current = false;
+      requestId.current += 1;
+    };
+  }, [client, loadRemoteHeroIds]);
+
   const zoneGroups = useMemo(() => {
-    const buildReadyHeroIds = new Set([
-      ...heroesWithBuilds.map((hero) => hero.id),
-      ...remoteHeroIds,
-    ]);
+    const resource = catalogState.selection.resources.heroBuilds;
+    const buildReadyHeroIds = new Set(resource.data ?? []);
     const buildReadyHeroes = heroes.filter((hero) => buildReadyHeroIds.has(hero.id));
     const filtered = filterHeroes(buildReadyHeroes, filters);
     return groupHeroesByZone(filtered);
-  }, [filters, remoteHeroIds]);
+  }, [catalogState.selection.resources.heroBuilds.data, filters]);
+  const criticalImageSources = useMemo(
+    () =>
+      getHeroCatalogCriticalImageSources(
+        zoneGroups.flatMap((group) => group.heroes),
+      ),
+    [zoneGroups],
+  );
+
+  const heroBuildsSource = catalogState.selection.resources.heroBuilds;
+  const criticalImagesReady = useCriticalImagePreload(criticalImageSources, {
+    enabled: heroBuildsSource.source !== "checking",
+    readinessKey: heroBuildsSource.source,
+    resetOnReadinessKeyChange: false,
+  });
+  const isInitialContentLoading =
+    heroBuildsSource.source === "checking" || !criticalImagesReady;
 
   const openHero = (heroId: string) => {
     router.push({ pathname: "/heroes/[heroId]", params: { heroId } });
@@ -84,13 +278,45 @@ export function HeroSelectScreen() {
           },
         ]}
       >
-        <HeroListFiltersPanel filters={filters} onChange={setFilters} />
+        {isInitialContentLoading ? null : (
+          <HeroListFiltersPanel filters={filters} onChange={setFilters} />
+        )}
 
-        {isRemoteBuildsLoading ? (
-          <View style={styles.loadingCard}>
-            <Text style={styles.loadingText}>Загружаем билды...</Text>
+        {isInitialContentLoading ? (
+          <ScreenLoader
+            label={
+              heroBuildsSource.source === "checking"
+                ? "Загружаем билды"
+                : "Подготавливаем иконки"
+            }
+          />
+        ) : null}
+
+        {!isInitialContentLoading &&
+        (catalogState.error || heroBuildsSource.isRefreshing) ? (
+          <View style={styles.sourceStatus}>
+            {catalogState.error ? (
+              <Text accessibilityLiveRegion="polite" style={styles.sourceStatusText}>
+                {catalogState.error}
+              </Text>
+            ) : null}
+            {heroBuildsSource.isRefreshing ? (
+              <ScreenLoader label="Обновляем список билдов" mode="inline" />
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  void loadRemoteHeroIds(true);
+                }}
+                style={styles.retryButton}
+              >
+                <Text style={styles.retryText}>Повторить</Text>
+              </Pressable>
+            )}
           </View>
-        ) : zoneGroups.length > 0 ? (
+        ) : null}
+
+        {isInitialContentLoading ? null : zoneGroups.length > 0 ? (
           zoneGroups.map((group) => (
             <View key={group.zoneId} style={styles.zone}>
               <Text style={styles.zoneTitle}>{group.title}</Text>
@@ -149,17 +375,35 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
   },
-  loadingCard: {
-    borderRadius: 8,
+  sourceStatus: {
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#5a412b",
     backgroundColor: "#1d130f",
-    padding: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  loadingText: {
+  sourceStatusText: {
+    color: "#d7c19a",
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  retryButton: {
+    minHeight: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#8a6a44",
+    backgroundColor: "#2c2118",
+    paddingHorizontal: 18,
+  },
+  retryText: {
     color: "#f6d59a",
     fontSize: 14,
-    fontWeight: "800",
-    textAlign: "center",
+    fontWeight: "900",
   },
 });

@@ -1,0 +1,68 @@
+name: Update hero build snapshot
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-hero-build-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.19.0
+          cache: npm
+
+      - name: Verify npm version
+        run: test "$(npm --version)" = "11.17.0"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Export and verify snapshot
+        env:
+          SUPABASE_ANON_KEY: ${{ secrets.SNAPSHOT_SUPABASE_ANON_KEY }}
+          SUPABASE_URL: ${{ secrets.SNAPSHOT_SUPABASE_URL }}
+        run: |
+          npm run snapshot:hero-builds
+          npm test -- --runInBand src/features/builds/data/__tests__/heroBuildSnapshot.test.ts src/features/builds/data/__tests__/heroBuildSnapshotRemote.test.ts
+          npx tsc --noEmit
+
+      - name: Create or update dedicated pull request
+        env:
+          BRANCH: automation/hero-build-snapshots
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- src/features/game-data/snapshots/hero-builds; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch --no-tags origin "refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" || true
+          EXPECTED_SHA="$(git rev-parse "refs/remotes/origin/$BRANCH" 2>/dev/null || true)"
+          git switch -C "$BRANCH"
+          git add src/features/game-data/snapshots/hero-builds
+          git commit -m "chore: обновить snapshots данных"
+          git push --force-with-lease="refs/heads/$BRANCH:$EXPECTED_SHA" origin "HEAD:refs/heads/$BRANCH"
+          PR_NUMBER="$(gh pr list --head "$BRANCH" --base main --state open --json number --jq '.[0].number')"
+          if test -n "$PR_NUMBER"; then
+            gh pr edit "$PR_NUMBER" --base main --title "chore: обновить snapshots данных" --body "Автоматическое обновление проверенного bundled snapshot."
+          else
+            gh pr create --base main --head "$BRANCH" --title "chore: обновить snapshots данных" --body "Автоматическое обновление проверенного bundled snapshot."
+          fi

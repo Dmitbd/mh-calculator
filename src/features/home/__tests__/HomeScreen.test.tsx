@@ -46,6 +46,6 @@ test("shows the current version in a footer linked to the latest release", () =>
     "link-https://github.com/Dmitbd/mh-calculator/releases/latest",
   );
 
-  expect(within(releaseLink).getByText("Версия 1.1.0")).toBeTruthy();
+  expect(within(releaseLink).getByText("Версия 1.2.0")).toBeTruthy();
   expect(within(releaseLink).getByText("Что нового")).toBeTruthy();
 });

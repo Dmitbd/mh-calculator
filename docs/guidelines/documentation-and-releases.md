@@ -62,10 +62,28 @@ Spec должен описывать актуальные:
 
 Версия должна совпадать в `package.json`, `package-lock.json` и `app.json → expo.version`. Тег использует формат `vX.Y.Z`.
 
+## Воспроизводимая проверка
+
+- Локальная и CI-среда используют точные версии Node.js и npm из `.nvmrc`, `package.json → engines` и `packageManager`; workflow дополнительно проверяет фактическую версию npm.
+- Чистая установка выполняется через `npm ci`. Команда `npm run verify` сама зависимости не устанавливает и одинаково запускает Expo compatibility check, Jest в последовательном режиме, TypeScript и чистый web export.
+- Перед выпуском выполняется `npm audit --omit=dev`; полный `npm audit` помогает отдельно оценить dev-only цепочки. Оставшиеся advisories классифицируются по прямой или транзитивной зависимости, runtime/build-time пути и наличию совместимого исправления.
+- Нельзя применять `npm audit fix --force`: предложенный major downgrade или upgrade сначала проверяется на совместимость с текущим Expo SDK и оформляется отдельным осознанным изменением.
+
+## Performance и operational gates
+
+- `npm run verify` после чистого production web export запускает `npm run budget:web`. Export намеренно использует `expo export --clear`: это медленнее тёплой сборки, но не позволяет Metro cache перенести Supabase env из предыдущего режима. Скрипт требует ровно один Expo entry bundle и проверяет фактические raw/gzip-9 размеры по [scripts/web-bundle-budget.json](../../scripts/web-bundle-budget.json).
+- Baseline обновляется только после измерения `npm run export:web:clean && npm run budget:web`; в конфигурации фиксируются дата, export mode, raw/gzip значения и отдельные ceilings. Нельзя поднимать budget только ради зелёного CI без описанной причины и повторного измерения.
+- Текущий baseline `2026-08-13` для static production export без Supabase env после обязательной очистки Metro cache: `1 864 793` raw bytes и `459 905` gzip-9 bytes. Configured E2E export того же рабочего дерева: `1 864 823` raw и `459 925` gzip-9 bytes. Общие ceilings: `1 950 000` raw и `490 000` gzip-9 bytes.
+- `npm run e2e` изолированно собирает `dist-e2e` с публичной тестовой конфигурацией, проверяет тот же budget, поднимает локальный static server и запускает exact Playwright Chromium. Release/verify export остаётся в `dist`, поэтому параллельные независимые CI или reviewer gates не смешивают hashed entry bundles. Browser binary устанавливается в CI командой `npx playwright install --with-deps chromium` и не хранится в репозитории.
+- Operational E2E обязан сохранять сценарии initial loader, remote и controlled fallback каталога, публичного build view, отказа non-admin и защиты dirty edit; каждый сценарий завершается ошибкой при любом browser `console.error` или `pageerror`. Эти тесты не заменяют реальные cold/repeat измерения GitHub Pages и native runtime из `BL-001`.
+- Pages build повторно выполняет `npm run budget:web` непосредственно после export с реальными deployment env и до загрузки artifact: budget раннего verify/export не считается доказательством для другого bundle.
+- Runtime diagnostic записывает только allowlisted `area`, `event`, `reason`, `resource`, `route`, `heroId`; строки ограничены `64` символами. Нельзя передавать raw error, stack, backend body, payload, token, key или secret.
+- Общий route boundary показывает контролируемое восстановление без текста пойманной ошибки. Действия `Повторить` и `На главную` не должны раскрывать данные сбоя.
+
 ## Процедура выпуска тега
 
 1. Убедиться, что выпускается актуальная `main`, а рабочее дерево содержит только ожидаемые изменения.
-2. Выполнить релевантные тесты, `npx tsc --noEmit` и `npm run export:web`.
+2. На закреплённых версиях Node.js и npm выполнить `npm ci`, `npm run verify` и `npm audit --omit=dev`.
 3. Проверить соответствующую постоянную спецификацию и `docs/README.md`.
 4. Выбрать версию по SemVer и синхронно обновить все поля версии.
 5. Перенести записи `Unreleased` под версию с датой ISO.
