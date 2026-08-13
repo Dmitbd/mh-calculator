@@ -18,6 +18,33 @@ const validManifest = {
   },
 };
 
+function responseFor(
+  text: string,
+  overrides: Partial<{
+    body: ReadableStream<Uint8Array> | null;
+    contentLength: string | null;
+    ok: boolean;
+    status: number;
+    text: () => Promise<string>;
+  }> = {},
+) {
+  const contentLength =
+    overrides.contentLength === undefined
+      ? String(new TextEncoder().encode(text).byteLength)
+      : overrides.contentLength;
+
+  return {
+    body: overrides.body,
+    headers: {
+      get: (name: string) =>
+        name.toLowerCase() === "content-length" ? contentLength : null,
+    },
+    ok: overrides.ok ?? true,
+    status: overrides.status ?? 200,
+    text: overrides.text ?? (async () => text),
+  };
+}
+
 describe("data bootstrap", () => {
   afterEach(() => {
     invalidateDataBootstrap();
@@ -58,11 +85,9 @@ describe("data bootstrap", () => {
   });
 
   test("uses one bounded public bootstrap request", async () => {
-    const fetchImpl = jest.fn(async () => ({
-      ok: true,
-      status: 200,
-      text: async () => JSON.stringify(validManifest),
-    }));
+    const fetchImpl = jest.fn(async () =>
+      responseFor(JSON.stringify(validManifest)),
+    );
 
     await expect(
       requestBootstrap({
@@ -102,33 +127,25 @@ describe("data bootstrap", () => {
     await expect(
       requestBootstrap({
         config: { anonKey: "anon", url: "https://project.supabase.co" },
-        fetchImpl: jest.fn(async () => ({
-          ok: false,
-          status: 503,
-          text: async () => "unavailable",
-        })),
+        fetchImpl: jest.fn(async () =>
+          responseFor("unavailable", { ok: false, status: 503 }),
+        ),
       }),
     ).rejects.toMatchObject({ kind: "http" });
 
     await expect(
       requestBootstrap({
         config: { anonKey: "anon", url: "https://project.supabase.co" },
-        fetchImpl: jest.fn(async () => ({
-          ok: true,
-          status: 200,
-          text: async () => "not-json",
-        })),
+        fetchImpl: jest.fn(async () => responseFor("not-json")),
       }),
     ).rejects.toMatchObject({ kind: "invalid-body" });
 
     await expect(
       requestBootstrap({
         config: { anonKey: "anon", url: "https://project.supabase.co" },
-        fetchImpl: jest.fn(async () => ({
-          ok: true,
-          status: 200,
-          text: async () => JSON.stringify({ ...validManifest, schemaVersion: 2 }),
-        })),
+        fetchImpl: jest.fn(async () =>
+          responseFor(JSON.stringify({ ...validManifest, schemaVersion: 2 })),
+        ),
       }),
     ).rejects.toMatchObject({ kind: "incompatible-schema" });
   });
@@ -137,14 +154,14 @@ describe("data bootstrap", () => {
     jest.useFakeTimers();
     const pending = requestBootstrap({
       config: { anonKey: "anon", url: "https://project.supabase.co" },
-      fetchImpl: jest.fn(async () => ({
-        ok: true,
-        status: 200,
-        text: () =>
-          new Promise<string>((resolve) => {
-            setTimeout(() => resolve(JSON.stringify(validManifest)), 200);
-          }),
-      })),
+      fetchImpl: jest.fn(async () =>
+        responseFor(JSON.stringify(validManifest), {
+          text: () =>
+            new Promise<string>((resolve) => {
+              setTimeout(() => resolve(JSON.stringify(validManifest)), 200);
+            }),
+        }),
+      ),
       timeoutMs: 100,
     });
     const outcome = expect(pending).rejects.toMatchObject({ kind: "timeout" });
@@ -152,6 +169,74 @@ describe("data bootstrap", () => {
     await jest.advanceTimersByTimeAsync(200);
 
     await outcome;
+  });
+
+  test.each([
+    ["missing", null],
+    ["invalid", "many"],
+    ["oversized", String(32 * 1024 + 1)],
+  ])("rejects %s Content-Length before native text fallback", async (_label, length) => {
+    const readText = jest.fn(async () => JSON.stringify(validManifest));
+
+    await expect(
+      requestBootstrap({
+        config: { anonKey: "anon", url: "https://project.supabase.co" },
+        fetchImpl: jest.fn(async () =>
+          responseFor(JSON.stringify(validManifest), {
+            contentLength: length,
+            text: readText,
+          }),
+        ),
+      }),
+    ).rejects.toMatchObject({ kind: "invalid-body" });
+    expect(readText).not.toHaveBeenCalled();
+  });
+
+  test("verifies native fallback Content-Length using encoded multibyte bytes", async () => {
+    const body = JSON.stringify({ ...validManifest, contentVersion: "версия" });
+    const characterLength = body.length;
+    expect(new TextEncoder().encode(body).byteLength).toBeGreaterThan(characterLength);
+
+    await expect(
+      requestBootstrap({
+        config: { anonKey: "anon", url: "https://project.supabase.co" },
+        fetchImpl: jest.fn(async () =>
+          responseFor(body, { contentLength: String(characterLength) }),
+        ),
+      }),
+    ).rejects.toMatchObject({ kind: "invalid-body" });
+  });
+
+  test("cancels an over-budget stream before releasing its reader", async () => {
+    const events: string[] = [];
+    const reader = {
+      cancel: jest.fn(async () => {
+        events.push("cancel");
+      }),
+      read: jest.fn(async () => ({
+        done: false,
+        value: new Uint8Array(32 * 1024 + 1),
+      })),
+      releaseLock: jest.fn(() => {
+        events.push("release");
+      }),
+    };
+
+    await expect(
+      requestBootstrap({
+        config: { anonKey: "anon", url: "https://project.supabase.co" },
+        fetchImpl: jest.fn(async () => ({
+          body: { getReader: () => reader } as unknown as ReadableStream<Uint8Array>,
+          headers: { get: () => null },
+          ok: true,
+          status: 200,
+          text: jest.fn(async () => ""),
+        })),
+      }),
+    ).rejects.toMatchObject({ kind: "invalid-body" });
+
+    expect(reader.cancel).toHaveBeenCalledTimes(1);
+    expect(events).toEqual(["cancel", "release"]);
   });
 
   test("deduplicates compatible bootstrap and retries transient fallback", async () => {
@@ -169,11 +254,7 @@ describe("data bootstrap", () => {
           }),
       )
       .mockRejectedValueOnce(new Error("offline"))
-      .mockResolvedValue({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(validManifest),
-      });
+      .mockResolvedValue(responseFor(JSON.stringify(validManifest)));
     const options = {
       config: { anonKey: "anon", url: "https://project.supabase.co" },
       fetchImpl,
@@ -182,11 +263,7 @@ describe("data bootstrap", () => {
     const first = loadDataBootstrap(options);
     const concurrent = loadDataBootstrap(options);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
-    resolveRequest({
-      ok: true,
-      status: 200,
-      text: async () => JSON.stringify(validManifest),
-    });
+    resolveRequest(responseFor(JSON.stringify(validManifest)));
     await expect(first).resolves.toMatchObject({ source: "remote" });
     await expect(concurrent).resolves.toMatchObject({ source: "remote" });
 
@@ -211,11 +288,7 @@ describe("data bootstrap", () => {
             resolveFirst = resolve;
           }),
       )
-      .mockResolvedValue({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(validManifest),
-      });
+      .mockResolvedValue(responseFor(JSON.stringify(validManifest)));
     const options = {
       config: { anonKey: "anon", url: "https://project.supabase.co" },
       fetchImpl,
@@ -223,11 +296,7 @@ describe("data bootstrap", () => {
 
     const stale = loadDataBootstrap(options);
     invalidateDataBootstrap();
-    resolveFirst({
-      ok: true,
-      status: 200,
-      text: async () => JSON.stringify(validManifest),
-    });
+    resolveFirst(responseFor(JSON.stringify(validManifest)));
     await stale;
 
     await loadDataBootstrap(options);

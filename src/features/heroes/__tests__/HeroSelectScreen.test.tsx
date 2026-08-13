@@ -12,6 +12,10 @@ const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
 const mockFetchPublishedHeroIds = jest.fn<Promise<string[]>, [unknown]>();
 const mockUseCriticalImagePreload = jest.fn(() => true);
 const mockLoadDataBootstrap = jest.fn();
+const mockAcceptBootstrapTransition = jest.fn();
+const mockAcceptResourceTransition = jest.fn();
+const mockRejectBootstrapTransition = jest.fn();
+const mockRejectResourceTransition = jest.fn();
 const remoteBootstrap = {
   manifest: {
     status: "ok",
@@ -51,6 +55,29 @@ jest.mock("@/shared/lib/dataBootstrap", () => ({
   loadDataBootstrap: (...args: unknown[]) => mockLoadDataBootstrap(...args),
 }));
 
+jest.mock("@/shared/lib/sourceSelection", () => {
+  const actual = jest.requireActual("@/shared/lib/sourceSelection");
+  return {
+    ...actual,
+    acceptBootstrap: (...args: unknown[]) => {
+      mockAcceptBootstrapTransition(...args);
+      return actual.acceptBootstrap(...args);
+    },
+    acceptResource: (...args: unknown[]) => {
+      mockAcceptResourceTransition(...args);
+      return actual.acceptResource(...args);
+    },
+    rejectBootstrap: (...args: unknown[]) => {
+      mockRejectBootstrapTransition(...args);
+      return actual.rejectBootstrap(...args);
+    },
+    rejectResource: (...args: unknown[]) => {
+      mockRejectResourceTransition(...args);
+      return actual.rejectResource(...args);
+    },
+  };
+});
+
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { AccessibilityInfo } from "react-native";
 
@@ -70,6 +97,10 @@ describe("HeroSelectScreen", () => {
     mockFetchPublishedHeroIds.mockResolvedValue([]);
     mockLoadDataBootstrap.mockReset();
     mockLoadDataBootstrap.mockResolvedValue(remoteBootstrap);
+    mockAcceptBootstrapTransition.mockClear();
+    mockAcceptResourceTransition.mockClear();
+    mockRejectBootstrapTransition.mockClear();
+    mockRejectResourceTransition.mockClear();
     mockUseCriticalImagePreload.mockReturnValue(true);
   });
 
@@ -193,6 +224,15 @@ describe("HeroSelectScreen", () => {
     expect(await screen.findByText("Показаны локальные билды.")).toBeTruthy();
     expect(screen.getByText("Бастет")).toBeTruthy();
     expect(mockFetchPublishedHeroIds).not.toHaveBeenCalled();
+    expect(mockRejectBootstrapTransition).toHaveBeenCalledWith(
+      expect.any(Object),
+      "incompatible-schema",
+    );
+    expect(mockRejectResourceTransition).toHaveBeenCalledWith(
+      expect.any(Object),
+      "heroBuilds",
+      "incompatible-schema",
+    );
   });
 
   test("rechecks bootstrap on retry before reading the hero resource", async () => {
@@ -226,6 +266,12 @@ describe("HeroSelectScreen", () => {
 
     expect(await screen.findByText(remoteOnlyHero!.name.ru)).toBeTruthy();
     expect(screen.queryByText("Бастет")).toBeNull();
+    expect(mockAcceptBootstrapTransition).toHaveBeenCalled();
+    expect(mockAcceptResourceTransition).toHaveBeenCalledWith(
+      expect.any(Object),
+      "heroBuilds",
+      [remoteOnlyHero!.id],
+    );
   });
 
   test("falls back after a timeout and keeps fallback cards visible during retry", async () => {

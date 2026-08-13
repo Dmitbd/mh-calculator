@@ -4,10 +4,10 @@ import type {
 } from "./dataBootstrap";
 
 export type ResourceFallbackReason =
+  | BootstrapFallbackReason
+  | "conflict"
   | "invalid-data"
-  | "network"
-  | "no-data"
-  | "timeout";
+  | "no-data";
 
 export type ResourceSourceState<T> = {
   data: T | null;

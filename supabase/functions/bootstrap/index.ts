@@ -1,10 +1,15 @@
 // @ts-nocheck -- Supabase Edge Functions are checked by the Deno runtime, not app tsc.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  createHeroBuildsBootstrapManifest,
+  loadPublishedHeroBuildMetadata,
+} from "./manifest.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "authorization, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Expose-Headers": "Content-Length",
 };
 
 Deno.serve(async (request) => {
@@ -16,51 +21,38 @@ Deno.serve(async (request) => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseUrl || !serviceRoleKey) {
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !anonKey) {
     return jsonResponse({ status: "error" }, 503);
   }
 
-  const client = createClient(supabaseUrl, serviceRoleKey, {
+  const client = createClient(supabaseUrl, anonKey, {
     auth: { persistSession: false },
   });
-  const { data, error } = await client
-    .from("hero_build_sets")
-    .select("hero_id,revision,updated_at")
-    .eq("status", "published")
-    .order("hero_id", { ascending: true });
-
-  if (error || !Array.isArray(data)) {
+  try {
+    const rows = await loadPublishedHeroBuildMetadata(async (from, to) =>
+      await client
+        .from("hero_build_sets")
+        .select("hero_id,revision,updated_at")
+        .eq("status", "published")
+        .order("hero_id", { ascending: true })
+        .range(from, to)
+    );
+    return jsonResponse(await createHeroBuildsBootstrapManifest(rows));
+  } catch {
     return jsonResponse({ status: "error" }, 503);
   }
-
-  const canonicalRows = data.map(({ hero_id, revision, updated_at }) => ({
-    heroId: hero_id,
-    revision,
-    updatedAt: updated_at,
-  }));
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(JSON.stringify(canonicalRows)),
-  );
-  const etag = `sha256:${Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, "0")
-  ).join("")}`;
-  const version = `hero-builds:${etag.slice("sha256:".length, 23)}`;
-
-  return jsonResponse({
-    status: "ok",
-    contentVersion: version,
-    schemaVersion: 1,
-    resources: {
-      heroBuilds: { version, etag },
-    },
-  });
 });
 
 function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+  const json = JSON.stringify(body);
+  const contentLength = new TextEncoder().encode(json).byteLength;
+  return new Response(json, {
+    headers: {
+      ...CORS_HEADERS,
+      "Content-Length": String(contentLength),
+      "Content-Type": "application/json",
+    },
     status,
   });
 }

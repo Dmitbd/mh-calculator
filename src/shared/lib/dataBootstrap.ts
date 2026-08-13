@@ -51,6 +51,7 @@ export class BootstrapRequestError extends Error {
 
 type BootstrapResponse = {
   body?: ReadableStream<Uint8Array> | null;
+  headers: { get: (name: string) => string | null };
   ok: boolean;
   status: number;
   text: () => Promise<string>;
@@ -176,11 +177,35 @@ async function readBoundedResponseText(
   response: BootstrapResponse,
 ): Promise<string> {
   if (!response.body) {
-    const text = await response.text();
-    if (new TextEncoder().encode(text).byteLength > MAX_BODY_LENGTH) {
+    const contentLengthHeader = response.headers.get("Content-Length");
+    if (
+      contentLengthHeader === null ||
+      !/^\d+$/.test(contentLengthHeader)
+    ) {
+      throw new BootstrapRequestError(
+        "invalid-body",
+        "Bootstrap response requires a valid Content-Length.",
+      );
+    }
+    const declaredByteLength = Number(contentLengthHeader);
+    if (
+      !Number.isSafeInteger(declaredByteLength) ||
+      declaredByteLength > MAX_BODY_LENGTH
+    ) {
       throw new BootstrapRequestError(
         "invalid-body",
         "Bootstrap response exceeds its size budget.",
+      );
+    }
+    const text = await response.text();
+    const actualByteLength = new TextEncoder().encode(text).byteLength;
+    if (
+      actualByteLength > MAX_BODY_LENGTH ||
+      actualByteLength !== declaredByteLength
+    ) {
+      throw new BootstrapRequestError(
+        "invalid-body",
+        "Bootstrap response length does not match Content-Length.",
       );
     }
     return text;
@@ -198,6 +223,11 @@ async function readBoundedResponseText(
       }
       byteLength += value.byteLength;
       if (byteLength > MAX_BODY_LENGTH) {
+        try {
+          await reader.cancel("Bootstrap response exceeds its size budget.");
+        } catch {
+          // The size violation remains authoritative even if transport cleanup fails.
+        }
         throw new BootstrapRequestError(
           "invalid-body",
           "Bootstrap response exceeds its size budget.",

@@ -14,6 +14,10 @@ const mockRouter = {
 const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
 const mockLoadPublishedHeroBuildSet = jest.fn();
 const mockLoadDataBootstrap = jest.fn();
+const mockAcceptBootstrapTransition = jest.fn();
+const mockAcceptResourceTransition = jest.fn();
+const mockRejectBootstrapTransition = jest.fn();
+const mockRejectResourceTransition = jest.fn();
 const mockUseCriticalImagePreload = jest.fn(() => true);
 const remoteBootstrap = {
   manifest: {
@@ -67,6 +71,29 @@ jest.mock("@/shared/lib/dataBootstrap", () => ({
   loadDataBootstrap: (...args: unknown[]) => mockLoadDataBootstrap(...args),
 }));
 
+jest.mock("@/shared/lib/sourceSelection", () => {
+  const actual = jest.requireActual("@/shared/lib/sourceSelection");
+  return {
+    ...actual,
+    acceptBootstrap: (...args: unknown[]) => {
+      mockAcceptBootstrapTransition(...args);
+      return actual.acceptBootstrap(...args);
+    },
+    acceptResource: (...args: unknown[]) => {
+      mockAcceptResourceTransition(...args);
+      return actual.acceptResource(...args);
+    },
+    rejectBootstrap: (...args: unknown[]) => {
+      mockRejectBootstrapTransition(...args);
+      return actual.rejectBootstrap(...args);
+    },
+    rejectResource: (...args: unknown[]) => {
+      mockRejectResourceTransition(...args);
+      return actual.rejectResource(...args);
+    },
+  };
+});
+
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { AccessibilityInfo } from "react-native";
 
@@ -79,6 +106,7 @@ import {
   createHeroBuildLoadState,
   resolveHeroBuildLoadState,
 } from "@/features/heroes/model/heroBuildLoading";
+import { acceptResource } from "@/shared/lib/sourceSelection";
 
 describe("HeroBuildScreen", () => {
   let diagnostic: jest.SpyInstance;
@@ -100,6 +128,10 @@ describe("HeroBuildScreen", () => {
     mockLoadPublishedHeroBuildSet.mockResolvedValue(getHeroBuildSet("bastet"));
     mockLoadDataBootstrap.mockReset();
     mockLoadDataBootstrap.mockResolvedValue(remoteBootstrap);
+    mockAcceptBootstrapTransition.mockClear();
+    mockAcceptResourceTransition.mockClear();
+    mockRejectBootstrapTransition.mockClear();
+    mockRejectResourceTransition.mockClear();
     mockUseCriticalImagePreload.mockReturnValue(true);
   });
 
@@ -291,6 +323,12 @@ describe("HeroBuildScreen", () => {
 
     expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
     expect(screen.queryByText("Загружаем билд")).toBeNull();
+    expect(mockAcceptBootstrapTransition).toHaveBeenCalled();
+    expect(mockAcceptResourceTransition).toHaveBeenCalledWith(
+      expect.any(Object),
+      "heroBuilds",
+      getHeroBuildSet("bastet"),
+    );
   });
 
   test("does not read a published build before compatible bootstrap", async () => {
@@ -330,6 +368,15 @@ describe("HeroBuildScreen", () => {
       heroId: "bastet",
       kind: "timeout",
     });
+    expect(mockRejectBootstrapTransition).toHaveBeenCalledWith(
+      expect.any(Object),
+      "timeout",
+    );
+    expect(mockRejectResourceTransition).toHaveBeenCalledWith(
+      expect.any(Object),
+      "heroBuilds",
+      "timeout",
+    );
   });
 
   test("bounds a hanging hero resource request and ignores its late result", async () => {
@@ -400,7 +447,10 @@ describe("HeroBuildScreen", () => {
     });
     const buildSet = getHeroBuildSet("bastet");
 
-    const resolvedState = resolveHeroBuildLoadState(initialState, buildSet);
+    const resolvedState = resolveHeroBuildLoadState(
+      initialState,
+      acceptResource(initialState.sourceSelection, "heroBuilds", buildSet),
+    );
 
     expect(resolvedState).toEqual(
       expect.objectContaining({

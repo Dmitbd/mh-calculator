@@ -35,6 +35,14 @@ import {
 } from "@/shared/lib/boundedRequest";
 import { loadDataBootstrap } from "@/shared/lib/dataBootstrap";
 import { useCriticalImagePreload } from "@/shared/lib/imagePreload";
+import {
+  acceptBootstrap,
+  acceptResource,
+  beginResource,
+  rejectBootstrap,
+  rejectResource,
+  type ResourceFallbackReason,
+} from "@/shared/lib/sourceSelection";
 
 import { HeroMetadataRow } from "../components/HeroMetadataRow";
 import { HeroBuildBranchSection } from "../components/hero-build/HeroBuildBranchSection";
@@ -124,6 +132,7 @@ export function HeroBuildScreen({
     }
 
     const loadBuild = async () => {
+      let sourceSelection = currentLoadState.sourceSelection;
       try {
         const bootstrap = await loadDataBootstrap();
         if (!isMounted) {
@@ -135,20 +144,32 @@ export function HeroBuildScreen({
             heroId,
             kind: bootstrap.reason,
           });
+          sourceSelection = rejectBootstrap(sourceSelection, bootstrap.reason);
+          sourceSelection = rejectResource(
+            sourceSelection,
+            "heroBuilds",
+            bootstrap.reason,
+          );
+          const nextSelection = sourceSelection;
           setLoadState((current) =>
             current.heroId === heroId
-              ? resolveHeroBuildLoadState(current, fallbackBuildSet)
+              ? resolveHeroBuildLoadState(current, nextSelection)
               : current,
           );
           return;
         }
 
+        sourceSelection = acceptBootstrap(sourceSelection, bootstrap.manifest);
+        sourceSelection = beginResource(sourceSelection, "heroBuilds");
+
+        let fallbackReason: ResourceFallbackReason | null = null;
         const resourceRequest = createBoundedRequest(
           loadPublishedHeroBuildSet({
             client,
             fallbackBuildSet,
             heroId,
             onFallback: (outcome) => {
+              fallbackReason = outcome.kind;
               console.info("Hero build fallback", { heroId, kind: outcome.kind });
             },
           }),
@@ -156,23 +177,36 @@ export function HeroBuildScreen({
         );
         activeResourceRequest = resourceRequest;
         const loadedBuildSet = await resourceRequest.promise;
+        sourceSelection = fallbackReason
+          ? rejectResource(sourceSelection, "heroBuilds", fallbackReason)
+          : acceptResource(sourceSelection, "heroBuilds", loadedBuildSet);
+        const acceptedSelection = sourceSelection;
 
         if (isMounted) {
           setLoadState((current) =>
             current.heroId === heroId
-              ? resolveHeroBuildLoadState(current, loadedBuildSet)
+              ? resolveHeroBuildLoadState(current, acceptedSelection)
               : current,
           );
         }
       } catch (error) {
         if (isMounted) {
+          const reason = isBoundedRequestTimeoutError(error)
+            ? "timeout"
+            : "network";
           console.info("Hero build fallback", {
             heroId,
-            kind: isBoundedRequestTimeoutError(error) ? "timeout" : "network",
+            kind: reason,
           });
+          sourceSelection = rejectResource(
+            sourceSelection,
+            "heroBuilds",
+            reason,
+          );
+          const failedSelection = sourceSelection;
           setLoadState((current) =>
             current.heroId === heroId
-              ? resolveHeroBuildLoadState(current, fallbackBuildSet)
+              ? resolveHeroBuildLoadState(current, failedSelection)
               : current,
           );
         }

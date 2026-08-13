@@ -22,8 +22,19 @@ import { ScreenLoader } from "@/shared/ui/ScreenLoader";
 import {
   createBoundedRequest,
   isBoundedRequestCancelledError,
+  isBoundedRequestTimeoutError,
 } from "@/shared/lib/boundedRequest";
 import { loadDataBootstrap } from "@/shared/lib/dataBootstrap";
+import {
+  acceptBootstrap,
+  acceptResource,
+  beginBootstrap,
+  beginResource,
+  createSourceSelectionState,
+  rejectBootstrap,
+  rejectResource,
+  type SourceSelectionState,
+} from "@/shared/lib/sourceSelection";
 import { getSupabaseClient } from "@/shared/lib/supabaseClient";
 
 const SCREEN_PADDING = 24;
@@ -31,10 +42,19 @@ export const HERO_CATALOG_REQUEST_TIMEOUT_MS = 8_000;
 
 type HeroCatalogState = {
   error: string | null;
-  isRefreshing: boolean;
-  remoteHeroIds: string[];
-  source: "checking" | "remote" | "fallback";
+  selection: SourceSelectionState<{ heroBuilds: string[] }>;
 };
+
+function createHeroCatalogState(hasRemoteClient: boolean): HeroCatalogState {
+  let selection = createSourceSelectionState({
+    heroBuilds: heroesWithBuilds.map((hero) => hero.id),
+  });
+  if (!hasRemoteClient) {
+    selection = rejectBootstrap(selection, "not-configured");
+    selection = rejectResource(selection, "heroBuilds", "not-configured");
+  }
+  return { error: null, selection };
+}
 
 /** Экран выбора героя — фильтруемый список героев с готовыми билдами */
 export function HeroSelectScreen() {
@@ -44,12 +64,9 @@ export function HeroSelectScreen() {
   const isMounted = useRef(true);
   const requestId = useRef(0);
   const boundedRequest = useRef<{ cancel: () => void } | null>(null);
-  const [catalogState, setCatalogState] = useState<HeroCatalogState>(() => ({
-    error: null,
-    isRefreshing: false,
-    remoteHeroIds: [],
-    source: client ? "checking" : "fallback",
-  }));
+  const [catalogState, setCatalogState] = useState<HeroCatalogState>(() =>
+    createHeroCatalogState(Boolean(client)),
+  );
 
   const loadRemoteHeroIds = useCallback(
     async (preserveContent: boolean) => {
@@ -67,7 +84,10 @@ export function HeroSelectScreen() {
         setCatalogState((current) => ({
           ...current,
           error: null,
-          isRefreshing: true,
+          selection: beginResource(
+            beginBootstrap(current.selection),
+            "heroBuilds",
+          ),
         }));
       }
 
@@ -86,19 +106,34 @@ export function HeroSelectScreen() {
         }
 
         if (bootstrap.source === "fallback") {
-          setCatalogState((current) => ({
-            ...current,
-            error:
-              current.source === "checking"
+          setCatalogState((current) => {
+            const wasChecking =
+              current.selection.resources.heroBuilds.source === "checking";
+            const bootstrapFallback = rejectBootstrap(
+              current.selection,
+              bootstrap.reason,
+            );
+            return {
+              error: wasChecking
                 ? "Показаны локальные билды."
                 : "Не удалось обновить список билдов.",
-            isRefreshing: false,
-            remoteHeroIds:
-              current.source === "checking" ? [] : current.remoteHeroIds,
-            source: current.source === "checking" ? "fallback" : current.source,
-          }));
+              selection: rejectResource(
+                bootstrapFallback,
+                "heroBuilds",
+                bootstrap.reason,
+              ),
+            };
+          });
           return;
         }
+
+        setCatalogState((current) => ({
+          ...current,
+          selection: beginResource(
+            acceptBootstrap(current.selection, bootstrap.manifest),
+            "heroBuilds",
+          ),
+        }));
 
         currentBoundedRequest = createBoundedRequest(
           fetchPublishedHeroIds(client),
@@ -111,12 +146,14 @@ export function HeroSelectScreen() {
           return;
         }
 
-        setCatalogState({
+        setCatalogState((current) => ({
           error: null,
-          isRefreshing: false,
-          remoteHeroIds: heroIds,
-          source: "remote",
-        });
+          selection: acceptResource(
+            current.selection,
+            "heroBuilds",
+            heroIds,
+          ),
+        }));
       } catch (error) {
         if (isBoundedRequestCancelledError(error)) {
           return;
@@ -126,17 +163,20 @@ export function HeroSelectScreen() {
           return;
         }
 
-        setCatalogState((current) => ({
-          ...current,
-          error:
-            current.source === "checking"
+        setCatalogState((current) => {
+          const wasChecking =
+            current.selection.resources.heroBuilds.source === "checking";
+          return {
+            error: wasChecking
               ? "Показаны локальные билды."
               : "Не удалось обновить список билдов.",
-          isRefreshing: false,
-          remoteHeroIds:
-            current.source === "checking" ? [] : current.remoteHeroIds,
-          source: current.source === "checking" ? "fallback" : current.source,
-        }));
+            selection: rejectResource(
+              current.selection,
+              "heroBuilds",
+              isBoundedRequestTimeoutError(error) ? "timeout" : "network",
+            ),
+          };
+        });
       } finally {
         currentBoundedRequest?.cancel();
 
@@ -162,17 +202,12 @@ export function HeroSelectScreen() {
   }, [loadRemoteHeroIds]);
 
   const zoneGroups = useMemo(() => {
-    const buildReadyHeroIds = new Set(
-      catalogState.source === "remote"
-        ? catalogState.remoteHeroIds
-        : catalogState.source === "fallback"
-        ? heroesWithBuilds.map((hero) => hero.id)
-        : [],
-    );
+    const resource = catalogState.selection.resources.heroBuilds;
+    const buildReadyHeroIds = new Set(resource.data ?? []);
     const buildReadyHeroes = heroes.filter((hero) => buildReadyHeroIds.has(hero.id));
     const filtered = filterHeroes(buildReadyHeroes, filters);
     return groupHeroesByZone(filtered);
-  }, [catalogState.remoteHeroIds, catalogState.source, filters]);
+  }, [catalogState.selection.resources.heroBuilds.data, filters]);
   const criticalImageSources = useMemo(
     () =>
       getHeroCatalogCriticalImageSources(
@@ -181,13 +216,14 @@ export function HeroSelectScreen() {
     [zoneGroups],
   );
 
+  const heroBuildsSource = catalogState.selection.resources.heroBuilds;
   const criticalImagesReady = useCriticalImagePreload(criticalImageSources, {
-    enabled: catalogState.source !== "checking",
-    readinessKey: catalogState.source,
+    enabled: heroBuildsSource.source !== "checking",
+    readinessKey: heroBuildsSource.source,
     resetOnReadinessKeyChange: false,
   });
   const isInitialContentLoading =
-    catalogState.source === "checking" || !criticalImagesReady;
+    heroBuildsSource.source === "checking" || !criticalImagesReady;
 
   const openHero = (heroId: string) => {
     router.push({ pathname: "/heroes/[heroId]", params: { heroId } });
@@ -212,7 +248,7 @@ export function HeroSelectScreen() {
         {isInitialContentLoading ? (
           <ScreenLoader
             label={
-              catalogState.source === "checking"
+              heroBuildsSource.source === "checking"
                 ? "Загружаем билды"
                 : "Подготавливаем иконки"
             }
@@ -220,14 +256,14 @@ export function HeroSelectScreen() {
         ) : null}
 
         {!isInitialContentLoading &&
-        (catalogState.error || catalogState.isRefreshing) ? (
+        (catalogState.error || heroBuildsSource.isRefreshing) ? (
           <View style={styles.sourceStatus}>
             {catalogState.error ? (
               <Text accessibilityLiveRegion="polite" style={styles.sourceStatusText}>
                 {catalogState.error}
               </Text>
             ) : null}
-            {catalogState.isRefreshing ? (
+            {heroBuildsSource.isRefreshing ? (
               <ScreenLoader label="Обновляем список билдов" mode="inline" />
             ) : (
               <Pressable
