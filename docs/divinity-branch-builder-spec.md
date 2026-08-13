@@ -44,7 +44,7 @@
 - [src/shared/ui/ScreenLoader.tsx](../src/shared/ui/ScreenLoader.tsx) — общий полноэкранный и встроенный loader
 - [src/features/admin/hooks/useDivinityBranchBuilder.ts](../src/features/admin/hooks/useDivinityBranchBuilder.ts) — состояние и экспорт
 - [src/features/admin/model/builderEditorReducer.ts](../src/features/admin/model/builderEditorReducer.ts) — чистые переходы редактируемого draft
-- [src/features/admin/model/asyncRequestIdentity.ts](../src/features/admin/model/asyncRequestIdentity.ts) — generation identity и latch асинхронных операций
+- [src/features/admin/model/asyncRequestIdentity.ts](../src/features/admin/model/asyncRequestIdentity.ts) — generation identity, атомарные channel-latches и единый controller асинхронных операций screen
 - [src/features/admin/model/validationNavigation.ts](../src/features/admin/model/validationNavigation.ts) — перевод ошибок в leaf/секцию, scroll target и toast
 - [src/features/admin/hooks/useAdminSessionGate.ts](../src/features/admin/hooks/useAdminSessionGate.ts) — восстановление и gate административной сессии
 - [src/features/admin/hooks/useHeroBuildStatusQuery.ts](../src/features/admin/hooks/useHeroBuildStatusQuery.ts) — current-only запрос status-каталога
@@ -427,6 +427,8 @@ Base и awakened slots редактируются отдельно. Awakened-н�
 Backend success не должен жить дольше актуальной операции или выбранного героя. Loading, error, empty и retry состояния являются частью контракта, а не временным служебным UI.
 
 Внутренняя ownership-граница также является правилом переноса: screen компонует секции и намерения пользователя, hook хранит editor-session, чистый reducer владеет переходами draft, request identity определяет актуальность async-ответов, status query владеет каталогом server-состояний, server-command boundary возвращает типизированный исход с revision, а validation navigation переводит доменные paths в выбранный leaf и секцию. Эти модули не меняют пользовательский контракт, но не должны снова сливаться в route-level screen.
+
+Reducer вычисляет следующий цвет пробуждения из draft, полученного самим state transition, поэтому несколько кликов, объединённых React в один batch, не теряются и проходят каталог последовательно. Screen не ведёт параллельные request-id/in-flight refs для initial edit, draft, entity, auth, dirty-discard, tab-save или publish: атомарный controller сериализует intent, инвалидирует устаревшие поколения и освобождает только актуальный latch.
 
 ## Porting Rules
 

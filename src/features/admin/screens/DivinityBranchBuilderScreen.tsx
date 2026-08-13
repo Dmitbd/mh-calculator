@@ -63,7 +63,7 @@ import {
   type PendingValidationScrollTarget,
   type ValidationScrollSection,
 } from "../model/validationNavigation";
-import { RequestIdentityRegistry } from "../model/asyncRequestIdentity";
+import { BuilderAsyncController } from "../model/asyncRequestIdentity";
 import type {
   BranchBuildValidationError,
   BranchColumnId,
@@ -119,18 +119,9 @@ export function DivinityBranchBuilderScreen({
   );
   const pendingScrollTarget = useRef<PendingValidationScrollTarget | null>(null);
   const loadedEditHeroId = useRef<string | null>(null);
-  const initialEditLoadInFlight = useRef(false);
-  const draftLoadInFlight = useRef(false);
-  const entityLoadRequestId = useRef(0);
-  const writeRequests = useRef(
-    new RequestIdentityRegistry<"tabSave" | "publish">(),
-  );
-  const authTransitionInFlight = useRef(false);
-  const discardTransitionInFlight = useRef(false);
-  const discardTransitionRequestId = useRef(0);
+  const asyncController = useRef(new BuilderAsyncController());
   const activeHeroId = useRef<string | null>(null);
   const serverRevisions = useRef(new BuilderRevisionStore());
-  const authRequestId = useRef(0);
   const isScreenMounted = useRef(true);
   const {
     addArtifact,
@@ -242,9 +233,9 @@ export function DivinityBranchBuilderScreen({
       isEditBuildLoading ||
       isDraftLoadPending ||
       isAuthPending ||
-      initialEditLoadInFlight.current ||
-      draftLoadInFlight.current ||
-      authTransitionInFlight.current,
+      asyncController.current.isInFlight("initialEditLoad") ||
+      asyncController.current.isInFlight("draftLoad") ||
+      asyncController.current.isInFlight("auth"),
     [
       isAuthPending,
       isDraftLoadPending,
@@ -256,18 +247,18 @@ export function DivinityBranchBuilderScreen({
     () =>
       isDraftLoadPending ||
       isAuthPending ||
-      draftLoadInFlight.current ||
-      authTransitionInFlight.current,
+      asyncController.current.isInFlight("draftLoad") ||
+      asyncController.current.isInFlight("auth"),
     [isAuthPending, isDraftLoadPending],
   );
 
   const resetTabSave = useCallback(() => {
-    writeRequests.current.invalidate("tabSave");
+    asyncController.current.invalidate("tabSave");
     setIsTabSavePending(false);
   }, []);
 
   const resetPublish = useCallback(() => {
-    writeRequests.current.invalidate("publish");
+    asyncController.current.invalidate("publish");
     setIsPublishPending(false);
   }, []);
 
@@ -310,13 +301,12 @@ export function DivinityBranchBuilderScreen({
       return isScreenMounted.current;
     }
 
-    if (discardTransitionInFlight.current || !isScreenMounted.current) {
+    if (!isScreenMounted.current) {
       return false;
     }
 
-    discardTransitionInFlight.current = true;
-    const requestId = discardTransitionRequestId.current + 1;
-    discardTransitionRequestId.current = requestId;
+    const requestId = asyncController.current.tryBegin("discard");
+    if (requestId === null) return false;
 
     try {
       const isConfirmed = await confirmDiscardChanges();
@@ -324,16 +314,13 @@ export function DivinityBranchBuilderScreen({
       return (
         isConfirmed &&
         isScreenMounted.current &&
-        requestId === discardTransitionRequestId.current
+        asyncController.current.isCurrent("discard", requestId)
       );
     } catch {
       return false;
     } finally {
-      if (
-        isScreenMounted.current &&
-        requestId === discardTransitionRequestId.current
-      ) {
-        discardTransitionInFlight.current = false;
+      if (isScreenMounted.current) {
+        asyncController.current.finish("discard", requestId);
       }
     }
   }, [confirmDiscardChanges, hasUnsavedPublishedEdits]);
@@ -363,21 +350,16 @@ export function DivinityBranchBuilderScreen({
 
     return () => {
       isScreenMounted.current = false;
-      entityLoadRequestId.current += 1;
-      initialEditLoadInFlight.current = false;
-      draftLoadInFlight.current = false;
-      writeRequests.current.invalidate("tabSave");
-      writeRequests.current.invalidate("publish");
-      authRequestId.current += 1;
-      authTransitionInFlight.current = false;
-      discardTransitionRequestId.current += 1;
+      asyncController.current.invalidateAll();
     };
   }, []);
 
   const cancelEntityLoads = useCallback(() => {
-    entityLoadRequestId.current += 1;
-    initialEditLoadInFlight.current = false;
-    draftLoadInFlight.current = false;
+    asyncController.current.invalidate(
+      "entity",
+      "initialEditLoad",
+      "draftLoad",
+    );
     setIsDraftLoadPending(false);
     setIsEditBuildLoading(false);
   }, []);
@@ -420,16 +402,23 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
+    const initialLoadRequestId = asyncController.current.tryBegin(
+      "initialEditLoad",
+    );
+    if (initialLoadRequestId === null) return;
+    const entityRequestId = asyncController.current.begin("entity");
     const client = getSupabaseClient();
-    const requestId = entityLoadRequestId.current + 1;
-    entityLoadRequestId.current = requestId;
     const isCurrentRequest = () =>
-      isScreenMounted.current && requestId === entityLoadRequestId.current;
+      isScreenMounted.current &&
+      asyncController.current.isCurrent("entity", entityRequestId) &&
+      asyncController.current.isCurrent(
+        "initialEditLoad",
+        initialLoadRequestId,
+      );
 
     loadedEditHeroId.current = initialHeroId;
     resetTabSave();
     resetPublish();
-    initialEditLoadInFlight.current = true;
     setIsEditBuildLoading(true);
 
     const fallbackBuildSet = getHeroBuildSet(initialHeroId);
@@ -446,7 +435,8 @@ export function DivinityBranchBuilderScreen({
         showBackendMessage("error", "Supabase не настроен.");
       }
 
-      initialEditLoadInFlight.current = false;
+      asyncController.current.finish("entity", entityRequestId);
+      asyncController.current.finish("initialEditLoad", initialLoadRequestId);
       setIsEditBuildLoading(false);
       return;
     }
@@ -481,7 +471,11 @@ export function DivinityBranchBuilderScreen({
       })
       .finally(() => {
         if (isCurrentRequest()) {
-          initialEditLoadInFlight.current = false;
+          asyncController.current.finish("entity", entityRequestId);
+          asyncController.current.finish(
+            "initialEditLoad",
+            initialLoadRequestId,
+          );
           setIsEditBuildLoading(false);
         }
       });
@@ -695,8 +689,8 @@ export function DivinityBranchBuilderScreen({
   const handleSaveCurrentTargetBuild = async () => {
     if (
       isBuilderActionBlocked() ||
-      writeRequests.current.isInFlight("tabSave") ||
-      writeRequests.current.isInFlight("publish")
+      asyncController.current.isInFlight("tabSave") ||
+      asyncController.current.isInFlight("publish")
     ) {
       return;
     }
@@ -732,11 +726,11 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
-    const requestId = writeRequests.current.begin("tabSave");
+    const requestId = asyncController.current.begin("tabSave");
     setIsTabSavePending(true);
     const isCurrentRequest = () =>
       isScreenMounted.current &&
-      writeRequests.current.isCurrent("tabSave", requestId) &&
+      asyncController.current.isCurrent("tabSave", requestId) &&
       activeHeroId.current === selectedHeroId;
 
     try {
@@ -801,7 +795,7 @@ export function DivinityBranchBuilderScreen({
       showRepositoryError(error);
     } finally {
       if (isCurrentRequest()) {
-        writeRequests.current.finish("tabSave", requestId);
+        asyncController.current.finish("tabSave", requestId);
         setIsTabSavePending(false);
       }
     }
@@ -835,8 +829,8 @@ export function DivinityBranchBuilderScreen({
   const saveFullBuildSetToBackend = async (status: "draft" | "published") => {
     if (
       isBuilderActionBlocked() ||
-      writeRequests.current.isInFlight("tabSave") ||
-      writeRequests.current.isInFlight("publish")
+      asyncController.current.isInFlight("tabSave") ||
+      asyncController.current.isInFlight("publish")
     ) {
       return;
     }
@@ -900,11 +894,11 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
-    const requestId = writeRequests.current.begin("publish");
+    const requestId = asyncController.current.begin("publish");
     setIsPublishPending(true);
     const isCurrentRequest = () =>
       isScreenMounted.current &&
-      writeRequests.current.isCurrent("publish", requestId) &&
+      asyncController.current.isCurrent("publish", requestId) &&
       activeHeroId.current === heroId;
 
     try {
@@ -1016,7 +1010,7 @@ export function DivinityBranchBuilderScreen({
       showRepositoryError(error);
     } finally {
       if (isCurrentRequest()) {
-        writeRequests.current.finish("publish", requestId);
+        asyncController.current.finish("publish", requestId);
         setIsPublishPending(false);
       }
     }
@@ -1073,24 +1067,20 @@ export function DivinityBranchBuilderScreen({
     email: string;
     password: string;
   }) => {
-    if (authTransitionInFlight.current) {
-      return;
-    }
-
-    authTransitionInFlight.current = true;
-    const requestId = authRequestId.current + 1;
-    authRequestId.current = requestId;
+    const requestId = asyncController.current.tryBegin("auth");
+    if (requestId === null) return;
     setIsAuthPending(true);
     setToast(null);
     const isCurrentRequest = () =>
-      isScreenMounted.current && requestId === authRequestId.current;
+      isScreenMounted.current &&
+      asyncController.current.isCurrent("auth", requestId);
 
     const client = getSupabaseClient();
 
     if (!client) {
       if (isCurrentRequest()) {
         setToast({ kind: "error", message: "Supabase не настроен." });
-        authTransitionInFlight.current = false;
+        asyncController.current.finish("auth", requestId);
         setIsAuthPending(false);
       }
       return;
@@ -1119,14 +1109,14 @@ export function DivinityBranchBuilderScreen({
       });
     } finally {
       if (isCurrentRequest()) {
-        authTransitionInFlight.current = false;
+        asyncController.current.finish("auth", requestId);
         setIsAuthPending(false);
       }
     }
   };
 
   const handleAdminSignOut = async () => {
-    if (authTransitionInFlight.current) {
+    if (asyncController.current.isInFlight("auth")) {
       return;
     }
 
@@ -1137,14 +1127,14 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
-    if (!isScreenMounted.current || authTransitionInFlight.current) {
+    if (!isScreenMounted.current) {
       return;
     }
 
-    authTransitionInFlight.current = true;
-    const requestId = authRequestId.current + 1;
-    authRequestId.current = requestId;
-    const shouldRetryInitialEditLoad = initialEditLoadInFlight.current;
+    const requestId = asyncController.current.tryBegin("auth");
+    if (requestId === null) return;
+    const shouldRetryInitialEditLoad =
+      asyncController.current.isInFlight("initialEditLoad");
     setIsAuthPending(true);
     setToast(null);
     cancelEntityLoads();
@@ -1152,7 +1142,8 @@ export function DivinityBranchBuilderScreen({
     resetPublish();
     invalidateHeroStatusList();
     const isCurrentRequest = () =>
-      isScreenMounted.current && requestId === authRequestId.current;
+      isScreenMounted.current &&
+      asyncController.current.isCurrent("auth", requestId);
 
     const client = getSupabaseClient();
 
@@ -1173,7 +1164,7 @@ export function DivinityBranchBuilderScreen({
         resetHeroStatusList();
         setAdminSession(null);
         setToast({ kind: "success", message: "Выход выполнен." });
-        authTransitionInFlight.current = false;
+        asyncController.current.finish("auth", requestId);
         setIsAuthPending(false);
       }
       return;
@@ -1211,7 +1202,7 @@ export function DivinityBranchBuilderScreen({
       void loadHeroStatusIds({ preserveCurrentIdsOnError: true });
     } finally {
       if (isCurrentRequest()) {
-        authTransitionInFlight.current = false;
+        asyncController.current.finish("auth", requestId);
         setIsAuthPending(false);
       }
     }
@@ -1253,9 +1244,8 @@ export function DivinityBranchBuilderScreen({
 
     resetTabSave();
     resetPublish();
-    const requestId = entityLoadRequestId.current + 1;
-    entityLoadRequestId.current = requestId;
-    initialEditLoadInFlight.current = false;
+    asyncController.current.invalidate("initialEditLoad", "draftLoad");
+    const entityRequestId = asyncController.current.begin("entity");
     setIsEditBuildLoading(false);
     clearValidationErrors(isHeroErrorPath);
 
@@ -1263,20 +1253,27 @@ export function DivinityBranchBuilderScreen({
       serverRevisions.current.set(heroId, null);
       selectHero(heroId);
       activeHeroId.current = heroId;
+      asyncController.current.finish("entity", entityRequestId);
       return;
     }
 
     const client = getSupabaseClient();
-
-    if (!client || draftLoadInFlight.current) {
+    if (!client) {
+      asyncController.current.finish("entity", entityRequestId);
+      return;
+    }
+    const draftRequestId = asyncController.current.tryBegin("draftLoad");
+    if (draftRequestId === null) {
+      asyncController.current.finish("entity", entityRequestId);
       return;
     }
 
-    draftLoadInFlight.current = true;
     setIsDraftLoadPending(true);
 
     const isCurrentRequest = () =>
-      isScreenMounted.current && requestId === entityLoadRequestId.current;
+      isScreenMounted.current &&
+      asyncController.current.isCurrent("entity", entityRequestId) &&
+      asyncController.current.isCurrent("draftLoad", draftRequestId);
 
     try {
       const draftRecord = await fetchDraftHeroBuildSetRecord(
@@ -1315,7 +1312,8 @@ export function DivinityBranchBuilderScreen({
       );
     } finally {
       if (isCurrentRequest()) {
-        draftLoadInFlight.current = false;
+        asyncController.current.finish("entity", entityRequestId);
+        asyncController.current.finish("draftLoad", draftRequestId);
         setIsDraftLoadPending(false);
       }
     }

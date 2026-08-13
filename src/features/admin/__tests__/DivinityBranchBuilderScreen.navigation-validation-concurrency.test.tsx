@@ -197,6 +197,35 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
     expect(screen.getByLabelText("Select PvP build tab")).toBeTruthy();
   });
 
+  it("does not inspect a late sign-in error after the builder unmounts", async () => {
+    const signIn = createDeferred<never>();
+    let messageReadCount = 0;
+    const lateError = new Error("late auth");
+    Object.defineProperty(lateError, "message", {
+      configurable: true,
+      get: () => {
+        messageReadCount += 1;
+        return "late auth";
+      },
+    });
+    mockGetSupabaseClient.mockReturnValue({ auth: {} });
+    mockSignInAdmin.mockReturnValue(signIn.promise);
+
+    const view = render(
+      <DivinityBranchBuilderScreen initialAdminSession={null} />,
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("Email"), "admin@example.com");
+    fireEvent.changeText(screen.getByPlaceholderText("Пароль"), "secret");
+    fireEvent.press(screen.getByText("Войти"));
+    view.unmount();
+
+    await act(async () => {
+      signIn.reject(lateError);
+    });
+
+    expect(messageReadCount).toBe(0);
+  });
+
   it("shows a loader and success toast when admin signs out", async () => {
     let resolveSignOut!: () => void;
 

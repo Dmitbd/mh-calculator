@@ -41,9 +41,6 @@ import type {
   WeaponAwakeningSlot,
 } from "../types/admin.types";
 import {
-  getNextWeaponAwakeningColor,
-} from "../utils/weaponAwakening";
-import {
   getGameModeForPath,
   getTabByPath,
   sortBuildTabs,
@@ -242,15 +239,14 @@ export function useDivinityBranchBuilder(
   const cycleWeaponAwakeningSlot = useCallback(
     (slot: number) => {
       dispatchEditorAction({
-        type: "set-weapon-awakening",
+        type: "cycle-weapon-awakening",
         slot,
-        colorId: getNextWeaponAwakeningColor(
-          weaponAwakeningSelections[slot] ?? null,
-          weaponAwakeningCatalog.colors,
-        ),
+        orderedColorIds: [...weaponAwakeningCatalog.colors]
+          .sort((first, second) => first.order - second.order)
+          .map((color) => color.id),
       });
     },
-    [dispatchEditorAction, weaponAwakeningCatalog.colors, weaponAwakeningSelections],
+    [dispatchEditorAction, weaponAwakeningCatalog.colors],
   );
 
   const addArtifact = useCallback((id: string) => {

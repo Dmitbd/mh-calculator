@@ -62,3 +62,53 @@ export class RequestIdentityRegistry<TChannel extends string> {
     return identity;
   }
 }
+
+export type BuilderAsyncChannel =
+  | "entity"
+  | "initialEditLoad"
+  | "draftLoad"
+  | "tabSave"
+  | "publish"
+  | "auth"
+  | "discard";
+
+export class BuilderAsyncController {
+  private readonly registry = new RequestIdentityRegistry<BuilderAsyncChannel>();
+
+  begin(channel: BuilderAsyncChannel): number {
+    return this.registry.begin(channel);
+  }
+
+  tryBegin(channel: BuilderAsyncChannel): number | null {
+    if (this.registry.isInFlight(channel)) return null;
+    return this.registry.begin(channel);
+  }
+
+  finish(channel: BuilderAsyncChannel, requestId: number): boolean {
+    return this.registry.finish(channel, requestId);
+  }
+
+  invalidate(...channels: BuilderAsyncChannel[]): void {
+    channels.forEach((channel) => this.registry.invalidate(channel));
+  }
+
+  invalidateAll(): void {
+    this.invalidate(
+      "entity",
+      "initialEditLoad",
+      "draftLoad",
+      "tabSave",
+      "publish",
+      "auth",
+      "discard",
+    );
+  }
+
+  isCurrent(channel: BuilderAsyncChannel, requestId: number): boolean {
+    return this.registry.isCurrent(channel, requestId);
+  }
+
+  isInFlight(channel: BuilderAsyncChannel): boolean {
+    return this.registry.isInFlight(channel);
+  }
+}

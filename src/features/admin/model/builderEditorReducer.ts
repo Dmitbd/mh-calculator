@@ -13,6 +13,7 @@ export type BuilderEditorAction =
   | { type: "set-divinity-skill"; rowId: DivinitySkillLoadoutRowId; slotIndex: number; skillId: string | null }
   | { type: "show-awakened-divinity-skills" }
   | { type: "set-weapon-awakening"; slot: number; colorId: WeaponAwakeningColorId | null }
+  | { type: "cycle-weapon-awakening"; slot: number; orderedColorIds: readonly WeaponAwakeningColorId[] }
   | { type: "add-artifact"; id: string }
   | { type: "remove-artifact"; id: string }
   | { type: "add-rune"; id: string }
@@ -88,6 +89,25 @@ export function reduceEditableBuildDraft(
       if (action.colorId) next[action.slot] = action.colorId;
       else delete next[action.slot];
       return { ...draft, weaponAwakeningSelections: next };
+    }
+    case "cycle-weapon-awakening": {
+      if (action.orderedColorIds.length === 0) {
+        throw new Error("Weapon awakening colors catalog is empty.");
+      }
+      const current = draft.weaponAwakeningSelections[action.slot] ?? null;
+      const currentIndex = current
+        ? action.orderedColorIds.indexOf(current)
+        : -1;
+      const nextColorId = action.orderedColorIds[
+        (currentIndex + 1) % action.orderedColorIds.length
+      ];
+      return {
+        ...draft,
+        weaponAwakeningSelections: {
+          ...draft.weaponAwakeningSelections,
+          [action.slot]: nextColorId,
+        },
+      };
     }
     case "add-artifact":
       return draft.selectedArtifactIds.includes(action.id) ? draft : { ...draft, selectedArtifactIds: [...draft.selectedArtifactIds, action.id] };

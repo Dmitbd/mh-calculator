@@ -468,6 +468,34 @@ describe("useDivinityBranchBuilder", () => {
     expect(result.current.selectedRuneIds).toEqual(["fire"]);
   });
 
+  it("advances two weapon colors when two cycle intents are batched", () => {
+    const { result } = renderHook(() =>
+      useDivinityBranchBuilder(weaponAwakeningCatalog),
+    );
+
+    act(() => {
+      result.current.cycleWeaponAwakeningSlot(1);
+      result.current.cycleWeaponAwakeningSlot(1);
+    });
+
+    expect(result.current.weaponAwakeningSelections[1]).toBe("yellow");
+  });
+
+  it("wraps to the first weapon color after the last ordered color", () => {
+    const { result } = renderHook(() =>
+      useDivinityBranchBuilder(weaponAwakeningCatalog),
+    );
+
+    act(() => {
+      weaponAwakeningColors.forEach(() => {
+        result.current.cycleWeaponAwakeningSlot(1);
+      });
+      result.current.cycleWeaponAwakeningSlot(1);
+    });
+
+    expect(result.current.weaponAwakeningSelections[1]).toBe("red");
+  });
+
   it("seeds empty target tab drafts from the first saved build without marking them saved", () => {
     const result = filledBuild();
 
