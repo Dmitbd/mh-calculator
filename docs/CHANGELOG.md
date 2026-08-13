@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## v1.2.0 - 2026-08-13
+
 ### Added
 
 - Добавлены эксплуатационные gates: documented raw/gzip budget production web-entry, exact Chromium E2E для initial loader, remote/fallback каталога, build view, non-admin denial и dirty edit, а также общий безопасный recovery boundary.
@@ -29,6 +31,7 @@
 
 ### Fixed
 
+- Configured web export гарантированно встраивает публичные Supabase URL и anon key через прямую Expo compile-time boundary; чистая сборка больше не выбирает локальный fallback из-за потерянного env.
 - Production static export с настроенным Supabase больше не создаёт browser auth storage во время Node SSR; публичные env значения при этом встраиваются в browser bundle для последующей hydration.
 - SSR и первый hydration-render каталога теперь начинают с одинакового loader-only состояния; fallback или remote-контент выбирается только после client effect без несовпадающей разметки.
 - Возврат из общего recovery boundary восстанавливает главную даже при сбое уже на маршруте `/`; диагностический лог строится только из явного allowlist, а deployment artifact проверяется budget после export с реальными env.
