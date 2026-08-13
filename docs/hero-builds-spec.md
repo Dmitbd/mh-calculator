@@ -48,6 +48,10 @@
 - [boundedRequest.ts](../src/shared/lib/boundedRequest.ts)
 - [dataBootstrap.ts](../src/shared/lib/dataBootstrap.ts)
 - [sourceSelection.ts](../src/shared/lib/sourceSelection.ts)
+- [heroBuildSnapshot.ts](../src/features/builds/data/heroBuildSnapshot.ts)
+- [heroBuildSnapshotRemote.ts](../src/features/builds/data/heroBuildSnapshotRemote.ts)
+- [heroBuildSnapshotStorage.ts](../src/features/builds/storage/heroBuildSnapshotStorage.ts)
+- [bundled snapshot manifest](../src/features/game-data/snapshots/hero-builds/manifest.json)
 - [bootstrap/index.ts](../supabase/functions/bootstrap/index.ts)
 - [bootstrap/manifest.ts](../supabase/functions/bootstrap/manifest.ts)
 - [atomic bootstrap manifest migration](../supabase/migrations/20260813180000_add_atomic_bootstrap_manifest_rpc.sql)
@@ -80,14 +84,18 @@
 Экран `/heroes` выбирает один источник доступности через явное состояние `checking | remote | fallback`:
 
 1. если Supabase настроен, первый render синхронно находится в `checking`, показывает общий `ScreenLoader` и не вычисляет карточки из локального каталога или resource-запрос;
-2. один GET к repository-owned Supabase Edge Function `/bootstrap` с настраиваемым timeout по умолчанию `8` секунд подтверждает backend и manifest: `status: "ok"`, ограниченные `contentVersion`, `schemaVersion: 1`, не более `16` resource manifests и обязательный `heroBuilds.version + sha256 etag`;
+2. один GET к repository-owned Supabase Edge Function `/bootstrap` с настраиваемым timeout по умолчанию `8` секунд подтверждает backend и manifest: `status: "ok"`, ограниченные `contentVersion`, стабильный server-derived `contentUpdatedAt`, `schemaVersion: 1`, не более `16` resource manifests и обязательный `heroBuilds.version + sha256 etag`;
 3. только после совместимого bootstrap вызывается `fetchPublishedHeroIds`, и его успех переводит экран в `remote`: показываются только подтверждённые backend IDs без примеси `heroesWithBuilds`;
-4. timeout, network/HTTP error, слишком большой или невалидный JSON и несовместимая schema bootstrap, а также ошибка hero-build resource переводят только этот ресурс в `fallback`, показывают локальные `heroesWithBuilds`, пояснение и действие `Повторить`;
+4. полный remote snapshot проверяет bootstrap metadata, count, уникальные hero IDs и каждый payload общей total resource-bounded схемой; timeout, partial/mismatch, network/HTTP error, слишком большой или невалидный JSON выбирают самый новый совместимый LKG, затем generated bundled snapshot;
 5. если Supabase не настроен, `fallback` выбирается синхронно без лишнего промежуточного render.
 
 Совместимый bootstrap кэшируется на сессию и дедуплицирует параллельные callers; fallback-результат не кэшируется навсегда, а явный retry выполняет `force`-перепроверку. Каталог и экран билда используют общую машину `sourceSelection` для переходов bootstrap и hero-build resource, поэтому повторная попытка является фоновой: уже показанный remote или fallback каталог остаётся видимым, а встроенный loader не заменяет его пустым состоянием. Timer снимается при завершении, повторе и unmount; отмена немедленно и идемпотентно завершает wrapper типизированным `BoundedRequestCancelledError` и не включает fallback/error UI. Текущий Supabase wrapper не принимает `AbortSignal`, поэтому underlying resource transport может физически продолжаться, но он отсоединён: его поздний resolve/reject обработан и не меняет UI или не создаёт unhandled rejection. Поздний ответ после timeout, unmount или более нового запроса также игнорируется. Неизвестные remote IDs не превращаются в героев.
 
 Bootstrap body ограничен по фактическим UTF-8 байтам. Streaming-ответ отменяет reader при превышении budget до освобождения lock. Для runtime без streaming body клиент требует корректный ограниченный `Content-Length`, не вызывает `text()` при отсутствующем, нечисловом или чрезмерном значении и после чтения сверяет заявленную длину с фактической. Edge Function явно возвращает этот CORS-доступный заголовок для JSON-ответов.
+
+Полный snapshot также ограничен по UTF-8 байтам до JSON parse. Его строгий manifest содержит `schemaVersion: 1`, `contentVersion`, стабильный backend `contentUpdatedAt` и SHA-256 checksum `hero-builds.json`. Canonical JSON сортирует object keys и hero IDs, поэтому одинаковые данные и server date дают byte-identical файлы. LKG хранится через AsyncStorage неизменяемым поколением: после записи и полного reread/validation последним переключается pointer. Прерванная, повреждённая, несовместимая или более старая запись не заменяет текущую. Сериализация гарантируется внутри процесса; AsyncStorage не предоставляет межпроцессный CAS.
+
+`scripts/export-hero-build-snapshot.cjs` получает опубликованный resource только через env-конфигурацию, не печатает URL/key, проверяет payload, IDs и `/img` assets до замены полного staged-комплекта. Manual/scheduled workflow использует pinned checkout, dedicated branch и idempotent PR и никогда не пишет напрямую в `main`.
 
 После выбора источника мастер-каталог фильтруется по выбранным признакам и группируется по зонам. Пустой результат показывает `Нет героев с готовыми билдами по выбранным фильтрам.`
 
@@ -116,7 +124,7 @@ Bootstrap body ограничен по фактическим UTF-8 байтам
 
 При настроенном Supabase первоначальная загрузка комплекта показывает общий `ScreenLoader` и не раскрывает bundled билд до завершения bootstrap и выбора remote/fallback ресурса. Смена route `heroId` атомарно сбрасывает комплект и active tab path до render нового заголовка, отменяет bounded wrapper прежнего ресурса и игнорирует его поздний transport-ответ; принятый комплект и его валидный default path также фиксируются одной state transition без промежуточного empty-state. Без клиента локальный комплект доступен сразу, а `not-configured` диагностируется тем же контролируемым сообщением ровно один раз на загрузку героя. Loader не имеет искусственной минимальной задержки и исчезает при любом контролируемом результате; timeout или неожиданное отклонение promise возвращает локальный fallback без unhandled rejection. Причина контролируемого fallback логируется только как стабильные `heroId` и `kind` (`not-configured | no-data | network | conflict | invalid-data | timeout | http | incompatible-schema | invalid-body`), без сырого backend error или пользовательских данных.
 
-Edge Function использует `SUPABASE_ANON_KEY` и одним вызовом обращается к узкому SQL RPC `get_published_hero_builds_bootstrap_manifest`. `SECURITY INVOKER`, явный `status = 'published'` и действующая публичная RLS policy исключают service-role bypass и draft/private данные. Внутри одного SQL statement и одного database snapshot RPC агрегирует полный набор `hero_id`, `revision` и UTC `updated_at` в стабильном порядке `hero_id`; поэтому лимит строк Data API и изменение между страницами не создают частичный или смешанный manifest. SHA-256 полного ordered aggregate одновременно задаёт resource etag и стабильную версию содержимого; RPC возвращает только `published_count`, `version`, `etag`, а Edge строго проверяет одну bounded строку до формирования публичного bootstrap. Пустой набор имеет детерминированный digest `[]`. Bootstrap является единственной проверкой доступности: внешнего ping, `navigator.onLine` или другого platform connectivity truth нет. Версионированный last-known-good cache и generated bundled snapshots остаются отдельной задачей; текущий fallback использует существующие bundled данные.
+Edge Function использует `SUPABASE_ANON_KEY` и одним вызовом обращается к узкому SQL RPC `get_published_hero_builds_bootstrap_manifest`. `SECURITY INVOKER`, явный `status = 'published'` и действующая публичная RLS policy исключают service-role bypass и draft/private данные. Внутри одного database snapshot RPC агрегирует полный набор `hero_id`, `revision` и UTC `updated_at`; manifest возвращает также стабильный максимум `contentUpdatedAt`. Полный payload выдаёт отдельный RLS-preserving RPC с DB-side лимитом `1000`, а клиент принимает его только при полном совпадении count/version/etag/date с bootstrap. Список IDs или один detail payload не могут создать LKG с global manifest; удалённые герои исчезают только вместе с новым полным snapshot. Bootstrap остаётся единственной проверкой доступности: внешнего ping или `navigator.onLine` нет.
 
 Fresh migration chain явно выдаёт table-level `SELECT` на `hero_build_sets` ролям `anon, authenticated`, чтобы `SECURITY INVOKER` RPC и существующие публичные repository reads были работоспособны независимо от hosted defaults. RLS по-прежнему пропускает им только `published`, а прямые `insert/update/delete` остаются отозваны.
 
@@ -295,6 +303,10 @@ Parser остаётся ограниченным текущим `HeroBuildSet` �
 - [bootstrapEdgeFunction.test.js](../src/shared/lib/__tests__/bootstrapEdgeFunction.test.js)
 - [bootstrapManifest.test.ts](../src/shared/lib/__tests__/bootstrapManifest.test.ts)
 - [bootstrapManifestSql.test.js](../src/shared/lib/__tests__/bootstrapManifestSql.test.js)
+- [heroBuildSnapshot.test.ts](../src/features/builds/data/__tests__/heroBuildSnapshot.test.ts)
+- [heroBuildSnapshotRemote.test.ts](../src/features/builds/data/__tests__/heroBuildSnapshotRemote.test.ts)
+- [heroBuildSnapshotStorage.test.ts](../src/features/builds/storage/__tests__/heroBuildSnapshotStorage.test.ts)
+- [bundledHeroBuildSnapshot.test.ts](../src/features/game-data/snapshots/__tests__/bundledHeroBuildSnapshot.test.ts)
 - [EquipmentVariantTabs.test.tsx](../src/features/builds/__tests__/EquipmentVariantTabs.test.tsx)
 - [WeaponAwakeningBonusList.test.tsx](../src/features/builds/__tests__/WeaponAwakeningBonusList.test.tsx)
 - [weaponAwakeningBonuses.test.ts](../src/features/game-data/weapon-awakening/__tests__/weaponAwakeningBonuses.test.ts)

@@ -6,6 +6,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   fetchPublishedHeroIds,
 } from "@/features/builds";
+import {
+  loadAndCacheRemoteHeroBuildSnapshot,
+  loadHeroBuildSnapshotFallback,
+} from "@/features/builds/data/heroBuildSnapshotSource";
 import { heroes, heroesWithBuilds } from "@/features/game-data/heroes";
 import { HeroListCard } from "@/features/heroes/components/HeroListCard";
 import { HeroListFiltersPanel } from "@/features/heroes/components/HeroListFiltersPanel";
@@ -106,6 +110,8 @@ export function HeroSelectScreen() {
         }
 
         if (bootstrap.source === "fallback") {
+          const fallback = await loadHeroBuildSnapshotFallback();
+          const fallbackIds = fallback.snapshot.heroBuilds.map(({ heroId }) => heroId);
           setCatalogState((current) => {
             const wasChecking =
               current.selection.resources.heroBuilds.source === "checking";
@@ -113,15 +119,27 @@ export function HeroSelectScreen() {
               current.selection,
               bootstrap.reason,
             );
+            const rejectedResource = rejectResource(
+              bootstrapFallback,
+              "heroBuilds",
+              bootstrap.reason,
+            );
             return {
               error: wasChecking
                 ? "Показаны локальные билды."
                 : "Не удалось обновить список билдов.",
-              selection: rejectResource(
-                bootstrapFallback,
-                "heroBuilds",
-                bootstrap.reason,
-              ),
+              selection: {
+                ...rejectedResource,
+                resources: {
+                  ...rejectedResource.resources,
+                  heroBuilds: {
+                    ...rejectedResource.resources.heroBuilds,
+                    data: wasChecking
+                      ? fallbackIds
+                      : rejectedResource.resources.heroBuilds.data,
+                  },
+                },
+              },
             };
           });
           return;
@@ -141,6 +159,12 @@ export function HeroSelectScreen() {
         );
         boundedRequest.current = currentBoundedRequest;
         const heroIds = await currentBoundedRequest.promise;
+        const fullRemote = await loadAndCacheRemoteHeroBuildSnapshot(
+          bootstrap.manifest,
+        );
+        const acceptedHeroIds = fullRemote.snapshot.heroBuilds.map(
+          ({ heroId }) => heroId,
+        );
 
         if (!isMounted.current || currentRequestId !== requestId.current) {
           return;
@@ -151,7 +175,7 @@ export function HeroSelectScreen() {
           selection: acceptResource(
             current.selection,
             "heroBuilds",
-            heroIds,
+            acceptedHeroIds,
           ),
         }));
       } catch (error) {
@@ -163,18 +187,35 @@ export function HeroSelectScreen() {
           return;
         }
 
+        const fallback = await loadHeroBuildSnapshotFallback();
+        const fallbackIds = fallback.snapshot.heroBuilds.map(({ heroId }) => heroId);
         setCatalogState((current) => {
           const wasChecking =
             current.selection.resources.heroBuilds.source === "checking";
+          const reason = isBoundedRequestTimeoutError(error)
+            ? "timeout"
+            : "network";
+          const rejectedResource = rejectResource(
+            current.selection,
+            "heroBuilds",
+            reason,
+          );
           return {
             error: wasChecking
               ? "Показаны локальные билды."
               : "Не удалось обновить список билдов.",
-            selection: rejectResource(
-              current.selection,
-              "heroBuilds",
-              isBoundedRequestTimeoutError(error) ? "timeout" : "network",
-            ),
+            selection: {
+              ...rejectedResource,
+              resources: {
+                ...rejectedResource.resources,
+                heroBuilds: {
+                  ...rejectedResource.resources.heroBuilds,
+                  data: wasChecking
+                    ? fallbackIds
+                    : rejectedResource.resources.heroBuilds.data,
+                },
+              },
+            },
           };
         });
       } finally {

@@ -11,6 +11,7 @@ import {
 const manifest = {
   status: "ok" as const,
   contentVersion: "v1",
+  contentUpdatedAt: "1970-01-01T00:00:00.000000Z",
   schemaVersion: 1 as const,
   resources: {
     heroBuilds: { version: "v1", etag: `sha256:${"a".repeat(64)}` },

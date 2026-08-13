@@ -9,6 +9,7 @@ const ZERO_ROWS_ETAG = `sha256:${
 
 function rpcRow(overrides: Record<string, unknown> = {}) {
   return {
+    content_updated_at: "1970-01-01T00:00:00.000000Z",
     published_count: 0,
     version: "hero-builds:4f53cda18c2baa0c",
     etag: ZERO_ROWS_ETAG,
@@ -19,6 +20,7 @@ function rpcRow(overrides: Record<string, unknown> = {}) {
 describe("bootstrap Edge manifest RPC response", () => {
   test("accepts the deterministic zero-row manifest", () => {
     expect(parseBootstrapManifestRpcResponse([rpcRow()])).toEqual({
+      contentUpdatedAt: "1970-01-01T00:00:00.000000Z",
       publishedCount: 0,
       version: "hero-builds:4f53cda18c2baa0c",
       etag: ZERO_ROWS_ETAG,

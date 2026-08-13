@@ -37,6 +37,7 @@ Deno.serve(async (request) => {
     return jsonResponse({
       status: "ok",
       contentVersion: manifest.version,
+      contentUpdatedAt: manifest.contentUpdatedAt,
       schemaVersion: 1,
       resources: {
         heroBuilds: { version: manifest.version, etag: manifest.etag },

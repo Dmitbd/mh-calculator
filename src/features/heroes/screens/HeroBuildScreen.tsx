@@ -5,6 +5,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { loadPublishedHeroBuildSet } from "@/features/builds";
 import {
+  getBuildSetFromSnapshot,
+  loadAndCacheRemoteHeroBuildSnapshot,
+  loadHeroBuildSnapshotFallback,
+} from "@/features/builds/data/heroBuildSnapshotSource";
+import {
   getCurrentAdminSession,
   type AdminSession,
 } from "@/shared/lib/adminAuth";
@@ -41,7 +46,6 @@ import {
   beginResource,
   rejectBootstrap,
   rejectResource,
-  type ResourceFallbackReason,
 } from "@/shared/lib/sourceSelection";
 
 import { HeroMetadataRow } from "../components/HeroMetadataRow";
@@ -144,12 +148,23 @@ export function HeroBuildScreen({
             heroId,
             kind: bootstrap.reason,
           });
+          const fallback = await loadHeroBuildSnapshotFallback();
           sourceSelection = rejectBootstrap(sourceSelection, bootstrap.reason);
           sourceSelection = rejectResource(
             sourceSelection,
             "heroBuilds",
             bootstrap.reason,
           );
+          sourceSelection = {
+            ...sourceSelection,
+            resources: {
+              ...sourceSelection.resources,
+              heroBuilds: {
+                ...sourceSelection.resources.heroBuilds,
+                data: getBuildSetFromSnapshot(fallback, heroId),
+              },
+            },
+          };
           const nextSelection = sourceSelection;
           setLoadState((current) =>
             current.heroId === heroId
@@ -162,24 +177,28 @@ export function HeroBuildScreen({
         sourceSelection = acceptBootstrap(sourceSelection, bootstrap.manifest);
         sourceSelection = beginResource(sourceSelection, "heroBuilds");
 
-        let fallbackReason: ResourceFallbackReason | null = null;
         const resourceRequest = createBoundedRequest(
           loadPublishedHeroBuildSet({
             client,
             fallbackBuildSet,
             heroId,
             onFallback: (outcome) => {
-              fallbackReason = outcome.kind;
               console.info("Hero build fallback", { heroId, kind: outcome.kind });
             },
           }),
           HERO_BUILD_REQUEST_TIMEOUT_MS,
         );
         activeResourceRequest = resourceRequest;
-        const loadedBuildSet = await resourceRequest.promise;
-        sourceSelection = fallbackReason
-          ? rejectResource(sourceSelection, "heroBuilds", fallbackReason)
-          : acceptResource(sourceSelection, "heroBuilds", loadedBuildSet);
+        await resourceRequest.promise;
+        const fullRemote = await loadAndCacheRemoteHeroBuildSnapshot(
+          bootstrap.manifest,
+        );
+        const acceptedBuildSet = getBuildSetFromSnapshot(fullRemote, heroId);
+        sourceSelection = acceptResource(
+          sourceSelection,
+          "heroBuilds",
+          acceptedBuildSet,
+        );
         const acceptedSelection = sourceSelection;
 
         if (isMounted) {
@@ -198,11 +217,22 @@ export function HeroBuildScreen({
             heroId,
             kind: reason,
           });
+          const fallback = await loadHeroBuildSnapshotFallback();
           sourceSelection = rejectResource(
             sourceSelection,
             "heroBuilds",
             reason,
           );
+          sourceSelection = {
+            ...sourceSelection,
+            resources: {
+              ...sourceSelection.resources,
+              heroBuilds: {
+                ...sourceSelection.resources.heroBuilds,
+                data: getBuildSetFromSnapshot(fallback, heroId),
+              },
+            },
+          };
           const failedSelection = sourceSelection;
           setLoadState((current) =>
             current.heroId === heroId

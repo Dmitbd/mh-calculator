@@ -12,6 +12,8 @@ const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
 const mockFetchPublishedHeroIds = jest.fn<Promise<string[]>, [unknown]>();
 const mockUseCriticalImagePreload = jest.fn(() => true);
 const mockLoadDataBootstrap = jest.fn();
+const mockLoadAndCacheRemoteHeroBuildSnapshot = jest.fn();
+const mockLoadHeroBuildSnapshotFallback = jest.fn();
 const mockAcceptBootstrapTransition = jest.fn();
 const mockAcceptResourceTransition = jest.fn();
 const mockRejectBootstrapTransition = jest.fn();
@@ -20,6 +22,7 @@ const remoteBootstrap = {
   manifest: {
     status: "ok",
     contentVersion: "v1",
+    contentUpdatedAt: "1970-01-01T00:00:00.000000Z",
     schemaVersion: 1,
     resources: {
       heroBuilds: { version: "v1", etag: `sha256:${"a".repeat(64)}` },
@@ -45,6 +48,13 @@ jest.mock("@/shared/lib/supabaseClient", () => ({
 
 jest.mock("@/features/builds", () => ({
   fetchPublishedHeroIds: (...args: [unknown]) => mockFetchPublishedHeroIds(...args),
+}));
+
+jest.mock("@/features/builds/data/heroBuildSnapshotSource", () => ({
+  loadAndCacheRemoteHeroBuildSnapshot: (...args: unknown[]) =>
+    mockLoadAndCacheRemoteHeroBuildSnapshot(...args),
+  loadHeroBuildSnapshotFallback: (...args: unknown[]) =>
+    mockLoadHeroBuildSnapshotFallback(...args),
 }));
 
 jest.mock("@/shared/lib/imagePreload", () => ({
@@ -95,6 +105,22 @@ describe("HeroSelectScreen", () => {
     mockGetSupabaseClient.mockReturnValue(null);
     mockFetchPublishedHeroIds.mockReset();
     mockFetchPublishedHeroIds.mockResolvedValue([]);
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockReset();
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockImplementation(async () => {
+      const result = mockFetchPublishedHeroIds.mock.results.at(-1)?.value;
+      const heroIds = result ? await result : [];
+      return {
+        source: "remote",
+        snapshot: { heroBuilds: heroIds.map((heroId: string) => ({ heroId })) },
+      };
+    });
+    mockLoadHeroBuildSnapshotFallback.mockReset();
+    mockLoadHeroBuildSnapshotFallback.mockResolvedValue({
+      source: "bundled",
+      snapshot: {
+        heroBuilds: heroesWithBuilds.map(({ id: heroId }) => ({ heroId })),
+      },
+    });
     mockLoadDataBootstrap.mockReset();
     mockLoadDataBootstrap.mockResolvedValue(remoteBootstrap);
     mockAcceptBootstrapTransition.mockClear();
@@ -272,6 +298,38 @@ describe("HeroSelectScreen", () => {
       "heroBuilds",
       [remoteOnlyHero!.id],
     );
+  });
+
+  test("derives catalog ids from the complete snapshot so removed heroes disappear", async () => {
+    mockGetSupabaseClient.mockReturnValue({});
+    mockFetchPublishedHeroIds.mockResolvedValue(["bastet", "morana"]);
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockResolvedValue({
+      source: "remote",
+      snapshot: { heroBuilds: [{ heroId: "bastet" }] },
+    });
+
+    render(<HeroSelectScreen />);
+
+    expect(await screen.findByText("Бастет")).toBeTruthy();
+    expect(screen.queryByText("Морана")).toBeNull();
+  });
+
+  test("uses last-known-good ids before bundled ids on bootstrap failure", async () => {
+    mockGetSupabaseClient.mockReturnValue({});
+    mockLoadDataBootstrap.mockResolvedValue({
+      manifest: null,
+      reason: "network",
+      source: "fallback",
+    });
+    mockLoadHeroBuildSnapshotFallback.mockResolvedValue({
+      source: "last-known-good",
+      snapshot: { heroBuilds: [{ heroId: "morana" }] },
+    });
+
+    render(<HeroSelectScreen />);
+
+    expect(await screen.findByText("Морана")).toBeTruthy();
+    expect(screen.queryByText("Бастет")).toBeNull();
   });
 
   test("falls back after a timeout and keeps fallback cards visible during retry", async () => {

@@ -39,7 +39,7 @@ describe("atomic bootstrap manifest migration", () => {
     const body = definition.match(/\$\$([\s\S]*?)\$\$;/)?.[1] ?? "";
 
     expect(definition).toMatch(
-      /returns\s+table\s*\(\s*published_count\s+bigint\s*,\s*version\s+text\s*,\s*etag\s+text\s*\)/i,
+      /returns\s+table\s*\(\s*published_count\s+bigint\s*,\s*version\s+text\s*,\s*etag\s+text\s*,\s*content_updated_at\s+text\s*\)/i,
     );
     expect(definition).toMatch(/language\s+sql/i);
     expect(definition).toMatch(/stable/i);
@@ -52,6 +52,7 @@ describe("atomic bootstrap manifest migration", () => {
     expect(body).toMatch(/count\(\*\)::bigint\s+as\s+published_count/i);
     expect(body).toMatch(/jsonb_agg\([\s\S]*?order\s+by\s+hero_id/i);
     expect(body).toMatch(/hero_id[\s\S]*?revision[\s\S]*?updated_at/i);
+    expect(body).toMatch(/max\(updated_at\)/i);
     expect(body).toMatch(/extensions\.digest\([\s\S]*?'sha256'/i);
     expect(body).toMatch(/coalesce\([\s\S]*?'\[\]'::jsonb/i);
     expect(body).toMatch(

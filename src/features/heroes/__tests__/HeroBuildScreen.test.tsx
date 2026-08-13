@@ -14,6 +14,8 @@ const mockRouter = {
 const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
 const mockLoadPublishedHeroBuildSet = jest.fn();
 const mockLoadDataBootstrap = jest.fn();
+const mockLoadAndCacheRemoteHeroBuildSnapshot = jest.fn();
+const mockLoadHeroBuildSnapshotFallback = jest.fn();
 const mockAcceptBootstrapTransition = jest.fn();
 const mockAcceptResourceTransition = jest.fn();
 const mockRejectBootstrapTransition = jest.fn();
@@ -23,6 +25,7 @@ const remoteBootstrap = {
   manifest: {
     status: "ok",
     contentVersion: "v1",
+    contentUpdatedAt: "1970-01-01T00:00:00.000000Z",
     schemaVersion: 1,
     resources: {
       heroBuilds: { version: "v1", etag: `sha256:${"a".repeat(64)}` },
@@ -62,6 +65,15 @@ jest.mock("@/features/builds", () => {
       mockLoadPublishedHeroBuildSet(...args),
   };
 });
+
+jest.mock("@/features/builds/data/heroBuildSnapshotSource", () => ({
+  getBuildSetFromSnapshot: (source: { snapshot: { heroBuilds: Array<{ buildSet: unknown; heroId: string }> } }, heroId: string) =>
+    source.snapshot.heroBuilds.find((entry) => entry.heroId === heroId)?.buildSet ?? null,
+  loadAndCacheRemoteHeroBuildSnapshot: (...args: unknown[]) =>
+    mockLoadAndCacheRemoteHeroBuildSnapshot(...args),
+  loadHeroBuildSnapshotFallback: (...args: unknown[]) =>
+    mockLoadHeroBuildSnapshotFallback(...args),
+}));
 
 jest.mock("@/shared/lib/imagePreload", () => ({
   useCriticalImagePreload: () => mockUseCriticalImagePreload(),
@@ -126,6 +138,20 @@ describe("HeroBuildScreen", () => {
     mockGetSupabaseClient.mockReturnValue(null);
     mockLoadPublishedHeroBuildSet.mockReset();
     mockLoadPublishedHeroBuildSet.mockResolvedValue(getHeroBuildSet("bastet"));
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockReset();
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockResolvedValue({
+      source: "remote",
+      snapshot: {
+        heroBuilds: [{ buildSet: getHeroBuildSet("bastet"), heroId: "bastet" }],
+      },
+    });
+    mockLoadHeroBuildSnapshotFallback.mockReset();
+    mockLoadHeroBuildSnapshotFallback.mockResolvedValue({
+      source: "bundled",
+      snapshot: {
+        heroBuilds: [{ buildSet: getHeroBuildSet("bastet"), heroId: "bastet" }],
+      },
+    });
     mockLoadDataBootstrap.mockReset();
     mockLoadDataBootstrap.mockResolvedValue(remoteBootstrap);
     mockAcceptBootstrapTransition.mockClear();

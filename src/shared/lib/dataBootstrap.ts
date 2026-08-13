@@ -17,6 +17,7 @@ export type BootstrapResourceManifest = {
 };
 
 export type DataBootstrapManifest = {
+  contentUpdatedAt: string;
   contentVersion: string;
   resources: Record<string, BootstrapResourceManifest> & {
     heroBuilds: BootstrapResourceManifest;
@@ -253,6 +254,7 @@ export function parseBootstrapManifest(value: unknown): DataBootstrapManifest {
     const root = readExactObject(value, [
       "status",
       "contentVersion",
+      "contentUpdatedAt",
       "schemaVersion",
       "resources",
     ]);
@@ -262,6 +264,17 @@ export function parseBootstrapManifest(value: unknown): DataBootstrapManifest {
       "contentVersion",
       MAX_CONTENT_VERSION_LENGTH,
     );
+    const contentUpdatedAt = readBoundedString(
+      root.contentUpdatedAt,
+      "contentUpdatedAt",
+      27,
+    );
+    if (
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/.test(contentUpdatedAt) ||
+      Number.isNaN(Date.parse(contentUpdatedAt))
+    ) {
+      throw new Error("contentUpdatedAt must be a stable backend UTC date");
+    }
     const schemaVersion = root.schemaVersion;
 
     if (status !== "ok") {
@@ -320,6 +333,7 @@ export function parseBootstrapManifest(value: unknown): DataBootstrapManifest {
 
     return {
       contentVersion,
+      contentUpdatedAt,
       resources: resources as DataBootstrapManifest["resources"],
       schemaVersion: DATA_BOOTSTRAP_SCHEMA_VERSION,
       status: "ok",

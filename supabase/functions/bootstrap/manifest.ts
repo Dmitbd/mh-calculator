@@ -2,6 +2,7 @@ const MAX_PUBLISHED_COUNT = 100_000;
 const ETAG_PATTERN = /^sha256:([a-f0-9]{64})$/;
 
 export type BootstrapManifestRpcResult = {
+  contentUpdatedAt: string;
   etag: string;
   publishedCount: number;
   version: string;
@@ -28,7 +29,8 @@ export function parseBootstrapManifestRpcResponse(
   }
   const keys = Reflect.ownKeys(row);
   if (
-    keys.length !== 3 ||
+    keys.length !== 4 ||
+    !keys.includes("content_updated_at") ||
     !keys.includes("published_count") ||
     !keys.includes("version") ||
     !keys.includes("etag")
@@ -39,8 +41,16 @@ export function parseBootstrapManifestRpcResponse(
   }
 
   const publishedCount = readOwnDataProperty(row, "published_count");
+  const contentUpdatedAt = readOwnDataProperty(row, "content_updated_at");
   const version = readOwnDataProperty(row, "version");
   const etag = readOwnDataProperty(row, "etag");
+  if (
+    typeof contentUpdatedAt !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/.test(contentUpdatedAt) ||
+    Number.isNaN(Date.parse(contentUpdatedAt))
+  ) {
+    throw new BootstrapManifestError("Bootstrap manifest content date is invalid.");
+  }
   if (
     typeof publishedCount !== "number" ||
     !Number.isSafeInteger(publishedCount) ||
@@ -65,7 +75,7 @@ export function parseBootstrapManifestRpcResponse(
     );
   }
 
-  return { etag, publishedCount, version };
+  return { contentUpdatedAt, etag, publishedCount, version };
 }
 
 function readOwnDataProperty(value: object, key: string): unknown {

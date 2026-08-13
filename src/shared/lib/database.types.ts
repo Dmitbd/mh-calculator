@@ -66,6 +66,26 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      get_published_hero_builds_bootstrap_manifest: {
+        Args: Record<never, never>;
+        Returns: {
+          content_updated_at: string;
+          etag: string;
+          published_count: number;
+          version: string;
+        }[];
+      };
+      get_published_hero_builds_snapshot: {
+        Args: Record<never, never>;
+        Returns: {
+          content_updated_at: string;
+          etag: string;
+          hero_builds_text: string;
+          published_count: number;
+          resource_checksum: string;
+          version: string;
+        }[];
+      };
       create_or_update_draft_hero_build_set: {
         Args: {
           p_expected_revision: number | null;
