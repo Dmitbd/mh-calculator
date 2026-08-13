@@ -37,7 +37,7 @@ import {
   HERO_CATALOG_REQUEST_TIMEOUT_MS,
   HeroSelectScreen,
 } from "@/features/heroes/screens/HeroSelectScreen";
-import { createBoundedRequest } from "@/shared/lib/boundedRequest";
+import * as boundedRequestModule from "@/shared/lib/boundedRequest";
 
 describe("HeroSelectScreen", () => {
   beforeEach(() => {
@@ -188,12 +188,17 @@ describe("HeroSelectScreen", () => {
 
   test("falls back after the bounded request timeout and can retry", async () => {
     jest.useFakeTimers();
+    let resolveFirstRequest!: (heroIds: string[]) => void;
     jest
       .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
       .mockResolvedValue(true);
     mockGetSupabaseClient.mockReturnValue({});
     mockFetchPublishedHeroIds
-      .mockReturnValueOnce(new Promise(() => undefined))
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFirstRequest = resolve;
+        }),
+      )
       .mockResolvedValueOnce(["zeus"]);
 
     render(<HeroSelectScreen />);
@@ -209,26 +214,102 @@ describe("HeroSelectScreen", () => {
 
     expect(await screen.findByText("Зевс")).toBeTruthy();
     expect(screen.queryByText("Бастет")).toBeNull();
+
+    await act(async () => {
+      resolveFirstRequest(["bastet"]);
+    });
+
+    expect(screen.getByText("Зевс")).toBeTruthy();
+    expect(screen.queryByText("Не удалось обновить список билдов.")).toBeNull();
   });
 
-  test("cancels a bounded request timer explicitly", () => {
+  test("silently cancels a superseded retry and ignores its late failure", async () => {
+    let rejectSupersededRequest!: (error: Error) => void;
+    mockGetSupabaseClient.mockReturnValue({});
+    mockFetchPublishedHeroIds
+      .mockRejectedValueOnce(new Error("initial failure"))
+      .mockReturnValueOnce(
+        new Promise((_resolve, reject) => {
+          rejectSupersededRequest = reject;
+        }),
+      )
+      .mockResolvedValueOnce(["zeus"]);
+
+    render(<HeroSelectScreen />);
+
+    const retry = await screen.findByText("Повторить");
+    let retryButton = retry.parent;
+
+    while (retryButton && typeof retryButton.props.onPress !== "function") {
+      retryButton = retryButton.parent;
+    }
+
+    const retryRequest = retryButton?.props.onPress as (() => void) | undefined;
+
+    expect(retryRequest).toEqual(expect.any(Function));
+
+    await act(async () => {
+      retryRequest?.();
+      retryRequest?.();
+    });
+
+    expect(await screen.findByText("Зевс")).toBeTruthy();
+
+    await act(async () => {
+      rejectSupersededRequest(new Error("late transport failure"));
+    });
+
+    expect(screen.getByText("Зевс")).toBeTruthy();
+    expect(screen.queryByText("Не удалось обновить список билдов.")).toBeNull();
+  });
+
+  test("settles a cancelled bounded request with a typed outcome", async () => {
     jest.useFakeTimers();
-    const boundedRequest = createBoundedRequest(
-      new Promise<string[]>(() => undefined),
+    const clearTimeoutSpy = jest.spyOn(globalThis, "clearTimeout");
+    let rejectRequest!: (error: Error) => void;
+    const boundedRequest = boundedRequestModule.createBoundedRequest(
+      new Promise<string[]>((_resolve, reject) => {
+        rejectRequest = reject;
+      }),
       HERO_CATALOG_REQUEST_TIMEOUT_MS,
     );
+    const outcome = boundedRequest.promise.catch((error: unknown) => error);
 
     expect(jest.getTimerCount()).toBe(1);
 
     boundedRequest.cancel();
+    boundedRequest.cancel();
 
     expect(jest.getTimerCount()).toBe(0);
+    await expect(outcome).resolves.toEqual(
+      expect.objectContaining({
+        code: "BOUNDED_REQUEST_CANCELLED",
+        name: "BoundedRequestCancelledError",
+      }),
+    );
+    expect(clearTimeoutSpy).toHaveBeenCalledTimes(1);
+
+    rejectRequest(new Error("late transport failure"));
+    await Promise.resolve();
+
+    await expect(outcome).resolves.toEqual(
+      expect.objectContaining({ code: "BOUNDED_REQUEST_CANCELLED" }),
+    );
   });
 
-  test("clears the active catalog timeout on unmount", () => {
+  test("settles and clears the active catalog request on unmount", async () => {
     jest.useFakeTimers();
     const setTimeoutSpy = jest.spyOn(globalThis, "setTimeout");
     const clearTimeoutSpy = jest.spyOn(globalThis, "clearTimeout");
+    const createBoundedRequest = boundedRequestModule.createBoundedRequest;
+    let requestOutcome: Promise<unknown> | null = null;
+    jest
+      .spyOn(boundedRequestModule, "createBoundedRequest")
+      .mockImplementation((request, timeoutMs) => {
+        const boundedRequest = createBoundedRequest(request, timeoutMs);
+        requestOutcome = boundedRequest.promise.catch((error: unknown) => error);
+        return boundedRequest;
+      });
     jest
       .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
       .mockResolvedValue(true);
@@ -248,5 +329,8 @@ describe("HeroSelectScreen", () => {
     view.unmount();
 
     expect(clearTimeoutSpy).toHaveBeenCalledWith(catalogTimerId);
+    await expect(requestOutcome).resolves.toEqual(
+      expect.objectContaining({ code: "BOUNDED_REQUEST_CANCELLED" }),
+    );
   });
 });

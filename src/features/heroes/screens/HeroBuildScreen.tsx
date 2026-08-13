@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -61,6 +61,7 @@ export function HeroBuildScreen({
   const hero = getHeroById(heroId);
   const fallbackBuildSet = getHeroBuildSet(heroId);
   const [client] = useState(() => getSupabaseClient());
+  const noClientDiagnosticHeroId = useRef<string | null>(null);
   const [loadState, setLoadState] = useState(() =>
     createHeroBuildLoadState({
       fallbackBuildSet,
@@ -92,6 +93,14 @@ export function HeroBuildScreen({
     let isMounted = true;
 
     if (!client) {
+      if (noClientDiagnosticHeroId.current !== heroId) {
+        noClientDiagnosticHeroId.current = heroId;
+        console.info("Hero build fallback", {
+          heroId,
+          kind: "not-configured",
+        });
+      }
+
       return () => {
         isMounted = false;
       };

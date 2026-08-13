@@ -55,8 +55,11 @@ import {
 } from "@/features/heroes/model/heroBuildLoading";
 
 describe("HeroBuildScreen", () => {
+  let diagnostic: jest.SpyInstance;
+
   beforeEach(() => {
     jest.useRealTimers();
+    diagnostic = jest.spyOn(console, "info").mockImplementation();
     mockRouter.back.mockClear();
     mockRouter.canGoBack.mockClear();
     mockRouter.push.mockClear();
@@ -64,6 +67,10 @@ describe("HeroBuildScreen", () => {
     mockGetSupabaseClient.mockReturnValue(null);
     mockLoadPublishedHeroBuildSet.mockReset();
     mockLoadPublishedHeroBuildSet.mockResolvedValue(getHeroBuildSet("bastet"));
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   test("renders only tabs with ready builds for bastet", () => {
@@ -283,7 +290,6 @@ describe("HeroBuildScreen", () => {
   });
 
   test("reports a controlled remote fallback kind for diagnostics", async () => {
-    const diagnostic = jest.spyOn(console, "info").mockImplementation();
     mockGetSupabaseClient.mockReturnValue({});
     mockLoadPublishedHeroBuildSet.mockImplementation(async (params) => {
       params.onFallback?.({ kind: "network" });
@@ -296,6 +302,32 @@ describe("HeroBuildScreen", () => {
     expect(diagnostic).toHaveBeenCalledWith("Hero build fallback", {
       heroId: "bastet",
       kind: "network",
+    });
+  });
+
+  test("reports the no-client fallback exactly once per hero load", () => {
+    const view = render(
+      <HeroBuildScreen heroId="bastet" initialAdminSession={null} />,
+    );
+
+    expect(diagnostic).toHaveBeenCalledTimes(1);
+    expect(diagnostic).toHaveBeenLastCalledWith("Hero build fallback", {
+      heroId: "bastet",
+      kind: "not-configured",
+    });
+
+    view.rerender(
+      <HeroBuildScreen heroId="bastet" initialAdminSession={null} />,
+    );
+    expect(diagnostic).toHaveBeenCalledTimes(1);
+
+    view.rerender(
+      <HeroBuildScreen heroId="morana" initialAdminSession={null} />,
+    );
+    expect(diagnostic).toHaveBeenCalledTimes(2);
+    expect(diagnostic).toHaveBeenLastCalledWith("Hero build fallback", {
+      heroId: "morana",
+      kind: "not-configured",
     });
   });
 });

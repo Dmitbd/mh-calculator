@@ -17,7 +17,10 @@ import { groupHeroesByZone } from "@/features/heroes/utils/heroListGrouping";
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 import { ScreenLoader } from "@/shared/ui/ScreenLoader";
-import { createBoundedRequest } from "@/shared/lib/boundedRequest";
+import {
+  createBoundedRequest,
+  isBoundedRequestCancelledError,
+} from "@/shared/lib/boundedRequest";
 import { getSupabaseClient } from "@/shared/lib/supabaseClient";
 
 const SCREEN_PADDING = 24;
@@ -88,7 +91,11 @@ export function HeroSelectScreen() {
           remoteHeroIds: heroIds,
           source: "remote",
         });
-      } catch {
+      } catch (error) {
+        if (isBoundedRequestCancelledError(error)) {
+          return;
+        }
+
         if (!isMounted.current || currentRequestId !== requestId.current) {
           return;
         }
