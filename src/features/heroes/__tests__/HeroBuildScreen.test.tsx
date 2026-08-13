@@ -172,7 +172,7 @@ describe("HeroBuildScreen", () => {
     );
 
     expect(
-      screen.getByRole("progressbar", { name: "Подготавливаем иконки" }),
+      screen.getByRole("progressbar", { name: "Загружаем билд" }),
     ).toBeTruthy();
     expect(screen.queryByText("Axe of Pangu")).toBeNull();
 
@@ -215,7 +215,7 @@ describe("HeroBuildScreen", () => {
     });
 
     expect(
-      screen.getByRole("progressbar", { name: "Подготавливаем иконки" }),
+      screen.getByRole("progressbar", { name: "Загружаем билд" }),
     ).toBeTruthy();
     expect(screen.getByTestId("screen-loader-mark")).toBe(initialLoaderMark);
     expect(screen.queryByText("Axe of Pangu")).toBeNull();

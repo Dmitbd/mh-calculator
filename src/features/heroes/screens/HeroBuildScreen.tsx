@@ -364,11 +364,7 @@ export function HeroBuildScreen({
         contentContainerStyle={[styles.container, contentPadding]}
       >
         {isInitialContentLoading ? (
-          <ScreenLoader
-            label={
-              isBuildLoading ? "Загружаем билд" : "Подготавливаем иконки"
-            }
-          />
+          <ScreenLoader label="Загружаем билд" />
         ) : (
           <>
             <View style={styles.section}>
