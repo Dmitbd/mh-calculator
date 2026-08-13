@@ -4,12 +4,10 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
-  fetchPublishedHeroIds,
-} from "@/features/builds";
-import {
   loadAndCacheRemoteHeroBuildSnapshot,
   loadHeroBuildSnapshotFallback,
 } from "@/features/builds/data/heroBuildSnapshotSource";
+import { isHeroBuildSnapshotRemoteTimeoutError } from "@/features/builds/data/heroBuildSnapshotRemote";
 import { heroes, heroesWithBuilds } from "@/features/game-data/heroes";
 import { HeroListCard } from "@/features/heroes/components/HeroListCard";
 import { HeroListFiltersPanel } from "@/features/heroes/components/HeroListFiltersPanel";
@@ -23,11 +21,6 @@ import { getHeroCatalogCriticalImageSources } from "@/features/heroes/utils/hero
 import { useCriticalImagePreload } from "@/shared/lib/imagePreload";
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 import { ScreenLoader } from "@/shared/ui/ScreenLoader";
-import {
-  createBoundedRequest,
-  isBoundedRequestCancelledError,
-  isBoundedRequestTimeoutError,
-} from "@/shared/lib/boundedRequest";
 import { loadDataBootstrap } from "@/shared/lib/dataBootstrap";
 import {
   acceptBootstrap,
@@ -42,8 +35,6 @@ import {
 import { getSupabaseClient } from "@/shared/lib/supabaseClient";
 
 const SCREEN_PADDING = 24;
-export const HERO_CATALOG_REQUEST_TIMEOUT_MS = 8_000;
-
 type HeroCatalogState = {
   error: string | null;
   selection: SourceSelectionState<{ heroBuilds: string[] }>;
@@ -67,7 +58,6 @@ export function HeroSelectScreen() {
   const [client] = useState(() => getSupabaseClient());
   const isMounted = useRef(true);
   const requestId = useRef(0);
-  const boundedRequest = useRef<{ cancel: () => void } | null>(null);
   const [catalogState, setCatalogState] = useState<HeroCatalogState>(() =>
     createHeroCatalogState(Boolean(client)),
   );
@@ -81,9 +71,6 @@ export function HeroSelectScreen() {
       const currentRequestId = requestId.current + 1;
       requestId.current = currentRequestId;
 
-      boundedRequest.current?.cancel();
-      boundedRequest.current = null;
-
       if (preserveContent) {
         setCatalogState((current) => ({
           ...current,
@@ -94,11 +81,6 @@ export function HeroSelectScreen() {
           ),
         }));
       }
-
-      let currentBoundedRequest: {
-        cancel: () => void;
-        promise: Promise<string[]>;
-      } | null = null;
 
       try {
         const bootstrap = await loadDataBootstrap(
@@ -153,12 +135,6 @@ export function HeroSelectScreen() {
           ),
         }));
 
-        currentBoundedRequest = createBoundedRequest(
-          fetchPublishedHeroIds(client),
-          HERO_CATALOG_REQUEST_TIMEOUT_MS,
-        );
-        boundedRequest.current = currentBoundedRequest;
-        const heroIds = await currentBoundedRequest.promise;
         const fullRemote = await loadAndCacheRemoteHeroBuildSnapshot(
           bootstrap.manifest,
         );
@@ -179,10 +155,6 @@ export function HeroSelectScreen() {
           ),
         }));
       } catch (error) {
-        if (isBoundedRequestCancelledError(error)) {
-          return;
-        }
-
         if (!isMounted.current || currentRequestId !== requestId.current) {
           return;
         }
@@ -192,9 +164,9 @@ export function HeroSelectScreen() {
         setCatalogState((current) => {
           const wasChecking =
             current.selection.resources.heroBuilds.source === "checking";
-          const reason = isBoundedRequestTimeoutError(error)
-            ? "timeout"
-            : "network";
+          const reason = isHeroBuildSnapshotRemoteTimeoutError(error)
+            ? ("timeout" as const)
+            : ("network" as const);
           const rejectedResource = rejectResource(
             current.selection,
             "heroBuilds",
@@ -218,12 +190,6 @@ export function HeroSelectScreen() {
             },
           };
         });
-      } finally {
-        currentBoundedRequest?.cancel();
-
-        if (boundedRequest.current === currentBoundedRequest) {
-          boundedRequest.current = null;
-        }
       }
     },
     [client],
@@ -236,9 +202,6 @@ export function HeroSelectScreen() {
     return () => {
       isMounted.current = false;
       requestId.current += 1;
-
-      boundedRequest.current?.cancel();
-      boundedRequest.current = null;
     };
   }, [loadRemoteHeroIds]);
 

@@ -3,12 +3,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { loadPublishedHeroBuildSet } from "@/features/builds";
 import {
   getBuildSetFromSnapshot,
   loadAndCacheRemoteHeroBuildSnapshot,
   loadHeroBuildSnapshotFallback,
 } from "@/features/builds/data/heroBuildSnapshotSource";
+import { isHeroBuildSnapshotRemoteTimeoutError } from "@/features/builds/data/heroBuildSnapshotRemote";
 import {
   getCurrentAdminSession,
   type AdminSession,
@@ -34,10 +34,6 @@ import {
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 import { ScreenLoader } from "@/shared/ui/ScreenLoader";
-import {
-  createBoundedRequest,
-  isBoundedRequestTimeoutError,
-} from "@/shared/lib/boundedRequest";
 import { loadDataBootstrap } from "@/shared/lib/dataBootstrap";
 import { useCriticalImagePreload } from "@/shared/lib/imagePreload";
 import {
@@ -62,8 +58,6 @@ import { mapBuildToView } from "../utils/mapBuildToView";
 import { getHeroMetadataImageSources } from "../utils/heroCriticalImages";
 
 const SCREEN_PADDING = 20;
-export const HERO_BUILD_REQUEST_TIMEOUT_MS = 8_000;
-
 type HeroBuildScreenProps = {
   /** Id героя из роута */
   heroId: string;
@@ -119,7 +113,6 @@ export function HeroBuildScreen({
 
   useEffect(() => {
     let isMounted = true;
-    let activeResourceRequest: { cancel: () => void } | null = null;
 
     if (!client) {
       if (noClientDiagnosticHeroId.current !== heroId) {
@@ -177,19 +170,6 @@ export function HeroBuildScreen({
         sourceSelection = acceptBootstrap(sourceSelection, bootstrap.manifest);
         sourceSelection = beginResource(sourceSelection, "heroBuilds");
 
-        const resourceRequest = createBoundedRequest(
-          loadPublishedHeroBuildSet({
-            client,
-            fallbackBuildSet,
-            heroId,
-            onFallback: (outcome) => {
-              console.info("Hero build fallback", { heroId, kind: outcome.kind });
-            },
-          }),
-          HERO_BUILD_REQUEST_TIMEOUT_MS,
-        );
-        activeResourceRequest = resourceRequest;
-        await resourceRequest.promise;
         const fullRemote = await loadAndCacheRemoteHeroBuildSnapshot(
           bootstrap.manifest,
         );
@@ -210,9 +190,9 @@ export function HeroBuildScreen({
         }
       } catch (error) {
         if (isMounted) {
-          const reason = isBoundedRequestTimeoutError(error)
-            ? "timeout"
-            : "network";
+          const reason = isHeroBuildSnapshotRemoteTimeoutError(error)
+            ? ("timeout" as const)
+            : ("network" as const);
           console.info("Hero build fallback", {
             heroId,
             kind: reason,
@@ -247,7 +227,6 @@ export function HeroBuildScreen({
 
     return () => {
       isMounted = false;
-      activeResourceRequest?.cancel();
     };
   }, [client, fallbackBuildSet, heroId]);
 

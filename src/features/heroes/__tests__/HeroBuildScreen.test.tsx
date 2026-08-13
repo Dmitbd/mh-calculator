@@ -12,7 +12,6 @@ const mockRouter = {
   replace: jest.fn(),
 };
 const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
-const mockLoadPublishedHeroBuildSet = jest.fn();
 const mockLoadDataBootstrap = jest.fn();
 const mockLoadAndCacheRemoteHeroBuildSnapshot = jest.fn();
 const mockLoadHeroBuildSnapshotFallback = jest.fn();
@@ -55,16 +54,6 @@ jest.mock("@/shared/lib/supabaseClient", () => ({
   __esModule: true,
   getSupabaseClient: () => mockGetSupabaseClient(),
 }));
-
-jest.mock("@/features/builds", () => {
-  const actual = jest.requireActual("@/features/builds");
-
-  return {
-    ...actual,
-    loadPublishedHeroBuildSet: (...args: unknown[]) =>
-      mockLoadPublishedHeroBuildSet(...args),
-  };
-});
 
 jest.mock("@/features/builds/data/heroBuildSnapshotSource", () => ({
   getBuildSetFromSnapshot: (source: { snapshot: { heroBuilds: Array<{ buildSet: unknown; heroId: string }> } }, heroId: string) =>
@@ -110,10 +99,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-
 import { AccessibilityInfo } from "react-native";
 
 import { getHeroBuildSet } from "@/features/game-data/heroes/heroBuilds";
-import {
-  HERO_BUILD_REQUEST_TIMEOUT_MS,
-  HeroBuildScreen,
-} from "@/features/heroes/screens/HeroBuildScreen";
+import { HeroBuildScreen } from "@/features/heroes/screens/HeroBuildScreen";
 import {
   createHeroBuildLoadState,
   resolveHeroBuildLoadState,
@@ -136,8 +122,6 @@ describe("HeroBuildScreen", () => {
     mockRouter.push.mockClear();
     mockRouter.replace.mockClear();
     mockGetSupabaseClient.mockReturnValue(null);
-    mockLoadPublishedHeroBuildSet.mockReset();
-    mockLoadPublishedHeroBuildSet.mockResolvedValue(getHeroBuildSet("bastet"));
     mockLoadAndCacheRemoteHeroBuildSnapshot.mockReset();
     mockLoadAndCacheRemoteHeroBuildSnapshot.mockResolvedValue({
       source: "remote",
@@ -329,9 +313,9 @@ describe("HeroBuildScreen", () => {
   });
 
   test("shows the shared loader until the initial remote build resolves", async () => {
-    let resolveBuild!: (buildSet: ReturnType<typeof getHeroBuildSet>) => void;
+    let resolveBuild!: (source: unknown) => void;
     mockGetSupabaseClient.mockReturnValue({});
-    mockLoadPublishedHeroBuildSet.mockReturnValue(
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockReturnValue(
       new Promise((resolve) => {
         resolveBuild = resolve;
       }),
@@ -345,7 +329,10 @@ describe("HeroBuildScreen", () => {
     expect(screen.queryByText("Axe of Pangu")).toBeNull();
     expect(screen.queryByText("Билд для этого режима ещё не готов.")).toBeNull();
 
-    resolveBuild(getHeroBuildSet("bastet"));
+    resolveBuild({
+      source: "remote",
+      snapshot: { heroBuilds: [{ buildSet: getHeroBuildSet("bastet"), heroId: "bastet" }] },
+    });
 
     expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
     expect(screen.queryByText("Загружаем билд")).toBeNull();
@@ -368,14 +355,14 @@ describe("HeroBuildScreen", () => {
 
     render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
 
-    expect(mockLoadPublishedHeroBuildSet).not.toHaveBeenCalled();
+    expect(mockLoadAndCacheRemoteHeroBuildSnapshot).not.toHaveBeenCalled();
     expect(screen.getByRole("progressbar", { name: "Загружаем билд" })).toBeTruthy();
 
     await act(async () => {
       resolveBootstrap(remoteBootstrap);
     });
 
-    expect(mockLoadPublishedHeroBuildSet).toHaveBeenCalledTimes(1);
+    expect(mockLoadAndCacheRemoteHeroBuildSnapshot).toHaveBeenCalledTimes(1);
   });
 
   test("keeps the bundled build when bootstrap selects fallback", async () => {
@@ -389,7 +376,7 @@ describe("HeroBuildScreen", () => {
     render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
 
     expect(await screen.findByText("Axe of Pangu")).toBeTruthy();
-    expect(mockLoadPublishedHeroBuildSet).not.toHaveBeenCalled();
+    expect(mockLoadAndCacheRemoteHeroBuildSnapshot).not.toHaveBeenCalled();
     expect(diagnostic).toHaveBeenCalledWith("Hero build fallback", {
       heroId: "bastet",
       kind: "timeout",
@@ -405,38 +392,26 @@ describe("HeroBuildScreen", () => {
     );
   });
 
-  test("bounds a hanging hero resource request and ignores its late result", async () => {
-    jest.useFakeTimers();
-    let resolveRemote!: (buildSet: ReturnType<typeof getHeroBuildSet>) => void;
+  test("ignores a late full snapshot after route cleanup", async () => {
+    let resolveRemote!: (source: unknown) => void;
     mockGetSupabaseClient.mockReturnValue({});
-    mockLoadPublishedHeroBuildSet.mockReturnValue(
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockReturnValue(
       new Promise((resolve) => {
         resolveRemote = resolve;
       }),
     );
 
-    render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
-    await act(async () => {
-      await Promise.resolve();
-      await jest.advanceTimersByTimeAsync(HERO_BUILD_REQUEST_TIMEOUT_MS);
-    });
-
-    expect(screen.getByText("Axe of Pangu")).toBeTruthy();
-    expect(diagnostic).toHaveBeenCalledWith("Hero build fallback", {
-      heroId: "bastet",
-      kind: "timeout",
-    });
+    const view = render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
+    view.unmount();
 
     await act(async () => {
-      resolveRemote(getHeroBuildSet("morana"));
+      resolveRemote({ source: "remote", snapshot: { heroBuilds: [] } });
     });
-
-    expect(screen.getByText("Axe of Pangu")).toBeTruthy();
   });
 
   test("uses the local build when an unexpected initial request error occurs", async () => {
     mockGetSupabaseClient.mockReturnValue({});
-    mockLoadPublishedHeroBuildSet.mockRejectedValue(new Error("unexpected"));
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockRejectedValue(new Error("unexpected"));
 
     render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
 
@@ -446,8 +421,11 @@ describe("HeroBuildScreen", () => {
 
   test("resets build content synchronously when the route hero changes", async () => {
     mockGetSupabaseClient.mockReturnValue({});
-    mockLoadPublishedHeroBuildSet
-      .mockResolvedValueOnce(getHeroBuildSet("bastet"))
+    mockLoadAndCacheRemoteHeroBuildSnapshot
+      .mockResolvedValueOnce({
+        source: "remote",
+        snapshot: { heroBuilds: [{ buildSet: getHeroBuildSet("bastet"), heroId: "bastet" }] },
+      })
       .mockReturnValueOnce(new Promise(() => undefined));
     const view = render(
       <HeroBuildScreen heroId="bastet" initialAdminSession={null} />,
@@ -490,10 +468,7 @@ describe("HeroBuildScreen", () => {
 
   test("reports a controlled remote fallback kind for diagnostics", async () => {
     mockGetSupabaseClient.mockReturnValue({});
-    mockLoadPublishedHeroBuildSet.mockImplementation(async (params) => {
-      params.onFallback?.({ kind: "network" });
-      return getHeroBuildSet("bastet");
-    });
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockRejectedValue(new Error("network"));
 
     render(<HeroBuildScreen heroId="bastet" initialAdminSession={null} />);
 

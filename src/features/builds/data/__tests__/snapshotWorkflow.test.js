@@ -10,9 +10,18 @@ describe("snapshot update workflow", () => {
     expect(source).not.toMatch(/pages: write|id-token: write/);
     expect(source).toMatch(/concurrency:[\s\S]*cancel-in-progress: false/);
     expect(source).toContain("automation/hero-build-snapshots");
-    expect(source).toMatch(/gh pr view[\s\S]*gh pr edit[\s\S]*gh pr create/);
+    expect(source).toMatch(/git fetch --no-tags origin "refs\/heads\/\$BRANCH:refs\/remotes\/origin\/\$BRANCH"/);
+    expect(source).toMatch(/EXPECTED_SHA=.*git rev-parse "refs\/remotes\/origin\/\$BRANCH"/);
+    expect(source).toMatch(/--force-with-lease="refs\/heads\/\$BRANCH:\$EXPECTED_SHA"/);
+    expect(source).toMatch(/gh pr list --head "\$BRANCH" --base main --state open --json number --jq '\.\[0\]\.number'/);
+    expect(source).toMatch(/gh pr edit "\$PR_NUMBER"[\s\S]*gh pr create/);
+    expect(source).not.toContain("gh pr view");
     expect(source).not.toMatch(/git push[^\n]*main/);
     expect(source).toMatch(/SUPABASE_ANON_KEY: \$\{\{ secrets\./);
     expect(source).not.toMatch(/echo.*SUPABASE|artifact/i);
+
+    const owners = fs.readFileSync(path.join(process.cwd(), ".github/CODEOWNERS"), "utf8");
+    expect(owners).toMatch(/update-hero-build-snapshot\.yml\s+@Dmitbd/);
+    expect(owners).toMatch(/snapshots\/hero-builds\/\s+@Dmitbd/);
   });
 });

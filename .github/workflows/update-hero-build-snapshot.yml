@@ -51,12 +51,15 @@ jobs:
           fi
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch --no-tags origin "refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" || true
+          EXPECTED_SHA="$(git rev-parse "refs/remotes/origin/$BRANCH" 2>/dev/null || true)"
           git switch -C "$BRANCH"
           git add src/features/game-data/snapshots/hero-builds
           git commit -m "chore: обновить snapshots данных"
-          git push --force-with-lease origin "HEAD:$BRANCH"
-          if gh pr view "$BRANCH" >/dev/null 2>&1; then
-            gh pr edit "$BRANCH" --base main --title "chore: обновить snapshots данных" --body "Автоматическое обновление проверенного bundled snapshot."
+          git push --force-with-lease="refs/heads/$BRANCH:$EXPECTED_SHA" origin "HEAD:refs/heads/$BRANCH"
+          PR_NUMBER="$(gh pr list --head "$BRANCH" --base main --state open --json number --jq '.[0].number')"
+          if test -n "$PR_NUMBER"; then
+            gh pr edit "$PR_NUMBER" --base main --title "chore: обновить snapshots данных" --body "Автоматическое обновление проверенного bundled snapshot."
           else
             gh pr create --base main --head "$BRANCH" --title "chore: обновить snapshots данных" --body "Автоматическое обновление проверенного bundled snapshot."
           fi

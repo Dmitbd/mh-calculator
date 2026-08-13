@@ -9,7 +9,6 @@ const mockRouter = {
   push: jest.fn(),
 };
 const mockGetSupabaseClient = jest.fn<unknown, []>(() => null);
-const mockFetchPublishedHeroIds = jest.fn<Promise<string[]>, [unknown]>();
 const mockUseCriticalImagePreload = jest.fn(() => true);
 const mockLoadDataBootstrap = jest.fn();
 const mockLoadAndCacheRemoteHeroBuildSnapshot = jest.fn();
@@ -44,10 +43,6 @@ jest.mock("expo-router", () => ({
 
 jest.mock("@/shared/lib/supabaseClient", () => ({
   getSupabaseClient: () => mockGetSupabaseClient(),
-}));
-
-jest.mock("@/features/builds", () => ({
-  fetchPublishedHeroIds: (...args: [unknown]) => mockFetchPublishedHeroIds(...args),
 }));
 
 jest.mock("@/features/builds/data/heroBuildSnapshotSource", () => ({
@@ -89,31 +84,24 @@ jest.mock("@/shared/lib/sourceSelection", () => {
 });
 
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import { AccessibilityInfo } from "react-native";
 
 import { heroes, heroesWithBuilds } from "@/features/game-data/heroes/heroBuilds";
-import {
-  HERO_CATALOG_REQUEST_TIMEOUT_MS,
-  HeroSelectScreen,
-} from "@/features/heroes/screens/HeroSelectScreen";
-import * as boundedRequestModule from "@/shared/lib/boundedRequest";
+import { HeroSelectScreen } from "@/features/heroes/screens/HeroSelectScreen";
+
+function remoteSnapshot(heroIds: string[]) {
+  return {
+    source: "remote",
+    snapshot: { heroBuilds: heroIds.map((heroId) => ({ heroId })) },
+  };
+}
 
 describe("HeroSelectScreen", () => {
   beforeEach(() => {
     mockRouter.push.mockClear();
     mockGetSupabaseClient.mockReset();
     mockGetSupabaseClient.mockReturnValue(null);
-    mockFetchPublishedHeroIds.mockReset();
-    mockFetchPublishedHeroIds.mockResolvedValue([]);
     mockLoadAndCacheRemoteHeroBuildSnapshot.mockReset();
-    mockLoadAndCacheRemoteHeroBuildSnapshot.mockImplementation(async () => {
-      const result = mockFetchPublishedHeroIds.mock.results.at(-1)?.value;
-      const heroIds = result ? await result : [];
-      return {
-        source: "remote",
-        snapshot: { heroBuilds: heroIds.map((heroId: string) => ({ heroId })) },
-      };
-    });
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockResolvedValue(remoteSnapshot([]));
     mockLoadHeroBuildSnapshotFallback.mockReset();
     mockLoadHeroBuildSnapshotFallback.mockResolvedValue({
       source: "bundled",
@@ -188,12 +176,12 @@ describe("HeroSelectScreen", () => {
   });
 
   test("keeps catalog controls and cards hidden until the initial source is accepted", async () => {
-    let resolveHeroIds!: (heroIds: string[]) => void;
-    const loadingHeroIds = new Promise<string[]>((resolve) => {
-      resolveHeroIds = resolve;
+    let resolveSnapshot!: (snapshot: ReturnType<typeof remoteSnapshot>) => void;
+    const loadingSnapshot = new Promise((resolve) => {
+      resolveSnapshot = resolve;
     });
     mockGetSupabaseClient.mockReturnValue({});
-    mockFetchPublishedHeroIds.mockReturnValue(loadingHeroIds);
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockReturnValue(loadingSnapshot);
 
     render(<HeroSelectScreen />);
 
@@ -204,7 +192,7 @@ describe("HeroSelectScreen", () => {
     ).toBeTruthy();
     expect(screen.queryByText("Бастет")).toBeNull();
 
-    resolveHeroIds([]);
+    resolveSnapshot(remoteSnapshot([]));
 
     await waitFor(() => {
       expect(screen.queryByText("Загружаем билды")).toBeNull();
@@ -227,14 +215,14 @@ describe("HeroSelectScreen", () => {
     render(<HeroSelectScreen />);
 
     expect(mockLoadDataBootstrap).toHaveBeenCalledTimes(1);
-    expect(mockFetchPublishedHeroIds).not.toHaveBeenCalled();
+    expect(mockLoadAndCacheRemoteHeroBuildSnapshot).not.toHaveBeenCalled();
     expect(screen.getByRole("progressbar", { name: "Загружаем билды" })).toBeTruthy();
 
     await act(async () => {
       resolveBootstrap(remoteBootstrap);
     });
 
-    expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1);
+    expect(mockLoadAndCacheRemoteHeroBuildSnapshot).toHaveBeenCalledTimes(1);
   });
 
   test("uses only bundled hero builds when bootstrap selects fallback", async () => {
@@ -249,7 +237,7 @@ describe("HeroSelectScreen", () => {
 
     expect(await screen.findByText("Показаны локальные билды.")).toBeTruthy();
     expect(screen.getByText("Бастет")).toBeTruthy();
-    expect(mockFetchPublishedHeroIds).not.toHaveBeenCalled();
+    expect(mockLoadAndCacheRemoteHeroBuildSnapshot).not.toHaveBeenCalled();
     expect(mockRejectBootstrapTransition).toHaveBeenCalledWith(
       expect.any(Object),
       "incompatible-schema",
@@ -270,14 +258,14 @@ describe("HeroSelectScreen", () => {
         source: "fallback",
       })
       .mockResolvedValueOnce(remoteBootstrap);
-    mockFetchPublishedHeroIds.mockResolvedValue(["zeus"]);
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockResolvedValue(remoteSnapshot(["zeus"]));
 
     render(<HeroSelectScreen />);
     fireEvent.press(await screen.findByText("Повторить"));
 
     expect(await screen.findByText("Зевс")).toBeTruthy();
     expect(mockLoadDataBootstrap).toHaveBeenLastCalledWith({ force: true });
-    expect(mockFetchPublishedHeroIds).toHaveBeenCalledTimes(1);
+    expect(mockLoadAndCacheRemoteHeroBuildSnapshot).toHaveBeenCalledTimes(1);
   });
 
   test("shows only confirmed remote heroes after the initial check", async () => {
@@ -286,7 +274,7 @@ describe("HeroSelectScreen", () => {
     );
     expect(remoteOnlyHero).toBeDefined();
     mockGetSupabaseClient.mockReturnValue({});
-    mockFetchPublishedHeroIds.mockResolvedValue([remoteOnlyHero!.id]);
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockResolvedValue(remoteSnapshot([remoteOnlyHero!.id]));
 
     render(<HeroSelectScreen />);
 
@@ -302,7 +290,6 @@ describe("HeroSelectScreen", () => {
 
   test("derives catalog ids from the complete snapshot so removed heroes disappear", async () => {
     mockGetSupabaseClient.mockReturnValue({});
-    mockFetchPublishedHeroIds.mockResolvedValue(["bastet", "morana"]);
     mockLoadAndCacheRemoteHeroBuildSnapshot.mockResolvedValue({
       source: "remote",
       snapshot: { heroBuilds: [{ heroId: "bastet" }] },
@@ -337,12 +324,12 @@ describe("HeroSelectScreen", () => {
       (hero) => !heroesWithBuilds.some((withBuild) => withBuild.id === hero.id),
     );
     expect(remoteOnlyHero).toBeDefined();
-    let resolveRetry!: (heroIds: string[]) => void;
-    const retry = new Promise<string[]>((resolve) => {
+    let resolveRetry!: (snapshot: ReturnType<typeof remoteSnapshot>) => void;
+    const retry = new Promise((resolve) => {
       resolveRetry = resolve;
     });
     mockGetSupabaseClient.mockReturnValue({});
-    mockFetchPublishedHeroIds
+    mockLoadAndCacheRemoteHeroBuildSnapshot
       .mockRejectedValueOnce(new Error("timeout"))
       .mockReturnValueOnce(retry);
 
@@ -359,7 +346,7 @@ describe("HeroSelectScreen", () => {
     ).toBeTruthy();
 
     await act(async () => {
-      resolveRetry([remoteOnlyHero!.id]);
+      resolveRetry(remoteSnapshot([remoteOnlyHero!.id]));
     });
 
     expect(await screen.findByText(remoteOnlyHero!.name.ru)).toBeTruthy();
@@ -368,11 +355,11 @@ describe("HeroSelectScreen", () => {
   });
 
   test("does not update state after an initial request resolves post-unmount", async () => {
-    let resolveHeroIds!: (heroIds: string[]) => void;
+    let resolveSnapshot!: (snapshot: ReturnType<typeof remoteSnapshot>) => void;
     mockGetSupabaseClient.mockReturnValue({});
-    mockFetchPublishedHeroIds.mockReturnValue(
-      new Promise<string[]>((resolve) => {
-        resolveHeroIds = resolve;
+    mockLoadAndCacheRemoteHeroBuildSnapshot.mockReturnValue(
+      new Promise((resolve) => {
+        resolveSnapshot = resolve;
       }),
     );
     const consoleError = jest.spyOn(console, "error").mockImplementation();
@@ -381,45 +368,27 @@ describe("HeroSelectScreen", () => {
     view.unmount();
 
     await act(async () => {
-      resolveHeroIds(["bastet"]);
+      resolveSnapshot(remoteSnapshot(["bastet"]));
     });
 
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  test("falls back after the bounded request timeout and can retry", async () => {
-    jest.useFakeTimers();
-    let resolveFirstRequest!: (heroIds: string[]) => void;
-    jest
-      .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
-      .mockResolvedValue(true);
+  test("falls back after the snapshot timeout and can retry", async () => {
     mockGetSupabaseClient.mockReturnValue({});
-    mockFetchPublishedHeroIds
-      .mockReturnValueOnce(
-        new Promise((resolve) => {
-          resolveFirstRequest = resolve;
-        }),
-      )
-      .mockResolvedValueOnce(["zeus"]);
+    mockLoadAndCacheRemoteHeroBuildSnapshot
+      .mockRejectedValueOnce(new Error("snapshot timeout"))
+      .mockResolvedValueOnce(remoteSnapshot(["zeus"]));
 
     render(<HeroSelectScreen />);
 
-    await act(async () => {
-      await Promise.resolve();
-      await jest.advanceTimersByTimeAsync(HERO_CATALOG_REQUEST_TIMEOUT_MS);
-    });
-
-    expect(screen.getByText("Показаны локальные билды.")).toBeTruthy();
+    expect(await screen.findByText("Показаны локальные билды.")).toBeTruthy();
     expect(screen.getByText("Бастет")).toBeTruthy();
 
     fireEvent.press(screen.getByText("Повторить"));
 
     expect(await screen.findByText("Зевс")).toBeTruthy();
     expect(screen.queryByText("Бастет")).toBeNull();
-
-    await act(async () => {
-      resolveFirstRequest(["bastet"]);
-    });
 
     expect(screen.getByText("Зевс")).toBeTruthy();
     expect(screen.queryByText("Не удалось обновить список билдов.")).toBeNull();
@@ -428,14 +397,14 @@ describe("HeroSelectScreen", () => {
   test("silently cancels a superseded retry and ignores its late failure", async () => {
     let rejectSupersededRequest!: (error: Error) => void;
     mockGetSupabaseClient.mockReturnValue({});
-    mockFetchPublishedHeroIds
+    mockLoadAndCacheRemoteHeroBuildSnapshot
       .mockRejectedValueOnce(new Error("initial failure"))
       .mockReturnValueOnce(
         new Promise((_resolve, reject) => {
           rejectSupersededRequest = reject;
         }),
       )
-      .mockResolvedValueOnce(["zeus"]);
+      .mockResolvedValueOnce(remoteSnapshot(["zeus"]));
 
     render(<HeroSelectScreen />);
 
@@ -466,77 +435,4 @@ describe("HeroSelectScreen", () => {
     expect(screen.queryByText("Не удалось обновить список билдов.")).toBeNull();
   });
 
-  test("settles a cancelled bounded request with a typed outcome", async () => {
-    jest.useFakeTimers();
-    const clearTimeoutSpy = jest.spyOn(globalThis, "clearTimeout");
-    let rejectRequest!: (error: Error) => void;
-    const boundedRequest = boundedRequestModule.createBoundedRequest(
-      new Promise<string[]>((_resolve, reject) => {
-        rejectRequest = reject;
-      }),
-      HERO_CATALOG_REQUEST_TIMEOUT_MS,
-    );
-    const outcome = boundedRequest.promise.catch((error: unknown) => error);
-
-    expect(jest.getTimerCount()).toBe(1);
-
-    boundedRequest.cancel();
-    boundedRequest.cancel();
-
-    expect(jest.getTimerCount()).toBe(0);
-    await expect(outcome).resolves.toEqual(
-      expect.objectContaining({
-        code: "BOUNDED_REQUEST_CANCELLED",
-        name: "BoundedRequestCancelledError",
-      }),
-    );
-    expect(clearTimeoutSpy).toHaveBeenCalledTimes(1);
-
-    rejectRequest(new Error("late transport failure"));
-    await Promise.resolve();
-
-    await expect(outcome).resolves.toEqual(
-      expect.objectContaining({ code: "BOUNDED_REQUEST_CANCELLED" }),
-    );
-  });
-
-  test("settles and clears the active catalog request on unmount", async () => {
-    jest.useFakeTimers();
-    const setTimeoutSpy = jest.spyOn(globalThis, "setTimeout");
-    const clearTimeoutSpy = jest.spyOn(globalThis, "clearTimeout");
-    const createBoundedRequest = boundedRequestModule.createBoundedRequest;
-    let requestOutcome: Promise<unknown> | null = null;
-    jest
-      .spyOn(boundedRequestModule, "createBoundedRequest")
-      .mockImplementation((request, timeoutMs) => {
-        const boundedRequest = createBoundedRequest(request, timeoutMs);
-        requestOutcome = boundedRequest.promise.catch((error: unknown) => error);
-        return boundedRequest;
-      });
-    jest
-      .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
-      .mockResolvedValue(true);
-    mockGetSupabaseClient.mockReturnValue({});
-    mockFetchPublishedHeroIds.mockReturnValue(
-      new Promise(() => undefined),
-    );
-
-    const view = render(<HeroSelectScreen />);
-    await act(async () => {
-      await Promise.resolve();
-    });
-    const catalogTimerCallIndex = setTimeoutSpy.mock.calls.findIndex(
-      (call) => call[1] === HERO_CATALOG_REQUEST_TIMEOUT_MS,
-    );
-    const catalogTimerId = setTimeoutSpy.mock.results[catalogTimerCallIndex]?.value;
-
-    expect(catalogTimerCallIndex).toBeGreaterThanOrEqual(0);
-
-    view.unmount();
-
-    expect(clearTimeoutSpy).toHaveBeenCalledWith(catalogTimerId);
-    await expect(requestOutcome).resolves.toEqual(
-      expect.objectContaining({ code: "BOUNDED_REQUEST_CANCELLED" }),
-    );
-  });
 });

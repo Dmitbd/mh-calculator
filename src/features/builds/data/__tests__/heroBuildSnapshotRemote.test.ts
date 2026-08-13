@@ -2,7 +2,12 @@ import bastetBuild from "@/features/game-data/heroes/builds/bastet.json";
 import type { DataBootstrapManifest } from "@/shared/lib/dataBootstrap";
 
 import { sha256Hex } from "../heroBuildSnapshot";
-import { loadRemoteHeroBuildSnapshot } from "../heroBuildSnapshotRemote";
+import {
+  HERO_BUILD_SNAPSHOT_INNER_BYTES,
+  HERO_BUILD_SNAPSHOT_OUTER_BYTES,
+  HeroBuildSnapshotRemoteError,
+  loadRemoteHeroBuildSnapshot,
+} from "../heroBuildSnapshotRemote";
 
 const etag = `sha256:${"a".repeat(64)}`;
 const manifest: DataBootstrapManifest = {
@@ -38,6 +43,16 @@ function rpcSnapshotRow(overrides: Record<string, unknown> = {}) {
 }
 
 describe("remote hero build snapshot", () => {
+  test("keeps a worst-case escaped inner payload within the outer envelope budget", () => {
+    const escaped = "\\".repeat(HERO_BUILD_SNAPSHOT_INNER_BYTES);
+    const envelope = JSON.stringify([rpcSnapshotRow({
+      hero_builds_text: escaped,
+      resource_checksum: `sha256:${sha256Hex(escaped)}`,
+    })]);
+    expect(new TextEncoder().encode(envelope).byteLength).toBeLessThanOrEqual(
+      HERO_BUILD_SNAPSHOT_OUTER_BYTES,
+    );
+  });
   test("accepts only a complete resource matching bootstrap metadata", async () => {
     const fetchImpl = jest.fn(async () => responseFor([rpcSnapshotRow()]));
 
@@ -84,5 +99,29 @@ describe("remote hero build snapshot", () => {
       manifest,
     })).rejects.toThrow("budget");
     expect(cancel).toHaveBeenCalled();
+  });
+
+  test("aborts the sole full-resource request and classifies its internal deadline", async () => {
+    jest.useFakeTimers();
+    let signal: AbortSignal | undefined;
+    const request = loadRemoteHeroBuildSnapshot({
+      config: { anonKey: "secret", url: "https://example.supabase.co" },
+      fetchImpl: (_input, init) => {
+        signal = init.signal;
+        return new Promise(() => undefined);
+      },
+      manifest,
+      timeoutMs: 10,
+    });
+    const rejection = expect(request).rejects.toEqual(
+      expect.objectContaining<Partial<HeroBuildSnapshotRemoteError>>({
+        kind: "timeout",
+      }),
+    );
+
+    await jest.advanceTimersByTimeAsync(10);
+    await rejection;
+    expect(signal?.aborted).toBe(true);
+    jest.useRealTimers();
   });
 });

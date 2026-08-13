@@ -10,10 +10,10 @@ import {
   type ParsedHeroBuildSnapshot,
 } from "./heroBuildSnapshot";
 
-const MAX_REMOTE_RESOURCE_BYTES = 4 * 1024 * 1024;
+export const HERO_BUILD_SNAPSHOT_OUTER_BYTES = 4 * 1024 * 1024;
+export const HERO_BUILD_SNAPSHOT_INNER_BYTES = 1_572_864;
 const MAX_REMOTE_HERO_BUILDS = 1_000;
-const MAX_REMOTE_RESOURCE_TEXT_BYTES = 3_670_016;
-const DEFAULT_TIMEOUT_MS = 8_000;
+export const HERO_BUILD_SNAPSHOT_TIMEOUT_MS = 8_000;
 
 type SnapshotResponse = {
   body?: ReadableStream<Uint8Array> | null;
@@ -38,6 +38,24 @@ export type RemoteHeroBuildSnapshot = {
   parsed: ParsedHeroBuildSnapshot;
 };
 
+export class HeroBuildSnapshotRemoteError extends Error {
+  constructor(
+    readonly kind: "timeout",
+    message: string,
+  ) {
+    super(message);
+    this.name = "HeroBuildSnapshotRemoteError";
+  }
+}
+
+export function isHeroBuildSnapshotRemoteTimeoutError(
+  error: unknown,
+): boolean {
+  return (
+    error instanceof HeroBuildSnapshotRemoteError && error.kind === "timeout"
+  );
+}
+
 export async function loadRemoteHeroBuildSnapshot(options: {
   config: SupabaseConfig;
   fetchImpl?: SnapshotFetch;
@@ -48,7 +66,7 @@ export async function loadRemoteHeroBuildSnapshot(options: {
     config,
     fetchImpl = globalThis.fetch as SnapshotFetch,
     manifest,
-    timeoutMs = DEFAULT_TIMEOUT_MS,
+    timeoutMs = HERO_BUILD_SNAPSHOT_TIMEOUT_MS,
   } = options;
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -56,7 +74,12 @@ export async function loadRemoteHeroBuildSnapshot(options: {
     const timeout = new Promise<never>((_resolve, reject) => {
       timer = setTimeout(() => {
         controller.abort();
-        reject(new Error("Hero build snapshot request timed out"));
+        reject(
+          new HeroBuildSnapshotRemoteError(
+            "timeout",
+            "Hero build snapshot request timed out",
+          ),
+        );
       }, timeoutMs);
     });
     const request = async () => {
@@ -115,7 +138,7 @@ function parseRemoteResponse(
     (row.published_count as number) < 0 ||
     (row.published_count as number) > MAX_REMOTE_HERO_BUILDS ||
     typeof row.hero_builds_text !== "string" ||
-    new TextEncoder().encode(row.hero_builds_text).byteLength > MAX_REMOTE_RESOURCE_TEXT_BYTES ||
+    new TextEncoder().encode(row.hero_builds_text).byteLength > HERO_BUILD_SNAPSHOT_INNER_BYTES ||
     typeof row.resource_checksum !== "string" ||
     row.resource_checksum !== `sha256:${sha256Hex(row.hero_builds_text)}`
   ) {
@@ -146,7 +169,7 @@ function parseRemoteResponse(
 async function readBoundedText(response: SnapshotResponse): Promise<string> {
   if (!response.body) {
     const length = response.headers.get("Content-Length");
-    if (!length || !/^\d+$/.test(length) || Number(length) > MAX_REMOTE_RESOURCE_BYTES) {
+    if (!length || !/^\d+$/.test(length) || Number(length) > HERO_BUILD_SNAPSHOT_OUTER_BYTES) {
       throw new Error("Remote hero build snapshot requires a bounded Content-Length");
     }
     const text = await response.text();
@@ -163,7 +186,7 @@ async function readBoundedText(response: SnapshotResponse): Promise<string> {
       const result = await reader.read();
       if (result.done) break;
       length += result.value.byteLength;
-      if (length > MAX_REMOTE_RESOURCE_BYTES) {
+      if (length > HERO_BUILD_SNAPSHOT_OUTER_BYTES) {
         try { await reader.cancel("snapshot byte budget exceeded"); } catch {}
         throw new Error("Remote hero build snapshot exceeds its byte budget");
       }

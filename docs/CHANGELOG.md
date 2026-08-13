@@ -25,6 +25,7 @@
 
 ### Fixed
 
+- Каталог и detail теперь принимают remote только из одного полного snapshot; LKG восстанавливается из ограниченного набора immutable-поколений при повреждённом или проигравшем гонку pointer, bundled-файлы проверяются без реконструкции manifest, а SQL/workflow используют согласованный byte budget, exact branch lease и только открытый PR.
 - Fresh Supabase migration chain теперь явно выдаёт `anon, authenticated` право `SELECT` на билды героев; published-only RLS продолжает скрывать черновики, а права прямой записи не открываются.
 - Bootstrap manifest теперь атомарно хеширует полный ordered snapshot опубликованных метаданных одним `SECURITY INVOKER` SQL RPC через anon/RLS, не зависит от Data API pagination, строго ограничивает body по UTF-8 байтам и управляет реальными source-переходами каталога и экрана билда.
 - Отмена загрузки каталога теперь немедленно завершает wrapper типизированным исходом без зависших closures или ложного fallback, а локальный Hero Build симметрично диагностирует `not-configured` ровно один раз на героя.

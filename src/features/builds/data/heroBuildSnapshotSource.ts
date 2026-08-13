@@ -1,7 +1,10 @@
 import type { DataBootstrapManifest } from "@/shared/lib/dataBootstrap";
 import { readSupabaseConfig } from "@/shared/lib/supabaseConfig";
 
-import { createHeroBuildSnapshot, parseHeroBuildSnapshot, type ParsedHeroBuildSnapshot } from "./heroBuildSnapshot";
+import {
+  parseHeroBuildSnapshot,
+  type ParsedHeroBuildSnapshot,
+} from "./heroBuildSnapshot";
 import { loadRemoteHeroBuildSnapshot } from "./heroBuildSnapshotRemote";
 import {
   loadLastKnownGoodHeroBuildSnapshot,
@@ -59,23 +62,22 @@ export function getBuildSetFromSnapshot(
   source: HeroBuildSnapshotSource,
   heroId: string,
 ) {
-  return source.snapshot.heroBuilds.find((entry) => entry.heroId === heroId)?.buildSet ?? null;
+  return (
+    source.snapshot.heroBuilds.find((entry) => entry.heroId === heroId)
+      ?.buildSet ?? null
+  );
 }
 
 function getBundledSnapshot(): ParsedHeroBuildSnapshot {
-  const manifest = bundledManifest as {
-    contentUpdatedAt: string;
-    contentVersion: string;
-    resources: { heroBuilds: { checksum: string } };
-  };
-  const files = createHeroBuildSnapshot({
-    contentUpdatedAt: manifest.contentUpdatedAt,
-    contentVersion: manifest.contentVersion,
-    heroBuilds: bundledResource.heroBuilds,
-  });
-  const recreatedManifest = JSON.parse(files.manifestJson) as typeof manifest;
-  if (recreatedManifest.resources.heroBuilds.checksum !== manifest.resources.heroBuilds.checksum) {
-    throw new Error("Bundled hero build snapshot checksum is invalid");
-  }
-  return parseHeroBuildSnapshot(files.manifestJson, files.resourceJson);
+  return parseBundledHeroBuildSnapshot(bundledManifest, bundledResource);
+}
+
+export function parseBundledHeroBuildSnapshot(
+  rawManifest: unknown,
+  rawResource: unknown,
+): ParsedHeroBuildSnapshot {
+  return parseHeroBuildSnapshot(
+    `${JSON.stringify(rawManifest)}\n`,
+    `${JSON.stringify(rawResource)}\n`,
+  );
 }

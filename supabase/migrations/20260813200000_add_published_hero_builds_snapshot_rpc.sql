@@ -15,6 +15,7 @@ as $$
 declare
   row_count bigint;
   metadata jsonb;
+  hero_builds_json jsonb;
   content_hash text;
   resource_text text;
 begin
@@ -30,13 +31,13 @@ begin
     coalesce(jsonb_agg(jsonb_build_array(hero_id, revision,
       to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')) order by hero_id), '[]'::jsonb),
     coalesce(jsonb_agg(jsonb_build_object('hero_id', hero_id, 'payload', payload) order by hero_id), '[]'::jsonb)
-  into metadata, hero_builds
+  into metadata, hero_builds_json
   from public.hero_build_sets
   where status = 'published';
 
   content_hash := encode(extensions.digest(metadata::text, 'sha256'), 'hex');
-  resource_text := hero_builds::text;
-  if octet_length(resource_text) > 3670016 then
+  resource_text := hero_builds_json::text;
+  if octet_length(resource_text) > 1572864 then
     raise exception 'published hero build snapshot exceeds byte budget';
   end if;
   published_count := row_count;
