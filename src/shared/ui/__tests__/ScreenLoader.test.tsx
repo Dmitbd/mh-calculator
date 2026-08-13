@@ -36,6 +36,18 @@ describe("ScreenLoader", () => {
     ).toEqual(expect.objectContaining({ minHeight: 96 }));
   });
 
+  it("renders the approved lightning pulse composition", () => {
+    jest
+      .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
+      .mockResolvedValue(true);
+
+    render(<ScreenLoader label="Загрузка" />);
+
+    expect(screen.getByTestId("screen-loader-bolt").props.children).toBe("⚡");
+    expect(screen.getByTestId("screen-loader-pulse-ring")).toBeTruthy();
+    expect(screen.getAllByTestId("screen-loader-spark")).toHaveLength(2);
+  });
+
   it("keeps the themed mark static when reduced motion is enabled", async () => {
     jest
       .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
@@ -54,21 +66,32 @@ describe("ScreenLoader", () => {
     jest
       .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
       .mockResolvedValue(false);
-    const start = jest.fn();
-    const stop = jest.fn();
+    const startPulse = jest.fn();
+    const stopPulse = jest.fn();
+    const startOrbit = jest.fn();
+    const stopOrbit = jest.fn();
     jest
       .spyOn(Animated, "loop")
-      .mockReturnValue({ start, stop } as unknown as Animated.CompositeAnimation);
+      .mockReturnValueOnce({
+        start: startPulse,
+        stop: stopPulse,
+      } as unknown as Animated.CompositeAnimation)
+      .mockReturnValueOnce({
+        start: startOrbit,
+        stop: stopOrbit,
+      } as unknown as Animated.CompositeAnimation);
 
     const view = render(<ScreenLoader label="Загрузка" />);
 
     await waitFor(() => {
-      expect(start).toHaveBeenCalledTimes(1);
+      expect(startPulse).toHaveBeenCalledTimes(1);
+      expect(startOrbit).toHaveBeenCalledTimes(1);
     });
 
     view.unmount();
 
-    expect(stop).toHaveBeenCalledTimes(1);
+    expect(stopPulse).toHaveBeenCalledTimes(1);
+    expect(stopOrbit).toHaveBeenCalledTimes(1);
   });
 
   it("does not let a stale snapshot override a newer reduced-motion event", async () => {

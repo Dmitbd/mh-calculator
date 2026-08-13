@@ -14,7 +14,8 @@ type ScreenLoaderProps = {
 };
 
 export function ScreenLoader({ label, mode = "full" }: ScreenLoaderProps) {
-  const animationProgress = useRef(new Animated.Value(0)).current;
+  const pulseProgress = useRef(new Animated.Value(0)).current;
+  const orbitProgress = useRef(new Animated.Value(0)).current;
   const hasReceivedMotionEvent = useRef(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
 
@@ -50,54 +51,81 @@ export function ScreenLoader({ label, mode = "full" }: ScreenLoaderProps) {
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      animationProgress.stopAnimation();
-      animationProgress.setValue(0);
+      pulseProgress.stopAnimation();
+      pulseProgress.setValue(0);
+      orbitProgress.stopAnimation();
+      orbitProgress.setValue(0);
       return;
     }
 
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(animationProgress, {
-          duration: 900,
-          easing: Easing.inOut(Easing.cubic),
-          toValue: 1,
-          useNativeDriver: true,
-        }),
-        Animated.timing(animationProgress, {
-          duration: 900,
-          easing: Easing.inOut(Easing.cubic),
-          toValue: 0,
-          useNativeDriver: true,
-        }),
-      ]),
+    const pulseAnimation = Animated.loop(
+      Animated.timing(pulseProgress, {
+        duration: 1250,
+        easing: Easing.inOut(Easing.cubic),
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+    );
+    const orbitAnimation = Animated.loop(
+      Animated.timing(orbitProgress, {
+        duration: 1800,
+        easing: Easing.linear,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
     );
 
-    animation.start();
+    pulseAnimation.start();
+    orbitAnimation.start();
 
     return () => {
-      animation.stop();
-      animationProgress.stopAnimation();
+      pulseAnimation.stop();
+      orbitAnimation.stop();
+      pulseProgress.stopAnimation();
+      orbitProgress.stopAnimation();
     };
-  }, [animationProgress, prefersReducedMotion]);
+  }, [orbitProgress, prefersReducedMotion, pulseProgress]);
 
-  const animatedMarkStyle = prefersReducedMotion
-    ? undefined
+  const animatedBoltStyle = prefersReducedMotion
+    ? styles.staticBolt
     : {
-        opacity: animationProgress.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0.55, 1],
+        opacity: pulseProgress.interpolate({
+          inputRange: [0, 0.5, 1],
+          outputRange: [0.82, 1, 0.82],
         }),
         transform: [
           {
-            rotate: animationProgress.interpolate({
-              inputRange: [0, 1],
-              outputRange: ["45deg", "225deg"],
+            scale: pulseProgress.interpolate({
+              inputRange: [0, 0.5, 1],
+              outputRange: [0.9, 1.12, 0.9],
             }),
           },
+        ],
+      };
+  const animatedRingStyle = prefersReducedMotion
+    ? styles.staticRing
+    : {
+        opacity: pulseProgress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.45, 0],
+        }),
+        transform: [
           {
-            scale: animationProgress.interpolate({
+            scale: pulseProgress.interpolate({
               inputRange: [0, 1],
-              outputRange: [0.9, 1.08],
+              outputRange: [0.68, 1.18],
+            }),
+          },
+        ],
+      };
+  const animatedOrbitStyle = prefersReducedMotion
+    ? undefined
+    : {
+        transform: [
+          {
+            rotate: orbitProgress.interpolate({
+              inputRange: [0, 1],
+              outputRange: ["0deg", "360deg"],
             }),
           },
         ],
@@ -111,13 +139,38 @@ export function ScreenLoader({ label, mode = "full" }: ScreenLoaderProps) {
       style={[styles.container, mode === "full" ? styles.full : styles.inline]}
       testID="screen-loader"
     >
-      <View style={styles.markFrame}>
+      <View
+        accessible={false}
+        style={styles.markFrame}
+        testID="screen-loader-mark"
+      >
         <Animated.View
-          style={[styles.mark, animatedMarkStyle]}
-          testID="screen-loader-mark"
+          accessible={false}
+          style={[styles.pulseRing, animatedRingStyle]}
+          testID="screen-loader-pulse-ring"
+        />
+        <Animated.View
+          accessible={false}
+          style={[styles.sparkOrbit, animatedOrbitStyle]}
         >
-          <View style={styles.markCore} />
+          <View
+            accessible={false}
+            style={[styles.spark, styles.sparkTop]}
+            testID="screen-loader-spark"
+          />
+          <View
+            accessible={false}
+            style={[styles.spark, styles.sparkBottom]}
+            testID="screen-loader-spark"
+          />
         </Animated.View>
+        <Animated.Text
+          accessible={false}
+          style={[styles.bolt, animatedBoltStyle]}
+          testID="screen-loader-bolt"
+        >
+          ⚡
+        </Animated.Text>
       </View>
       <Text style={styles.label}>{label}</Text>
     </View>
@@ -143,30 +196,54 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
   },
   markFrame: {
-    width: 46,
-    height: 46,
+    width: 92,
+    height: 92,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 23,
+  },
+  pulseRing: {
+    position: "absolute",
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     borderWidth: 1,
-    borderColor: "#5a412b",
-    backgroundColor: "#1d130f",
+    borderColor: "#f0c36a",
   },
-  mark: {
-    width: 22,
-    height: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#f6d59a",
-    backgroundColor: "#795125",
-    transform: [{ rotate: "45deg" }],
+  staticRing: {
+    opacity: 0.45,
+    transform: [{ scale: 1 }],
   },
-  markCore: {
+  sparkOrbit: {
+    position: "absolute",
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+  },
+  spark: {
+    position: "absolute",
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#fff8e8",
+    backgroundColor: "#fff3a6",
+    shadowColor: "#ffc83d",
+    shadowOpacity: 0.9,
+    shadowRadius: 5,
+  },
+  sparkTop: {
+    top: 0,
+    left: 40,
+  },
+  sparkBottom: {
+    bottom: 0,
+    left: 40,
+  },
+  bolt: {
+    fontSize: 48,
+    lineHeight: 56,
+  },
+  staticBolt: {
+    opacity: 1,
+    transform: [{ scale: 1 }],
   },
   label: {
     color: "#f6d59a",
