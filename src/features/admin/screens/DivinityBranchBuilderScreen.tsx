@@ -15,15 +15,12 @@ import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 import { ScreenLoader } from "@/shared/ui/ScreenLoader";
 import { StatusToast } from "@/shared/ui/StatusToast";
 import {
-  createOrUpdateDraftHeroBuildSet,
   DivinitySkillLoadoutSection,
   fetchDraftHeroBuildSetRecord,
   fetchHeroBuildSetStatusIds,
   fetchPublishedHeroBuildSet,
   fetchPublishedHeroBuildSetRecord,
   HeroBuildSetRepositoryError,
-  updatePublishedHeroBuildSet,
-  type HeroBuildSetStatusIds,
 } from "@/features/builds";
 import { getHeroBuildSet } from "@/features/game-data/heroes";
 import { resolveWeaponAwakeningBonuses } from "@/features/game-data/weapon-awakening";
@@ -51,8 +48,22 @@ import { HeroBuilderSection } from "../components/branch-builder/HeroBuilderSect
 import { WeaponAwakeningSection } from "../components/branch-builder/WeaponAwakeningSection";
 import { ValidationErrorMessages } from "../components/ValidationErrorMessages";
 import { useDivinityBranchBuilder } from "../hooks/useDivinityBranchBuilder";
+import { useHeroBuildStatusQuery } from "../hooks/useHeroBuildStatusQuery";
+import { useAdminSessionGate } from "../hooks/useAdminSessionGate";
 import { getBranchBuilderTargetTabs } from "../model/branchBuilderTabs";
 import { getBuilderHeroLists } from "../model/heroGuideSelector";
+import {
+  areTabPathsEqual,
+  formatValidationToastMessage,
+  getErrorMessages,
+  getRelativeValidationErrors,
+  getValidationScrollTarget,
+  hasTargetTabErrors,
+  isTargetTabErrorPath,
+  type PendingValidationScrollTarget,
+  type ValidationScrollSection,
+} from "../model/validationNavigation";
+import { RequestIdentityRegistry } from "../model/asyncRequestIdentity";
 import type {
   BranchBuildValidationError,
   BranchColumnId,
@@ -72,23 +83,18 @@ import {
 } from "../api/adminAuthRepository";
 import {
   hasCreatePublicationConflict,
-  publishAdminHeroBuildSet,
 } from "../api/saveAdminHeroBuildSet";
+import {
+  BuilderRevisionStore,
+  runBuilderDraftCommand,
+  runBuilderPublishCommand,
+  runBuilderUpdateCommand,
+} from "../api/builderServerCommands";
 
 const SCREEN_PADDING = 20;
-const MAX_VALIDATION_TOAST_ERRORS = 5;
 const SCROLL_TARGET_TOP_GAP = 14;
 const MISSING_PREVIOUS_BRANCH_SKILL_MESSAGE =
   "Сначала выберите навык выше в этой ветке.";
-type ValidationScrollSection =
-  | "targetTabs"
-  | "hero"
-  | "equipment"
-  | "weaponAwakening"
-  | "divinitySkills"
-  | "branchGrid"
-  | "download";
-type PendingScrollTarget = "top" | ValidationScrollSection;
 type BuilderMode = "create" | "edit";
 type StatusToastState = {
   kind: "success" | "error";
@@ -111,21 +117,19 @@ export function DivinityBranchBuilderScreen({
   const sectionYByKey = useRef<Partial<Record<ValidationScrollSection, number>>>(
     {},
   );
-  const pendingScrollTarget = useRef<PendingScrollTarget | null>(null);
+  const pendingScrollTarget = useRef<PendingValidationScrollTarget | null>(null);
   const loadedEditHeroId = useRef<string | null>(null);
   const initialEditLoadInFlight = useRef(false);
   const draftLoadInFlight = useRef(false);
   const entityLoadRequestId = useRef(0);
-  const heroListRequestId = useRef(0);
-  const tabSaveInFlight = useRef(false);
-  const tabSaveRequestId = useRef(0);
-  const publishInFlight = useRef(false);
-  const publishRequestId = useRef(0);
+  const writeRequests = useRef(
+    new RequestIdentityRegistry<"tabSave" | "publish">(),
+  );
   const authTransitionInFlight = useRef(false);
   const discardTransitionInFlight = useRef(false);
   const discardTransitionRequestId = useRef(0);
   const activeHeroId = useRef<string | null>(null);
-  const serverRevisionsByHero = useRef<Record<string, number>>({});
+  const serverRevisions = useRef(new BuilderRevisionStore());
   const authRequestId = useRef(0);
   const isScreenMounted = useRef(true);
   const {
@@ -179,25 +183,36 @@ export function DivinityBranchBuilderScreen({
   const [validationErrorTabPath, setValidationErrorTabPath] =
     useState<HeroBuildTargetTabPath | null>(null);
   const [backendStatus, setBackendStatus] = useState<string | null>(null);
-  const [adminSession, setAdminSession] = useState<AdminSession | null>(
-    initialAdminSession ?? null,
-  );
-  const [isAuthChecked, setIsAuthChecked] = useState(
-    initialAdminSession !== undefined,
-  );
+  const {
+    isChecked: isAuthChecked,
+    restoreError: adminRestoreError,
+    session: adminSession,
+    setSession: setAdminSession,
+  } = useAdminSessionGate({
+    getClient: getSupabaseClient,
+    initialSession: initialAdminSession,
+    restore: getCurrentAdminSession,
+  });
   const [isAuthPending, setIsAuthPending] = useState(false);
   const [isEditBuildLoading, setIsEditBuildLoading] = useState(false);
   const [initialEditLoadRetryId, setInitialEditLoadRetryId] = useState(0);
   const [isPublishPending, setIsPublishPending] = useState(false);
   const [isTabSavePending, setIsTabSavePending] = useState(false);
   const [toast, setToast] = useState<StatusToastState>(null);
-  const [heroStatusIds, setHeroStatusIds] = useState<HeroBuildSetStatusIds>({
-    draftHeroIds: [],
-    publishedHeroIds: [],
-  });
   const [isDraftLoadPending, setIsDraftLoadPending] = useState(false);
-  const [isHeroListLoading, setIsHeroListLoading] = useState(true);
-  const [heroListError, setHeroListError] = useState<string | null>(null);
+  const {
+    error: heroListError,
+    ids: heroStatusIds,
+    invalidate: invalidateHeroStatusList,
+    isLoading: isHeroListLoading,
+    load: loadHeroStatusIds,
+    reset: resetHeroStatusList,
+    setIds: setHeroStatusIds,
+  } = useHeroBuildStatusQuery({
+    enabled: isAuthChecked && Boolean(adminSession),
+    fetchIds: fetchHeroBuildSetStatusIds,
+    getClient: getSupabaseClient,
+  });
   const hasUnsavedPublishedEdits = initialMode === "edit" && isDirty;
   const isValidInitialEditHero = Boolean(
     initialMode === "edit" &&
@@ -247,14 +262,12 @@ export function DivinityBranchBuilderScreen({
   );
 
   const resetTabSave = useCallback(() => {
-    tabSaveRequestId.current += 1;
-    tabSaveInFlight.current = false;
+    writeRequests.current.invalidate("tabSave");
     setIsTabSavePending(false);
   }, []);
 
   const resetPublish = useCallback(() => {
-    publishRequestId.current += 1;
-    publishInFlight.current = false;
+    writeRequests.current.invalidate("publish");
     setIsPublishPending(false);
   }, []);
 
@@ -353,10 +366,8 @@ export function DivinityBranchBuilderScreen({
       entityLoadRequestId.current += 1;
       initialEditLoadInFlight.current = false;
       draftLoadInFlight.current = false;
-      tabSaveRequestId.current += 1;
-      tabSaveInFlight.current = false;
-      publishRequestId.current += 1;
-      publishInFlight.current = false;
+      writeRequests.current.invalidate("tabSave");
+      writeRequests.current.invalidate("publish");
       authRequestId.current += 1;
       authTransitionInFlight.current = false;
       discardTransitionRequestId.current += 1;
@@ -373,126 +384,16 @@ export function DivinityBranchBuilderScreen({
 
   const resetDraftLoad = useCallback(() => {
     cancelEntityLoads();
-    serverRevisionsByHero.current = {};
+    serverRevisions.current.clear();
   }, [cancelEntityLoads]);
 
-  const resetHeroStatusList = useCallback(() => {
-    heroListRequestId.current += 1;
-    setHeroStatusIds({ draftHeroIds: [], publishedHeroIds: [] });
-    setHeroListError(null);
-    setIsHeroListLoading(true);
-  }, []);
-
-  const loadHeroStatusIds = useCallback(async (options?: {
-    preserveCurrentIdsOnError?: boolean;
-  }): Promise<boolean> => {
-    if (!isScreenMounted.current) {
-      return false;
-    }
-
-    const requestId = heroListRequestId.current + 1;
-    heroListRequestId.current = requestId;
-    const client = getSupabaseClient();
-
-    if (!client) {
-      if (!options?.preserveCurrentIdsOnError) {
-        setHeroStatusIds({ draftHeroIds: [], publishedHeroIds: [] });
-      }
-      setHeroListError("Supabase не настроен.");
-      setIsHeroListLoading(false);
-      return false;
-    }
-
-    setIsHeroListLoading(true);
-    setHeroListError(null);
-
-    try {
-      const ids = await fetchHeroBuildSetStatusIds(
-        client,
-      );
-
-      if (requestId !== heroListRequestId.current) {
-        return false;
-      }
-
-      setHeroStatusIds(ids);
-      return true;
-    } catch (error) {
-      if (requestId !== heroListRequestId.current) {
-        return false;
-      }
-
-      if (!options?.preserveCurrentIdsOnError) {
-        setHeroStatusIds({ draftHeroIds: [], publishedHeroIds: [] });
-      }
-      setHeroListError(
-        error instanceof Error ? error.message : "Неизвестная ошибка Supabase.",
-      );
-      return false;
-    } finally {
-      if (requestId === heroListRequestId.current) {
-        setIsHeroListLoading(false);
-      }
-    }
-  }, []);
+  useEffect(() => {
+    if (isAuthChecked && !adminSession) resetDraftLoad();
+  }, [adminSession, isAuthChecked, resetDraftLoad]);
 
   useEffect(() => {
-    if (isAuthChecked) {
-      if (!adminSession) {
-        resetDraftLoad();
-        resetHeroStatusList();
-      } else {
-        void loadHeroStatusIds();
-      }
-    }
-
-    return () => {
-      heroListRequestId.current += 1;
-    };
-  }, [
-    adminSession,
-    isAuthChecked,
-    loadHeroStatusIds,
-    resetDraftLoad,
-    resetHeroStatusList,
-  ]);
-
-  useEffect(() => {
-    if (initialAdminSession !== undefined) {
-      return;
-    }
-
-    const client = getSupabaseClient();
-
-    if (!client) {
-      setIsAuthChecked(true);
-      return;
-    }
-
-    let isMounted = true;
-
-    void getCurrentAdminSession(client)
-      .then((session) => {
-        if (isMounted) {
-          setAdminSession(session);
-          setIsAuthChecked(true);
-        }
-      })
-      .catch((error) => {
-        if (isMounted) {
-          setIsAuthChecked(true);
-          setBackendStatus(
-            error instanceof Error
-              ? `Ошибка Supabase: ${error.message}`
-              : "Ошибка Supabase.",
-          );
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [initialAdminSession]);
+    if (adminRestoreError) setBackendStatus(adminRestoreError);
+  }, [adminRestoreError]);
 
   useEffect(() => {
     if (toast?.kind !== "success") {
@@ -563,7 +464,7 @@ export function DivinityBranchBuilderScreen({
         }
 
         activeHeroId.current = initialHeroId;
-        setServerRevision(initialHeroId, record?.revision ?? null);
+        serverRevisions.current.set(initialHeroId, record?.revision ?? null);
         showBackendMessage("success", "Билд загружен для редактирования.");
       })
       .catch((error) => {
@@ -618,19 +519,6 @@ export function DivinityBranchBuilderScreen({
         ? `Ошибка Supabase: ${error.message}`
         : "Ошибка Supabase.",
     );
-  }
-
-  function getServerRevision(heroId: string): number | null {
-    return serverRevisionsByHero.current[heroId] ?? null;
-  }
-
-  function setServerRevision(heroId: string, revision: number | null) {
-    if (revision === null) {
-      delete serverRevisionsByHero.current[heroId];
-      return;
-    }
-
-    serverRevisionsByHero.current[heroId] = revision;
   }
 
   function showValidationErrorToast(
@@ -807,8 +695,8 @@ export function DivinityBranchBuilderScreen({
   const handleSaveCurrentTargetBuild = async () => {
     if (
       isBuilderActionBlocked() ||
-      tabSaveInFlight.current ||
-      publishInFlight.current
+      writeRequests.current.isInFlight("tabSave") ||
+      writeRequests.current.isInFlight("publish")
     ) {
       return;
     }
@@ -844,49 +732,43 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
-    tabSaveInFlight.current = true;
-    const requestId = tabSaveRequestId.current + 1;
-    tabSaveRequestId.current = requestId;
+    const requestId = writeRequests.current.begin("tabSave");
     setIsTabSavePending(true);
     const isCurrentRequest = () =>
       isScreenMounted.current &&
-      requestId === tabSaveRequestId.current &&
+      writeRequests.current.isCurrent("tabSave", requestId) &&
       activeHeroId.current === selectedHeroId;
 
     try {
       let resultingRevision: number;
-      const expectedRevision = getServerRevision(selectedHeroId);
+      const expectedRevision = serverRevisions.current.get(selectedHeroId);
 
       if (initialMode === "edit") {
         if (expectedRevision === null) {
           showBackendMessage("error", "Загрузите актуальный серверный билд перед сохранением.");
           return;
         }
-        const record = await updatePublishedHeroBuildSet(
+        const outcome = await runBuilderUpdateCommand({
+          buildSet: prepared.buildSet,
           client,
-          {
-            buildSet: prepared.buildSet,
-            expectedRevision,
-            heroId: selectedHeroId,
-          },
-        );
-        resultingRevision =
-          record?.revision ?? expectedRevision + 1;
+          expectedRevision,
+          heroId: selectedHeroId,
+        });
+        if (outcome.kind !== "success") throw outcome.error;
+        resultingRevision = outcome.revision;
       } else {
-        const record = await createOrUpdateDraftHeroBuildSet(
+        const outcome = await runBuilderDraftCommand({
+          buildSet: prepared.buildSet,
           client,
-          {
-            buildSet: prepared.buildSet,
-            expectedRevision,
-            heroId: selectedHeroId,
-          },
-        );
-        resultingRevision =
-          record?.revision ?? (expectedRevision ?? 0) + 1;
+          expectedRevision,
+          heroId: selectedHeroId,
+        });
+        if (outcome.kind !== "success") throw outcome.error;
+        resultingRevision = outcome.revision;
       }
 
       if (isCurrentRequest()) {
-        setServerRevision(selectedHeroId, resultingRevision);
+        serverRevisions.current.set(selectedHeroId, resultingRevision);
       }
       if (!isCurrentRequest()) {
         return;
@@ -919,7 +801,7 @@ export function DivinityBranchBuilderScreen({
       showRepositoryError(error);
     } finally {
       if (isCurrentRequest()) {
-        tabSaveInFlight.current = false;
+        writeRequests.current.finish("tabSave", requestId);
         setIsTabSavePending(false);
       }
     }
@@ -953,8 +835,8 @@ export function DivinityBranchBuilderScreen({
   const saveFullBuildSetToBackend = async (status: "draft" | "published") => {
     if (
       isBuilderActionBlocked() ||
-      tabSaveInFlight.current ||
-      publishInFlight.current
+      writeRequests.current.isInFlight("tabSave") ||
+      writeRequests.current.isInFlight("publish")
     ) {
       return;
     }
@@ -1002,19 +884,15 @@ export function DivinityBranchBuilderScreen({
 
     if (status === "draft") {
       try {
-        const expectedRevision = getServerRevision(heroId);
-        const record = await createOrUpdateDraftHeroBuildSet(
+        const expectedRevision = serverRevisions.current.get(heroId);
+        const outcome = await runBuilderDraftCommand({
+          buildSet,
           client,
-          {
-            buildSet,
-            expectedRevision,
-            heroId,
-          },
-        );
-        setServerRevision(
+          expectedRevision,
           heroId,
-          record?.revision ?? (expectedRevision ?? 0) + 1,
-        );
+        });
+        if (outcome.kind !== "success") throw outcome.error;
+        serverRevisions.current.set(heroId, outcome.revision);
         showBackendMessage("success", "Черновик сохранён.");
       } catch (error) {
         showRepositoryError(error);
@@ -1022,34 +900,30 @@ export function DivinityBranchBuilderScreen({
       return;
     }
 
-    publishInFlight.current = true;
-    const requestId = publishRequestId.current + 1;
-    publishRequestId.current = requestId;
+    const requestId = writeRequests.current.begin("publish");
     setIsPublishPending(true);
     const isCurrentRequest = () =>
       isScreenMounted.current &&
-      requestId === publishRequestId.current &&
+      writeRequests.current.isCurrent("publish", requestId) &&
       activeHeroId.current === heroId;
 
     try {
       let resultingRevision: number;
-      const expectedRevision = getServerRevision(heroId);
+      const expectedRevision = serverRevisions.current.get(heroId);
 
       if (initialMode === "edit") {
         if (expectedRevision === null) {
           showBackendMessage("error", "Загрузите актуальный серверный билд перед сохранением.");
           return;
         }
-        const record = await updatePublishedHeroBuildSet(
+        const outcome = await runBuilderUpdateCommand({
+          buildSet,
           client,
-          {
-            buildSet,
-            expectedRevision,
-            heroId,
-          },
-        );
-        resultingRevision =
-          record?.revision ?? expectedRevision + 1;
+          expectedRevision,
+          heroId,
+        });
+        if (outcome.kind !== "success") throw outcome.error;
+        resultingRevision = outcome.revision;
       } else {
         const remoteBuildSet = await fetchPublishedHeroBuildSet(
           client,
@@ -1071,18 +945,18 @@ export function DivinityBranchBuilderScreen({
           showBackendMessage("error", "Сначала сохраните черновик на сервере.");
           return;
         }
-        const record = await publishAdminHeroBuildSet({
+        const outcome = await runBuilderPublishCommand({
           buildSet,
           client,
           expectedRevision,
           heroId,
         });
-        resultingRevision =
-          record?.revision ?? expectedRevision + 1;
+        if (outcome.kind !== "success") throw outcome.error;
+        resultingRevision = outcome.revision;
       }
 
       if (isCurrentRequest()) {
-        setServerRevision(heroId, resultingRevision);
+        serverRevisions.current.set(heroId, resultingRevision);
       }
       if (!isCurrentRequest()) {
         return;
@@ -1142,7 +1016,7 @@ export function DivinityBranchBuilderScreen({
       showRepositoryError(error);
     } finally {
       if (isCurrentRequest()) {
-        publishInFlight.current = false;
+        writeRequests.current.finish("publish", requestId);
         setIsPublishPending(false);
       }
     }
@@ -1184,7 +1058,7 @@ export function DivinityBranchBuilderScreen({
         return;
       }
 
-      setServerRevision(selectedHeroId, record?.revision ?? null);
+      serverRevisions.current.set(selectedHeroId, record?.revision ?? null);
       setBackendStatus("Билд загружен для редактирования.");
     } catch (error) {
       setBackendStatus(
@@ -1276,7 +1150,7 @@ export function DivinityBranchBuilderScreen({
     cancelEntityLoads();
     resetTabSave();
     resetPublish();
-    heroListRequestId.current += 1;
+    invalidateHeroStatusList();
     const isCurrentRequest = () =>
       isScreenMounted.current && requestId === authRequestId.current;
 
@@ -1289,7 +1163,7 @@ export function DivinityBranchBuilderScreen({
 
       loadedEditHeroId.current = null;
       activeHeroId.current = null;
-      serverRevisionsByHero.current = {};
+      serverRevisions.current.clear();
       resetBuilderSession();
     };
 
@@ -1386,7 +1260,7 @@ export function DivinityBranchBuilderScreen({
     clearValidationErrors(isHeroErrorPath);
 
     if (!heroStatusIds.draftHeroIds.includes(heroId)) {
-      setServerRevision(heroId, null);
+      serverRevisions.current.set(heroId, null);
       selectHero(heroId);
       activeHeroId.current = heroId;
       return;
@@ -1426,7 +1300,7 @@ export function DivinityBranchBuilderScreen({
       }
 
       activeHeroId.current = heroId;
-      setServerRevision(heroId, draftRecord.revision);
+      serverRevisions.current.set(heroId, draftRecord.revision);
       showBackendMessage("success", "Черновик загружен.");
     } catch (error) {
       if (!isCurrentRequest()) {
@@ -1887,131 +1761,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
-
-function getErrorMessages(
-  errors: readonly BranchBuildValidationError[],
-  matches: (path: string, error: BranchBuildValidationError) => boolean,
-): string[] {
-  return errors
-    .filter((error) => error.path && matches(error.path, error))
-    .map((error) => error.message);
-}
-
-function getRelativeValidationErrors(
-  errors: readonly BranchBuildValidationError[],
-  tabPath: readonly string[],
-): BranchBuildValidationError[] {
-  const tabKey = tabPath.join("/");
-  const fieldPrefix = `${tabKey}.`;
-
-  return errors.reduce<BranchBuildValidationError[]>((relativeErrors, error) => {
-    if (!error.path) {
-      return relativeErrors;
-    }
-
-    if (error.path === tabKey) {
-      relativeErrors.push({ ...error, path: undefined });
-      return relativeErrors;
-    }
-
-    if (!error.path.startsWith(fieldPrefix)) {
-      return relativeErrors;
-    }
-
-    relativeErrors.push({
-      ...error,
-      path: error.path.slice(fieldPrefix.length),
-    });
-    return relativeErrors;
-  }, []);
-}
-
-function areTabPathsEqual(
-  first: readonly string[],
-  second: readonly string[],
-): boolean {
-  return (
-    first.length === second.length &&
-    first.every((segment, index) => segment === second[index])
-  );
-}
-
-function getValidationScrollTarget(
-  errors: readonly BranchBuildValidationError[],
-): PendingScrollTarget {
-  if (hasTargetTabErrors(errors)) {
-    return "top";
-  }
-
-  const firstError = errors[0];
-  const path = firstError?.path;
-
-  if (!path) {
-    return "top";
-  }
-
-  if (path === "heroId" || path === "heroName") {
-    return "hero";
-  }
-
-  if (path.startsWith("equipment.")) {
-    return "equipment";
-  }
-
-  if (path.startsWith("weaponAwakening.")) {
-    return "weaponAwakening";
-  }
-
-  if (path.startsWith("divinitySkills.")) {
-    return "divinitySkills";
-  }
-
-  if (
-    path.startsWith("columns.") ||
-    path.startsWith("progress.") ||
-    path.startsWith("majorNodes.")
-  ) {
-    return "branchGrid";
-  }
-
-  return "top";
-}
-
-function formatValidationToastMessage(
-  errors: readonly BranchBuildValidationError[],
-  fallbackMessage: string,
-): string {
-  const messages = [...new Set(errors.map((error) => error.message).filter(Boolean))];
-
-  if (messages.length === 0) {
-    return fallbackMessage;
-  }
-
-  const visibleMessages = messages.slice(0, MAX_VALIDATION_TOAST_ERRORS);
-  const hiddenCount = messages.length - visibleMessages.length;
-
-  return [
-    ...visibleMessages,
-    ...(hiddenCount > 0 ? [`И ещё ${hiddenCount} ошибок.`] : []),
-  ].join("\n");
-}
-
-function isTargetTabErrorPath(path: string): boolean {
-  return (
-    !path.includes(".") &&
-    (path.includes("/") || path === "pvp" || path === "pve")
-  );
-}
-
-function hasTargetTabErrors(
-  errors: readonly BranchBuildValidationError[],
-): boolean {
-  return errors.some(
-    (error) =>
-      error.code.startsWith("multiBuild.") ||
-      (error.path ? isTargetTabErrorPath(error.path) : false),
-  );
-}
 
 function isHeroErrorPath(path: string): boolean {
   return path === "heroId" || path === "heroName";

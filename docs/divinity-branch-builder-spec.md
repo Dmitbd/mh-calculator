@@ -43,6 +43,12 @@
 - [src/shared/ui/AppImage.tsx](../src/shared/ui/AppImage.tsx) — общий фиксированный loading/error-контейнер URL-изображения
 - [src/shared/ui/ScreenLoader.tsx](../src/shared/ui/ScreenLoader.tsx) — общий полноэкранный и встроенный loader
 - [src/features/admin/hooks/useDivinityBranchBuilder.ts](../src/features/admin/hooks/useDivinityBranchBuilder.ts) — состояние и экспорт
+- [src/features/admin/model/builderEditorReducer.ts](../src/features/admin/model/builderEditorReducer.ts) — чистые переходы редактируемого draft
+- [src/features/admin/model/asyncRequestIdentity.ts](../src/features/admin/model/asyncRequestIdentity.ts) — generation identity и latch асинхронных операций
+- [src/features/admin/model/validationNavigation.ts](../src/features/admin/model/validationNavigation.ts) — перевод ошибок в leaf/секцию, scroll target и toast
+- [src/features/admin/hooks/useAdminSessionGate.ts](../src/features/admin/hooks/useAdminSessionGate.ts) — восстановление и gate административной сессии
+- [src/features/admin/hooks/useHeroBuildStatusQuery.ts](../src/features/admin/hooks/useHeroBuildStatusQuery.ts) — current-only запрос status-каталога
+- [src/features/admin/api/builderServerCommands.ts](../src/features/admin/api/builderServerCommands.ts) — типизированные исходы server-команд и revision
 - [src/features/admin/utils/validateBranchBuild.ts](../src/features/admin/utils/validateBranchBuild.ts) — валидация
 - [src/features/builds/model/heroBuildSetSchema.ts](../src/features/builds/model/heroBuildSetSchema.ts) — runtime-валидация загруженных Supabase payload
 - [src/features/builds/api/heroBuildSetRepository.ts](../src/features/builds/api/heroBuildSetRepository.ts) — типизированная граница чтения и lifecycle RPC
@@ -420,6 +426,8 @@ Base и awakened slots редактируются отдельно. Awakened-н�
 
 Backend success не должен жить дольше актуальной операции или выбранного героя. Loading, error, empty и retry состояния являются частью контракта, а не временным служебным UI.
 
+Внутренняя ownership-граница также является правилом переноса: screen компонует секции и намерения пользователя, hook хранит editor-session, чистый reducer владеет переходами draft, request identity определяет актуальность async-ответов, status query владеет каталогом server-состояний, server-command boundary возвращает типизированный исход с revision, а validation navigation переводит доменные paths в выбранный leaf и секцию. Эти модули не меняют пользовательский контракт, но не должны снова сливаться в route-level screen.
+
 ## Porting Rules
 
 При переносе на другой стек нельзя терять инварианты:
@@ -462,7 +470,8 @@ Backend success не должен жить дольше актуальной о�
 - [useDivinityBranchBuilder.test.ts](../src/features/admin/__tests__/useDivinityBranchBuilder.test.ts) — пустой драфт и сборка JSON (включая `progress` и `activeNodes`);
 - [validateBranchBuild.test.ts](../src/features/admin/__tests__/validateBranchBuild.test.ts) — валидация и `slugifyFileName`;
 - [heroBuildSetSchema.test.ts](../src/features/builds/model/__tests__/heroBuildSetSchema.test.ts) — версия и полная runtime-целостность загруженного комплекта;
-- [DivinityBranchBuilderScreen.test.tsx](../src/features/admin/__tests__/DivinityBranchBuilderScreen.test.tsx) — поведение экрана.
+- `DivinityBranchBuilderScreen.*.test.tsx` и [builderScreenFixture.tsx](../src/features/admin/testing/builderScreenFixture.tsx) — auth/load, create/draft/publish, edit/update/conflict, navigation/validation/concurrency через один общий fixture;
+- [builderEditorReducer.test.ts](../src/features/admin/__tests__/builderEditorReducer.test.ts), [asyncRequestIdentity.test.ts](../src/features/admin/__tests__/asyncRequestIdentity.test.ts), [validationNavigation.test.ts](../src/features/admin/__tests__/validationNavigation.test.ts), [useAdminSessionGate.test.ts](../src/features/admin/__tests__/useAdminSessionGate.test.ts), [useHeroBuildStatusQuery.test.ts](../src/features/admin/__tests__/useHeroBuildStatusQuery.test.ts) и [builderServerCommands.test.ts](../src/features/admin/__tests__/builderServerCommands.test.ts) — focused boundaries декомпозированного workflow;
 - [heroBuildSetRepository.test.ts](../src/features/builds/api/__tests__/heroBuildSetRepository.test.ts) — draft/published запросы и явные lifecycle-операции;
 - [branchBuilderTabs.test.ts](../src/features/admin/__tests__/branchBuilderTabs.test.ts) — структура вкладок и path;
 - [multiBuildExport.test.ts](../src/features/admin/__tests__/multiBuildExport.test.ts) — сборка полного комплекта;
