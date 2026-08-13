@@ -29,6 +29,12 @@ function ReadinessProbe({
   return createElement(Text, null, ready ? "ready" : "loading");
 }
 
+async function flushMicrotasks() {
+  for (let step = 0; step < 6; step += 1) {
+    await Promise.resolve();
+  }
+}
+
 test("deduplicates a critical batch and respects its per-screen limit", async () => {
   const prefetch = jest.fn<Promise<boolean>, [string]>(async () => true);
   const preloader = createBoundedImagePreloader({
@@ -91,34 +97,88 @@ test("keeps a successful web prefetch that resolves without a value", async () =
   expect(preloader.registrySize()).toBe(1);
 });
 
-test("does not evict an in-flight preload to start another request", async () => {
-  const resolvers: Array<(loaded: boolean) => void> = [];
-  const prefetch = jest.fn<Promise<boolean>, [string]>((uri) => {
-    if (uri.endsWith("/c.png")) {
-      return Promise.resolve(true);
-    }
-
-    return new Promise((resolve) => {
-      resolvers.push(resolve);
-    });
-  });
+test("waits for a registry slot and deduplicates concurrent queued requests", async () => {
+  const resolvers = new Map<string, (loaded?: boolean) => void>();
+  const prefetch = jest.fn<Promise<boolean | void>, [string]>((uri) =>
+    new Promise((resolve) => {
+      resolvers.set(uri, resolve);
+    }),
+  );
   const preloader = createBoundedImagePreloader({
     maxRegistryEntries: 2,
     prefetch,
   });
 
   const firstBatch = preloader.preload(["/img/a.png", "/img/b.png"]);
-  await Promise.resolve();
-  await preloader.preload(["/img/c.png"]);
+  await flushMicrotasks();
+  const firstQueuedCaller = preloader.preload(["/img/c.png"]);
+  const secondQueuedCaller = preloader.preload(["/img/c.png"]);
+  let firstQueuedCallerSettled = false;
+  void firstQueuedCaller.then(() => {
+    firstQueuedCallerSettled = true;
+  });
+  await flushMicrotasks();
 
   expect(prefetch).toHaveBeenCalledTimes(2);
   expect(preloader.registrySize()).toBe(2);
+  expect(firstQueuedCallerSettled).toBe(false);
 
-  resolvers.forEach((resolve) => resolve(true));
-  await firstBatch;
-  await preloader.preload(["/img/c.png"]);
+  resolvers.get("resolved:/img/a.png")?.(true);
+  await flushMicrotasks();
 
   expect(prefetch).toHaveBeenCalledTimes(3);
+  expect(prefetch).toHaveBeenLastCalledWith("resolved:/img/c.png");
+  expect(firstQueuedCallerSettled).toBe(false);
+  expect(preloader.registrySize()).toBe(2);
+
+  resolvers.get("resolved:/img/c.png")?.();
+  await Promise.all([firstQueuedCaller, secondQueuedCaller]);
+
+  expect(
+    prefetch.mock.calls.filter(([uri]) => uri.endsWith("/c.png")),
+  ).toHaveLength(1);
+
+  resolvers.get("resolved:/img/b.png")?.(true);
+  await firstBatch;
+});
+
+test("uses a failed request slot for a queued URL and keeps failure retryable", async () => {
+  const attempts = new Map<string, number>();
+  let rejectFirst!: (error: Error) => void;
+  const prefetch = jest.fn<Promise<boolean>, [string]>((uri) => {
+    attempts.set(uri, (attempts.get(uri) ?? 0) + 1);
+
+    if (uri.endsWith("/a.png") && attempts.get(uri) === 1) {
+      return new Promise((_resolve, reject) => {
+        rejectFirst = reject;
+      });
+    }
+
+    return Promise.resolve(true);
+  });
+  const preloader = createBoundedImagePreloader({
+    maxRegistryEntries: 1,
+    prefetch,
+  });
+
+  const failedRequest = preloader.preload(["/img/a.png"]);
+  await flushMicrotasks();
+  const queuedRequest = preloader.preload(["/img/c.png"]);
+
+  expect(prefetch).toHaveBeenCalledTimes(1);
+
+  rejectFirst(new Error("prefetch failed"));
+  await Promise.all([failedRequest, queuedRequest]);
+
+  expect(prefetch.mock.calls.map(([uri]) => uri)).toEqual([
+    "resolved:/img/a.png",
+    "resolved:/img/c.png",
+  ]);
+
+  await preloader.preload(["/img/a.png"]);
+
+  expect(prefetch).toHaveBeenLastCalledWith("resolved:/img/a.png");
+  expect(attempts.get("resolved:/img/a.png")).toBe(2);
 });
 
 test("reports readiness only after the critical preload attempt settles", async () => {

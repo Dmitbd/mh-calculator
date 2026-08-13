@@ -28,12 +28,79 @@ type PreloadRegistryEntry = {
   settled: boolean;
 };
 
-/** Creates a bounded, insertion-ordered registry for critical image readiness. */
+/** Creates a bounded active/cache registry with deduplicated slot waiting. */
 export function createBoundedImagePreloader({
   maxRegistryEntries = DEFAULT_PRELOAD_REGISTRY_LIMIT,
   prefetch = (uri) => Image.prefetch(uri),
 }: ImagePreloaderOptions = {}): BoundedImagePreloader {
   const registry = new Map<string, PreloadRegistryEntry>();
+  const queuedRequests = new Map<string, Promise<boolean>>();
+  const registryLimit = Math.max(1, maxRegistryEntries);
+
+  const startRequest = (uri: string): Promise<boolean> => {
+    let entry!: PreloadRegistryEntry;
+    const request = Promise.resolve()
+      .then(() => prefetch(uri))
+      .then((loaded) => {
+        if (loaded === false) {
+          registry.delete(uri);
+        } else {
+          entry.settled = true;
+        }
+
+        return loaded !== false;
+      })
+      .catch(() => {
+        registry.delete(uri);
+        return false;
+      });
+
+    entry = { request, settled: false };
+    registry.set(uri, entry);
+    return request;
+  };
+
+  const preloadUri = (uri: string): Promise<boolean> => {
+    const registered = registry.get(uri);
+
+    if (registered) {
+      return registered.request;
+    }
+
+    const queued = queuedRequests.get(uri);
+
+    if (queued) {
+      return queued;
+    }
+
+    const queuedRequest = (async () => {
+      while (registry.size >= registryLimit) {
+        const oldestSettledUri = Array.from(registry.entries()).find(
+          ([, entry]) => entry.settled,
+        )?.[0];
+
+        if (oldestSettledUri) {
+          registry.delete(oldestSettledUri);
+          break;
+        }
+
+        await Promise.race(
+          Array.from(registry.values(), (entry) => entry.request),
+        );
+      }
+
+      const requestStartedWhileWaiting = registry.get(uri);
+      return requestStartedWhileWaiting?.request ?? startRequest(uri);
+    })();
+
+    queuedRequests.set(uri, queuedRequest);
+    void queuedRequest.then(() => {
+      if (queuedRequests.get(uri) === queuedRequest) {
+        queuedRequests.delete(uri);
+      }
+    });
+    return queuedRequest;
+  };
 
   const preload = async (
     sources: readonly string[],
@@ -42,51 +109,7 @@ export function createBoundedImagePreloader({
     const uniqueUris = Array.from(
       new Set(sources.filter(Boolean).map((source) => resolveAssetUri(source))),
     ).slice(0, Math.max(0, limit));
-    const pending: Promise<boolean>[] = [];
-
-    for (const uri of uniqueUris) {
-      const registered = registry.get(uri);
-
-      if (registered) {
-        pending.push(registered.request);
-        continue;
-      }
-
-      if (registry.size >= Math.max(1, maxRegistryEntries)) {
-        const oldestSettledUri = Array.from(registry.entries()).find(
-          ([, entry]) => entry.settled,
-        )?.[0];
-
-        if (!oldestSettledUri) {
-          continue;
-        }
-
-        registry.delete(oldestSettledUri);
-      }
-
-      let entry!: PreloadRegistryEntry;
-      const request = Promise.resolve()
-        .then(() => prefetch(uri))
-        .then((loaded) => {
-          if (loaded === false) {
-            registry.delete(uri);
-          } else {
-            entry.settled = true;
-          }
-
-          return loaded !== false;
-        })
-        .catch(() => {
-          registry.delete(uri);
-          return false;
-        });
-
-      entry = { request, settled: false };
-      registry.set(uri, entry);
-      pending.push(request);
-    }
-
-    await Promise.all(pending);
+    await Promise.all(uniqueUris.map(preloadUri));
   };
 
   return {
