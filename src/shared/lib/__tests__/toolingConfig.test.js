@@ -46,7 +46,7 @@ describe("reproducible project tooling", () => {
   test("provides one install-independent verification command with a clean web export", () => {
     const scripts = JSON.parse(read("package.json")).scripts;
 
-    expect(scripts.typecheck).toBe("tsc --noEmit");
+    expect(scripts.typecheck).toBe("node scripts/prepare-typecheck.cjs && tsc --noEmit");
     expect(scripts["expo:check"]).toBe("expo install --check");
     expect(scripts.verify).toContain("npm run expo:check");
     expect(scripts.verify).toContain("jest --runInBand");
