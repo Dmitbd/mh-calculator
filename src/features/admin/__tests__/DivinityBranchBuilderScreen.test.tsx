@@ -576,6 +576,50 @@ describe("DivinityBranchBuilderScreen", () => {
     );
   });
 
+  it("preserves the published revision and dirty update after logout fails", async () => {
+    mockGetSupabaseClient.mockReturnValue({ auth: {}, from: jest.fn() });
+    mockFetchPublishedHeroBuildSetRecord.mockResolvedValue(
+      getBuildSetRecord("published", 7),
+    );
+    mockFetchHeroBuildSetStatusIds.mockResolvedValue({
+      draftHeroIds: [],
+      publishedHeroIds: ["bastet"],
+    });
+    mockSignOutAdmin.mockRejectedValue(new Error("session retained"));
+    mockUpdatePublishedHeroBuildSet.mockResolvedValue(
+      getBuildSetRecord("published", 8),
+    );
+
+    render(
+      <DivinityBranchBuilderScreen
+        initialAdminSession={ADMIN_SESSION}
+        initialHeroId="bastet"
+        initialMode="edit"
+      />,
+    );
+
+    await screen.findAllByText("Билд загружен для редактирования.");
+    fireEvent.press(screen.getByLabelText("Weapon awakening slot 1, Зелёный"));
+    fireEvent.press(screen.getByText("Выйти"));
+
+    expect(
+      await screen.findByText("Ошибка выхода: session retained"),
+    ).toBeTruthy();
+    fireEvent.press(screen.getByText("Обновить"));
+
+    await waitFor(() =>
+      expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          expectedRevision: 7,
+          heroId: "bastet",
+        }),
+      ),
+    );
+    expect(await screen.findAllByText("Билд обновлён.")).not.toHaveLength(0);
+    expect(screen.queryByText("Обновить")).toBeNull();
+  });
+
   it("serializes duplicate dirty logout confirmations and actions", async () => {
     Object.defineProperty(Platform, "OS", { value: "ios" });
     let confirmExit!: () => void;
@@ -2840,6 +2884,9 @@ describe("DivinityBranchBuilderScreen", () => {
 
     fireEvent.press(screen.getByText("Обновить"));
     await waitFor(() => expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(2));
+    expect(mockUpdatePublishedHeroBuildSet.mock.calls[1][1]).toEqual(
+      expect.objectContaining({ expectedRevision: 1, heroId: "bastet" }),
+    );
   });
 
   it("restarts an interrupted initial edit load after logout rejection", async () => {

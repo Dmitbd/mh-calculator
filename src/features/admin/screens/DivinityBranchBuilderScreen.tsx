@@ -336,14 +336,18 @@ export function DivinityBranchBuilderScreen({
     };
   }, []);
 
-  const resetDraftLoad = useCallback(() => {
+  const cancelEntityLoads = useCallback(() => {
     entityLoadRequestId.current += 1;
     initialEditLoadInFlight.current = false;
     draftLoadInFlight.current = false;
     setIsDraftLoadPending(false);
     setIsEditBuildLoading(false);
-    serverRevisionsByHero.current = {};
   }, []);
+
+  const resetDraftLoad = useCallback(() => {
+    cancelEntityLoads();
+    serverRevisionsByHero.current = {};
+  }, [cancelEntityLoads]);
 
   const resetHeroStatusList = useCallback(() => {
     heroListRequestId.current += 1;
@@ -821,8 +825,6 @@ export function DivinityBranchBuilderScreen({
       isScreenMounted.current &&
       requestId === tabSaveRequestId.current &&
       activeHeroId.current === selectedHeroId;
-    const isCurrentEntity = () =>
-      isScreenMounted.current && activeHeroId.current === selectedHeroId;
 
     try {
       let resultingRevision: number;
@@ -856,7 +858,7 @@ export function DivinityBranchBuilderScreen({
           record?.revision ?? (expectedRevision ?? 0) + 1;
       }
 
-      if (isCurrentEntity()) {
+      if (isCurrentRequest()) {
         setServerRevision(selectedHeroId, resultingRevision);
       }
       if (!isCurrentRequest()) {
@@ -1001,8 +1003,6 @@ export function DivinityBranchBuilderScreen({
       isScreenMounted.current &&
       requestId === publishRequestId.current &&
       activeHeroId.current === heroId;
-    const isCurrentEntity = () =>
-      isScreenMounted.current && activeHeroId.current === heroId;
 
     try {
       let resultingRevision: number;
@@ -1054,7 +1054,7 @@ export function DivinityBranchBuilderScreen({
           record?.revision ?? expectedRevision + 1;
       }
 
-      if (isCurrentEntity()) {
+      if (isCurrentRequest()) {
         setServerRevision(heroId, resultingRevision);
       }
       if (!isCurrentRequest()) {
@@ -1246,7 +1246,7 @@ export function DivinityBranchBuilderScreen({
     const shouldRetryInitialEditLoad = initialEditLoadInFlight.current;
     setIsAuthPending(true);
     setToast(null);
-    resetDraftLoad();
+    cancelEntityLoads();
     resetTabSave();
     resetPublish();
     heroListRequestId.current += 1;
