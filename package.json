@@ -1,6 +1,6 @@
 {
   "name": "mh-calculator",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Mythic Heroes resource calculator",
   "main": "expo-router/entry",
   "scripts": {
