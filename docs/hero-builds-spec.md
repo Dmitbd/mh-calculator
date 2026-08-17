@@ -24,7 +24,7 @@
 - `/heroes/[heroId]` — просмотр комплекта билдов героя;
 - переход на `/admin/branch-builder?heroId=<id>&mode=edit` доступен авторизованному администратору.
 
-Навигация назад использует историю, а при её отсутствии возвращается в `/` или `/heroes` через [ScreenHeader](../src/shared/ui/ScreenHeader.tsx).
+Системная шапка Expo Router для обоих маршрутов отключена. Каталог и экран героя используют единый крупный однострочный заголовок через [ScreenHeader](../src/shared/ui/ScreenHeader.tsx); навигация назад использует историю, а при её отсутствии возвращается в `/` или `/heroes`.
 
 ## Source Files
 
@@ -34,6 +34,7 @@
 - [app/heroes/[heroId].tsx](../app/heroes/[heroId].tsx)
 - [HeroSelectScreen.tsx](../src/features/heroes/screens/HeroSelectScreen.tsx)
 - [HeroBuildScreen.tsx](../src/features/heroes/screens/HeroBuildScreen.tsx)
+- [ScreenHeader.tsx](../src/shared/ui/ScreenHeader.tsx)
 - [HeroListFiltersPanel.tsx](../src/features/heroes/components/HeroListFiltersPanel.tsx)
 - [heroListFilters.ts](../src/features/heroes/utils/heroListFilters.ts)
 - [heroListGrouping.ts](../src/features/heroes/utils/heroListGrouping.ts)

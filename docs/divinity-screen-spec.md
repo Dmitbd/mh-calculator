@@ -46,6 +46,7 @@
 - [app/divinity/manual.tsx](../app/divinity/manual.tsx)
 - [src/features/divinity/screens/DivinityManualScreen.tsx](../src/features/divinity/screens/DivinityManualScreen.tsx)
 - [src/shared/ui/InstructionButton.tsx](../src/shared/ui/InstructionButton.tsx)
+- [src/shared/ui/ScreenHeader.tsx](../src/shared/ui/ScreenHeader.tsx)
 - [src/shared/ui/CalculatorManualScreen.tsx](../src/shared/ui/CalculatorManualScreen.tsx)
 - [src/shared/ui/AppImage.tsx](../src/shared/ui/AppImage.tsx)
 - [src/shared/ui/PixelIconLoader.tsx](../src/shared/ui/PixelIconLoader.tsx)
@@ -260,6 +261,8 @@ type DivinityProgressRecord = {
 Это именно reset прогресса и диапазона, а не только кольца.
 
 ## UI Contract
+
+Основной экран использует единый `ScreenHeader`: крупный однострочный заголовок `Божественность`, кнопка `Назад`, история переходов и fallback `/`. Системная шапка Expo Router для основного экрана и инструкции отключена.
 
 На экране сейчас должны оставаться только такие основные секции:
 - `Рассчитать`

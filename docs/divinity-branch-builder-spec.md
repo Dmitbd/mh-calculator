@@ -6,7 +6,7 @@
 - не допустить лишних изменений от будущих агентов или разработчиков;
 - дать опору для переноса на другой стек, включая SPA, без потери функциональности.
 
-Билдер открывается как отдельный маршрут expo-router: `/admin/branch-builder`.
+Билдер открывается как отдельный маршрут expo-router: `/admin/branch-builder`. Системная шапка маршрута отключена; экран использует единый крупный однострочный заголовок через `ScreenHeader`, сохраняя асинхронный перехват кнопки `Назад` для dirty-формы.
 
 ## Scope
 
@@ -36,6 +36,7 @@
 Логика билдера дерева распределена так:
 - [app/admin/branch-builder.tsx](../app/admin/branch-builder.tsx) — маршрут
 - [src/features/admin/screens/DivinityBranchBuilderScreen.tsx](../src/features/admin/screens/DivinityBranchBuilderScreen.tsx) — экран, сборка секций
+- [src/shared/ui/ScreenHeader.tsx](../src/shared/ui/ScreenHeader.tsx) — единая шапка и защищённая навигация назад
 - [src/features/builds/components/BranchBuilderGrid.tsx](../src/features/builds/components/BranchBuilderGrid.tsx) — сетка, заголовки-селекторы веток, линии дерева
 - [src/features/builds/components/BranchNodeCard.tsx](../src/features/builds/components/BranchNodeCard.tsx) — `MinorStatCard` и `MajorNodeCard`
 - [src/features/builds/components/MajorSkillPicker.tsx](../src/features/builds/components/MajorSkillPicker.tsx) — список выбора скилла

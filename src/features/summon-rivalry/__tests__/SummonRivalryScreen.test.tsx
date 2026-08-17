@@ -84,6 +84,7 @@ test("renders the complete loaded calculator", () => {
   render(<SummonRivalryScreen />);
 
   expect(screen.getByText("Призыв").props.numberOfLines).toBe(1);
+  expect(screen.getByTestId("screen-header")).toBeTruthy();
   expect(
     screen.getByText("Калькулятор соперничества за призыв героев"),
   ).toBeTruthy();

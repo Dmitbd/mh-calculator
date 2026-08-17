@@ -59,6 +59,7 @@ test("increments level and shows updated totals", async () => {
 
   await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
   expect(screen.getByText("Божественность").props.numberOfLines).toBe(1);
+  expect(screen.getByTestId("screen-header")).toBeTruthy();
   expect(screen.queryByText(/^divinity$/i)).toBeNull();
   expect(screen.getByLabelText("Назад")).toBeTruthy();
   expect(screen.queryByText("Mythic Heroes")).toBeNull();

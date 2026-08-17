@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { InstructionButton } from "@/shared/ui/InstructionButton";
+import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 
 import { SummonCashback } from "../components/SummonCashback";
 import { SummonCashbackToggle } from "../components/SummonCashbackToggle";
@@ -15,40 +16,6 @@ import { useSummonRivalryCalculator } from "../hooks/useSummonRivalryCalculator"
 import { calculateSummonRivalry } from "../model/calculateSummonRivalry";
 
 const SCREEN_PADDING = 24;
-const HEADER_HEIGHT = 76;
-
-function SummonRivalryHeader({ topInset }: { topInset: number }) {
-  return (
-    <View
-      style={[
-        styles.headerShell,
-        { paddingTop: topInset, height: HEADER_HEIGHT + topInset },
-      ]}
-    >
-      <View style={styles.headerRow}>
-        <Pressable
-          accessibilityLabel="Назад"
-          accessibilityRole="button"
-          onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-              return;
-            }
-
-            router.replace("/");
-          }}
-          style={styles.backButton}
-        >
-          <Text style={styles.backArrow}>‹</Text>
-        </Pressable>
-        <Text numberOfLines={1} style={styles.headerTitle}>
-          Призыв
-        </Text>
-        <View style={styles.backButtonPlaceholder} />
-      </View>
-    </View>
-  );
-}
 
 export default function SummonRivalryScreen() {
   const { top, bottom } = useSafeAreaInsets();
@@ -77,12 +44,12 @@ export default function SummonRivalryScreen() {
 
   return (
     <View style={styles.screen}>
-      <SummonRivalryHeader topInset={top} />
+      <ScreenHeader title="Призыв" fallbackHref="/" />
       <ScrollView
         contentContainerStyle={[
           styles.container,
           {
-            paddingTop: HEADER_HEIGHT + top,
+            paddingTop: SCREEN_HEADER_HEIGHT + top,
             paddingBottom: SCREEN_PADDING + bottom,
           },
         ]}
@@ -177,44 +144,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: SCREEN_PADDING,
     backgroundColor: "#140d0b",
-  },
-  headerShell: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    backgroundColor: "#140d0b",
-    paddingHorizontal: SCREEN_PADDING,
-  },
-  headerRow: {
-    height: HEADER_HEIGHT,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#140d0b",
-  },
-  backButton: {
-    width: 32,
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  backButtonPlaceholder: { width: 32, height: 32 },
-  backArrow: {
-    fontSize: 34,
-    lineHeight: 34,
-    fontWeight: "900",
-    color: "#f3d38a",
-  },
-  headerTitle: {
-    minWidth: 0,
-    flex: 1,
-    textAlign: "center",
-    fontSize: 19,
-    lineHeight: 23,
-    fontWeight: "900",
-    color: "#f3d38a",
   },
   contentSection: { gap: 16, marginTop: 10 },
   storageWarning: {

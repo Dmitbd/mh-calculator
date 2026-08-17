@@ -23,7 +23,8 @@
 
 - маршруты: `/antiques`, `/antiques/manual`;
 - вход с главного экрана: `Калькуляторы → Антиквариат`;
-- возврат: через общий `ScreenHeader`, fallback `/`.
+- системная шапка Expo Router отключена для обоих маршрутов;
+- основной экран использует единый `ScreenHeader` с крупным заголовком `Антиквариат` и fallback `/`.
 
 Основные файлы:
 
@@ -39,6 +40,7 @@
 - [game-data/antiques/index.ts](../src/features/game-data/antiques/index.ts)
 - [antique-rivalry-rewards.json](../src/features/game-data/antiques/antique-rivalry-rewards.json)
 - [InstructionButton.tsx](../src/shared/ui/InstructionButton.tsx)
+- [ScreenHeader.tsx](../src/shared/ui/ScreenHeader.tsx)
 - [CalculatorManualScreen.tsx](../src/shared/ui/CalculatorManualScreen.tsx)
 - [AppImage.tsx](../src/shared/ui/AppImage.tsx)
 - [PixelIconLoader.tsx](../src/shared/ui/PixelIconLoader.tsx)

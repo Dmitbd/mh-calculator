@@ -21,7 +21,8 @@
 
 - маршруты: `/summon-rivalry`, `/summon-rivalry/manual`;
 - вход с главного экрана: `Калькуляторы → Призыв`;
-- заголовок основного экрана: `Призыв`;
+- системная шапка Expo Router отключена для обоих маршрутов;
+- основной экран использует единый `ScreenHeader` с крупным заголовком `Призыв`;
 - возврат без истории: `/` для калькулятора и `/summon-rivalry` для инструкции.
 
 Основные файлы:
@@ -36,8 +37,9 @@
 - [summonRivalryStorage.ts](../src/features/summon-rivalry/storage/summonRivalryStorage.ts)
 - [game-data/summon-rivalry/index.ts](../src/features/game-data/summon-rivalry/index.ts)
 - [summon-rivalry-rewards.json](../src/features/game-data/summon-rivalry/summon-rivalry-rewards.json)
+- [ScreenHeader.tsx](../src/shared/ui/ScreenHeader.tsx)
 
-Функция не импортирует компоненты, модель или storage `Антиквариата`. Общими остаются только нейтральные UI-границы `AppImage`, `InstructionButton` и `CalculatorManualScreen`.
+Функция не импортирует компоненты, модель или storage `Антиквариата`. Общими остаются только нейтральные UI-границы `AppImage`, `InstructionButton`, `ScreenHeader` и `CalculatorManualScreen`.
 
 ## Input Model
 

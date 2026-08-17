@@ -17,7 +17,7 @@ type ScreenHeaderProps = {
   onBeforeBack?: () => boolean | Promise<boolean>;
 };
 
-/** Фиксированная шапка экрана с кнопкой "назад" (паттерн экрана божественности) */
+/** Единая фиксированная шапка внутренних экранов с кнопкой "назад" */
 export function ScreenHeader({
   title,
   fallbackHref = "/",
@@ -68,6 +68,7 @@ export function ScreenHeader({
 
   return (
     <View
+      testID="screen-header"
       style={[
         styles.headerShell,
         { paddingTop: top, height: SCREEN_HEADER_HEIGHT + top },
@@ -87,7 +88,6 @@ export function ScreenHeader({
         </Text>
         <View style={styles.backButtonPlaceholder} />
       </View>
-      <View pointerEvents="none" style={styles.divider} />
     </View>
   );
 }
@@ -98,17 +98,9 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 100,
+    zIndex: 10,
     backgroundColor: "#140d0b",
     paddingHorizontal: HORIZONTAL_PADDING,
-  },
-  divider: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 1,
-    backgroundColor: "#533b29",
   },
   headerRow: {
     height: SCREEN_HEADER_HEIGHT,
@@ -134,9 +126,10 @@ const styles = StyleSheet.create({
     color: "#f3d38a",
   },
   headerTitle: {
+    minWidth: 0,
     flex: 1,
     textAlign: "center",
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: "900",
     letterSpacing: 0.2,
     color: "#f3d38a",
