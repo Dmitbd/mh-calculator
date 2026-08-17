@@ -88,7 +88,6 @@ function ExchangeRow({
           symbol="+"
         />
       </View>
-      <Text style={styles.rowCost}>{cost} алмазов</Text>
     </View>
   );
 }
@@ -240,12 +239,6 @@ const styles = StyleSheet.create({
     minWidth: 48,
     color: "#fff8e7",
     fontSize: 21,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  rowCost: {
-    color: "#f0c36a",
-    fontSize: 14,
     fontWeight: "800",
     textAlign: "center",
   },

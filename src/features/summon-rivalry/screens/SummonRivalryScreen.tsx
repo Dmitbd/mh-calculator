@@ -10,7 +10,6 @@ import { SummonDiamondExchange } from "../components/SummonDiamondExchange";
 import { SummonOwnedResources } from "../components/SummonOwnedResources";
 import { SummonRewardTrack } from "../components/SummonRewardTrack";
 import { SummonScoreProgress } from "../components/SummonScoreProgress";
-import { SummonSummary } from "../components/SummonSummary";
 import { useSummonRivalryCalculator } from "../hooks/useSummonRivalryCalculator";
 import { calculateSummonRivalry } from "../model/calculateSummonRivalry";
 
@@ -101,7 +100,6 @@ export default function SummonRivalryScreen() {
               <Text style={styles.storageWarningText}>{storageError}</Text>
             </View>
           ) : null}
-          <SummonSummary result={result} />
           <SummonOwnedResources
             ownedCommonScrolls={input.ownedCommonScrolls}
             ownedLimitedScrolls={input.ownedLimitedScrolls}

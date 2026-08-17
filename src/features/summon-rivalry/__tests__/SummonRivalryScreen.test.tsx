@@ -84,11 +84,14 @@ test("renders the complete loaded calculator", () => {
   render(<SummonRivalryScreen />);
 
   expect(screen.getByText("Калькулятор соперничества за призыв").props.numberOfLines).toBe(2);
-  expect(screen.getByLabelText("Итоговые очки: 0")).toBeTruthy();
+  expect(screen.queryByLabelText("Итоговые очки: 0")).toBeNull();
+  expect(screen.queryByText("До 12 000")).toBeNull();
+  expect(screen.queryByText("Крупные сундуки")).toBeNull();
   expect(screen.getByText("Мои ресурсы")).toBeTruthy();
   expect(screen.getByText("Обмен алмазов на призывы")).toBeTruthy();
   expect(screen.getByLabelText("Затраты алмазов: 0")).toBeTruthy();
   expect(screen.getByRole("checkbox", { name: "Учитывать кешбэк" })).toBeTruthy();
+  expect(screen.getByLabelText("Очки соревнования: 0 из 12000")).toBeTruthy();
   expect(screen.getByText("Шкала наград")).toBeTruthy();
   expect(screen.getByText("Кешбэк")).toBeTruthy();
   expect(screen.getByText("Сбросить расчёт")).toBeTruthy();

@@ -15,36 +15,6 @@ import { SummonOwnedResources } from "../components/SummonOwnedResources";
 import { SummonRewardTrack } from "../components/SummonRewardTrack";
 import { SummonResourceIcon } from "../components/SummonResourceIcon";
 import { SummonScoreProgress } from "../components/SummonScoreProgress";
-import { SummonSummary } from "../components/SummonSummary";
-import type { SummonRivalryResult } from "../model/types";
-
-const result: SummonRivalryResult = {
-  baseScore: 2_850,
-  totalScore: 3_505,
-  scoreRemaining: 8_495,
-  openedNodes: 4,
-  openedMajorChests: 1,
-  spentResources: {
-    commonScrolls: 15,
-    limitedScrolls: 95,
-    factionScrolls: 0,
-    fateCrystals: 5,
-  },
-  purchases: { commonScrolls: 0, limitedScrolls: 0, fateCrystals: 0 },
-  purchaseCosts: {
-    commonScrolls: 0,
-    limitedScrolls: 0,
-    fateCrystals: 0,
-    total: 0,
-  },
-  diamondCost: 0,
-  cashback: {
-    commonScrolls: 15,
-    fateCrystals: 5,
-    ssrFragments: 15,
-    urFragments: 5,
-  },
-};
 
 test("renders every verified resource icon through AppImage", () => {
   render(
@@ -123,9 +93,9 @@ test("shows diamond total at the top and wires ten-item purchase controls", () =
   expect(screen.getByText("Обмен алмазов на призывы")).toBeTruthy();
   expect(screen.getByLabelText("Затраты алмазов: 23700")).toBeTruthy();
   expect(screen.queryByText(/Общие затраты/)).toBeNull();
-  expect(screen.getByText("2700 алмазов")).toBeTruthy();
-  expect(screen.getByText("6000 алмазов")).toBeTruthy();
-  expect(screen.getByText("15000 алмазов")).toBeTruthy();
+  expect(screen.queryByText("2700 алмазов")).toBeNull();
+  expect(screen.queryByText("6000 алмазов")).toBeNull();
+  expect(screen.queryByText("15000 алмазов")).toBeNull();
 
   const actions = [
     ["Уменьшить свитки обычного призыва", handlers.onDecrementCommonScrolls],
@@ -196,15 +166,6 @@ test("shows all cashback resources and toggles the checkbox", () => {
 
   fireEvent.press(screen.getByRole("checkbox", { name: "Учитывать кешбэк" }));
   expect(onChange).toHaveBeenCalledWith(false);
-});
-
-test("shows the four summary values", () => {
-  render(<SummonSummary result={result} />);
-
-  expect(screen.getByLabelText("Итоговые очки: 3505")).toBeTruthy();
-  expect(screen.getByLabelText("До 12 000: 8495")).toBeTruthy();
-  expect(screen.getByLabelText("Узлы: 4 / 16")).toBeTruthy();
-  expect(screen.getByLabelText("Крупные сундуки: 1 / 4")).toBeTruthy();
 });
 
 test.each([
