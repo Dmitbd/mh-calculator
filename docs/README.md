@@ -41,6 +41,15 @@
 - Тип: пользовательский калькулятор.
 - Spec: [antique-rivalry-spec.md](antique-rivalry-spec.md).
 
+### Призыв
+
+- Точки входа: `/summon-rivalry`, `/summon-rivalry/manual`.
+- Назначение: каскадный расчёт соперничества за призыв по имеющимся и купленным свиткам и кристаллам, с затратами алмазов, наградами и опциональным кешбэком.
+- Иконки: семь ресурсов используют оригинальные прозрачные игровые спрайты без счётчиков из скриншотов; сундуки и ресурсы проходят через общий локальный image boundary.
+- Инструкция: общая доступная кнопка `? Инструкция` открывает справку об очках, обмене алмазов, каскаде наград, шкале и сбросе.
+- Тип: пользовательский калькулятор.
+- Spec: [summon-rivalry-spec.md](summon-rivalry-spec.md).
+
 Главный экран `/` является навигацией к этим функциям и не получает отдельный capability spec. Он также показывает текущую версию и ссылку на последний GitHub Release.
 
 Все маршруты находятся под общим recovery boundary: неожиданный render/runtime-сбой показывает безопасные действия повторной попытки и возврата на главную без backend details. CI проверяет documented raw/gzip web-entry budgets и production Chromium E2E для загрузки каталога, remote/fallback данных, build view, admin denial и dirty edit.
@@ -62,6 +71,7 @@
 | `hero-builder-validation-and-hero-select`, builder-части `equipment-variants`, `iconic-weapon-node-bonuses`, `hero-build-tabs`, `multi-build-export`, `admin-hero-guide-selector`, `server-tab-drafts` | [divinity-branch-builder-spec.md](divinity-branch-builder-spec.md) |
 | `hero-catalog`, viewer-части `equipment-variants`, `iconic-weapon-node-bonuses`, `hero-build-tabs`, `hero-localization-id-migration` | [hero-builds-spec.md](hero-builds-spec.md) |
 | `antique-rivalry-calculator` | [antique-rivalry-spec.md](antique-rivalry-spec.md) |
+| `summon-rivalry-calculator` | [summon-rivalry-spec.md](summon-rivalry-spec.md) |
 | `project-guidelines-handbook`, `architecture-quality-followups` | [guidelines](guidelines/README.md) |
 
 `server-tab-drafts` относится к текущему поведению: серверные черновики реализованы в `main` и входят в spec билдера.
