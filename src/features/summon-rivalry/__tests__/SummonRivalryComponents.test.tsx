@@ -12,7 +12,39 @@ import { SummonCashback } from "../components/SummonCashback";
 import { SummonCashbackToggle } from "../components/SummonCashbackToggle";
 import { SummonDiamondExchange } from "../components/SummonDiamondExchange";
 import { SummonOwnedResources } from "../components/SummonOwnedResources";
+import { SummonRewardTrack } from "../components/SummonRewardTrack";
 import { SummonResourceIcon } from "../components/SummonResourceIcon";
+import { SummonScoreProgress } from "../components/SummonScoreProgress";
+import { SummonSummary } from "../components/SummonSummary";
+import type { SummonRivalryResult } from "../model/types";
+
+const result: SummonRivalryResult = {
+  baseScore: 2_850,
+  totalScore: 3_505,
+  scoreRemaining: 8_495,
+  openedNodes: 4,
+  openedMajorChests: 1,
+  spentResources: {
+    commonScrolls: 15,
+    limitedScrolls: 95,
+    factionScrolls: 0,
+    fateCrystals: 5,
+  },
+  purchases: { commonScrolls: 0, limitedScrolls: 0, fateCrystals: 0 },
+  purchaseCosts: {
+    commonScrolls: 0,
+    limitedScrolls: 0,
+    fateCrystals: 0,
+    total: 0,
+  },
+  diamondCost: 0,
+  cashback: {
+    commonScrolls: 15,
+    fateCrystals: 5,
+    ssrFragments: 15,
+    urFragments: 5,
+  },
+};
 
 test("renders every verified resource icon through AppImage", () => {
   render(
@@ -164,4 +196,47 @@ test("shows all cashback resources and toggles the checkbox", () => {
 
   fireEvent.press(screen.getByRole("checkbox", { name: "Учитывать кешбэк" }));
   expect(onChange).toHaveBeenCalledWith(false);
+});
+
+test("shows the four summary values", () => {
+  render(<SummonSummary result={result} />);
+
+  expect(screen.getByLabelText("Итоговые очки: 3505")).toBeTruthy();
+  expect(screen.getByLabelText("До 12 000: 8495")).toBeTruthy();
+  expect(screen.getByLabelText("Узлы: 4 / 16")).toBeTruthy();
+  expect(screen.getByLabelText("Крупные сундуки: 1 / 4")).toBeTruthy();
+});
+
+test.each([
+  [0, "0 / 12000", "Очки соревнования: 0 из 12000"],
+  [15_000, "15000 / 12000", "Очки соревнования: 15000 из 12000"],
+])("shows uncapped score %i against the event maximum", (score, text, label) => {
+  render(<SummonScoreProgress totalScore={score} />);
+
+  expect(screen.getByText(text)).toBeTruthy();
+  expect(screen.getByLabelText(label)).toBeTruthy();
+});
+
+test("renders all 16 reward chests and marks every fourth as major", () => {
+  render(<SummonRewardTrack openedNodes={4} totalScore={3_505} />);
+
+  const chests = screen.getAllByLabelText(/^Сундук награды /);
+  expect(chests).toHaveLength(16);
+  expect(chests[0].props.accessibilityLabel).toBe(
+    "Сундук награды 1: 750 очков, открыт",
+  );
+  expect(chests[3].props.accessibilityLabel).toBe(
+    "Сундук награды 4: 3000 очков, открыт, большой сундук",
+  );
+  expect(
+    chests.filter((chest) =>
+      chest.props.accessibilityLabel.endsWith("большой сундук"),
+    ),
+  ).toHaveLength(4);
+  expect(screen.getAllByLabelText("Открыто")).toHaveLength(4);
+  expect(
+    screen
+      .getAllByLabelText(/^Линия наград /)
+      .map((row) => row.props.accessibilityValue?.now),
+  ).toEqual([100, 0, 0, 0]);
 });
