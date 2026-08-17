@@ -306,12 +306,12 @@ test("shows all four cashback resources and values", () => {
   expect(screen.getByLabelText("Кешбэк — Карта храма: 5")).toBeTruthy();
   expect(
     screen.getByLabelText(
-      "Кешбэк — Фрагменты легендарного сундука антиквариата: 150",
+      "Кешбэк — Фрагменты королевского сокровища: 150",
     ),
   ).toBeTruthy();
   expect(
     screen.getByLabelText(
-      "Кешбэк — Фрагменты мифического сундука антиквариата: 50",
+      "Кешбэк — Фрагменты небесного сокровища: 50",
     ),
   ).toBeTruthy();
 });

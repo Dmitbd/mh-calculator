@@ -49,18 +49,20 @@ export const antiqueResourceCatalog = {
   legendaryChestFragments: {
     kind: "legendaryChestFragments",
     verification: "verified",
-    label: "Фрагменты легендарного сундука антиквариата",
-    fallbackLabel: "ФЛ",
+    label: "Фрагменты королевского сокровища",
+    fallbackLabel: "ФК",
     resourceId: 700036,
     spriteName: "700036",
+    icon: "/img/antiques/royal-treasure-fragments.png",
   },
   mythicChestFragments: {
     kind: "mythicChestFragments",
     verification: "verified",
-    label: "Фрагменты мифического сундука антиквариата",
-    fallbackLabel: "ФМ",
+    label: "Фрагменты небесного сокровища",
+    fallbackLabel: "ФН",
     resourceId: 700035,
     spriteName: "700035",
+    icon: "/img/antiques/celestial-treasure-fragments.png",
   },
 } satisfies AntiqueResourceCatalog;
 

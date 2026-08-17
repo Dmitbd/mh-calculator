@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import {
   ANTIQUE_EVENT_MAX_SCORE,
   ANTIQUE_MAJOR_THRESHOLDS,
@@ -5,6 +8,19 @@ import {
   antiqueResourceCatalog,
   antiqueRivalryRewards,
 } from "..";
+
+const treasureFragmentResources = [
+  {
+    resource: antiqueResourceCatalog.legendaryChestFragments,
+    label: "Фрагменты королевского сокровища",
+    icon: "/img/antiques/royal-treasure-fragments.png",
+  },
+  {
+    resource: antiqueResourceCatalog.mythicChestFragments,
+    label: "Фрагменты небесного сокровища",
+    icon: "/img/antiques/celestial-treasure-fragments.png",
+  },
+];
 
 test("maps the supplied antique icons to the correct resources", () => {
   expect(antiqueResourceCatalog.researchCoins.icon).toBe(
@@ -16,6 +32,14 @@ test("maps the supplied antique icons to the correct resources", () => {
   expect(antiqueResourceCatalog.tombMap.icon).toBe(
     "/img/antiques/tomb-map.png",
   );
+});
+
+test("maps the supplied treasure fragment icons and game names", () => {
+  for (const { resource, label, icon } of treasureFragmentResources) {
+    expect(resource.label).toBe(label);
+    expect(resource.icon).toBe(icon);
+    expect(fs.existsSync(path.join(process.cwd(), "public", icon))).toBe(true);
+  }
 });
 
 test("defines every cumulative rivalry reward node", () => {
