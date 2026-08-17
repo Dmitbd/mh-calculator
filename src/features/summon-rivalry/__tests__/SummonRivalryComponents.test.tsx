@@ -90,8 +90,9 @@ test("shows diamond total at the top and wires ten-item purchase controls", () =
     />,
   );
 
-  expect(screen.getByText("Обмен алмазов на призывы")).toBeTruthy();
-  expect(screen.getByLabelText("Затраты алмазов: 23700")).toBeTruthy();
+  expect(screen.getByText("Покупки за алмазы")).toBeTruthy();
+  expect(screen.getByLabelText("Алмазы: 23700")).toBeTruthy();
+  expect(screen.getByText(": 23700")).toBeTruthy();
   expect(screen.queryByText(/Общие затраты/)).toBeNull();
   expect(screen.queryByText("2700 алмазов")).toBeNull();
   expect(screen.queryByText("6000 алмазов")).toBeNull();
@@ -128,7 +129,7 @@ test("disables all purchase decrements at zero and starts diamond spend at zero"
     />,
   );
 
-  expect(screen.getByLabelText("Затраты алмазов: 0")).toBeTruthy();
+  expect(screen.getByLabelText("Алмазы: 0")).toBeTruthy();
   expect(
     screen.getAllByRole("button").filter(
       (button) => button.props.accessibilityLabel?.startsWith("Уменьшить"),

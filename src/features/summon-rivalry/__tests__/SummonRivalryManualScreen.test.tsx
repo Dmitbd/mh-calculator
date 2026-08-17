@@ -38,7 +38,7 @@ test("renders exact summon scores, purchases, rewards, and calculator rules", ()
 
   for (const title of [
     "Быстрый расчёт",
-    "Обмен алмазов",
+    "Покупки за алмазы",
     "Кешбэк и каскад наград",
     "Шкала наград и сундуки",
     "Сброс расчёта",

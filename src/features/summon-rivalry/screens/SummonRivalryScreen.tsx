@@ -10,6 +10,7 @@ import { SummonDiamondExchange } from "../components/SummonDiamondExchange";
 import { SummonOwnedResources } from "../components/SummonOwnedResources";
 import { SummonRewardTrack } from "../components/SummonRewardTrack";
 import { SummonScoreProgress } from "../components/SummonScoreProgress";
+import { SummonRivalrySummary } from "../components/SummonRivalrySummary";
 import { useSummonRivalryCalculator } from "../hooks/useSummonRivalryCalculator";
 import { calculateSummonRivalry } from "../model/calculateSummonRivalry";
 
@@ -40,8 +41,8 @@ function SummonRivalryHeader({ topInset }: { topInset: number }) {
         >
           <Text style={styles.backArrow}>‹</Text>
         </Pressable>
-        <Text numberOfLines={2} style={styles.headerTitle}>
-          Калькулятор соперничества за призыв
+        <Text numberOfLines={1} style={styles.headerTitle}>
+          Призыв
         </Text>
         <View style={styles.backButtonPlaceholder} />
       </View>
@@ -91,6 +92,7 @@ export default function SummonRivalryScreen() {
             accessibilityLabel="Открыть инструкцию по призыву"
             onPress={() => router.push("/summon-rivalry/manual")}
           />
+          <SummonRivalrySummary />
           {storageError ? (
             <View
               accessible

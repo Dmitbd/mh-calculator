@@ -106,17 +106,17 @@ export function SummonDiamondExchange({
 }: SummonDiamondExchangeProps) {
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Обмен алмазов на призывы</Text>
+      <Text style={styles.title}>Покупки за алмазы</Text>
       <View
         accessible
-        accessibilityLabel={`Затраты алмазов: ${costs.total}`}
+        accessibilityLabel={`Алмазы: ${costs.total}`}
         style={styles.total}
       >
         <SummonResourceIcon
           resource={summonRivalryResourceCatalog.diamond}
           size={38}
         />
-        <Text style={styles.totalText}>Затраты алмазов: {costs.total}</Text>
+        <Text style={styles.totalText}>: {costs.total}</Text>
       </View>
       <Text style={styles.description}>
         Количество меняется наборами по 10.
