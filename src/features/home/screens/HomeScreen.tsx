@@ -30,6 +30,11 @@ export default function HomeScreen() {
               <Text style={styles.buttonText}>Антиквариат</Text>
             </Pressable>
           </Link>
+          <Link href="/summon-rivalry" asChild>
+            <Pressable style={styles.button}>
+              <Text style={styles.buttonText}>Призыв</Text>
+            </Pressable>
+          </Link>
         </View>
       </View>
 

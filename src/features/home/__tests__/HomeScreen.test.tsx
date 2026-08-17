@@ -35,6 +35,9 @@ test("renders calculator and build entry points", () => {
   expect(
     within(screen.getByTestId("link-/antiques")).getByText("Антиквариат"),
   ).toBeTruthy();
+  expect(
+    within(screen.getByTestId("link-/summon-rivalry")).getByText("Призыв"),
+  ).toBeTruthy();
   expect(screen.getByText("Билды")).toBeTruthy();
   expect(screen.getByText("Билды героев")).toBeTruthy();
   expect(screen.getByText("build builder")).toBeTruthy();
