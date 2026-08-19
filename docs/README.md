@@ -55,6 +55,17 @@
 - Тип: пользовательский калькулятор.
 - Spec: [summon-rivalry-spec.md](summon-rivalry-spec.md).
 
+### Еженедельное соперничество
+
+- Точки входа: `/weekly-rivalry/tower-of-babel`, `/weekly-rivalry/zodiac-map`, `/weekly-rivalry/beastly-echoes` и одноимённые маршруты `/manual`.
+- Назначение: расчёт шкалы соперничества и пяти разделов заданий событий `Вавилонская башня`, `Карта зодиака` и `Звериные эхо` по общему исходному количеству Молотов вознесения, Светящихся жемчужин или Печатей зверя и персонализированных сундуков.
+- Кешбэк: обычные награды соперничества, полученные со шкалы персонализированные сундуки и награды заданий имеют отдельные выключенные по умолчанию переключатели; четвёртая общая галочка по выбору связывает включённые источники между обеими зонами до остановки каскада.
+- Интерфейс: три экрана повторяют типографику и карточную структуру `Антиквариата` и `Призыва`, показывают два собственных ресурса, общую галочку, 16 сундуков, карточки кешбэка с иконками и количеством, 30 заданий и пять наград разделов с завершёнными состояниями.
+- Инструкция: общая встроенная справка с названием ресурса текущего события объясняет четыре галочки, изолированный и взаимный режимы, однократный учёт наград и сброс.
+- Архитектура: один экран, одна инструкция, один hook, одна модель и переиспользуемые секции получают различия из трёх валидируемых конфигураций; event-specific route-обёртки не содержат расчётов.
+- Тип: пользовательский калькулятор.
+- Spec: [weekly-rivalry-spec.md](weekly-rivalry-spec.md).
+
 Главный экран `/` является навигацией к этим функциям и не получает отдельный capability spec. Он также показывает текущую версию и ссылку на последний GitHub Release.
 
 Все маршруты находятся под общим recovery boundary: неожиданный render/runtime-сбой показывает безопасные действия повторной попытки и возврата на главную без backend details. CI проверяет documented raw/gzip web-entry budgets и production Chromium E2E для загрузки каталога, remote/fallback данных, build view, admin denial и dirty edit.
@@ -77,6 +88,7 @@
 | `hero-catalog`, viewer-части `equipment-variants`, `iconic-weapon-node-bonuses`, `hero-build-tabs`, `hero-localization-id-migration` | [hero-builds-spec.md](hero-builds-spec.md) |
 | `antique-rivalry-calculator` | [antique-rivalry-spec.md](antique-rivalry-spec.md) |
 | `summon-rivalry-calculator` | [summon-rivalry-spec.md](summon-rivalry-spec.md) |
+| `weekly-rivalry-calculator` | [weekly-rivalry-spec.md](weekly-rivalry-spec.md) |
 | `project-guidelines-handbook`, `architecture-quality-followups` | [guidelines](guidelines/README.md) |
 
 `server-tab-drafts` относится к текущему поведению: серверные черновики реализованы в `main` и входят в spec билдера.

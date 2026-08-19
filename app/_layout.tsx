@@ -22,6 +22,30 @@ export default function RootLayout() {
           name="summon-rivalry/manual"
           options={{ headerShown: false }}
         />
+        <Stack.Screen
+          name="weekly-rivalry/beastly-echoes"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="weekly-rivalry/beastly-echoes/manual"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="weekly-rivalry/tower-of-babel"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="weekly-rivalry/tower-of-babel/manual"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="weekly-rivalry/zodiac-map"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="weekly-rivalry/zodiac-map/manual"
+          options={{ headerShown: false }}
+        />
         <Stack.Screen name="heroes/index" options={{ headerShown: false }} />
         <Stack.Screen name="heroes/[heroId]" options={{ headerShown: false }} />
         <Stack.Screen

@@ -27,7 +27,16 @@ import { render } from "@testing-library/react-native";
 
 import RootLayout from "../../../app/_layout";
 
-test.each(["summon-rivalry", "summon-rivalry/manual"])(
+test.each([
+  "summon-rivalry",
+  "summon-rivalry/manual",
+  "weekly-rivalry/tower-of-babel",
+  "weekly-rivalry/tower-of-babel/manual",
+  "weekly-rivalry/zodiac-map",
+  "weekly-rivalry/zodiac-map/manual",
+  "weekly-rivalry/beastly-echoes",
+  "weekly-rivalry/beastly-echoes/manual",
+])(
   "disables the native stack header for %s",
   (routeName) => {
     render(<RootLayout />);

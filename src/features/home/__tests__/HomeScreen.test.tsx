@@ -38,6 +38,21 @@ test("renders calculator and build entry points", () => {
   expect(
     within(screen.getByTestId("link-/summon-rivalry")).getByText("Призыв"),
   ).toBeTruthy();
+  expect(
+    within(
+      screen.getByTestId("link-/weekly-rivalry/beastly-echoes"),
+    ).getByText("Звериные эхо"),
+  ).toBeTruthy();
+  expect(
+    within(
+      screen.getByTestId("link-/weekly-rivalry/tower-of-babel"),
+    ).getByText("Вавилонская башня"),
+  ).toBeTruthy();
+  expect(
+    within(screen.getByTestId("link-/weekly-rivalry/zodiac-map")).getByText(
+      "Карта зодиака",
+    ),
+  ).toBeTruthy();
   expect(screen.getByText("Билды")).toBeTruthy();
   expect(screen.getByText("Билды героев")).toBeTruthy();
   expect(screen.getByText("build builder")).toBeTruthy();

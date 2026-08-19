@@ -35,6 +35,21 @@ export default function HomeScreen() {
               <Text style={styles.buttonText}>Призыв</Text>
             </Pressable>
           </Link>
+          <Link href="/weekly-rivalry/tower-of-babel" asChild>
+            <Pressable style={styles.button}>
+              <Text style={styles.buttonText}>Вавилонская башня</Text>
+            </Pressable>
+          </Link>
+          <Link href="/weekly-rivalry/zodiac-map" asChild>
+            <Pressable style={styles.button}>
+              <Text style={styles.buttonText}>Карта зодиака</Text>
+            </Pressable>
+          </Link>
+          <Link href="/weekly-rivalry/beastly-echoes" asChild>
+            <Pressable style={styles.button}>
+              <Text style={styles.buttonText}>Звериные эхо</Text>
+            </Pressable>
+          </Link>
         </View>
       </View>
 
