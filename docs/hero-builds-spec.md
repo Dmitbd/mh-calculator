@@ -26,6 +26,8 @@
 
 Системная шапка Expo Router для обоих маршрутов отключена. Каталог и экран героя используют единый крупный однострочный заголовок через [ScreenHeader](../src/shared/ui/ScreenHeader.tsx); навигация назад использует историю, а при её отсутствии возвращается в `/` или `/heroes`.
 
+Сразу под шапкой каталога `/heroes` расположена постоянная информационная карточка: `Используйте билды как отправную точку, а не как строгую инструкцию. Адаптируйте их под конкретную ситуацию.` Она показывается до фильтров и остаётся видимой во время первоначальной загрузки каталога.
+
 ## Source Files
 
 Основные точки реализации:
@@ -109,7 +111,7 @@ LKG хранится через AsyncStorage неизменяемыми поко
 
 Полностью проверенный remote возвращается экрану сразу после network/runtime validation. Сохранение LKG запускается как наблюдаемый detached promise: его зависание или ошибка не задерживают remote, не удерживают manifest-keyed in-flight deduplication и не создают unhandled rejection; concurrent callers до завершения network validation по-прежнему разделяют один resource fetch.
 
-`scripts/export-hero-build-snapshot.cjs` получает опубликованный resource только через env-конфигурацию, не печатает URL/key, проверяет payload, IDs и `/img` assets до замены полного staged-комплекта. Manual/scheduled workflow использует actions по immutable SHA, dedicated branch с явным lease на exact fetched remote SHA и только открытый PR `head/base`; закрытый PR не переиспользуется. Workflow никогда не пишет напрямую в `main`, а ownership его кода и generated snapshot закреплён в `.github/CODEOWNERS`.
+`scripts/export-hero-build-snapshot.cjs` получает полный опубликованный resource только через env-конфигурацию, не печатает URL/key, проверяет payload, IDs и `/img` assets до замены полного staged-комплекта. Generated bundled snapshot содержит все опубликованные на момент синхронизации билды, а не выбранное вручную подмножество; поэтому новые герои и изменения существующих билдов переходят в локальный fallback одной атомарной заменой. Manual/scheduled workflow использует actions по immutable SHA, dedicated branch с явным lease на exact fetched remote SHA и только открытый PR `head/base`; закрытый PR не переиспользуется. Workflow никогда не пишет напрямую в `main`, а ownership его кода и generated snapshot закреплён в `.github/CODEOWNERS`.
 
 После выбора источника мастер-каталог фильтруется по выбранным признакам и группируется по зонам. Пустой результат показывает `Нет героев с готовыми билдами по выбранным фильтрам.`
 

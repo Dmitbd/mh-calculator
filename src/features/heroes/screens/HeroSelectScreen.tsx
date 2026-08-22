@@ -278,6 +278,13 @@ export function HeroSelectScreen() {
           },
         ]}
       >
+        <View style={styles.buildNotice}>
+          <Text style={styles.buildNoticeText}>
+            Используйте билды как отправную точку, а не как строгую инструкцию.
+            Адаптируйте их под конкретную ситуацию.
+          </Text>
+        </View>
+
         {isInitialContentLoading ? null : (
           <HeroListFiltersPanel filters={filters} onChange={setFilters} />
         )}
@@ -348,6 +355,22 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     gap: 20,
     paddingHorizontal: SCREEN_PADDING,
+  },
+  buildNotice: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderLeftWidth: 3,
+    borderColor: "#5a412b",
+    borderLeftColor: "#caa877",
+    backgroundColor: "#1d130f",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  buildNoticeText: {
+    color: "#d7c19a",
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 20,
   },
   zone: {
     gap: 10,

@@ -3,7 +3,34 @@ import resource from "../hero-builds/hero-builds.json";
 import { parseBundledHeroBuildSnapshot } from "@/features/builds/data/heroBuildSnapshotSource";
 
 test("generated bundled hero build snapshot is complete and checksum-valid", () => {
-  expect(parseBundledHeroBuildSnapshot(manifest, resource).heroBuilds.map(({ heroId }) => heroId)).toEqual(["bastet", "morana"]);
+  expect(
+    parseBundledHeroBuildSnapshot(manifest, resource).heroBuilds.map(
+      ({ heroId }) => heroId,
+    ),
+  ).toEqual([
+    "amaterasu",
+    "artemis",
+    "bastet",
+    "circe",
+    "dionysus",
+    "faust",
+    "freyja",
+    "gabriel",
+    "hestia",
+    "iset",
+    "king-arthur",
+    "leonidas",
+    "lucifer",
+    "luoshen",
+    "morana",
+    "morrigan",
+    "nagakanya",
+    "nyx",
+    "oda-nobunaga",
+    "odin",
+    "susanoo",
+    "western-queen",
+  ]);
 });
 
 test.each([
