@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { StyleSheet } from "react-native";
 
 const mockRouter = {
   back: jest.fn(),
@@ -28,6 +29,41 @@ describe("ScreenHeader", () => {
     mockRouter.canGoBack.mockClear();
     mockRouter.canGoBack.mockReturnValue(true);
     mockRouter.replace.mockClear();
+  });
+
+  it("uses the same two-line typography for short and long titles", () => {
+    render(<ScreenHeader title="Builder" />);
+
+    const title = screen.getByText("Builder");
+    expect(title.props.numberOfLines).toBe(2);
+    expect(StyleSheet.flatten(title.props.style)).toEqual(
+      expect.objectContaining({ fontSize: 30, lineHeight: 32 }),
+    );
+  });
+
+  it("centers a font-independent chevron beside a wrapping title", () => {
+    render(<ScreenHeader title="Таланты божественности" />);
+
+    const title = screen.getByText("Таланты божественности");
+    expect(title.props.numberOfLines).toBe(2);
+    expect(StyleSheet.flatten(title.props.style)).toEqual(
+      expect.objectContaining({
+        flex: 1,
+        minWidth: 0,
+        fontSize: 30,
+        lineHeight: 32,
+      }),
+    );
+    expect(screen.queryByText("‹")).toBeNull();
+    expect(
+      StyleSheet.flatten(screen.getByTestId("screen-header-back-chevron").props.style),
+    ).toMatchObject({
+      borderBottomWidth: 4,
+      borderLeftWidth: 4,
+      height: 12,
+      width: 12,
+      transform: [{ rotate: "45deg" }],
+    });
   });
 
   it("stays on the screen when back interception declines navigation", async () => {

@@ -28,6 +28,8 @@ import { render } from "@testing-library/react-native";
 import RootLayout from "../../../app/_layout";
 
 test.each([
+  "divinity-talents",
+  "divinity-talents/manual",
   "summon-rivalry",
   "summon-rivalry/manual",
   "weekly-rivalry/tower-of-babel",

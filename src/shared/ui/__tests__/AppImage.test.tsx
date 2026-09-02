@@ -13,6 +13,7 @@ import {
   AccessibilityInfo,
   Animated,
   Image,
+  Platform,
   StyleSheet,
 } from "react-native";
 
@@ -63,20 +64,92 @@ test("reserves its final geometry while the image is loading", () => {
   expect(StyleSheet.flatten(image.props.style).opacity).toBe(0);
 });
 
-test("can stay decorative inside an already accessible parent", () => {
+test("hides a decorative image from accessibility on every platform", () => {
+  const originalPlatform = Platform.OS;
+
+  try {
+    (["ios", "android", "web"] as const).forEach((platform) => {
+      Object.defineProperty(Platform, "OS", { value: platform });
+      const view = render(
+        <AppImage
+          accessible={false}
+          accessibilityLabel="Decorative reward chest"
+          height={52}
+          source="/img/antiques/rivalry-chest.png"
+          testID="reward-chest"
+          width={52}
+        />,
+      );
+      const imageBoundary = view.getByTestId("reward-chest", {
+        includeHiddenElements: true,
+      });
+
+      expect(imageBoundary.props.accessible).toBe(false);
+      expect(imageBoundary.props.accessibilityLabel).toBeUndefined();
+      expect(imageBoundary.props.accessibilityRole).toBeUndefined();
+      expect(imageBoundary.props.accessibilityElementsHidden).toBeUndefined();
+      expect(imageBoundary.props.importantForAccessibility).toBe(
+        platform === "android" ? "no-hide-descendants" : undefined,
+      );
+      expect(imageBoundary.props["aria-hidden"]).toBeUndefined();
+      expect(view.UNSAFE_getByType(Image).props.accessible).toBe(false);
+      expect(view.UNSAFE_getByType(Image).props["aria-hidden"]).toBe(
+        platform === "web" ? true : undefined,
+      );
+
+      view.unmount();
+    });
+  } finally {
+    Object.defineProperty(Platform, "OS", { value: originalPlatform });
+  }
+});
+
+test("renders many static images over fixed fallbacks without terminal callbacks", () => {
+  const timing = jest.spyOn(Animated, "timing");
+  jest.mocked(AccessibilityInfo.isReduceMotionEnabled).mockClear();
+
   render(
-    <AppImage
-      accessible={false}
-      accessibilityLabel="Decorative reward chest"
-      height={52}
-      source="/img/antiques/rivalry-chest.png"
-      testID="reward-chest"
-      width={52}
-    />,
+    <>
+      {Array.from({ length: 120 }, (_, index) => (
+        <AppImage
+          key={index}
+          accessible={false}
+          accessibilityLabel={`Static node cost ${index}`}
+          height={14}
+          loadingMode="static"
+          source="/img/divinity/talents/faith-combined.png"
+          testID={`static-node-cost-${index}`}
+          width={14}
+        />
+      ))}
+    </>,
   );
 
-  expect(screen.getByTestId("reward-chest").props.accessible).toBe(false);
-  expect(screen.getByTestId("reward-chest").props.accessibilityRole).toBeUndefined();
+  expect(AccessibilityInfo.isReduceMotionEnabled).not.toHaveBeenCalled();
+  expect(timing).not.toHaveBeenCalled();
+  expect(screen.UNSAFE_getAllByType(Image)).toHaveLength(120);
+  screen.UNSAFE_getAllByType(Image).forEach((image) => {
+    expect(image.props.onError).toBeUndefined();
+    expect(image.props.onLoad).toBeUndefined();
+    expect(image.props.accessible).toBe(false);
+  });
+  expect(screen.getByTestId("static-node-cost-0-placeholder", {
+    includeHiddenElements: true,
+  })).toBeTruthy();
+  expect(screen.getByTestId("static-node-cost-119-placeholder", {
+    includeHiddenElements: true,
+  })).toBeTruthy();
+  expect(
+    StyleSheet.flatten(
+      screen.getByTestId("static-node-cost-0-placeholder", {
+        includeHiddenElements: true,
+      }).props.style,
+    ),
+  ).toMatchObject({ height: 14, width: 14 });
+  expect(screen.UNSAFE_getAllByType(Image)[0].props.source).toEqual({
+    cache: "force-cache",
+    uri: "resolved:/img/divinity/talents/faith-combined.png",
+  });
 });
 
 test("measures a responsive image before drawing its pixel loader", () => {
@@ -91,7 +164,9 @@ test("measures a responsive image before drawing its pixel loader", () => {
     />,
   );
 
-  fireEvent(screen.getByTestId("responsive-color"), "layout", {
+  fireEvent(screen.getByTestId("responsive-color", {
+    includeHiddenElements: true,
+  }), "layout", {
     nativeEvent: { layout: { height: 34, width: 34, x: 0, y: 0 } },
   });
   act(() => {
@@ -99,12 +174,20 @@ test("measures a responsive image before drawing its pixel loader", () => {
   });
 
   expect(
-    StyleSheet.flatten(screen.getByTestId("responsive-color").props.style),
+    StyleSheet.flatten(
+      screen.getByTestId("responsive-color", {
+        includeHiddenElements: true,
+      }).props.style,
+    ),
   ).toMatchObject({ height: "100%", width: "100%" });
-  expect(screen.getByTestId("responsive-color-pixel-loader")).toBeTruthy();
+  expect(screen.getByTestId("responsive-color-pixel-loader", {
+    includeHiddenElements: true,
+  })).toBeTruthy();
   expect(
     StyleSheet.flatten(
-      screen.getByTestId("responsive-color-pixel-loader").props.style,
+      screen.getByTestId("responsive-color-pixel-loader", {
+        includeHiddenElements: true,
+      }).props.style,
     ),
   ).toMatchObject({ height: 34, width: 34 });
 });

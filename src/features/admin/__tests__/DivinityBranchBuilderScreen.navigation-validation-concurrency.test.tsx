@@ -98,7 +98,11 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
     expect(screen.queryByText("Devoid Skills")).toBeNull();
     expect(screen.queryByText("Primeval Skills")).toBeNull();
     expect(screen.getByText("1")).toBeTruthy();
-    expect(screen.getAllByText("Divinity skill level").length).toBeGreaterThan(0);
+    expect(screen.getByText("30")).toBeTruthy();
+    expect(screen.queryByText("Lv.1")).toBeNull();
+    expect(
+      screen.getByLabelText("Toggle progress for center level 28"),
+    ).toBeTruthy();
 
     fireEvent.press(screen.getByText("Сохранить вкладку"));
 
@@ -883,14 +887,9 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
 
   it("keeps branch connector lines on a single centered axis", () => {
     const view = renderAdminBuilder();
-    const branchLines = view.UNSAFE_getAllByType(View)
-      .map((node) => StyleSheet.flatten(node.props.style))
-      .filter(
-        (style) =>
-          style?.position === "absolute" &&
-          style.backgroundColor === "#4d3524" &&
-          style.width === 2,
-      );
+    const branchLines = screen
+      .getAllByLabelText(/branch connector$/)
+      .map((node) => StyleSheet.flatten(node.props.style));
 
     expect(branchLines.length).toBeGreaterThan(0);
     branchLines.forEach((style) => {
@@ -916,10 +915,9 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
       expect(style.minWidth).toBe(0);
     });
 
-    const levelTen = view.UNSAFE_getAllByType(Text).find(
-      (node) => node.props.children === 10,
+    const levelTenStyle = StyleSheet.flatten(
+      screen.getByTestId("branch-tree-level-10").props.style,
     );
-    const levelTenStyle = StyleSheet.flatten(levelTen?.props.style);
 
     expect(levelTenStyle.width).toBe(34);
     expect(levelTenStyle.minWidth).toBe(34);
@@ -927,7 +925,7 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
     expect(levelTenStyle.flexBasis).toBe(34);
   });
 
-  it("does not glow below active branch nodes without an active following node", () => {
+  it("stops the active branch line at the caption of its last active node", () => {
     renderAdminBuilder();
 
     fireEvent.press(screen.getByLabelText("Choose branch for центр"));
@@ -950,10 +948,14 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
       screen.getByLabelText("center level 28 upper branch connector").props
         .style,
     );
+    const activeTailStyle = StyleSheet.flatten(
+      screen.getByTestId("branch-tree-active-tail-center-28").props.style,
+    );
 
-    expect(upperConnectorStyle.backgroundColor).toBe("#f0c36a");
-    expect(lowerConnectorStyle.backgroundColor).toBe("#4d3524");
-    expect(lowerConnectorStyle.boxShadow).toBeUndefined();
+    expect(upperConnectorStyle.backgroundColor).toBe("#62ef45");
+    expect(lowerConnectorStyle.backgroundColor).toBe("#3b7e28");
+    expect(activeTailStyle.backgroundColor).toBe("#62ef45");
+    expect(activeTailStyle).toMatchObject({ bottom: 0, top: 35 });
   });
 
   it("blocks lower branch nodes until previous major skills are selected", () => {
@@ -983,10 +985,9 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
       ),
     ).toBeTruthy();
     expect(
-      StyleSheet.flatten(
-        screen.getByLabelText("Toggle progress for left level 11").props.style,
-      ).backgroundColor,
-    ).toBe("#1d130f");
+      screen.getByLabelText("Toggle progress for left level 11").props
+        .accessibilityState.selected,
+    ).toBe(false);
   });
 
   it("clears column skills and progress when changing the branch type", () => {
@@ -999,11 +1000,11 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
     fireEvent.press(screen.getByLabelText("Toggle progress for left level 5"));
 
     expect(screen.getByText("Energy Bubble")).toBeTruthy();
+    expect(screen.queryByLabelText("Clear skill for left level 3")).toBeNull();
     expect(
-      StyleSheet.flatten(
-        screen.getByLabelText("Toggle progress for left level 4").props.style,
-      ).backgroundColor,
-    ).toBe("#3a2810");
+      screen.getByLabelText("Toggle progress for left level 4").props
+        .accessibilityState.selected,
+    ).toBe(true);
 
     fireEvent.press(screen.getByLabelText("Choose branch for левая"));
     fireEvent.press(screen.getByLabelText("Select Asterial Skills for левая"));
@@ -1011,10 +1012,9 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
     expect(screen.queryByText("Energy Bubble")).toBeNull();
     expect(screen.queryByLabelText("Clear skill for left level 3")).toBeNull();
     expect(
-      StyleSheet.flatten(
-        screen.getByLabelText("Toggle progress for left level 4").props.style,
-      ).backgroundColor,
-    ).toBe("#1d130f");
+      screen.getByLabelText("Toggle progress for left level 4").props
+        .accessibilityState.selected,
+    ).toBe(false);
   });
 
   it("shows a toast when changing a branch clears divinity skills", () => {

@@ -25,6 +25,11 @@ export default function HomeScreen() {
               <Text style={styles.buttonText}>Божественность</Text>
             </Pressable>
           </Link>
+          <Link href="/divinity-talents" asChild>
+            <Pressable style={styles.button}>
+              <Text style={styles.buttonText}>Ветки героев</Text>
+            </Pressable>
+          </Link>
           <Link href="/antiques" asChild>
             <Pressable style={styles.button}>
               <Text style={styles.buttonText}>Антиквариат</Text>
@@ -119,7 +124,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#d8cdbb",
   },
   button: {
+    width: 246,
     minWidth: 220,
+    maxWidth: "100%",
     borderRadius: 16,
     backgroundColor: "#9a3412",
     paddingHorizontal: 24,

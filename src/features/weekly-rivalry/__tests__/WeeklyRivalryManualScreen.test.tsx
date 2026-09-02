@@ -15,6 +15,8 @@ jest.mock("expo-router", () => ({
 }));
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import type { Href } from "expo-router";
+import type { ComponentProps } from "react";
 
 import {
   towerOfBabelConfig,
@@ -24,6 +26,21 @@ import {
 import BeastlyEchoesManualScreen from "../screens/BeastlyEchoesManualScreen";
 import { WeeklyRivalryManualScreen } from "../screens/WeeklyRivalryManualScreen";
 import ZodiacMapManualScreen from "../screens/ZodiacMapManualScreen";
+
+type IsExact<Actual, Expected> =
+  (<Value>() => Value extends Actual ? 1 : 2) extends <Value>() =>
+    Value extends Expected ? 1 : 2
+    ? (<Value>() => Value extends Expected ? 1 : 2) extends <Value>() =>
+        Value extends Actual ? 1 : 2
+      ? true
+      : false
+    : false;
+
+const fallbackHrefUsesRouterType: IsExact<
+  ComponentProps<typeof WeeklyRivalryManualScreen>["fallbackHref"],
+  Href
+> = true;
+void fallbackHrefUsesRouterType;
 
 beforeEach(() => {
   jest.clearAllMocks();

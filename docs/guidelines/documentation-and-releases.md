@@ -16,9 +16,12 @@
 Один постоянный spec ведётся на одну устойчивую функцию приложения:
 
 - калькулятор божественности;
+- калькулятор талантов божественности;
 - билды героев;
 - билдер билдов;
-- калькулятор антиквариата.
+- калькулятор антиквариата;
+- калькулятор соперничества за призыв;
+- калькуляторы еженедельного соперничества, объединённые одним общим контрактом.
 
 Новая вкладка, секция, форма, фильтр, режим, источник данных или улучшение дописываются в spec родительской функции. Новый файл создаётся только для самостоятельной функции со своим назначением и точкой входа.
 
@@ -75,7 +78,7 @@ Spec должен описывать актуальные:
 
 - `npm run verify` после чистого production web export запускает `npm run budget:web`. Export намеренно использует `expo export --clear`: это медленнее тёплой сборки, но не позволяет Metro cache перенести Supabase env из предыдущего режима. Скрипт требует ровно один Expo entry bundle и проверяет фактические raw/gzip-9 размеры по [scripts/web-bundle-budget.json](../../scripts/web-bundle-budget.json).
 - Baseline обновляется только после измерения `npm run export:web:clean && npm run budget:web`; в конфигурации фиксируются дата, export mode, raw/gzip значения и отдельные ceilings. Нельзя поднимать budget только ради зелёного CI без описанной причины и повторного измерения.
-- Текущий baseline `2026-08-22` для static production export без Supabase env после обязательной очистки Metro cache на закреплённых Node/npm: `2 184 797` raw bytes и `493 095` gzip-9 bytes. Рост относительно `2026-08-20` вызван переносом полного опубликованного snapshot из `22` билдов в bundled fallback вместо двух локальных билдов: ресурс вырос с `20 797` до `239 510` raw bytes, но хорошо сжимается. Ceilings `2 220 000` raw bytes и `500 000` gzip-9 bytes сохраняют небольшой запас над фактическим измерением и не маскируют дальнейший незапланированный рост.
+- Текущий baseline `2026-09-02` для static production export без Supabase env после обязательной очистки Metro cache на закреплённых Node/npm: `2 239 398` raw bytes и `501 581` gzip-9 bytes. Рост относительно контрольной сборки прежнего `main` (`2 186 085` raw bytes и `490 299` gzip-9 bytes) вызван новой самостоятельной функцией талантов божественности: двумя маршрутами, проверяемым локальным snapshot точных цен и UI трёх веток. Ceilings `2 260 000` raw bytes и `510 000` gzip-9 bytes сохраняют отдельный запас над повторным измерением и не маскируют дальнейший незапланированный рост.
 - `npm run e2e` изолированно собирает `dist-e2e` с публичной тестовой конфигурацией, проверяет тот же budget, поднимает локальный static server и запускает exact Playwright Chromium. Release/verify export остаётся в `dist`, поэтому параллельные независимые CI или reviewer gates не смешивают hashed entry bundles. Browser binary устанавливается в CI командой `npx playwright install --with-deps chromium` и не хранится в репозитории.
 - Operational E2E обязан сохранять сценарии initial loader, remote и controlled fallback каталога, публичного build view, отказа non-admin и защиты dirty edit; каждый сценарий завершается ошибкой при любом browser `console.error` или `pageerror`. Эти тесты не заменяют реальные cold/repeat измерения GitHub Pages и native runtime из `BL-001`.
 - Pages build повторно выполняет `npm run budget:web` непосредственно после export с реальными deployment env и до загрузки artifact: budget раннего verify/export не считается доказательством для другого bundle.
@@ -90,10 +93,10 @@ Spec должен описывать актуальные:
 4. Выбрать версию по SemVer и синхронно обновить все поля версии.
 5. Перенести записи `Unreleased` под версию с датой ISO.
 6. Закоммитить релизное состояние.
-7. Создать аннотированный тег: `git tag -a vX.Y.Z -m "Release vX.Y.Z" <verified-sha>`.
-8. Отправить целевую ветку и тег.
+7. Отправить релизный commit в `main`, дождаться успешного workflow GitHub Pages именно для его SHA и вручную проверить главную и изменённые production-маршруты.
+8. Только после успешной production-проверки создать аннотированный тег на том же проверенном commit: `git tag -a vX.Y.Z -m "Release vX.Y.Z" <verified-sha>` — и отправить тег.
 9. Создать GitHub Release на том же теге. Release notes берутся из раздела этой версии в `docs/CHANGELOG.md` и при необходимости дополняются ссылкой на полный changelog.
-10. Отметить стабильный выпуск как latest.
+10. Отметить стабильный выпуск как latest и проверить endpoint `releases/latest`.
 
 Один Git-тег без опубликованного GitHub Release не является полным публичным выпуском: тег фиксирует commit, а Release показывает версию и patch notes в секции Releases на главной странице GitHub.
 
@@ -107,9 +110,10 @@ Spec должен описывать актуальные:
 git ls-remote origin refs/heads/main
 git ls-remote --tags origin refs/tags/vX.Y.Z refs/tags/vX.Y.Z^{}
 gh release view vX.Y.Z --repo Dmitbd/mh-calculator
+gh run list --workflow "Deploy GitHub Pages" --branch main
 ```
 
-Peeled SHA `refs/tags/vX.Y.Z^{}` должен совпасть с проверенным релизным commit, ветка `main` должна его содержать, а GitHub Release должен быть опубликован и отмечен latest.
+Peeled SHA `refs/tags/vX.Y.Z^{}` должен совпасть с проверенным релизным commit, ветка `main` должна указывать на него, workflow GitHub Pages для этого SHA должен завершиться успешно, production-маршруты должны быть проверены вручную, а GitHub Release — опубликован и отмечен latest.
 
 ## Версия в интерфейсе
 

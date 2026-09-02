@@ -138,7 +138,6 @@ export function DivinityBranchBuilderScreen({
     prepareCurrentTargetBuild,
     removeArtifact,
     removeRune,
-    rollbackColumnProgress,
     resetBuilderSession,
     selectHero,
     selectedArtifactIds,
@@ -1430,16 +1429,6 @@ export function DivinityBranchBuilderScreen({
     setActiveMajorSlot(null);
   };
 
-  const handleClearMajorSkill = (columnId: BranchColumnId, level: number) => {
-    if (isBuilderActionBlocked()) {
-      return;
-    }
-
-    setMajorSkill(columnId, level, null);
-    rollbackColumnProgress(columnId, level);
-    setActiveMajorSlot(null);
-  };
-
   const getMissingPreviousMajorSkillLevel = (
     columnId: BranchColumnId,
     level: number,
@@ -1673,7 +1662,6 @@ export function DivinityBranchBuilderScreen({
                   branches={branchBuilderBranches}
                   columns={branchBuilderColumns}
                   errors={branchGridErrors}
-                  onClearMajorSkill={handleClearMajorSkill}
                   onOpenMajorSlot={handleOpenMajorSlot}
                   onSelectMajorSkill={(columnId, level, skillId) => {
                     handleSetMajorSkill(columnId, level, skillId);

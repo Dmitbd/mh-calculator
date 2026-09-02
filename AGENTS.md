@@ -14,6 +14,9 @@
 Постоянные спецификации:
 
 - [Божественность](docs/divinity-screen-spec.md)
+- [Ветки героев](docs/divinity-talent-calculator-spec.md)
 - [Билдер билдов](docs/divinity-branch-builder-spec.md)
 - [Билды героев](docs/hero-builds-spec.md)
 - [Антиквариат](docs/antique-rivalry-spec.md)
+- [Призыв](docs/summon-rivalry-spec.md)
+- [Еженедельное соперничество](docs/weekly-rivalry-spec.md)

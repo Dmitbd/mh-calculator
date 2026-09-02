@@ -15,6 +15,11 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ title: "MH Calculator" }} />
         <Stack.Screen name="divinity" options={{ headerShown: false }} />
         <Stack.Screen name="divinity/manual" options={{ headerShown: false }} />
+        <Stack.Screen name="divinity-talents" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="divinity-talents/manual"
+          options={{ headerShown: false }}
+        />
         <Stack.Screen name="antiques" options={{ headerShown: false }} />
         <Stack.Screen name="antiques/manual" options={{ headerShown: false }} />
         <Stack.Screen name="summon-rivalry" options={{ headerShown: false }} />

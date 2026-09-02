@@ -23,6 +23,7 @@ jest.mock("expo-router", () => ({
 
 import { render, screen, within } from "@testing-library/react-native";
 import type React from "react";
+import { StyleSheet } from "react-native";
 
 import { APP_VERSION } from "../../../shared/lib/appVersion";
 import HomeScreen from "../screens/HomeScreen";
@@ -31,7 +32,15 @@ test("renders calculator and build entry points", () => {
   render(<HomeScreen />);
 
   expect(screen.getByText("Калькуляторы")).toBeTruthy();
-  expect(screen.getByText("Божественность")).toBeTruthy();
+  expect(
+    within(screen.getByTestId("link-/divinity")).getByText("Божественность"),
+  ).toBeTruthy();
+  expect(
+    within(screen.getByTestId("link-/divinity-talents")).getByText(
+      "Ветки героев",
+    ),
+  ).toBeTruthy();
+  expect(screen.queryByText("Таланты божественности")).toBeNull();
   expect(
     within(screen.getByTestId("link-/antiques")).getByText("Антиквариат"),
   ).toBeTruthy();
@@ -56,6 +65,21 @@ test("renders calculator and build entry points", () => {
   expect(screen.getByText("Билды")).toBeTruthy();
   expect(screen.getByText("Билды героев")).toBeTruthy();
   expect(screen.getByText("build builder")).toBeTruthy();
+
+  const calculatorButtonStyle = StyleSheet.flatten(
+    screen.getByTestId("link-/divinity").props.style,
+  );
+  const heroBuildButtonStyle = StyleSheet.flatten(
+    screen.getByTestId("link-/heroes").props.style,
+  );
+  expect(heroBuildButtonStyle.width).toBe(calculatorButtonStyle.width);
+  expect(heroBuildButtonStyle.width).toBe(246);
+
+  const calculatorLinks = screen.getAllByTestId(/^link-\//);
+  expect(calculatorLinks.slice(0, 2).map((link) => link.props.testID)).toEqual([
+    "link-/divinity",
+    "link-/divinity-talents",
+  ]);
 });
 
 test("shows the current version in a footer linked to the latest release", () => {

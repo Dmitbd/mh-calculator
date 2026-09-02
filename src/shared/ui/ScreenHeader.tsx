@@ -81,9 +81,12 @@ export function ScreenHeader({
           onPress={() => void handleBack()}
           style={styles.backButton}
         >
-          <Text style={styles.backArrow}>‹</Text>
+          <View
+            style={styles.backChevron}
+            testID="screen-header-back-chevron"
+          />
         </Pressable>
-        <Text numberOfLines={1} style={styles.headerTitle}>
+        <Text numberOfLines={2} style={styles.headerTitle}>
           {title}
         </Text>
         <View style={styles.backButtonPlaceholder} />
@@ -119,17 +122,20 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
   },
-  backArrow: {
-    fontSize: 34,
-    lineHeight: 34,
-    fontWeight: "900",
-    color: "#f3d38a",
+  backChevron: {
+    width: 12,
+    height: 12,
+    borderLeftWidth: 4,
+    borderBottomWidth: 4,
+    borderColor: "#f3d38a",
+    transform: [{ rotate: "45deg" }],
   },
   headerTitle: {
     minWidth: 0,
     flex: 1,
     textAlign: "center",
     fontSize: 30,
+    lineHeight: 32,
     fontWeight: "900",
     letterSpacing: 0.2,
     color: "#f3d38a",

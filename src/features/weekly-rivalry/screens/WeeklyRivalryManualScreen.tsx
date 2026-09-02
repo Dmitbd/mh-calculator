@@ -1,9 +1,11 @@
+import type { Href } from "expo-router";
+
 import type { WeeklyRivalryEventConfig } from "@/features/game-data/weekly-rivalry";
 import { CalculatorManualScreen } from "@/shared/ui/CalculatorManualScreen";
 
 type WeeklyRivalryManualScreenProps = {
   config: WeeklyRivalryEventConfig;
-  fallbackHref: string;
+  fallbackHref: Href;
 };
 
 export function WeeklyRivalryManualScreen({

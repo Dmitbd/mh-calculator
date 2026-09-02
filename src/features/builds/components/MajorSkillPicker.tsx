@@ -4,21 +4,45 @@ import type {
   DivinityMajorSkill,
   TreeTemplateMajorSkillNode,
 } from "@/features/game-data/divinity/types";
+import {
+  getBranchTreeTone,
+  type BranchTreeTone,
+} from "@/shared/ui/BranchTreeGrid";
 import { IconPreview } from "@/shared/ui/IconPreview";
 
 type MajorSkillPickerProps = {
   node: TreeTemplateMajorSkillNode;
   skills: readonly DivinityMajorSkill[];
   onSelect: (skillId: string) => void;
+  tone: BranchTreeTone;
 };
 
 export function MajorSkillPicker({
   node,
   skills,
   onSelect,
+  tone: toneName,
 }: MajorSkillPickerProps) {
+  const tone = getBranchTreeTone(toneName);
+  const alignment =
+    node.columnId === "left"
+      ? "flex-start"
+      : node.columnId === "right"
+        ? "flex-end"
+        : "center";
+
   return (
-    <View style={styles.wrapper}>
+    <View
+      style={[
+        styles.wrapper,
+        {
+          alignSelf: alignment,
+          borderColor: tone.color,
+          boxShadow: tone.inactiveLineShadow,
+        },
+      ]}
+      testID={`major-skill-picker-${node.columnId}-${node.level}`}
+    >
       {skills.map((skill) => (
         <Pressable
           accessibilityLabel={`Select ${skill.name} for ${node.columnId} level ${node.level}`}
@@ -40,26 +64,31 @@ export function MajorSkillPicker({
 
 const styles = StyleSheet.create({
   wrapper: {
+    width: "100%",
+    maxWidth: 140,
     gap: 6,
-    paddingTop: 8,
+    marginTop: 8,
+    padding: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    backgroundColor: "#241610",
   },
   option: {
-    minHeight: 34,
+    minHeight: 38,
     flexDirection: "column",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
+    gap: 8,
     borderRadius: 6,
     backgroundColor: "#1a100c",
-    paddingHorizontal: 4,
+    paddingHorizontal: 8,
     paddingVertical: 6,
   },
   optionText: {
     color: "#f7dfac",
     fontSize: 12,
     fontWeight: "700",
-    textAlign: "center",
     width: "100%",
+    textAlign: "center",
   },
   emptyText: {
     color: "#c8aa83",

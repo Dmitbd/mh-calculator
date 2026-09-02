@@ -1,8 +1,33 @@
 import {
+  divinityBranchPointConnector,
   divinityBranches,
   divinitySkills,
   divinityTreeTemplate,
 } from "../catalog";
+
+const EXPECTED_TALENT_ICONS: Readonly<Record<string, string>> = {
+  "Accuracy": "/img/divinity/talent-icons/talent-01.png",
+  "Dodge": "/img/divinity/talent-icons/talent-02.png",
+  "Crit chance": "/img/divinity/talent-icons/talent-03.png",
+  "Crit damage": "/img/divinity/talent-icons/talent-04.png",
+  "Physical resistance": "/img/divinity/talent-icons/talent-05.png",
+  "Magical resistance": "/img/divinity/talent-icons/talent-06.png",
+  "Attack speed": "/img/divinity/talent-icons/talent-07.png",
+  "Lifesteal": "/img/divinity/talent-icons/talent-08.png",
+  "All basic attributes": "/img/divinity/talent-icons/talent-10.png",
+  "Enhance limit": "/img/divinity/talent-icons/talent-11.png",
+  "Iconic weapon attributes": "/img/divinity/talent-icons/talent-13.png",
+  "Breakthrough": "/img/divinity/talent-icons/talent-14.png",
+  "Parry": "/img/divinity/talent-icons/talent-15.png",
+  "Crit damage resistance": "/img/divinity/talent-icons/talent-16.png",
+  "Crit chance resistance": "/img/divinity/talent-icons/talent-17.png",
+  "Control resistance": "/img/divinity/talent-icons/talent-20.png",
+  "Luck": "/img/divinity/talent-icons/talent-21.png",
+  "Health to all heroes": "/img/divinity/talent-icons/talent-22.png",
+  "Def to all heroes": "/img/divinity/talent-icons/talent-23.png",
+  "Atk to all heroes": "/img/divinity/talent-icons/talent-24.png",
+  "Divinity skill level": "/img/divinity/talent-icons/talent-25.png",
+};
 
 describe("divinity catalogs", () => {
   test("branches are sorted and have unique ids", () => {
@@ -35,6 +60,35 @@ describe("divinity catalogs", () => {
     divinityTreeTemplate.forEach((node) => {
       expect(supportedColumns.has(node.columnId)).toBe(true);
       expect(supportedNodeTypes.has(node.nodeType)).toBe(true);
+    });
+  });
+
+  test("every minor node uses its exact original APK talent icon", () => {
+    const minorNodes = divinityTreeTemplate.filter(
+      (node) => node.nodeType === "minorStat",
+    );
+
+    expect(minorNodes).not.toHaveLength(0);
+    minorNodes.forEach((node) => {
+      expect(node.icon).toBe(EXPECTED_TALENT_ICONS[node.label]);
+    });
+    expect(new Set(minorNodes.map((node) => node.icon))).toEqual(
+      new Set(Object.values(EXPECTED_TALENT_ICONS)),
+    );
+  });
+
+  test("branch-point connector keeps its exact APK icon and localized effect", () => {
+    expect(divinityBranchPointConnector).toEqual({
+      label: "Узлы божественной энергии",
+      description: "Предел узлов божественной энергии +1",
+      meta: "Лимит +1",
+      icon: "/img/divinity/talent-icons/talent-12.png",
+      source: {
+        clientVersion: "1.48.0",
+        build: 94,
+        asset: "Talent12",
+        localizationKey: "GodTalentAttri_description_GOD_Power",
+      },
     });
   });
 });

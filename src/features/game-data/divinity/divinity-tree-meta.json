@@ -1,0 +1,14 @@
+{
+  "branchPointConnector": {
+    "label": "Узлы божественной энергии",
+    "description": "Предел узлов божественной энергии +1",
+    "meta": "Лимит +1",
+    "icon": "/img/divinity/talent-icons/talent-12.png",
+    "source": {
+      "clientVersion": "1.48.0",
+      "build": 94,
+      "asset": "Talent12",
+      "localizationKey": "GodTalentAttri_description_GOD_Power"
+    }
+  }
+}

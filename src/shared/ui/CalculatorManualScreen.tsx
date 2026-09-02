@@ -15,7 +15,7 @@ export type ManualSection = {
 };
 
 export type CalculatorManualScreenProps = {
-  fallbackHref: string;
+  fallbackHref: Href;
   intro: string;
   sections: readonly ManualSection[];
   title?: string;
@@ -31,7 +31,7 @@ export function CalculatorManualScreen({
 
   return (
     <View style={styles.screen}>
-      <ScreenHeader fallbackHref={fallbackHref as Href} title="Инструкция" />
+      <ScreenHeader fallbackHref={fallbackHref} title="Инструкция" />
       <ScrollView
         contentContainerStyle={[
           styles.container,

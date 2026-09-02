@@ -24,7 +24,6 @@ type BranchGridSectionProps = {
   branches: readonly DivinityBranch[];
   columns: readonly BranchColumn[];
   errors: readonly string[];
-  onClearMajorSkill: (columnId: BranchColumnId, level: number) => void;
   onOpenMajorSlot: (columnId: BranchColumnId, level: number) => void;
   onSelectBranch: (columnId: BranchColumnId, branchId: DivinityBranchId) => void;
   onSelectMajorSkill: (
@@ -45,7 +44,6 @@ export function BranchGridSection({
   branches,
   columns,
   errors,
-  onClearMajorSkill,
   onOpenMajorSlot,
   onSelectBranch,
   onSelectMajorSkill,
@@ -63,7 +61,6 @@ export function BranchGridSection({
         activeMajorSlot={activeMajorSlot}
         branches={branches}
         columns={columns}
-        onClearMajorSkill={onClearMajorSkill}
         onOpenMajorSlot={onOpenMajorSlot}
         onSelectBranch={onSelectBranch}
         onSelectMajorSkill={onSelectMajorSkill}

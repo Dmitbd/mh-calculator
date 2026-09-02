@@ -61,6 +61,19 @@ export type BranchColumn = {
   isMain: boolean;
 };
 
+export type DivinityBranchPointConnector = {
+  readonly label: string;
+  readonly description: string;
+  readonly meta: string;
+  readonly icon: string;
+  readonly source: {
+    readonly clientVersion: "1.48.0";
+    readonly build: 94;
+    readonly asset: "Talent12";
+    readonly localizationKey: "GodTalentAttri_description_GOD_Power";
+  };
+};
+
 export type DraftBranchColumns = Record<BranchColumnId, DivinityBranchId | null>;
 
 export type SelectedBranchColumns = Record<BranchColumnId, DivinityBranchId>;

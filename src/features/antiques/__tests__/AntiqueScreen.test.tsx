@@ -85,7 +85,7 @@ beforeEach(() => {
 test("renders the loaded calculator sections with the plain heading first", () => {
   render(<AntiqueScreen />);
 
-  expect(screen.getByText("Антиквариат").props.numberOfLines).toBe(1);
+  expect(screen.getByText("Антиквариат").props.numberOfLines).toBe(2);
   expect(screen.getByTestId("screen-header")).toBeTruthy();
   expect(
     screen.getByText("Калькулятор соперничества за антиквариат"),

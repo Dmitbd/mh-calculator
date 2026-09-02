@@ -1,0 +1,841 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "clientVersion": "1.48.0",
+    "build": 94
+  },
+  "resources": {
+    "faith": {
+      "resourceIds": [
+        700301,
+        700302,
+        700303,
+        700304
+      ],
+      "originalIcons": [
+        {
+          "resourceId": 700301,
+          "icon": "/img/divinity/talents/700301.png"
+        },
+        {
+          "resourceId": 700302,
+          "icon": "/img/divinity/talents/700302.png"
+        },
+        {
+          "resourceId": 700303,
+          "icon": "/img/divinity/talents/700303.png"
+        },
+        {
+          "resourceId": 700304,
+          "icon": "/img/divinity/talents/700304.png"
+        }
+      ],
+      "label": "Очки веры",
+      "icon": "/img/divinity/talents/faith-combined.png"
+    },
+    "inheritedDivinity": {
+      "resourceId": 700300,
+      "label": "Унаследованная божественность",
+      "icon": "/img/divinity/talents/700300.png"
+    },
+    "resonanceStone": {
+      "resourceId": 700306,
+      "label": "Резонансный камень божественности",
+      "icon": "/img/divinity/talents/700306.png"
+    }
+  },
+  "levelCosts": [
+    {
+      "level": 1,
+      "faith": 0
+    },
+    {
+      "level": 2,
+      "faith": 100
+    },
+    {
+      "level": 3,
+      "faith": 150
+    },
+    {
+      "level": 4,
+      "faith": 200
+    },
+    {
+      "level": 5,
+      "faith": 250
+    },
+    {
+      "level": 6,
+      "faith": 300
+    },
+    {
+      "level": 7,
+      "faith": 400
+    },
+    {
+      "level": 8,
+      "faith": 500
+    },
+    {
+      "level": 9,
+      "faith": 600
+    },
+    {
+      "level": 10,
+      "faith": 700
+    },
+    {
+      "level": 11,
+      "faith": 800
+    },
+    {
+      "level": 12,
+      "faith": 900
+    },
+    {
+      "level": 13,
+      "faith": 1050
+    },
+    {
+      "level": 14,
+      "faith": 1200
+    },
+    {
+      "level": 15,
+      "faith": 1350
+    },
+    {
+      "level": 16,
+      "faith": 1500
+    },
+    {
+      "level": 17,
+      "faith": 1650
+    },
+    {
+      "level": 18,
+      "faith": 1800
+    },
+    {
+      "level": 19,
+      "faith": 2000
+    },
+    {
+      "level": 20,
+      "faith": 2200
+    },
+    {
+      "level": 21,
+      "faith": 2600
+    },
+    {
+      "level": 22,
+      "faith": 2800
+    },
+    {
+      "level": 23,
+      "faith": 3000
+    },
+    {
+      "level": 24,
+      "faith": 3250
+    },
+    {
+      "level": 25,
+      "faith": 3500
+    },
+    {
+      "level": 26,
+      "faith": 3750
+    },
+    {
+      "level": 27,
+      "faith": 4000
+    },
+    {
+      "level": 28,
+      "faith": 4000
+    },
+    {
+      "level": 29,
+      "faith": 4000
+    },
+    {
+      "level": 30,
+      "faith": 4000
+    }
+  ],
+  "branches": [
+    {
+      "id": "left",
+      "label": "Левая",
+      "nodeLevels": [
+        3,
+        4,
+        5,
+        7,
+        8,
+        10,
+        11,
+        13,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "majorLevels": [
+        3,
+        10,
+        15
+      ],
+      "inheritedDivinityByLevel": {
+        "3": 2,
+        "4": 1,
+        "5": 1,
+        "7": 2,
+        "8": 1,
+        "10": 2,
+        "11": 1,
+        "13": 2,
+        "15": 2,
+        "16": 1,
+        "17": 1,
+        "18": 1,
+        "19": 1,
+        "20": 1,
+        "21": 1,
+        "22": 1,
+        "23": 1,
+        "24": 1,
+        "25": 1,
+        "26": 1,
+        "27": 1,
+        "28": 1,
+        "29": 1,
+        "30": 1
+      },
+      "resonanceStoneByLevel": {
+        "19": 10,
+        "20": 20,
+        "21": 30,
+        "22": 40,
+        "23": 50,
+        "24": 60,
+        "25": 70,
+        "26": 80,
+        "27": 100,
+        "28": 120,
+        "29": 140,
+        "30": 160
+      },
+      "minorNodes": [
+        {
+          "level": 4,
+          "label": "Dodge",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-02.png"
+        },
+        {
+          "level": 5,
+          "label": "Physical resistance",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-05.png"
+        },
+        {
+          "level": 7,
+          "label": "All basic attributes",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-10.png"
+        },
+        {
+          "level": 8,
+          "label": "Dodge",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-02.png"
+        },
+        {
+          "level": 11,
+          "label": "Physical resistance",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-05.png"
+        },
+        {
+          "level": 13,
+          "label": "All basic attributes",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-10.png"
+        },
+        {
+          "level": 16,
+          "label": "Dodge",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-02.png"
+        },
+        {
+          "level": 17,
+          "label": "Iconic weapon attributes",
+          "value": 5,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-13.png"
+        },
+        {
+          "level": 18,
+          "label": "Physical resistance",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-05.png"
+        },
+        {
+          "level": 19,
+          "label": "Physical resistance",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-05.png"
+        },
+        {
+          "level": 20,
+          "label": "Divinity skill level",
+          "value": 1,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-25.png"
+        },
+        {
+          "level": 21,
+          "label": "Breakthrough",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-14.png"
+        },
+        {
+          "level": 22,
+          "label": "Atk to all heroes",
+          "value": 1,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-24.png"
+        },
+        {
+          "level": 23,
+          "label": "Control resistance",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-20.png"
+        },
+        {
+          "level": 24,
+          "label": "Divinity skill level",
+          "value": 1,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-25.png"
+        },
+        {
+          "level": 25,
+          "label": "Crit damage resistance",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-16.png"
+        },
+        {
+          "level": 26,
+          "label": "Health to all heroes",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-22.png"
+        },
+        {
+          "level": 27,
+          "label": "Breakthrough",
+          "value": 5,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-14.png"
+        },
+        {
+          "level": 28,
+          "label": "Divinity skill level",
+          "value": 1,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-25.png"
+        },
+        {
+          "level": 29,
+          "label": "Luck",
+          "value": 5,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-21.png"
+        },
+        {
+          "level": 30,
+          "label": "Def to all heroes",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-23.png"
+        }
+      ]
+    },
+    {
+      "id": "center",
+      "label": "Центральная",
+      "nodeLevels": [
+        1,
+        2,
+        4,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "majorLevels": [
+        1,
+        7,
+        13
+      ],
+      "inheritedDivinityByLevel": {},
+      "resonanceStoneByLevel": {
+        "20": 20,
+        "24": 60,
+        "28": 120
+      },
+      "minorNodes": [
+        {
+          "level": 2,
+          "label": "Crit chance",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-03.png"
+        },
+        {
+          "level": 4,
+          "label": "All basic attributes",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-10.png"
+        },
+        {
+          "level": 6,
+          "label": "Attack speed",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-07.png"
+        },
+        {
+          "level": 8,
+          "label": "Crit chance",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-03.png"
+        },
+        {
+          "level": 9,
+          "label": "Enhance limit",
+          "value": 5,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-11.png"
+        },
+        {
+          "level": 10,
+          "label": "Attack speed",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-07.png"
+        },
+        {
+          "level": 11,
+          "label": "All basic attributes",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-10.png"
+        },
+        {
+          "level": 12,
+          "label": "Enhance limit",
+          "value": 5,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-11.png"
+        },
+        {
+          "level": 14,
+          "label": "Crit chance",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-03.png"
+        },
+        {
+          "level": 15,
+          "label": "Enhance limit",
+          "value": 5,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-11.png"
+        },
+        {
+          "level": 16,
+          "label": "Attack speed",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-07.png"
+        },
+        {
+          "level": 17,
+          "label": "All basic attributes",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-10.png"
+        },
+        {
+          "level": 18,
+          "label": "Enhance limit",
+          "value": 5,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-11.png"
+        },
+        {
+          "level": 19,
+          "label": "Crit damage",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-04.png"
+        },
+        {
+          "level": 20,
+          "label": "Divinity skill level",
+          "value": 1,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-25.png"
+        },
+        {
+          "level": 21,
+          "label": "Crit chance",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-03.png"
+        },
+        {
+          "level": 22,
+          "label": "Enhance limit",
+          "value": 5,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-11.png"
+        },
+        {
+          "level": 23,
+          "label": "Accuracy",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-01.png"
+        },
+        {
+          "level": 24,
+          "label": "Divinity skill level",
+          "value": 1,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-25.png"
+        },
+        {
+          "level": 25,
+          "label": "Dodge",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-02.png"
+        },
+        {
+          "level": 26,
+          "label": "Enhance limit",
+          "value": 5,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-11.png"
+        },
+        {
+          "level": 27,
+          "label": "Attack speed",
+          "value": 5,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-07.png"
+        },
+        {
+          "level": 28,
+          "label": "Divinity skill level",
+          "value": 1,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-25.png"
+        },
+        {
+          "level": 29,
+          "label": "Lifesteal",
+          "value": 5,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-08.png"
+        },
+        {
+          "level": 30,
+          "label": "Atk to all heroes",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-24.png"
+        }
+      ]
+    },
+    {
+      "id": "right",
+      "label": "Правая",
+      "nodeLevels": [
+        3,
+        4,
+        5,
+        7,
+        8,
+        10,
+        11,
+        13,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "majorLevels": [
+        3,
+        10,
+        15
+      ],
+      "inheritedDivinityByLevel": {
+        "3": 2,
+        "4": 1,
+        "5": 1,
+        "7": 2,
+        "8": 1,
+        "10": 2,
+        "11": 1,
+        "13": 2,
+        "15": 2,
+        "16": 1,
+        "17": 1,
+        "18": 1,
+        "19": 1,
+        "20": 1,
+        "21": 1,
+        "22": 1,
+        "23": 1,
+        "24": 1,
+        "25": 1,
+        "26": 1,
+        "27": 1,
+        "28": 1,
+        "29": 1,
+        "30": 1
+      },
+      "resonanceStoneByLevel": {
+        "19": 10,
+        "20": 20,
+        "21": 30,
+        "22": 40,
+        "23": 50,
+        "24": 60,
+        "25": 70,
+        "26": 80,
+        "27": 100,
+        "28": 120,
+        "29": 140,
+        "30": 160
+      },
+      "minorNodes": [
+        {
+          "level": 4,
+          "label": "Accuracy",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-01.png"
+        },
+        {
+          "level": 5,
+          "label": "Magical resistance",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-06.png"
+        },
+        {
+          "level": 7,
+          "label": "All basic attributes",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-10.png"
+        },
+        {
+          "level": 8,
+          "label": "Accuracy",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-01.png"
+        },
+        {
+          "level": 11,
+          "label": "Magical resistance",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-06.png"
+        },
+        {
+          "level": 13,
+          "label": "All basic attributes",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-10.png"
+        },
+        {
+          "level": 16,
+          "label": "Accuracy",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-01.png"
+        },
+        {
+          "level": 17,
+          "label": "Iconic weapon attributes",
+          "value": 5,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-13.png"
+        },
+        {
+          "level": 18,
+          "label": "Magical resistance",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-06.png"
+        },
+        {
+          "level": 19,
+          "label": "Magical resistance",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-06.png"
+        },
+        {
+          "level": 20,
+          "label": "Divinity skill level",
+          "value": 1,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-25.png"
+        },
+        {
+          "level": 21,
+          "label": "Parry",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-15.png"
+        },
+        {
+          "level": 22,
+          "label": "Def to all heroes",
+          "value": 1,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-23.png"
+        },
+        {
+          "level": 23,
+          "label": "Luck",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-21.png"
+        },
+        {
+          "level": 24,
+          "label": "Divinity skill level",
+          "value": 1,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-25.png"
+        },
+        {
+          "level": 25,
+          "label": "Crit chance resistance",
+          "value": 3,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-17.png"
+        },
+        {
+          "level": 26,
+          "label": "Atk to all heroes",
+          "value": 1,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-24.png"
+        },
+        {
+          "level": 27,
+          "label": "Parry",
+          "value": 5,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-15.png"
+        },
+        {
+          "level": 28,
+          "label": "Divinity skill level",
+          "value": 1,
+          "unit": "flat",
+          "icon": "/img/divinity/talent-icons/talent-25.png"
+        },
+        {
+          "level": 29,
+          "label": "Control resistance",
+          "value": 5,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-20.png"
+        },
+        {
+          "level": 30,
+          "label": "Health to all heroes",
+          "value": 2,
+          "unit": "%",
+          "icon": "/img/divinity/talent-icons/talent-22.png"
+        }
+      ]
+    }
+  ]
+}

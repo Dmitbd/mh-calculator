@@ -3,8 +3,10 @@ import {
   Animated,
   type DimensionValue,
   Easing,
+  Image,
   type ImageResizeMode,
   type LayoutChangeEvent,
+  Platform,
   StyleSheet,
   View,
 } from "react-native";
@@ -17,22 +19,66 @@ import {
   useImageLoadingTransition,
 } from "./useImageLoadingTransition";
 
+export type AppImageLoadingMode = "animated" | "static";
+
 type AppImageProps = {
   accessible?: boolean;
   accessibilityLabel: string;
   borderRadius?: number;
   height: DimensionValue;
+  loadingMode?: AppImageLoadingMode;
   resizeMode?: ImageResizeMode;
   source: string | null | undefined;
   testID?: string;
   width: DimensionValue;
 };
 
+type AppImageBoundaryProps = Omit<AppImageProps, "loadingMode">;
+
+function getAccessibilityProps(
+  accessible: boolean,
+  accessibilityLabel: string,
+) {
+  if (accessible) {
+    return {
+      accessible: true,
+      accessibilityLabel,
+      accessibilityRole: "image" as const,
+    };
+  }
+
+  return {
+    accessible: false,
+    accessibilityLabel: undefined,
+    accessibilityRole: undefined,
+    importantForAccessibility:
+      Platform.OS === "android" ? ("no-hide-descendants" as const) : undefined,
+  } as const;
+}
+
+function getDecorativeImageAccessibilityProps() {
+  return {
+    accessible: false,
+    "aria-hidden": Platform.OS === "web" ? true : undefined,
+  } as const;
+}
+
 /**
  * Stable boundary for URL images. The final box exists before fetch/decode and
  * remains unchanged when loading fails.
  */
 export function AppImage({
+  loadingMode = "animated",
+  ...props
+}: AppImageProps) {
+  return loadingMode === "static" ? (
+    <StaticAppImage {...props} />
+  ) : (
+    <AnimatedAppImage {...props} />
+  );
+}
+
+function StaticAppImage({
   accessible = true,
   accessibilityLabel,
   borderRadius = 0,
@@ -41,7 +87,47 @@ export function AppImage({
   source,
   testID,
   width,
-}: AppImageProps) {
+}: AppImageBoundaryProps) {
+  const uri = source ? resolveAssetUri(source) : null;
+  const geometry = { borderRadius, height, width };
+
+  return (
+    <View
+      {...getAccessibilityProps(accessible, accessibilityLabel)}
+      style={[styles.container, geometry]}
+      testID={testID}
+    >
+      <View
+        pointerEvents="none"
+        style={[
+          styles.fallback,
+          !source && styles.missingFallback,
+          geometry,
+        ]}
+        testID={testID ? `${testID}-placeholder` : undefined}
+      />
+      {uri ? (
+        <Image
+          {...getDecorativeImageAccessibilityProps()}
+          resizeMode={resizeMode}
+          source={{ cache: "force-cache", uri }}
+          style={[styles.image, geometry]}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+function AnimatedAppImage({
+  accessible = true,
+  accessibilityLabel,
+  borderRadius = 0,
+  height,
+  resizeMode = "cover",
+  source,
+  testID,
+  width,
+}: AppImageBoundaryProps) {
   const uri = source ? resolveAssetUri(source) : null;
   const [measuredSize, setMeasuredSize] = useState(() => ({
     height: typeof height === "number" ? height : 0,
@@ -101,9 +187,7 @@ export function AppImage({
 
   return (
     <View
-      accessible={accessible}
-      accessibilityLabel={accessibilityLabel}
-      accessibilityRole={accessible ? "image" : undefined}
+      {...getAccessibilityProps(accessible, accessibilityLabel)}
       onLayout={handleLayout}
       style={[styles.container, geometry]}
       testID={testID}
@@ -143,7 +227,7 @@ export function AppImage({
 
       {uri ? (
         <Animated.Image
-          accessible={false}
+          {...getDecorativeImageAccessibilityProps()}
           onError={() => handleError(uri)}
           onLoad={() => handleLoad(uri)}
           resizeMode={resizeMode}

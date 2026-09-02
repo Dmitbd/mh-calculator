@@ -1,5 +1,6 @@
 export {
   divinityBranches,
+  divinityBranchPointConnector,
   divinityGemChests,
   divinitySkills,
   divinityTreeTemplate,

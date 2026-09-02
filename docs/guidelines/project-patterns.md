@@ -56,6 +56,7 @@
 - `src/features/divinity/ui` is currently an allowed local convention for divinity presentation components.
 - Do not introduce new `ui` folders without updating architecture guidelines and boundary tests.
 - Divinity calculator behavior MUST preserve the product rules in `docs/divinity-screen-spec.md`.
+- Divinity talent calculator behavior MUST preserve the range, cost snapshot, storage, and shared-tree rules in `docs/divinity-talent-calculator-spec.md`.
 
 ## Antique Calculator
 
