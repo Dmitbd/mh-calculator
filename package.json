@@ -38,7 +38,7 @@
     "@react-native/jest-preset": "^0.85.3",
     "@supabase/supabase-js": "^2.110.0",
     "expo": "~56.0.20",
-    "expo-constants": "~56.0.24",
+    "expo-constants": "~57.0.16",
     "expo-linking": "~56.0.17",
     "expo-router": "~56.2.19",
     "react": "19.2.3",
