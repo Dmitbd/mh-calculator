@@ -1,4 +1,5 @@
-import type { Hero, HeroBuildSet } from "@/features/game-data/heroes/types";
+import type { HeroBuildSet } from "@/features/game-data/builds/types";
+import type { Hero } from "@/features/game-data/heroes/types";
 import { hasReadyBuildInTabs } from "@/features/game-data/heroes/heroBuildTabs";
 
 import heroesData from "./heroes.json";

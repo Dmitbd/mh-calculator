@@ -1,8 +1,3 @@
-import type {
-  DivinityBranchBuildExport,
-  DivinityGameMode,
-} from "@/features/game-data/builds/types";
-
 /** Локализованное имя */
 export type LocalizedName = {
   /** Английское имя */
@@ -58,36 +53,4 @@ export type HeroDictionaryEntry = {
   icon: string;
   /** Порядок сортировки */
   order: number;
-};
-
-/** Тип вкладки билда: лист с билдом или группа дочерних вкладок */
-export type HeroBuildTabKind = "build" | "group";
-
-/** Путь к вкладке билда — цепочка id от корня */
-export type HeroBuildTabPath = string[];
-
-/** Вкладка дерева билдов героя */
-export type HeroBuildTab = {
-  /** Стабильный slug на уровне родителя */
-  id: string;
-  /** Подпись для UI */
-  label: string;
-  /** Порядок сортировки среди соседей */
-  order: number;
-  /** Лист с билдом или группа */
-  kind: HeroBuildTabKind;
-  /** Режим игры вкладки; дочерние наследуют от родителя */
-  gameMode?: DivinityGameMode;
-  /** Готовый билд или null */
-  build: DivinityBranchBuildExport | null;
-  /** Дочерние вкладки только для kind: "group" */
-  children?: HeroBuildTab[];
-};
-
-/** Набор билдов героя — дерево вкладок schema v2 */
-export type HeroBuildSet = {
-  /** Версия схемы набора билдов */
-  schemaVersion: 2;
-  /** Корневые вкладки */
-  tabs: HeroBuildTab[];
 };

@@ -21,3 +21,6 @@ test("renders placeholder when source is missing", () => {
 
   expect(screen.getByLabelText("Skill icon placeholder")).toBeTruthy();
 });
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

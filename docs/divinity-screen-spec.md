@@ -12,6 +12,7 @@
 - выбор диапазона расчета `От -> До`;
 - режим `Автозаполнение` для мгновенного полного расчета диапазона;
 - локально сохраняемый прогресс прокачки внутри выбранного диапазона;
+- явное восстановление после ошибки чтения локального прогресса или ресурсов;
 - кольцо прогресса по делениям текущего уровня;
 - расчет суммарного расхода ресурсов только по выбранному диапазону;
 - ограничение прогресса правой границей диапазона.
@@ -28,7 +29,9 @@
 
 Текущая логика распределена так:
 - [app/divinity.tsx](../app/divinity.tsx)
-- [src/features/divinity/data/divinity-levels.json](../src/features/divinity/data/divinity-levels.json)
+- [src/features/divinity/screens/DivinityScreen.tsx](../src/features/divinity/screens/DivinityScreen.tsx)
+- [src/features/game-data/divinity/divinity-levels.json](../src/features/game-data/divinity/divinity-levels.json)
+- [src/features/game-data/divinity/divinityLevels.ts](../src/features/game-data/divinity/divinityLevels.ts)
 - [src/features/divinity/hooks/useDivinityProgress.ts](../src/features/divinity/hooks/useDivinityProgress.ts)
 - [src/features/divinity/model/types.ts](../src/features/divinity/model/types.ts)
 - [src/features/divinity/model/calculateDivinityTotals.ts](../src/features/divinity/model/calculateDivinityTotals.ts)
@@ -40,6 +43,7 @@
 - [src/features/divinity/ui/GemIcon.tsx](../src/features/divinity/ui/GemIcon.tsx)
 - [src/features/divinity/ui/DivinityResourcesPanel.tsx](../src/features/divinity/ui/DivinityResourcesPanel.tsx)
 - [src/features/divinity/hooks/useDivinityResources.ts](../src/features/divinity/hooks/useDivinityResources.ts)
+- [src/features/divinity/ui/DivinityLocalDataRecovery.tsx](../src/features/divinity/ui/DivinityLocalDataRecovery.tsx)
 - [src/features/divinity/model/calculateRemainingDivinityCosts.ts](../src/features/divinity/model/calculateRemainingDivinityCosts.ts)
 - [src/features/divinity/storage/divinityResourcesStorage.ts](../src/features/divinity/storage/divinityResourcesStorage.ts)
 - [src/features/game-data/divinity/divinity-gem-chests.json](../src/features/game-data/divinity/divinity-gem-chests.json)
@@ -54,6 +58,8 @@
 ## Data Model
 
 ### DivinityLevel
+
+Тип и каталог уровней принадлежат `features/game-data/divinity`; feature `divinity` использует их для расчёта, но не владеет статическими игровыми ценами.
 
 Каждый уровень описывается как:
 
@@ -90,7 +96,7 @@ type StoneCosts = {
 
 Важно:
 - в UI и расчетах используются именно `stone1`–`stone7`;
-- уровни `6` и `7` уже участвуют в реальных расчетах, даже если их иконки пока временные;
+- уровни `6` и `7` участвуют в реальных расчётах и используют собственные игровые PNG, как и остальные уровни;
 - пустое значение камня выражается `0`, а не `null` и не отсутствующим полем.
 
 ### Progress state and persistence
@@ -331,6 +337,17 @@ type DivinityProgressRecord = {
 - записи сериализуются, чтобы поздно завершившийся reset не перетёр более новое пользовательское изменение;
 - экран ждёт загрузки прогресса и ресурсов до показа вычисленного состояния.
 
+Прогресс и собственные ресурсы загружаются и восстанавливаются независимо. Экран дожидается терминального результата обоих первоначальных чтений, чтобы одно действие охватило все найденные ошибки. Если чтение одной или обеих записей завершается ошибкой, приложение не выполняет скрытый автоматический сброс: обычная шапка остаётся на экране, калькулятор скрывается и как доступный alert показывается сообщение `Ошибка загрузки локальных данных.` с действиями `Повторить` и `Сбросить`.
+
+- `Повторить` заново читает только записи, загрузка которых завершилась ошибкой;
+- `Сбросить` без дополнительного подтверждения заменяет defaults только в ошибочных записях;
+- исправная запись и её пользовательские данные при обоих действиях не изменяются;
+- если повреждены обе записи, одно действие применяется к обеим независимо;
+- пока операция выполняется, обе кнопки заблокированы;
+- повторная ошибка чтения или записи сохраняет доступное состояние восстановления;
+- валидная частичная или устаревшая запись, включая прежние nullable-поля, проходит существующую нормализацию и не считается повреждённой;
+- синтаксически корректный JSON с неверной верхнеуровневой формой или типом поля прогресса считается повреждённым и не перезаписывается до явного сброса.
+
 ## Manual Route
 
 `/divinity/manual` — сохранённая инструкция внутри функции `Божественность`. Она объясняет диапазон, кольцо, автозаполнение, блок `Мои ресурсы`, остаток стоимости и раздельные сбросы. Изменение поведения калькулятора, влияющее на использование, должно обновлять и инструкцию, и этот spec.
@@ -360,6 +377,7 @@ type DivinityProgressRecord = {
 9. `Автозаполнение` не должно навсегда перетирать ручной прогресс; это отдельный режим.
 10. Собственные ресурсы уменьшают показанный остаток, но не мутируются самим расчётом.
 11. Прогресс и собственные ресурсы сохраняются и сбрасываются независимо.
+12. Ошибка чтения локальных данных требует явного повторения или сброса только повреждённой части; исправные данные нельзя сбрасывать автоматически.
 
 Если любой перенос ломает хотя бы один из этих пунктов, это считается потерей функциональности, а не “допустимой адаптацией”.
 
@@ -378,6 +396,7 @@ type DivinityProgressRecord = {
 - делать `Автозаполнение` расчетом “включая уровень До”;
 - позволять `Автозаполнению` оставлять фантомные траты после возврата в ручной режим.
 - объединять ключи хранения прогресса и инвентаря без явной миграции;
+- автоматически сбрасывать повреждённую локальную запись или оставлять экран в бесконечной загрузке;
 - применять непринятый draft числового ввода к итоговому расчёту;
 - допускать отрицательный остаток ресурсов;
 - создавать отдельный spec для инструкции или блока `Мои ресурсы`.
@@ -392,6 +411,8 @@ type DivinityProgressRecord = {
 - [DivinityResourcesPanel.test.tsx](../src/features/divinity/__tests__/DivinityResourcesPanel.test.tsx)
 - [divinityResourcesStorage.test.ts](../src/features/divinity/__tests__/divinityResourcesStorage.test.ts)
 - [useDivinityResources.test.tsx](../src/features/divinity/__tests__/useDivinityResources.test.tsx)
+- [useDivinityProgress.test.tsx](../src/features/divinity/__tests__/useDivinityProgress.test.tsx)
+- [DivinityLocalDataRecovery.test.tsx](../src/features/divinity/__tests__/DivinityLocalDataRecovery.test.tsx)
 - [DivinityManualScreen.test.tsx](../src/features/divinity/__tests__/DivinityManualScreen.test.tsx)
 - [InstructionButton.test.tsx](../src/shared/ui/__tests__/InstructionButton.test.tsx)
 - [CalculatorManualScreen.test.tsx](../src/shared/ui/__tests__/CalculatorManualScreen.test.tsx)

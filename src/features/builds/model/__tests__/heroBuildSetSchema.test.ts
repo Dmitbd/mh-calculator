@@ -1,6 +1,6 @@
 import bastetBuild from "@/features/game-data/heroes/builds/bastet.json";
 import moranaBuild from "@/features/game-data/heroes/builds/morana.json";
-import type { HeroBuildSet } from "@/features/game-data/heroes/types";
+import type { HeroBuildSet } from "@/features/game-data/builds/types";
 import * as heroBuildTabsModel from "@/features/game-data/heroes/heroBuildTabs";
 
 import {

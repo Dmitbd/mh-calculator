@@ -413,3 +413,6 @@ test("exposes complete cost and selection state on a standalone node", () => {
     ),
   ).toBeTruthy();
 });
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

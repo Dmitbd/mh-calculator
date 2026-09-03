@@ -4,10 +4,7 @@ import type { WeeklyRivalryEventConfig } from "@/features/game-data/weekly-rival
 
 import { calculateWeeklyRivalryEventProgress } from "../model/calculateWeeklyRivalryEventProgress";
 import { normalizeWeeklyRivalryInput } from "../model/normalizeWeeklyRivalryInput";
-import type {
-  NormalizedWeeklyRivalryInput,
-  WeeklyRivalryInput,
-} from "../model/types";
+import type { NormalizedWeeklyRivalryInput } from "../model/types";
 import {
   createEmptyWeeklyRivalryInput,
   loadWeeklyRivalryCalculator,

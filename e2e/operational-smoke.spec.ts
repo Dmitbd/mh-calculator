@@ -10,7 +10,7 @@ const snapshot = JSON.parse(
   readFileSync(
     path.join(
       process.cwd(),
-      "src/features/game-data/snapshots/hero-builds/hero-builds.json",
+      "src/features/builds/data/generated/hero-builds/hero-builds.json",
     ),
     "utf8",
   ),
@@ -189,6 +189,14 @@ test("non-admin credentials cannot reveal builder controls", async ({ page }) =>
   await signIn(page, "user");
   await expect(page.getByText(/Недостаточно прав администратора/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Опубликовать" })).toHaveCount(0);
+});
+
+test("removed builder route alias has no static artifact", async ({ request }) => {
+  const response = await request.get(
+    "/mh-calculator/admin/branch-builder.html.html",
+  );
+
+  expect(response.status()).toBe(404);
 });
 
 test("dirty published edit asks before leaving and can stay", async ({ page }) => {

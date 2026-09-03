@@ -40,7 +40,7 @@ export type {
   DivinitySkillLoadoutDraft,
   DivinitySkillLoadoutRowId,
   HeroBuildTargetTabPath,
-} from "@/features/game-data/builds/types";
+} from "@/features/builds";
 
 export type BranchBuildValidationError = {
   code: BranchBuildValidationErrorCode;

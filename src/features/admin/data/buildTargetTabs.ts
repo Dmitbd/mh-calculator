@@ -1,4 +1,4 @@
-import type { HeroBuildTab, HeroBuildTabPath } from "@/features/game-data/heroes/types";
+import type { HeroBuildTab, HeroBuildTabPath } from "@/features/builds";
 import { getDefaultTabPathFromTabs } from "@/features/game-data/heroes";
 
 /** Шаблон дерева вкладок назначения в билдере */

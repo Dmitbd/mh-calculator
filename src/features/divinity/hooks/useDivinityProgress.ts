@@ -1,47 +1,114 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { getCurrentDivinityStep } from "../model/getCurrentDivinityStep";
-import type { DivinityLevel } from "../model/types";
+import type { DivinityLevel, DivinityLocalDataLoadState } from "../model/types";
 import {
   loadDivinityProgress,
   resetDivinityProgress,
   saveDivinityProgress,
 } from "../storage/divinityProgressStorage";
 
-export function useDivinityProgress(levels: DivinityLevel[]) {
+export function useDivinityProgress(levels: readonly DivinityLevel[]) {
   const maxLevel = levels[levels.length - 1]?.level ?? 0;
   const [startLevel, setStartLevel] = useState(1);
   const [endLevel, setEndLevel] = useState(maxLevel);
   const [currentLevel, setCurrentLevel] = useState(1);
   const [filledSegments, setFilledSegments] = useState(0);
   const [autofillEnabled, setAutofillEnabled] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [loadState, setLoadState] =
+    useState<DivinityLocalDataLoadState>("loading");
+  const [isRecoveryPending, setIsRecoveryPending] = useState(false);
+  const isMountedRef = useRef(true);
+  const recoveryInFlightRef = useRef(false);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    void loadDivinityProgress().then((record) => {
-      if (!isMounted) {
-        return;
-      }
-
-      const safeStartLevel = Math.min(Math.max(record.startLevel, 1), Math.max(maxLevel - 1, 1));
+  const applyLoadedRecord = useCallback(
+    (record: Awaited<ReturnType<typeof loadDivinityProgress>>) => {
+      const safeStartLevel = Math.min(
+        Math.max(record.startLevel, 1),
+        Math.max(maxLevel - 1, 1),
+      );
       const safeEndLevel = Math.min(
         Math.max(record.endLevel, safeStartLevel + 1),
         maxLevel,
       );
       setStartLevel(safeStartLevel);
       setEndLevel(safeEndLevel);
-      setCurrentLevel(Math.min(Math.max(record.currentLevel, safeStartLevel), safeEndLevel));
+      setCurrentLevel(
+        Math.min(
+          Math.max(record.currentLevel, safeStartLevel),
+          safeEndLevel,
+        ),
+      );
       setFilledSegments(record.filledSegments);
       setAutofillEnabled(record.autofillEnabled);
-      setIsLoaded(true);
-    });
+    },
+    [maxLevel],
+  );
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void loadDivinityProgress()
+      .then((record) => {
+        if (!isMounted) {
+          return;
+        }
+
+        applyLoadedRecord(record);
+        setLoadState("ready");
+      })
+      .catch(() => {
+        if (isMounted) {
+          setLoadState("error");
+        }
+      });
 
     return () => {
       isMounted = false;
     };
-  }, [maxLevel]);
+  }, [applyLoadedRecord]);
+
+  const runRecovery = async (
+    operation: () => ReturnType<typeof loadDivinityProgress>,
+  ) => {
+    if (loadState !== "error" || recoveryInFlightRef.current) {
+      return;
+    }
+
+    recoveryInFlightRef.current = true;
+    if (isMountedRef.current) {
+      setIsRecoveryPending(true);
+    }
+
+    try {
+      const record = await operation();
+      if (isMountedRef.current) {
+        applyLoadedRecord(record);
+        setLoadState("ready");
+      }
+    } catch {
+      if (isMountedRef.current) {
+        setLoadState("error");
+      }
+    } finally {
+      recoveryInFlightRef.current = false;
+      if (isMountedRef.current) {
+        setIsRecoveryPending(false);
+      }
+    }
+  };
+
+  const retryLoad = () => runRecovery(loadDivinityProgress);
+
+  const resetProgressAfterLoadError = () => runRecovery(resetDivinityProgress);
 
   const persistProgress = async (
     nextCurrentLevel: number,
@@ -155,11 +222,7 @@ export function useDivinityProgress(levels: DivinityLevel[]) {
 
   const resetLevel = async () => {
     const record = await resetDivinityProgress();
-    setStartLevel(record.startLevel);
-    setEndLevel(record.endLevel);
-    setCurrentLevel(record.currentLevel);
-    setFilledSegments(record.filledSegments);
-    setAutofillEnabled(record.autofillEnabled);
+    applyLoadedRecord(record);
   };
 
   const toggleAutofill = async () => {
@@ -184,8 +247,12 @@ export function useDivinityProgress(levels: DivinityLevel[]) {
     incrementLevel,
     incrementEndLevel,
     incrementStartLevel,
-    isLoaded,
+    isLoaded: loadState === "ready",
+    isRecoveryPending,
+    loadState,
     resetLevel,
+    resetProgressAfterLoadError,
+    retryLoad,
     toggleAutofill,
   };
 }

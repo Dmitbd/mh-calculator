@@ -2,8 +2,8 @@ import {
   HeroBuildSetSchemaError,
   parseHeroBuildSet,
 } from "@/features/builds/model/heroBuildSetSchema";
-import type { HeroBuildSet } from "@/features/game-data/heroes/types";
-import type { AppSupabaseClient } from "@/shared/lib/supabaseClient";
+import type { HeroBuildSet } from "@/features/game-data/builds/types";
+import type { HeroBuildDatabaseClient } from "../data/heroBuildSupabaseClient";
 
 export type HeroBuildSetStatus = "draft" | "published";
 
@@ -38,7 +38,7 @@ export type HeroBuildSetStatusIds = {
 };
 
 export type HeroBuildSetSupabaseClient = Pick<
-  AppSupabaseClient,
+  HeroBuildDatabaseClient,
   "from" | "rpc"
 >;
 

@@ -1,9 +1,10 @@
-import type { DivinityGameMode, DivinityBranchBuildExport } from "@/features/game-data/builds/types";
 import type {
+  DivinityBranchBuildExport,
+  DivinityGameMode,
   HeroBuildSet,
   HeroBuildTab,
   HeroBuildTabPath,
-} from "@/features/game-data/heroes/types";
+} from "@/features/game-data/builds/types";
 
 /** Сортирует вкладки и дочерние вкладки по order */
 export function sortBuildTabs(tabs: HeroBuildTab[]): HeroBuildTab[] {

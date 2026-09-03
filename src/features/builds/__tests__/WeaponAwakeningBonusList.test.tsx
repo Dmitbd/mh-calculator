@@ -89,3 +89,6 @@ describe("WeaponAwakeningBonusList", () => {
     expect(screen.getByText(/Бонус за 4 ноды/)).toBeTruthy();
   });
 });
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

@@ -1,4 +1,7 @@
-import type { DivinityGemLevel } from "@/features/game-data/divinity";
+import type {
+  DivinityGemChestId,
+  DivinityGemLevel,
+} from "@/features/game-data/divinity";
 
 import type { DivinityOwnedResources } from "./types";
 
@@ -18,8 +21,8 @@ export function normalizeDivinityResourceCount(value: unknown): number {
 }
 
 type DivinityOwnedResourcesInput = {
-  chestCounts?: Partial<DivinityOwnedResources["chestCounts"]>;
-  gemCounts?: Partial<DivinityOwnedResources["gemCounts"]>;
+  chestCounts?: Partial<Record<DivinityGemChestId, unknown>> | null;
+  gemCounts?: Partial<Record<DivinityGemLevel, unknown>> | null;
 };
 
 export function normalizeDivinityOwnedResources(

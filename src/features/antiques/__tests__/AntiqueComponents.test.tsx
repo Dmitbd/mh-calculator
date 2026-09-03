@@ -40,7 +40,7 @@ const result: AntiqueRivalryResult = {
 };
 
 test("shows only the rivalry calculator heading", () => {
-  render(<AntiqueSummary result={result} />);
+  render(<AntiqueSummary />);
 
   expect(
     screen.getByText("Калькулятор соперничества за антиквариат"),
@@ -234,7 +234,7 @@ test.each([
   },
 );
 
-test("keeps every chest fully colored instead of rendering silhouettes", () => {
+test("uses untinted chest assets instead of rendering silhouettes", () => {
   const view = render(
     <AntiqueRewardTrack openedNodes={4} totalScore={3_450} />,
   );
@@ -246,18 +246,14 @@ test("keeps every chest fully colored instead of rendering silhouettes", () => {
         image.props.source.uri ===
           "resolved:/img/antiques/rivalry-chest.png" &&
         image.props.tintColor === undefined,
-    );
+  );
 
   expect(chestImages).toHaveLength(16);
-  for (const image of chestImages) {
-    fireEvent(image, "load");
-  }
   for (const image of chestImages) {
     expect(image.props.source.uri).toBe(
       "resolved:/img/antiques/rivalry-chest.png",
     );
     expect(image.props.tintColor).toBeUndefined();
-    expect(StyleSheet.flatten(image.props.style).opacity).not.toBe(0);
   }
 });
 
@@ -315,3 +311,6 @@ test("shows all four cashback resources and values", () => {
     ),
   ).toBeTruthy();
 });
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

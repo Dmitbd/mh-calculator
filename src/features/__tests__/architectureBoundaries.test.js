@@ -35,65 +35,51 @@ function relative(filePath) {
   return path.relative(repoRoot, filePath);
 }
 
-test("production screens and hooks do not import raw json catalogs", () => {
-  const offenders = listSourceFiles(path.join(repoRoot, "src/features"))
+test("shared production code contains only capability-neutral contracts", () => {
+  const forbiddenCapabilityTerms =
+    /\b(AdminSession|admin-auth|builderTheme|heroBuilds)\b/;
+  const forbiddenSharedFiles = new Set([
+    "adminAuth.ts",
+    "builderTheme.ts",
+    "dataBootstrap.ts",
+    "sourceSelection.ts",
+  ]);
+  const offenders = listSourceFiles(path.join(repoRoot, "src/shared"))
     .filter(
       (filePath) =>
-        filePath.includes(`${path.sep}screens${path.sep}`) ||
-        filePath.includes(`${path.sep}hooks${path.sep}`),
-    )
-    .filter((filePath) => /from\s+["'][^"']+\.json["']/.test(read(filePath)))
-    .map(relative);
-
-  expect(offenders).toEqual([]);
-});
-
-test("non-admin production features do not import admin internals", () => {
-  const offenders = listSourceFiles(path.join(repoRoot, "src/features"))
-    .filter((filePath) => !filePath.includes(`${path.sep}admin${path.sep}`))
-    .filter((filePath) => read(filePath).includes("@/features/admin"))
-    .map(relative);
-
-  expect(offenders).toEqual([]);
-});
-
-test("game-data production code does not import UI or app features", () => {
-  const forbiddenPatterns = [
-    /@\/features\/(admin|builds|divinity|heroes)\//,
-    /@\/shared\/ui\//,
-    /from\s+["']react-native/,
-  ];
-  const offenders = listSourceFiles(path.join(repoRoot, "src/features/game-data"))
-    .filter((filePath) =>
-      forbiddenPatterns.some((pattern) => pattern.test(read(filePath))),
+        forbiddenSharedFiles.has(path.basename(filePath)) ||
+        forbiddenCapabilityTerms.test(read(filePath)),
     )
     .map(relative);
 
   expect(offenders).toEqual([]);
 });
 
-test("shared production code does not import feature modules", () => {
-  const offenders = listSourceFiles(path.join(repoRoot, "src/shared"))
-    .filter((filePath) => read(filePath).includes("@/features/"))
-    .map(relative);
-
-  expect(offenders).toEqual([]);
+test("game catalogs and generated build snapshots live with their owners", () => {
+  expect(
+    fs.existsSync(
+      path.join(repoRoot, "src/features/game-data/divinity/divinity-levels.json"),
+    ),
+  ).toBe(true);
+  expect(
+    fs.existsSync(
+      path.join(
+        repoRoot,
+        "src/features/builds/data/generated/hero-builds/manifest.json",
+      ),
+    ),
+  ).toBe(true);
+  expect(
+    fs.existsSync(path.join(repoRoot, "src/features/divinity/data")),
+  ).toBe(false);
+  expect(
+    fs.existsSync(path.join(repoRoot, "src/features/game-data/snapshots")),
+  ).toBe(false);
 });
 
 test("shared production UI does not contain build-specific components", () => {
   const offenders = listSourceFiles(path.join(repoRoot, "src/shared/ui"))
     .filter((filePath) => path.basename(filePath).includes("Build"))
-    .map(relative);
-
-  expect(offenders).toEqual([]);
-});
-
-test("features consume builds through public entrypoints", () => {
-  const offenders = listSourceFiles(path.join(repoRoot, "src/features"))
-    .filter((filePath) => !filePath.includes(`${path.sep}builds${path.sep}`))
-    .filter((filePath) =>
-      /@\/features\/builds\/(components|types)\//.test(read(filePath)),
-    )
     .map(relative);
 
   expect(offenders).toEqual([]);

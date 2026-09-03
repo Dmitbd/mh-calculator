@@ -6,7 +6,7 @@ import type {
   WeaponAwakeningSlot,
 } from "@/features/game-data/weapon-awakening/types";
 import { AppImage } from "@/shared/ui/AppImage";
-import { builderTheme } from "@/shared/ui/builderTheme";
+import { builderTheme } from "./builderTheme";
 
 type WeaponAwakeningPickerProps = {
   colors: readonly WeaponAwakeningColor[];

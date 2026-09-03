@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import { getHeroById } from "@/features/game-data/heroes";
+import { isBranchSelectionAllowed } from "@/features/builds";
 
 import {
   buildTargetTabs,
@@ -44,8 +45,8 @@ import {
   getGameModeForPath,
   getTabByPath,
   sortBuildTabs,
-  type HeroBuildSet,
 } from "@/features/game-data/heroes";
+import type { HeroBuildSet } from "@/features/builds";
 import { validateBranchBuild } from "../utils/validateBranchBuild";
 import {
   createEmptyEditableBuildDraft,
@@ -203,9 +204,19 @@ export function useDivinityBranchBuilder(
 
   const setColumnBranch = useCallback(
     (columnId: BranchColumnId, branchId: DivinityBranchId | null) => {
+      if (selectedBranches[columnId] === branchId) {
+        return;
+      }
+      if (
+        branchId &&
+        !isBranchSelectionAllowed(selectedBranches, columnId, branchId)
+      ) {
+        return;
+      }
+
       dispatchEditorAction({ type: "set-column-branch", columnId, branchId });
     },
-    [dispatchEditorAction],
+    [dispatchEditorAction, selectedBranches],
   );
 
   const setMajorSkill = useCallback(

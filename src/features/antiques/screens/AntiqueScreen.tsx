@@ -63,7 +63,7 @@ export default function AntiqueScreen() {
               <Text style={styles.storageWarningText}>{storageError}</Text>
             </View>
           ) : null}
-          <AntiqueSummary result={result} />
+          <AntiqueSummary />
           <AntiqueCoinAllocation
             allocation={result.allocation}
             canConvertToTemple={result.allocation.tombMaps >= 2}

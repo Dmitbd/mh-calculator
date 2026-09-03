@@ -11,20 +11,18 @@ describe("reportRuntimeDiagnostic", () => {
     const info = jest.fn();
     console.info = info;
 
-    reportRuntimeDiagnostic({
-      area: "hero-builds",
-      event: "fallback-selected",
-      heroId: "hero-" + "x".repeat(120),
-      reason: "network",
-      resource: "heroBuilds",
-    });
+    reportRuntimeDiagnostic(
+      "area-" + "a".repeat(120),
+      "event-" + "e".repeat(120),
+      {
+        ["attribute-" + "k".repeat(120)]: "value-" + "v".repeat(120),
+      },
+    );
 
     expect(info).toHaveBeenCalledWith("MH_DIAGNOSTIC", {
-      area: "hero-builds",
-      event: "fallback-selected",
-      heroId: `hero-${"x".repeat(59)}`,
-      reason: "network",
-      resource: "heroBuilds",
+      area: `area-${"a".repeat(59)}`,
+      event: `event-${"e".repeat(58)}`,
+      [`attribute-${"k".repeat(54)}`]: `value-${"v".repeat(58)}`,
     });
   });
 
@@ -41,14 +39,14 @@ describe("reportRuntimeDiagnostic", () => {
     const info = jest.fn();
     console.info = info;
 
-    reportRuntimeDiagnostic({
-      area: "hero-builds",
-      event: "fallback-selected",
-      reason: "network",
+    reportRuntimeDiagnostic("hero-builds", "fallback-selected", {
+      access_token: "private",
+      error: new Error("private"),
       payload: { access_token: "private" },
       raw: "backend response",
+      reason: "network",
       secret: "do-not-log",
-    } as Parameters<typeof reportRuntimeDiagnostic>[0]);
+    } as unknown as Readonly<Record<string, string>>);
 
     expect(info).toHaveBeenCalledWith("MH_DIAGNOSTIC", {
       area: "hero-builds",

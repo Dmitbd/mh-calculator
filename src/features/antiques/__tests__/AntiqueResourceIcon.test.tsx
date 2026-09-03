@@ -64,3 +64,6 @@ test.each(Object.values(antiqueResourceCatalog))(
     expect(screen.queryByRole("image")).toBeNull();
   },
 );
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

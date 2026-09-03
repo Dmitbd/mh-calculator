@@ -16,7 +16,7 @@ export default defineConfig({
   },
   webServer: {
     command: "node scripts/serve-static-e2e.cjs",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 30_000,
     url: "http://127.0.0.1:4173/mh-calculator/",
   },

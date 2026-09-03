@@ -4,10 +4,12 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
+  isHeroBuildSnapshotRemoteTimeoutError,
+  getHeroBuildSupabaseClient,
+  loadDataBootstrap,
   loadAndCacheRemoteHeroBuildSnapshot,
   loadHeroBuildSnapshotFallback,
-} from "@/features/builds/data/heroBuildSnapshotSource";
-import { isHeroBuildSnapshotRemoteTimeoutError } from "@/features/builds/data/heroBuildSnapshotRemote";
+} from "@/features/builds";
 import { heroes, heroesWithBuilds } from "@/features/game-data/heroes";
 import { HeroListCard } from "@/features/heroes/components/HeroListCard";
 import { HeroListFiltersPanel } from "@/features/heroes/components/HeroListFiltersPanel";
@@ -21,7 +23,6 @@ import { getHeroCatalogCriticalImageSources } from "@/features/heroes/utils/hero
 import { useCriticalImagePreload } from "@/shared/lib/imagePreload";
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 import { ScreenLoader } from "@/shared/ui/ScreenLoader";
-import { loadDataBootstrap } from "@/shared/lib/dataBootstrap";
 import {
   acceptBootstrap,
   acceptResource,
@@ -31,9 +32,8 @@ import {
   rejectBootstrap,
   rejectResource,
   type SourceSelectionState,
-} from "@/shared/lib/sourceSelection";
-import { getSupabaseClient } from "@/shared/lib/supabaseClient";
-import { reportRuntimeDiagnostic } from "@/shared/lib/runtimeDiagnostics";
+} from "../model/sourceSelection";
+import { reportHeroBuildFallbackSelected } from "../model/heroBuildDiagnostics";
 
 const SCREEN_PADDING = 24;
 type HeroCatalogState = {
@@ -52,7 +52,7 @@ export function createInitialHeroCatalogState(): HeroCatalogState {
 export function HeroSelectScreen() {
   const { top, bottom } = useSafeAreaInsets();
   const [filters, setFilters] = useState(EMPTY_HERO_LIST_FILTERS);
-  const [client, setClient] = useState<ReturnType<typeof getSupabaseClient> | undefined>(
+  const [client, setClient] = useState<ReturnType<typeof getHeroBuildSupabaseClient> | undefined>(
     undefined,
   );
   const isMounted = useRef(true);
@@ -62,7 +62,7 @@ export function HeroSelectScreen() {
   );
 
   useEffect(() => {
-    setClient(getSupabaseClient());
+    setClient(getHeroBuildSupabaseClient());
   }, []);
 
   const loadRemoteHeroIds = useCallback(
@@ -95,11 +95,8 @@ export function HeroSelectScreen() {
         }
 
         if (bootstrap.source === "fallback") {
-          reportRuntimeDiagnostic({
-            area: "hero-builds",
-            event: "fallback-selected",
+          reportHeroBuildFallbackSelected({
             reason: bootstrap.reason,
-            resource: "heroBuilds",
             route: "/heroes",
           });
           const fallback = await loadHeroBuildSnapshotFallback();
@@ -176,11 +173,8 @@ export function HeroSelectScreen() {
           const reason = isHeroBuildSnapshotRemoteTimeoutError(error)
             ? ("timeout" as const)
             : ("network" as const);
-          reportRuntimeDiagnostic({
-            area: "hero-builds",
-            event: "fallback-selected",
+          reportHeroBuildFallbackSelected({
             reason,
-            resource: "heroBuilds",
             route: "/heroes",
           });
           const rejectedResource = rejectResource(
@@ -214,11 +208,8 @@ export function HeroSelectScreen() {
   useEffect(() => {
     isMounted.current = true;
     if (client === null) {
-      reportRuntimeDiagnostic({
-        area: "hero-builds",
-        event: "fallback-selected",
+      reportHeroBuildFallbackSelected({
         reason: "not-configured",
-        resource: "heroBuilds",
         route: "/heroes",
       });
       setCatalogState((current) => ({

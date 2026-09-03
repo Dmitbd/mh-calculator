@@ -33,3 +33,6 @@ test("loads a responsive color icon without duplicating the slot label", () => {
     screen.getByTestId("weapon-awakening-slot-icon-1-placeholder"),
   ).toBeTruthy();
 });
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

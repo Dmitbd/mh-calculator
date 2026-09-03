@@ -1,4 +1,5 @@
 import { branchBuilderTemplate } from "../data/branchBuilderCatalogs";
+import { isBranchSelectionAllowed } from "@/features/builds";
 import type {
   BranchColumnId,
   DivinityBranchId,
@@ -52,9 +53,16 @@ export function reduceEditableBuildDraft(
 ): EditableBuildDraft {
   switch (action.type) {
     case "set-column-branch": {
-      if (action.branchId && columnIds.some((columnId) =>
-        columnId !== action.columnId && draft.selectedBranches[columnId] === action.branchId,
-      )) return draft;
+      if (
+        action.branchId &&
+        !isBranchSelectionAllowed(
+          draft.selectedBranches,
+          action.columnId,
+          action.branchId,
+        )
+      ) {
+        return draft;
+      }
       const changed = draft.selectedBranches[action.columnId] !== action.branchId;
       if (!changed) return draft;
       const majorPrefix = `${action.columnId}:`;

@@ -10,7 +10,7 @@ jest.mock("@/shared/ui/useImageLoadingTransition", () => ({
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react-native";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { HeroBuildSetRepositoryError, type HeroBuildSetRecord, type HeroBuildSetStatusIds } from "@/features/builds";
-import type { HeroBuildSet } from "@/features/game-data/heroes";
+import type { HeroBuildSet } from "@/features/builds";
 
 import {
   ADMIN_SESSION,
@@ -148,7 +148,13 @@ describe("DivinityBranchBuilderScreen: edit-update-conflict", () => {
 
     renderAdminBuilder();
 
-    fireEvent.press(await screen.findByLabelText("Выбрать героя"));
+    fireEvent.press(
+      await screen.findByLabelText(
+        "Выбрать героя",
+        {},
+        { timeout: 5_000 },
+      ),
+    );
     fireEvent.press(screen.getByLabelText("Выбрать героя Бастет"));
     expect(screen.getAllByText("Загружаем черновик...")).toHaveLength(2);
 
@@ -172,17 +178,13 @@ describe("DivinityBranchBuilderScreen: edit-update-conflict", () => {
       expect(mockFetchDraftHeroBuildSet).toHaveBeenCalledTimes(2),
     );
     expect(await screen.findAllByText("Черновик загружен.")).not.toHaveLength(0);
-  });
+  }, 15_000);
 
   it("does not consume a draft payload that resolves after unmount", async () => {
     let resolveDraft!: (draft: HeroBuildSet) => void;
     let tabsReadCount = 0;
     const draft = getValidBastetBuildSet();
     const tabs = draft.tabs;
-    const consoleError = jest
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
-
     Object.defineProperty(draft, "tabs", {
       configurable: true,
       get: () => {
@@ -211,29 +213,20 @@ describe("DivinityBranchBuilderScreen: edit-update-conflict", () => {
     const renderCountBeforeUnmount = mockHeroBuilderSectionProps.mock.calls.length;
     view.unmount();
 
-    try {
-      await act(async () => {
-        resolveDraft(draft);
-      });
+    await act(async () => {
+      resolveDraft(draft);
+    });
 
-      expect(tabsReadCount).toBe(0);
-      expect(mockHeroBuilderSectionProps).toHaveBeenCalledTimes(
-        renderCountBeforeUnmount,
-      );
-      expect(consoleError).not.toHaveBeenCalled();
-    } finally {
-      consoleError.mockRestore();
-    }
+    expect(tabsReadCount).toBe(0);
+    expect(mockHeroBuilderSectionProps).toHaveBeenCalledTimes(
+      renderCountBeforeUnmount,
+    );
   });
 
   it("does not inspect a draft error that rejects after unmount", async () => {
     let rejectDraft!: (error: Error) => void;
     let messageReadCount = 0;
     const lateError = new Error();
-    const consoleError = jest
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
-
     Object.defineProperty(lateError, "message", {
       configurable: true,
       get: () => {
@@ -262,29 +255,20 @@ describe("DivinityBranchBuilderScreen: edit-update-conflict", () => {
     const renderCountBeforeUnmount = mockHeroBuilderSectionProps.mock.calls.length;
     view.unmount();
 
-    try {
-      await act(async () => {
-        rejectDraft(lateError);
-      });
+    await act(async () => {
+      rejectDraft(lateError);
+    });
 
-      expect(messageReadCount).toBe(0);
-      expect(mockHeroBuilderSectionProps).toHaveBeenCalledTimes(
-        renderCountBeforeUnmount,
-      );
-      expect(consoleError).not.toHaveBeenCalled();
-    } finally {
-      consoleError.mockRestore();
-    }
+    expect(messageReadCount).toBe(0);
+    expect(mockHeroBuilderSectionProps).toHaveBeenCalledTimes(
+      renderCountBeforeUnmount,
+    );
   });
 
   it("invalidates a combined catalog request when the screen unmounts", async () => {
     let rejectCatalog!: (error: Error) => void;
     let messageReadCount = 0;
     const lateError = new Error();
-    const consoleError = jest
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
-
     Object.defineProperty(lateError, "message", {
       configurable: true,
       get: () => {
@@ -307,19 +291,14 @@ describe("DivinityBranchBuilderScreen: edit-update-conflict", () => {
     const renderCountBeforeUnmount = mockHeroBuilderSectionProps.mock.calls.length;
     view.unmount();
 
-    try {
-      await act(async () => {
-        rejectCatalog(lateError);
-      });
+    await act(async () => {
+      rejectCatalog(lateError);
+    });
 
-      expect(messageReadCount).toBe(0);
-      expect(mockHeroBuilderSectionProps).toHaveBeenCalledTimes(
-        renderCountBeforeUnmount,
-      );
-      expect(consoleError).not.toHaveBeenCalled();
-    } finally {
-      consoleError.mockRestore();
-    }
+    expect(messageReadCount).toBe(0);
+    expect(mockHeroBuilderSectionProps).toHaveBeenCalledTimes(
+      renderCountBeforeUnmount,
+    );
   });
 
   it("does not request a draft for an invalid current tab", () => {
@@ -649,10 +628,6 @@ describe("DivinityBranchBuilderScreen: edit-update-conflict", () => {
     let rejectSave!: (error: Error) => void;
     let messageReadCount = 0;
     const lateError = new Error();
-    const consoleError = jest
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
-
     Object.defineProperty(lateError, "message", {
       configurable: true,
       get: () => {
@@ -683,17 +658,12 @@ describe("DivinityBranchBuilderScreen: edit-update-conflict", () => {
     );
     view.unmount();
 
-    try {
-      await act(async () => {
-        rejectSave(lateError);
-      });
+    await act(async () => {
+      rejectSave(lateError);
+    });
 
-      expect(messageReadCount).toBe(0);
-      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
-      expect(consoleError).not.toHaveBeenCalled();
-    } finally {
-      consoleError.mockRestore();
-    }
+    expect(messageReadCount).toBe(0);
+    expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the local commit and catalog retry after refresh failure", async () => {

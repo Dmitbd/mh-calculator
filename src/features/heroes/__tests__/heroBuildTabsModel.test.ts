@@ -1,4 +1,4 @@
-import type { HeroBuildTab } from "@/features/game-data/heroes";
+import type { HeroBuildTab } from "@/features/builds";
 
 import { getHeroBuildTabViewModel } from "../model/heroBuildTabs";
 

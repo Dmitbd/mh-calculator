@@ -1,4 +1,4 @@
-import type { HeroBuildSet, HeroBuildTab } from "@/features/game-data/heroes/types";
+import type { HeroBuildSet, HeroBuildTab } from "@/features/game-data/builds/types";
 
 import {
   filterTabsWithReadyBuilds,

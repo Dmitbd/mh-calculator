@@ -5,7 +5,7 @@ import {
   getHeroBuildSet,
   getHeroById,
 } from "@/features/game-data/heroes/heroBuilds";
-import type { HeroBuildSet, HeroBuildTab } from "@/features/game-data/heroes";
+import type { HeroBuildSet, HeroBuildTab } from "@/features/builds";
 import weaponAwakeningColors from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
 import weaponAwakeningSlots from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
 
@@ -276,6 +276,25 @@ describe("useDivinityBranchBuilder", () => {
 
     expect(result.current.savedBuildsByPath.pvp).toBeTruthy();
     expect("targetTabPath" in result.current.savedBuildsByPath.pvp).toBe(false);
+  });
+
+  it("keeps a saved tab when a branch selection is a no-op", () => {
+    const result = filledBuild();
+
+    commitCurrentTargetBuild(result, "2026-05-30T00:00:00.000Z");
+    const savedBuild = result.current.savedBuildsByPath.pvp;
+
+    act(() => {
+      result.current.setColumnBranch("left", "asterial");
+    });
+
+    expect(result.current.savedBuildsByPath.pvp).toBe(savedBuild);
+
+    act(() => {
+      result.current.setColumnBranch("center", "asterial");
+    });
+
+    expect(result.current.savedBuildsByPath.pvp).toBe(savedBuild);
   });
 
   it("prepares the current valid tab as a partial build set without committing it", () => {
@@ -712,6 +731,7 @@ describe("useDivinityBranchBuilder", () => {
       awakened: [],
       awakenedEnabled: false,
     });
+    expect(result.current.buildExport("2026-05-30T00:00:00.000Z")).toBeNull();
   });
 
   it("loads an existing build set into editable drafts", () => {

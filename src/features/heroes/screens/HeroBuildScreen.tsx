@@ -4,21 +4,22 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
+  DivinitySkillLoadoutSection,
   getBuildSetFromSnapshot,
+  getHeroBuildSupabaseClient,
+  isHeroBuildSnapshotRemoteTimeoutError,
+  loadDataBootstrap,
   loadAndCacheRemoteHeroBuildSnapshot,
   loadHeroBuildSnapshotFallback,
-} from "@/features/builds/data/heroBuildSnapshotSource";
-import { isHeroBuildSnapshotRemoteTimeoutError } from "@/features/builds/data/heroBuildSnapshotRemote";
+} from "@/features/builds";
 import {
   getCurrentAdminSession,
   type AdminSession,
-} from "@/shared/lib/adminAuth";
-import { getSupabaseClient } from "@/shared/lib/supabaseClient";
+} from "@/features/auth";
 import {
   weaponAwakeningCombos,
   resolveWeaponAwakeningBonuses,
 } from "@/features/game-data/weapon-awakening";
-import { DivinitySkillLoadoutSection } from "@/features/builds";
 import {
   divinityBranches,
   divinitySkills,
@@ -34,16 +35,14 @@ import {
 
 import { ScreenHeader, SCREEN_HEADER_HEIGHT } from "@/shared/ui/ScreenHeader";
 import { ScreenLoader } from "@/shared/ui/ScreenLoader";
-import { loadDataBootstrap } from "@/shared/lib/dataBootstrap";
 import { useCriticalImagePreload } from "@/shared/lib/imagePreload";
-import { reportRuntimeDiagnostic } from "@/shared/lib/runtimeDiagnostics";
 import {
   acceptBootstrap,
   acceptResource,
   beginResource,
   rejectBootstrap,
   rejectResource,
-} from "@/shared/lib/sourceSelection";
+} from "../model/sourceSelection";
 
 import { HeroMetadataRow } from "../components/HeroMetadataRow";
 import { HeroBuildBranchSection } from "../components/hero-build/HeroBuildBranchSection";
@@ -54,6 +53,7 @@ import {
   createHeroBuildLoadState,
   resolveHeroBuildLoadState,
 } from "../model/heroBuildLoading";
+import { reportHeroBuildFallbackSelected } from "../model/heroBuildDiagnostics";
 import { getHeroBuildTabViewModel } from "../model/heroBuildTabs";
 import { mapBuildToView } from "../utils/mapBuildToView";
 import { getHeroMetadataImageSources } from "../utils/heroCriticalImages";
@@ -83,7 +83,7 @@ export function HeroBuildScreen({
     readinessKey: heroId,
   });
   const fallbackBuildSet = getHeroBuildSet(heroId);
-  const [client] = useState(() => getSupabaseClient());
+  const [client] = useState(() => getHeroBuildSupabaseClient());
   const noClientDiagnosticHeroId = useRef<string | null>(null);
   const [loadState, setLoadState] = useState(() =>
     createHeroBuildLoadState({
@@ -118,12 +118,9 @@ export function HeroBuildScreen({
     if (!client) {
       if (noClientDiagnosticHeroId.current !== heroId) {
         noClientDiagnosticHeroId.current = heroId;
-        reportRuntimeDiagnostic({
-          area: "hero-builds",
-          event: "fallback-selected",
+        reportHeroBuildFallbackSelected({
           heroId,
           reason: "not-configured",
-          resource: "heroBuilds",
         });
       }
 
@@ -141,12 +138,9 @@ export function HeroBuildScreen({
         }
 
         if (bootstrap.source === "fallback") {
-          reportRuntimeDiagnostic({
-            area: "hero-builds",
-            event: "fallback-selected",
+          reportHeroBuildFallbackSelected({
             heroId,
             reason: bootstrap.reason,
-            resource: "heroBuilds",
           });
           const fallback = await loadHeroBuildSnapshotFallback();
           sourceSelection = rejectBootstrap(sourceSelection, bootstrap.reason);
@@ -200,12 +194,9 @@ export function HeroBuildScreen({
           const reason = isHeroBuildSnapshotRemoteTimeoutError(error)
             ? ("timeout" as const)
             : ("network" as const);
-          reportRuntimeDiagnostic({
-            area: "hero-builds",
-            event: "fallback-selected",
+          reportHeroBuildFallbackSelected({
             heroId,
             reason,
-            resource: "heroBuilds",
           });
           const fallback = await loadHeroBuildSnapshotFallback();
           sourceSelection = rejectResource(
@@ -245,7 +236,7 @@ export function HeroBuildScreen({
       return;
     }
 
-    const client = getSupabaseClient();
+    const client = getHeroBuildSupabaseClient();
 
     if (!client) {
       setIsAuthChecked(true);

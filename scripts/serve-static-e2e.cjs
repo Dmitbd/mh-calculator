@@ -87,6 +87,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  DIST_DIRECTORY,
   createStaticRequestHandler,
   resolveRequestFile,
   startStaticServer,

@@ -2,24 +2,7 @@ import type {
   DivinityGemChestId,
   DivinityGemLevel,
 } from "@/features/game-data/divinity";
-
-export type StoneCosts = {
-  stone1: number;
-  stone2: number;
-  stone3: number;
-  stone4: number;
-  stone5: number;
-  stone6: number;
-  stone7: number;
-};
-
-export type DivinityLevel = {
-  level: number;
-  segmentCount: number;
-  segmentCost: StoneCosts;
-  transitionCost: StoneCosts;
-  note?: string;
-};
+export type { DivinityLevel, StoneCosts } from "@/features/game-data/divinity";
 
 export type DivinityProgress = {
   startLevel: number;
@@ -27,6 +10,8 @@ export type DivinityProgress = {
   currentLevel: number;
   filledSegments: number;
 };
+
+export type DivinityLocalDataLoadState = "loading" | "ready" | "error";
 
 export type DivinityChestCounts = Record<DivinityGemChestId, number>;
 

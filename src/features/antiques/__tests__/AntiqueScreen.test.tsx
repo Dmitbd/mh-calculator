@@ -56,6 +56,10 @@ jest.mock("../hooks/useAntiqueCalculator", () => ({
   useAntiqueCalculator: () => mockCalculatorState,
 }));
 
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);
+
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import AntiqueScreen from "../screens/AntiqueScreen";

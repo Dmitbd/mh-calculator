@@ -1,4 +1,4 @@
-import type { DivinityBranchBuildExport } from "@/features/game-data/builds/types";
+import type { DivinityBranchBuildExport } from "@/features/builds";
 
 import { mapBuildToView } from "../utils/mapBuildToView";
 

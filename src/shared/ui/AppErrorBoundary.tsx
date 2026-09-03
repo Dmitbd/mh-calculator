@@ -1,4 +1,4 @@
-import React, { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { reportRuntimeDiagnostic } from "../lib/runtimeDiagnostics";
@@ -23,11 +23,8 @@ export class AppErrorBoundary extends Component<
     return { hasError: true };
   }
 
-  componentDidCatch(_caught: unknown, _info: ErrorInfo): void {
-    reportRuntimeDiagnostic({
-      area: "runtime-boundary",
-      event: "recovery-view",
-    });
+  componentDidCatch(): void {
+    reportRuntimeDiagnostic("runtime-boundary", "recovery-view");
   }
 
   componentDidUpdate(previousProps: AppErrorBoundaryProps): void {

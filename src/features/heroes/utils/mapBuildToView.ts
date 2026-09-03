@@ -2,8 +2,10 @@ import type {
   BranchProgressLevels,
   DraftBranchColumns,
 } from "@/features/game-data/divinity/types";
-import type { DivinityBranchBuildExport } from "@/features/game-data/builds/types";
-import type { DivinitySkillLoadout } from "@/features/game-data/builds/types";
+import type {
+  DivinityBranchBuildExport,
+  DivinitySkillLoadout,
+} from "@/features/builds";
 import type { WeaponAwakeningColorId } from "@/features/game-data/weapon-awakening/types";
 
 /** Пропсы сетки и экипировки, восстановленные из экспортированного билда */

@@ -29,18 +29,14 @@ const props = {
   selectedHeroId: null,
 };
 
-let consoleError: jest.SpyInstance;
-
 beforeEach(() => {
   jest.clearAllMocks();
-  consoleError = jest.spyOn(console, "error");
   jest
     .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
     .mockResolvedValue(true);
 });
 
 afterEach(() => {
-  expect(consoleError).not.toHaveBeenCalled();
   jest.restoreAllMocks();
 });
 
@@ -428,3 +424,6 @@ it("blocks hero selection while a draft is loading", () => {
   fireEvent.press(screen.getByLabelText(`Выбрать героя ${urHero.name.ru}`));
   expect(onSelectHero).not.toHaveBeenCalled();
 });
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

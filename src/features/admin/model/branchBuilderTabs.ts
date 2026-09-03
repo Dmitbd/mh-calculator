@@ -1,10 +1,12 @@
-import type { BuildFolderTabItem } from "@/features/builds";
+import type {
+  BuildFolderTabItem,
+  HeroBuildTab,
+  HeroBuildTabPath,
+} from "@/features/builds";
 import {
   getTabByPath,
   sortBuildTabs,
 } from "@/features/game-data/heroes";
-import type { HeroBuildTabPath } from "@/features/game-data/heroes/types";
-import type { HeroBuildTab } from "@/features/game-data/heroes";
 
 import { buildTargetTabs } from "../data/buildTargetTabs";
 

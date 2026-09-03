@@ -2,12 +2,13 @@ import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { divinityLevels } from "@/features/divinity/data/divinityLevels";
+import { divinityLevels } from "@/features/game-data/divinity";
 import { useDivinityProgress } from "@/features/divinity/hooks/useDivinityProgress";
 import { useDivinityResources } from "@/features/divinity/hooks/useDivinityResources";
 import { calculateDivinityTotals } from "@/features/divinity/model/calculateDivinityTotals";
 import { calculateRemainingDivinityCosts } from "@/features/divinity/model/calculateRemainingDivinityCosts";
 import { getCurrentDivinityStep } from "@/features/divinity/model/getCurrentDivinityStep";
+import { DivinityLocalDataRecovery } from "@/features/divinity/ui/DivinityLocalDataRecovery";
 import { DivinityRing } from "@/features/divinity/ui/DivinityRing";
 import { DivinityRangeSelector } from "@/features/divinity/ui/DivinityRangeSelector";
 import { DivinityResourcesPanel } from "@/features/divinity/ui/DivinityResourcesPanel";
@@ -32,16 +33,22 @@ export default function DivinityScreen() {
     incrementEndLevel,
     incrementLevel,
     incrementStartLevel,
-    isLoaded,
+    isRecoveryPending: isProgressRecoveryPending,
+    loadState: progressLoadState,
     resetLevel,
+    resetProgressAfterLoadError,
+    retryLoad: retryProgressLoad,
     toggleAutofill,
   } = useDivinityProgress(divinityLevels);
   const {
     resources,
-    isLoaded: areResourcesLoaded,
+    isRecoveryPending: isResourcesRecoveryPending,
+    loadState: resourcesLoadState,
     setChestCount,
     setGemCount,
     resetResources,
+    resetResourcesAfterLoadError,
+    retryLoad: retryResourcesLoad,
   } = useDivinityResources();
   const autofillLevel =
     divinityLevels.find((level) => level.level === endLevel) ?? null;
@@ -72,10 +79,52 @@ export default function DivinityScreen() {
         filledSegments,
       });
 
-  if (!isLoaded || !areResourcesLoaded) {
+  const hasLoadError =
+    progressLoadState === "error" || resourcesLoadState === "error";
+  const isRecoveryPending =
+    isProgressRecoveryPending || isResourcesRecoveryPending;
+  const isInitialLoadPending =
+    progressLoadState === "loading" || resourcesLoadState === "loading";
+
+  const retryFailedLocalData = async () => {
+    await Promise.all([
+      progressLoadState === "error" ? retryProgressLoad() : Promise.resolve(),
+      resourcesLoadState === "error" ? retryResourcesLoad() : Promise.resolve(),
+    ]);
+  };
+
+  const resetFailedLocalData = async () => {
+    await Promise.all([
+      progressLoadState === "error"
+        ? resetProgressAfterLoadError()
+        : Promise.resolve(),
+      resourcesLoadState === "error"
+        ? resetResourcesAfterLoadError()
+        : Promise.resolve(),
+    ]);
+  };
+
+  if (isInitialLoadPending) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.loadingText}>Загрузка прогресса...</Text>
+      </View>
+    );
+  }
+
+  if (hasLoadError) {
+    return (
+      <View style={styles.screen}>
+        <ScreenHeader title="Божественность" fallbackHref="/" />
+        <DivinityLocalDataRecovery
+          isPending={isRecoveryPending}
+          onRetry={() => {
+            void retryFailedLocalData();
+          }}
+          onReset={() => {
+            void resetFailedLocalData();
+          }}
+        />
       </View>
     );
   }

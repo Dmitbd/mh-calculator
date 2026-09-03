@@ -1,4 +1,4 @@
-import type { DataBootstrapManifest } from "@/shared/lib/dataBootstrap";
+import type { DataBootstrapManifest } from "./dataBootstrap";
 import { readSupabaseConfig } from "@/shared/lib/supabaseConfig";
 
 import {
@@ -11,8 +11,8 @@ import {
   saveLastKnownGoodHeroBuildSnapshot,
 } from "../storage/heroBuildSnapshotStorage";
 
-import bundledManifest from "@/features/game-data/snapshots/hero-builds/manifest.json";
-import bundledResource from "@/features/game-data/snapshots/hero-builds/hero-builds.json";
+import bundledManifest from "./generated/hero-builds/manifest.json";
+import bundledResource from "./generated/hero-builds/hero-builds.json";
 
 export type HeroBuildSnapshotSource = {
   snapshot: ParsedHeroBuildSnapshot;

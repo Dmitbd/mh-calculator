@@ -6,6 +6,7 @@ export {
   divinityTreeTemplate,
 } from "./catalog";
 export { deriveSkillLevel } from "./deriveSkillLevel";
+export { divinityLevels } from "./divinityLevels";
 export {
   DIVINITY_SKILL_AWAKENED_NODE_BUDGET,
   DIVINITY_SKILL_BASE_NODE_BUDGET,

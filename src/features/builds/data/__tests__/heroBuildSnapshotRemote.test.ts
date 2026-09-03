@@ -1,5 +1,5 @@
 import bastetBuild from "@/features/game-data/heroes/builds/bastet.json";
-import type { DataBootstrapManifest } from "@/shared/lib/dataBootstrap";
+import type { DataBootstrapManifest } from "@/features/builds";
 
 import { sha256Hex } from "../heroBuildSnapshot";
 import {

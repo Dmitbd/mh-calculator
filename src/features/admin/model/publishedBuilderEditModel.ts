@@ -4,13 +4,13 @@ import type {
   DivinityBranchBuildValidationDraft,
   DivinityGameMode,
   DivinitySkillLoadout,
-} from "@/features/game-data/builds/types";
+} from "@/features/builds";
 import { compactDivinitySkillIds } from "@/features/game-data/divinity";
 import type {
   HeroBuildSet,
   HeroBuildTab,
   HeroBuildTabPath,
-} from "@/features/game-data/heroes";
+} from "@/features/builds";
 import { getHeroById, getGameModeForPath } from "@/features/game-data/heroes";
 
 import { branchBuilderTemplate } from "../data/branchBuilderCatalogs";

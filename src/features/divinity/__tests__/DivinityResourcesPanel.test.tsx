@@ -201,3 +201,6 @@ test("resets an unconfirmed draft when owned resources are reset", () => {
   expect(screen.queryByLabelText("Сохранить сундуки 600001")).toBeNull();
   expect(onReset).toHaveBeenCalledTimes(1);
 });
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

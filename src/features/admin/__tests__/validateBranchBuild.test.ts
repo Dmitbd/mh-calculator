@@ -7,7 +7,6 @@ import heroes from "@/features/game-data/heroes/heroes.json";
 import weaponAwakeningColors from "@/features/game-data/weapon-awakening/weapon-awakening-colors.json";
 import weaponAwakeningSlots from "@/features/game-data/weapon-awakening/weapon-awakening-slots.json";
 
-import { slugifyFileName } from "../utils/slugifyFileName";
 import { validateBranchBuild } from "../utils/validateBranchBuild";
 import type {
   BranchColumnId,
@@ -91,15 +90,6 @@ function createValidDraft(): DivinityBranchBuildValidationDraft {
     },
   };
 }
-
-describe("slugifyFileName", () => {
-  it("builds a json file name from a hero name", () => {
-    expect(slugifyFileName("Apollo")).toBe("apollo.json");
-    expect(slugifyFileName("Western Queen")).toBe("western-queen.json");
-    expect(slugifyFileName("Oda Nobunaga")).toBe("oda-nobunaga.json");
-    expect(slugifyFileName("Бастет")).toBe("bastet.json");
-  });
-});
 
 describe("validateBranchBuild", () => {
   it("accepts a completed branch build", () => {

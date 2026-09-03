@@ -1,24 +1,28 @@
 {
   "name": "mh-calculator",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "Mythic Heroes resource calculator",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "export:web": "expo export --platform web --clear",
+    "export:web": "EXPO_NO_DOTENV=1 expo export --platform web --clear",
     "export:web:clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && npm run export:web",
     "budget:web": "node scripts/check-web-bundle-budget.cjs",
-    "e2e:prepare": "node -e \"require('node:fs').rmSync('dist-e2e', { recursive: true, force: true })\" && EXPO_PUBLIC_SUPABASE_URL=https://e2e.invalid EXPO_PUBLIC_SUPABASE_ANON_KEY=e2e-public-anon-key expo export --platform web --clear --output-dir dist-e2e",
+    "e2e:prepare": "node -e \"require('node:fs').rmSync('dist-e2e', { recursive: true, force: true })\" && EXPO_NO_DOTENV=1 EXPO_PUBLIC_SUPABASE_URL=https://e2e.invalid EXPO_PUBLIC_SUPABASE_ANON_KEY=e2e-public-anon-key expo export --platform web --clear --output-dir dist-e2e",
     "e2e:budget": "node scripts/check-web-bundle-budget.cjs dist-e2e",
     "e2e:run": "playwright test --project=chromium",
     "e2e": "npm run e2e:prepare && npm run e2e:budget && npm run e2e:run",
     "snapshot:hero-builds": "node scripts/export-hero-build-snapshot.cjs",
+    "architecture:check": "node scripts/check-architecture.cjs",
+    "docs:check": "node scripts/check-documentation-contracts.cjs",
     "test": "jest",
+    "test:ci": "jest --runInBand --coverage",
     "typecheck": "node scripts/prepare-typecheck.cjs && tsc --noEmit",
+    "typecheck:unused": "node scripts/check-unused-suppressions.cjs && tsc -p tsconfig.production.json",
     "expo:check": "expo install --check",
-    "verify": "npm run expo:check && jest --runInBand && npm run typecheck && npm run export:web:clean && npm run budget:web"
+    "verify": "npm run expo:check && npm run architecture:check && npm run docs:check && npm run test:ci && npm run typecheck && npm run typecheck:unused && npm run export:web:clean && npm run budget:web"
   },
   "keywords": [
     "expo",
@@ -33,6 +37,23 @@
     "npm": "11.17.0"
   },
   "packageManager": "npm@11.17.0",
+  "overrides": {
+    "metro": "0.84.5",
+    "metro-babel-transformer": "0.84.5",
+    "metro-cache": "0.84.5",
+    "metro-cache-key": "0.84.5",
+    "metro-config": "0.84.5",
+    "metro-core": "0.84.5",
+    "metro-file-map": "0.84.5",
+    "metro-minify-terser": "0.84.5",
+    "metro-resolver": "0.84.5",
+    "metro-runtime": "0.84.5",
+    "metro-source-map": "0.84.5",
+    "metro-symbolicate": "0.84.5",
+    "metro-transform-plugins": "0.84.5",
+    "metro-transform-worker": "0.84.5",
+    "ob1": "0.84.5"
+  },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native/jest-preset": "^0.85.3",
@@ -51,7 +72,6 @@
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
-    "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "29.5.14",
     "@types/node": "24.13.3",

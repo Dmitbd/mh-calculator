@@ -259,3 +259,6 @@ test("uses the home fallback and opens the event instruction", () => {
     "/weekly-rivalry/beastly-echoes/manual",
   );
 });
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

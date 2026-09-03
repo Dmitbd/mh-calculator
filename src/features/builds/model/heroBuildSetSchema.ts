@@ -1,5 +1,5 @@
 import { heroes } from "@/features/game-data/heroes";
-import type { HeroBuildSet } from "@/features/game-data/heroes/types";
+import type { HeroBuildSet } from "@/features/game-data/builds/types";
 
 import { validateHeroBuildLeaf } from "./heroBuildSetLeafSchema";
 import {

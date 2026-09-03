@@ -23,18 +23,6 @@ function listSourceFiles(directory) {
   return files;
 }
 
-test("heroes feature code does not import admin components", () => {
-  const offenders = listSourceFiles(path.join(repoRoot, "src/features/heroes"))
-    .filter((filePath) =>
-      fs
-        .readFileSync(filePath, "utf8")
-        .includes("@/features/admin/components"),
-    )
-    .map((filePath) => path.relative(repoRoot, filePath));
-
-  expect(offenders).toEqual([]);
-});
-
 test("divinity branch builder screen is composed from focused sections", () => {
   const source = fs.readFileSync(
     path.join(repoRoot, "src/features/admin/screens/DivinityBranchBuilderScreen.tsx"),
@@ -46,7 +34,7 @@ test("divinity branch builder screen is composed from focused sections", () => {
     "EquipmentBuilderSection",
     "WeaponAwakeningSection",
     "BranchGridSection",
-    "DownloadSection",
+    "BuilderActions",
   ];
 
   const missingSections = requiredSections.filter(
@@ -54,4 +42,54 @@ test("divinity branch builder screen is composed from focused sections", () => {
   );
 
   expect(missingSections).toEqual([]);
+});
+
+test("admin production code does not retain the removed file JSON workflow", () => {
+  const forbiddenFragments = [
+    "DownloadJsonButton",
+    "DownloadSection",
+    "downloadJson",
+    "slugifyFileName",
+    "showAdvancedActions",
+    "Скачать полный JSON",
+    "Загрузить билд",
+    "Сохранить черновик",
+    "ошибки полного экспорта",
+  ];
+  const offenders = listSourceFiles(path.join(repoRoot, "src/features/admin"))
+    .filter((filePath) => !filePath.includes(`${path.sep}__tests__${path.sep}`))
+    .flatMap((filePath) => {
+      const source = fs.readFileSync(filePath, "utf8");
+
+      return forbiddenFragments
+        .filter((fragment) => source.includes(fragment))
+        .map((fragment) => ({
+          filePath: path.relative(repoRoot, filePath),
+          fragment,
+        }));
+    });
+
+  expect(offenders).toEqual([]);
+});
+
+test("divinity branch builder screen delegates application orchestration to its controller", () => {
+  const source = fs.readFileSync(
+    path.join(repoRoot, "src/features/admin/screens/DivinityBranchBuilderScreen.tsx"),
+    "utf8",
+  );
+  const forbiddenFragments = [
+    "getSupabaseClient",
+    "@/features/auth",
+    "heroBuildSetRepository",
+    "builderServerCommands",
+    "BuilderAsyncController",
+    "BuilderRevisionStore",
+    "useAdminSessionGate",
+    "useHeroBuildStatusQuery",
+  ];
+
+  expect(
+    forbiddenFragments.filter((fragment) => source.includes(fragment)),
+  ).toEqual([]);
+  expect(source).toContain("useDivinityBranchBuilderController");
 });

@@ -57,3 +57,6 @@ test("uses the default icon size", () => {
     height: 18,
   });
 });
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

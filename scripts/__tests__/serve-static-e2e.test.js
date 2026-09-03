@@ -3,6 +3,7 @@ const os = require("node:os");
 const path = require("node:path");
 
 const {
+  DIST_DIRECTORY,
   createStaticRequestHandler,
   resolveRequestFile,
 } = require("../serve-static-e2e.cjs");
@@ -37,5 +38,9 @@ describe("E2E static server", () => {
       "Content-Type": "text/html; charset=utf-8",
     });
     expect(end).toHaveBeenCalledWith(Buffer.from("<h1>ok</h1>"));
+  });
+
+  it("serves only the fresh isolated E2E artifact by default", () => {
+    expect(DIST_DIRECTORY).toBe(path.resolve(process.cwd(), "dist-e2e"));
   });
 });

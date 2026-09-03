@@ -1,6 +1,9 @@
-import type { DivinityBranchBuildExport } from "@/features/game-data/builds/types";
-import type { HeroBuildTab, HeroBuildTabPath } from "@/features/game-data/heroes";
-import type { HeroBuildSet } from "@/features/game-data/heroes";
+import type {
+  DivinityBranchBuildExport,
+  HeroBuildSet,
+  HeroBuildTab,
+  HeroBuildTabPath,
+} from "@/features/builds";
 import { sortBuildTabs } from "@/features/game-data/heroes";
 
 import type {

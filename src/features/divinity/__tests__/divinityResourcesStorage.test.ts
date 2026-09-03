@@ -10,6 +10,8 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
   },
 }));
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import type { DivinityOwnedResources } from "../model/types";
 import {
   loadDivinityResources,
@@ -23,7 +25,12 @@ const savedResources: DivinityOwnedResources = {
 };
 
 beforeEach(() => {
+  jest.clearAllMocks();
   mockStorage.clear();
+  jest.mocked(AsyncStorage.getItem).mockImplementation(async (key: string) => mockStorage.get(key) ?? null);
+  jest.mocked(AsyncStorage.setItem).mockImplementation(async (key: string, value: string) => {
+    mockStorage.set(key, value);
+  });
 });
 
 test("saves and loads divinity resources", async () => {
@@ -57,5 +64,53 @@ test("normalizes legacy stored counts into the supported range", async () => {
   await expect(loadDivinityResources()).resolves.toMatchObject({
     chestCounts: { "600001": 999, "600076": 0 },
     gemCounts: { 1: 12, 7: 0 },
+  });
+});
+
+test("rejects malformed saved JSON without overwriting it", async () => {
+  mockStorage.set("divinity-resources", "{broken-json");
+
+  await expect(loadDivinityResources()).rejects.toBeInstanceOf(SyntaxError);
+  expect(mockStorage.get("divinity-resources")).toBe("{broken-json");
+  expect(AsyncStorage.setItem).not.toHaveBeenCalled();
+});
+
+test("rejects a syntactically valid resources record with an invalid shape", async () => {
+  mockStorage.set("divinity-resources", "[]");
+
+  await expect(loadDivinityResources()).rejects.toBeInstanceOf(TypeError);
+  expect(mockStorage.get("divinity-resources")).toBe("[]");
+  expect(AsyncStorage.setItem).not.toHaveBeenCalled();
+});
+
+test("propagates a storage read failure", async () => {
+  const readError = new Error("storage unavailable");
+  jest.mocked(AsyncStorage.getItem).mockRejectedValueOnce(readError);
+
+  await expect(loadDivinityResources()).rejects.toBe(readError);
+  expect(AsyncStorage.setItem).not.toHaveBeenCalled();
+});
+
+test("normalizes a valid partial saved record", async () => {
+  mockStorage.set(
+    "divinity-resources",
+    JSON.stringify({ chestCounts: { "600001": 4 } }),
+  );
+
+  await expect(loadDivinityResources()).resolves.toMatchObject({
+    chestCounts: { "600001": 4, "600076": 0 },
+    gemCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 },
+  });
+});
+
+test("keeps nullable legacy resource fields compatible with empty defaults", async () => {
+  mockStorage.set(
+    "divinity-resources",
+    JSON.stringify({ chestCounts: null, gemCounts: null }),
+  );
+
+  await expect(loadDivinityResources()).resolves.toMatchObject({
+    chestCounts: { "600001": 0, "600076": 0 },
+    gemCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 },
   });
 });

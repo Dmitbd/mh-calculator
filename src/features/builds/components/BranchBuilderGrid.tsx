@@ -25,6 +25,7 @@ import {
 } from "@/shared/ui/BranchTreeGrid";
 import { MajorSkillPicker } from "./MajorSkillPicker";
 import { getBranchTreeToneForColumn } from "./branchTreeTone";
+import { getAvailableBranchesForColumn } from "../model/branchTreeRules";
 
 // Фиксированная высота ячеек заголовка — иконка + 2 строки текста без сдвига сетки
 const BRANCH_HEADER_HEIGHT = 72;
@@ -399,21 +400,6 @@ function WebBranchHeaderPicker({
 
 function getMajorSkillKey(columnId: BranchColumnId, level: number): string {
   return `${columnId}:${level}`;
-}
-
-function getAvailableBranchesForColumn(
-  branches: readonly DivinityBranch[],
-  selectedBranches: DraftBranchColumns,
-  columnId: BranchColumnId,
-): DivinityBranch[] {
-  const selectedInOtherColumns = new Set(
-    Object.entries(selectedBranches)
-      .filter(([selectedColumnId]) => selectedColumnId !== columnId)
-      .map(([, branchId]) => branchId)
-      .filter((branchId): branchId is DivinityBranchId => branchId !== null),
-  );
-
-  return branches.filter((branch) => !selectedInOtherColumns.has(branch.id));
 }
 
 const webStyles = {

@@ -1,7 +1,4 @@
-import type {
-  DivinityMajorSkill,
-  DivinitySkillNodeCost,
-} from "./types";
+import type { DivinitySkillNodeCost } from "./types";
 
 export const DIVINITY_SKILL_LOADOUT_MAX_SLOTS = 3;
 export const DIVINITY_SKILL_BASE_NODE_BUDGET = 6;

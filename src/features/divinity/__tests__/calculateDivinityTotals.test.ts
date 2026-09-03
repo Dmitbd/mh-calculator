@@ -1,4 +1,4 @@
-import levels from "../data/divinity-levels.json";
+import { divinityLevels as levels } from "@/features/game-data/divinity";
 import { calculateDivinityTotals } from "../model/calculateDivinityTotals";
 import { getCurrentDivinityStep } from "../model/getCurrentDivinityStep";
 

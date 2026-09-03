@@ -139,3 +139,20 @@ export type DivinityGemChest = {
   icon: string;
   contents: DivinityGemChestContent[];
 };
+export type StoneCosts = {
+  stone1: number;
+  stone2: number;
+  stone3: number;
+  stone4: number;
+  stone5: number;
+  stone6: number;
+  stone7: number;
+};
+
+export type DivinityLevel = {
+  level: number;
+  segmentCount: number;
+  segmentCost: StoneCosts;
+  transitionCost: StoneCosts;
+  note?: string;
+};

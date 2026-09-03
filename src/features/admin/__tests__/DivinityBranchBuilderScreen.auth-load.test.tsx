@@ -10,7 +10,7 @@ jest.mock("@/shared/ui/useImageLoadingTransition", () => ({
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react-native";
 import { Alert, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { HeroBuildSetRepositoryError, type HeroBuildSetRecord, type HeroBuildSetStatusIds } from "@/features/builds";
-import type { HeroBuildSet } from "@/features/game-data/heroes";
+import type { HeroBuildSet } from "@/features/builds";
 
 import {
   ADMIN_SESSION,

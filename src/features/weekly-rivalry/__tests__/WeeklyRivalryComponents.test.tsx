@@ -3,6 +3,10 @@ jest.mock("@/shared/lib/resolveAssetUri", () => ({
   resolveAssetUri: (assetPath: string) => `resolved:${assetPath}`,
 }));
 
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);
+
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import {

@@ -10,7 +10,7 @@ jest.mock("@/shared/ui/useImageLoadingTransition", () => ({
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react-native";
 import { Image, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { HeroBuildSetRepositoryError, type HeroBuildSetRecord, type HeroBuildSetStatusIds } from "@/features/builds";
-import type { HeroBuildSet } from "@/features/game-data/heroes";
+import type { HeroBuildSet } from "@/features/builds";
 
 import {
   ADMIN_SESSION,
@@ -501,7 +501,7 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
     expect(screen.getByText("Excalibur")).toBeTruthy();
   });
 
-  it("blocks full json download when target tabs are missing", () => {
+  it("blocks publication when target tabs are missing", () => {
     renderAdminBuilder();
 
     fireEvent.press(screen.getByText("Опубликовать"));
@@ -517,7 +517,7 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
     ).toBeTruthy();
   });
 
-  it("shows full export target tab errors above the target tabs", () => {
+  it("shows publication target tab errors above the target tabs", () => {
     renderAdminBuilder();
 
     fireEvent.press(screen.getByText("Опубликовать"));
@@ -533,7 +533,7 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
     ).toHaveLength(1);
   });
 
-  it("scrolls to the top when full export has target tab errors", () => {
+  it("scrolls to the top when publication has target tab errors", () => {
     const scrollToSpy = jest.spyOn(ScrollView.prototype, "scrollTo");
 
     renderAdminBuilder();
@@ -555,7 +555,7 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
         layout: { height: 90, width: 320, x: 0, y: 260 },
       },
     });
-    fireEvent(screen.getByTestId("branch-builder-download-section"), "layout", {
+    fireEvent(screen.getByTestId("branch-builder-actions-section"), "layout", {
       nativeEvent: {
         layout: { height: 120, width: 320, x: 0, y: 2200 },
       },
@@ -1041,6 +1041,38 @@ describe("DivinityBranchBuilderScreen: navigation-validation-concurrency", () =>
     expect(
       screen.getAllByText("\"Навыки божественности\" были сброшены").length,
     ).toBeTruthy();
+  });
+
+  it("does not show a reset toast when changing a branch with an empty divinity loadout", () => {
+    renderAdminBuilder();
+
+    fireEvent.press(screen.getByLabelText("Choose branch for левая"));
+    fireEvent.press(screen.getByLabelText("Select Psyche Skills for левая"));
+
+    expect(
+      screen.queryByText("\"Навыки божественности\" были сброшены"),
+    ).toBeNull();
+  });
+
+  it("does not treat an empty awakened row as selected divinity skills", () => {
+    renderAdminBuilder();
+
+    fireEvent.press(screen.getByLabelText("Choose branch for левая"));
+    fireEvent.press(screen.getByLabelText("Select Asterial Skills for левая"));
+    fireEvent.press(screen.getByLabelText("Choose branch for центр"));
+    fireEvent.press(screen.getByLabelText("Select Psyche Skills for центр"));
+    fireEvent.press(screen.getByLabelText("Choose branch for правая"));
+    fireEvent.press(screen.getByLabelText("Select Immortality Skills for правая"));
+    fireEvent.press(
+      screen.getByLabelText("Добавить навыки для 7 божественных узлов"),
+    );
+
+    fireEvent.press(screen.getByLabelText("Choose branch for левая"));
+    fireEvent.press(screen.getByLabelText("Select Devoid Skills for левая"));
+
+    expect(
+      screen.queryByText("\"Навыки божественности\" были сброшены"),
+    ).toBeNull();
   });
 
   it("loads web branch picker icons from the configured base URL", () => {

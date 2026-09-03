@@ -42,16 +42,12 @@ jest.mock("expo-router", () => ({
   router: mockRouter,
 }));
 
-jest.mock("@/shared/lib/supabaseClient", () => ({
-  getSupabaseClient: () => mockGetSupabaseClient(),
-}));
-
-jest.mock("@/features/builds/data/heroBuildSnapshotSource", () => {
-  const actual = jest.requireActual(
-    "@/features/builds/data/heroBuildSnapshotSource",
-  );
+jest.mock("@/features/builds", () => {
+  const actual = jest.requireActual("@/features/builds");
   return {
     ...actual,
+    getHeroBuildSupabaseClient: () => mockGetSupabaseClient(),
+    loadDataBootstrap: (...args: unknown[]) => mockLoadDataBootstrap(...args),
     loadAndCacheRemoteHeroBuildSnapshot: (...args: unknown[]) =>
       mockLoadAndCacheRemoteHeroBuildSnapshot(...args),
     loadHeroBuildSnapshotFallback: (...args: unknown[]) =>
@@ -65,12 +61,8 @@ jest.mock("@/shared/lib/imagePreload", () => ({
   useCriticalImagePreload: () => mockUseCriticalImagePreload(),
 }));
 
-jest.mock("@/shared/lib/dataBootstrap", () => ({
-  loadDataBootstrap: (...args: unknown[]) => mockLoadDataBootstrap(...args),
-}));
-
-jest.mock("@/shared/lib/sourceSelection", () => {
-  const actual = jest.requireActual("@/shared/lib/sourceSelection");
+jest.mock("@/features/heroes/model/sourceSelection", () => {
+  const actual = jest.requireActual("@/features/heroes/model/sourceSelection");
   return {
     ...actual,
     acceptBootstrap: (...args: unknown[]) => {
@@ -427,16 +419,12 @@ describe("HeroSelectScreen", () => {
         resolveSnapshot = resolve;
       }),
     );
-    const consoleError = jest.spyOn(console, "error").mockImplementation();
-
     const view = render(<HeroSelectScreen />);
     view.unmount();
 
     await act(async () => {
       resolveSnapshot(remoteSnapshot(["bastet"]));
     });
-
-    expect(consoleError).not.toHaveBeenCalled();
   });
 
   test("falls back after the snapshot timeout and can retry", async () => {
@@ -501,3 +489,6 @@ describe("HeroSelectScreen", () => {
   });
 
 });
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

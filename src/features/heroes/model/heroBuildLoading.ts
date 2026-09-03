@@ -1,15 +1,14 @@
 import {
   filterTabsWithReadyBuilds,
   getDefaultTabPath,
-  type HeroBuildSet,
 } from "@/features/game-data/heroes";
-import type { HeroBuildTabPath } from "@/features/game-data/heroes/types";
+import type { HeroBuildSet, HeroBuildTabPath } from "@/features/builds";
 import {
   createSourceSelectionState,
   rejectBootstrap,
   rejectResource,
   type SourceSelectionState,
-} from "@/shared/lib/sourceSelection";
+} from "./sourceSelection";
 
 export type HeroBuildSourceResources = {
   heroBuilds: HeroBuildSet | null;

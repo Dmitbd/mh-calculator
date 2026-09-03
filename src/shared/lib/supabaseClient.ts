@@ -2,14 +2,22 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 import { Platform } from "react-native";
 
-import type { Database } from "./database.types";
 import { readSupabaseConfig } from "./supabaseConfig";
 
-export type AppSupabaseClient = ReturnType<typeof createClient<Database>>;
+export type AppSupabaseClient<Database> = ReturnType<
+  typeof createClient<Database>
+>;
 
-let cachedClient: AppSupabaseClient | null = null;
+type GenericAppSupabaseClient = ReturnType<typeof createClient>;
 
-export function getSupabaseClient(): AppSupabaseClient | null {
+let cachedClient: GenericAppSupabaseClient | null = null;
+
+export function getSupabaseClient(): GenericAppSupabaseClient | null;
+export function getSupabaseClient<Database>(): AppSupabaseClient<Database> | null;
+export function getSupabaseClient<Database>():
+  | AppSupabaseClient<Database>
+  | GenericAppSupabaseClient
+  | null {
   if (Platform.OS === "web" && typeof window === "undefined") {
     return null;
   }
@@ -21,7 +29,7 @@ export function getSupabaseClient(): AppSupabaseClient | null {
   }
 
   if (!cachedClient) {
-    cachedClient = createClient<Database>(config.url, config.anonKey, {
+    cachedClient = createClient(config.url, config.anonKey, {
       auth: {
         autoRefreshToken: true,
         detectSessionInUrl: false,
@@ -31,5 +39,5 @@ export function getSupabaseClient(): AppSupabaseClient | null {
     });
   }
 
-  return cachedClient;
+  return cachedClient as AppSupabaseClient<Database>;
 }

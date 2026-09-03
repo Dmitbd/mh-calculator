@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import type { AdminSession } from "../api/adminAuthRepository";
+import type { AdminSession } from "@/features/auth";
 import { AsyncRequestIdentity } from "../model/asyncRequestIdentity";
 
 export function useAdminSessionGate<TClient>(params: {

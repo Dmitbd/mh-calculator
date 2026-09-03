@@ -11,7 +11,7 @@ import { heroFactions } from "@/features/game-data/heroes/heroDictionaries";
 import { heroRarities } from "@/features/game-data/heroes/heroDictionaries";
 import { heroRoles } from "@/features/game-data/heroes/heroDictionaries";
 import { hasReadyBuildInTabs, validateHeroBuildTabs } from "@/features/game-data/heroes/heroBuildTabs";
-import type { HeroBuildTab } from "@/features/game-data/heroes/types";
+import type { HeroBuildTab } from "@/features/game-data/builds/types";
 import type { DivinityBranchBuildExport } from "@/features/game-data/builds/types";
 
 function assertNoTargetTabPathInCommittedBuild(tab: HeroBuildTab) {

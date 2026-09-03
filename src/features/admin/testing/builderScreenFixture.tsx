@@ -14,7 +14,7 @@ import {
   type HeroBuildSetStatusIds,
 } from "@/features/builds";
 import { getHeroBuildSet } from "@/features/game-data/heroes";
-import type { HeroBuildSet } from "@/features/game-data/heroes";
+import type { HeroBuildSet } from "@/features/builds";
 
 import { DivinityBranchBuilderScreen } from "../screens/DivinityBranchBuilderScreen";
 
@@ -141,6 +141,7 @@ jest.mock("@/features/builds", () => {
       mockFetchPublishedHeroBuildSet(...args),
     fetchPublishedHeroBuildSetRecord: (...args: unknown[]) =>
       mockFetchPublishedHeroBuildSetRecord(...args),
+    getHeroBuildSupabaseClient: () => mockGetSupabaseClient(),
     loadPublishedHeroBuildSet: (...args: unknown[]) =>
       mockLoadPublishedHeroBuildSet(...args),
     publishDraftHeroBuildSet: (...args: unknown[]) =>
@@ -192,11 +193,7 @@ jest.mock("../components/branch-builder/EquipmentBuilderSection", () => {
   };
 });
 
-jest.mock("@/shared/lib/supabaseClient", () => ({
-  getSupabaseClient: () => mockGetSupabaseClient(),
-}));
-
-jest.mock("../api/adminAuthRepository", () => ({
+jest.mock("@/features/auth", () => ({
   getCurrentAdminSession: (...args: unknown[]) =>
     mockGetCurrentAdminSession(...args),
   signInAdmin: (...args: unknown[]) => mockSignInAdmin(...args),

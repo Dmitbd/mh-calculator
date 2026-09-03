@@ -36,3 +36,6 @@ test("does not tint an active node", () => {
     screen.queryByTestId("test-branch-node-inactive-overlay"),
   ).toBeNull();
 });
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

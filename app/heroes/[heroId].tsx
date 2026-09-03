@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 
-import { heroes } from "../../src/features/game-data/heroes/heroBuilds";
+import { heroes } from "../../src/features/game-data/heroes";
 import { HeroBuildScreen } from "../../src/features/heroes/screens/HeroBuildScreen";
 
 /** Список heroId для статического web-экспорта динамического роута */

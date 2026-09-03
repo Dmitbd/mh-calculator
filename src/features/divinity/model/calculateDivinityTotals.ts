@@ -39,7 +39,7 @@ const multiplyCosts = (costs: StoneCosts, count: number): StoneCosts => ({
 });
 
 export function calculateDivinityTotals(
-  levels: DivinityLevel[],
+  levels: readonly DivinityLevel[],
   progress: DivinityProgress,
 ): DivinityTotals {
   const completedLevels = levels.filter(

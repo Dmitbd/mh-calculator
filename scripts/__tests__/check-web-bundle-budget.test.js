@@ -81,4 +81,24 @@ describe("web entry bundle budget", () => {
       "dist-e2e/_expo/static/js/web/entry-e2e.js",
     );
   });
+
+  it("keeps the measured production baseline below the fixed ceilings", () => {
+    const config = JSON.parse(
+      fs.readFileSync(
+        path.join(process.cwd(), "scripts/web-bundle-budget.json"),
+        "utf8",
+      ),
+    );
+
+    expect(config.entry.budget).toEqual({
+      rawBytes: 2_260_000,
+      gzipBytes: 510_000,
+    });
+    expect(config.entry.baseline.rawBytes).toBeLessThanOrEqual(
+      config.entry.budget.rawBytes,
+    );
+    expect(config.entry.baseline.gzipBytes).toBeLessThanOrEqual(
+      config.entry.budget.gzipBytes,
+    );
+  });
 });

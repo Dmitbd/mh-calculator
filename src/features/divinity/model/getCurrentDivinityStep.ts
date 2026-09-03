@@ -6,7 +6,7 @@ type CurrentDivinityStep = DivinityLevel & {
 };
 
 export function getCurrentDivinityStep(
-  levels: DivinityLevel[],
+  levels: readonly DivinityLevel[],
   progress: DivinityProgress,
 ): CurrentDivinityStep | null {
   if (progress.currentLevel >= progress.endLevel) {

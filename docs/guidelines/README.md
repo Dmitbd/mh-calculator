@@ -4,10 +4,11 @@ These documents are strict rules for future MH Calculator implementation and ref
 
 ## Reading Order
 
-1. Read `documentation-and-releases.md` before planning documentation, changing product behavior, or publishing a version.
-2. Read `architecture.md` before moving or creating files.
-3. Read `code-style.md` before editing TypeScript, React Native components, hooks, tests, or JSON data.
-4. Read `project-patterns.md` before changing game data, hero builds, divinity logic, assets, builder flows, or admin tooling.
+1. Read [product-contracts.md](product-contracts.md) before changing product behavior, routes, screens, forms, or capability specs.
+2. Read [documentation-and-releases.md](documentation-and-releases.md) before planning documentation or publishing a version.
+3. Read [architecture.md](architecture.md) before moving or creating files.
+4. Read [code-style.md](code-style.md) before editing TypeScript, React Native components, hooks, tests, or JSON data.
+5. Read [project-patterns.md](project-patterns.md) before changing game data, hero builds, divinity logic, assets, builder flows, or admin tooling.
 
 Before changing build output, CI, runtime loading or error recovery, also follow the performance and operational gates in `documentation-and-releases.md`.
 
@@ -20,10 +21,9 @@ This handbook is complete only when all files listed in the Reading Order exist.
 - Guidelines in this directory define placement, boundaries, style, and repeatable project patterns.
 - When a product spec and a guideline appear to conflict, preserve product behavior and update the guideline or refactor plan explicitly.
 
-## Transition Policy
+## Verification Policy
 
-The current codebase does not yet satisfy every target rule.
-
-- New code MUST follow these guidelines.
-- Refactors SHOULD move existing code toward these guidelines.
-- Current violations MUST be listed as refactor targets instead of copied into new code.
+- Current code and new changes MUST follow these guidelines.
+- A known exception MUST be narrow, named in the relevant guideline and represented by an executable check where practical.
+- `npm run architecture:check` verifies production import boundaries; `npm run docs:check` verifies routes, capability specs, guideline discovery, inline/reference-style local links and Markdown heading fragments.
+- A refactor target MUST name a concrete remaining inconsistency. Completed migrations and deleted approaches MUST be removed from the rules instead of remaining as future architecture.

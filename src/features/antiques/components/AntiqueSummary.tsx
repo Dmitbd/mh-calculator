@@ -1,14 +1,6 @@
 import { StyleSheet, Text } from "react-native";
 
-import type { AntiqueRivalryResult } from "../model/types";
-
-type AntiqueSummaryProps = {
-  result: AntiqueRivalryResult;
-};
-
-export function AntiqueSummary({ result }: AntiqueSummaryProps) {
-  void result;
-
+export function AntiqueSummary() {
   return (
     <Text style={styles.title}>Калькулятор соперничества за антиквариат</Text>
   );

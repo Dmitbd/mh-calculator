@@ -134,3 +134,18 @@ test("lays out the skill picker as one bounded dropdown below the major caption"
       .getByTestId("major-skill-picker-center-1"),
   ).toBeTruthy();
 });
+
+test("excludes branches selected by other columns from the picker", () => {
+  renderGrid(false);
+
+  fireEvent.press(screen.getByLabelText("Choose branch for Left"));
+
+  expect(screen.getByLabelText("Select Asterial Skills for Left")).toBeTruthy();
+  expect(screen.queryByLabelText("Select Psyche Skills for Left")).toBeNull();
+  expect(
+    screen.queryByLabelText("Select Immortality Skills for Left"),
+  ).toBeNull();
+});
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

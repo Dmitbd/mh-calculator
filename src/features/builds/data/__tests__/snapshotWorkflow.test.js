@@ -22,6 +22,12 @@ describe("snapshot update workflow", () => {
 
     const owners = fs.readFileSync(path.join(process.cwd(), ".github/CODEOWNERS"), "utf8");
     expect(owners).toMatch(/update-hero-build-snapshot\.yml\s+@Dmitbd/);
-    expect(owners).toMatch(/snapshots\/hero-builds\/\s+@Dmitbd/);
+    expect(owners).toMatch(
+      /builds\/data\/generated\/hero-builds\/\s+@Dmitbd/,
+    );
+    expect(source).toContain("src/features/builds/data/generated/hero-builds");
+    expect(source).toContain("bundledHeroBuildSnapshot.test.ts");
+    expect(source).toContain("export-hero-build-snapshot.test.js");
+    expect(source).not.toContain("src/features/game-data/snapshots");
   });
 });

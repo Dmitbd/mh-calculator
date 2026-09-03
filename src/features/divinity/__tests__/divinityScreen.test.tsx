@@ -37,12 +37,166 @@ jest.mock("expo-router", () => ({
   },
 }));
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
 import DivinityScreen from "../screens/DivinityScreen";
 
-test("opens the divinity instruction screen", async () => {
+beforeEach(() => {
+  jest.clearAllMocks();
   mockStorage.clear();
+  jest.mocked(AsyncStorage.getItem).mockImplementation(async (key: string) => mockStorage.get(key) ?? null);
+  jest.mocked(AsyncStorage.setItem).mockImplementation(async (key: string, value: string) => {
+    mockStorage.set(key, value);
+  });
+});
+
+test("shows recovery with the regular header when progress data is damaged", async () => {
+  mockStorage.set("divinity-progress", "{broken-json");
+
+  render(<DivinityScreen />);
+
+  await waitFor(() => {
+    expect(screen.getByText("Ошибка загрузки локальных данных.")).toBeTruthy();
+  });
+  expect(screen.getByTestId("screen-header")).toBeTruthy();
+  expect(screen.getByText("Божественность")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Повторить" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Сбросить" })).toBeTruthy();
+  expect(screen.queryByText("Рассчитать")).toBeNull();
+  expect(screen.queryByText("Загрузка прогресса...")).toBeNull();
+});
+
+test("retries only the damaged local record", async () => {
+  mockStorage.set("divinity-progress", "{broken-json");
+  mockStorage.set(
+    "divinity-resources",
+    JSON.stringify({ gemCounts: { 7: 5 } }),
+  );
+  render(<DivinityScreen />);
+  await waitFor(() => {
+    expect(screen.getByText("Ошибка загрузки локальных данных.")).toBeTruthy();
+  });
+
+  jest.clearAllMocks();
+  mockStorage.set(
+    "divinity-progress",
+    JSON.stringify({ currentLevel: 8, filledSegments: 1 }),
+  );
+  fireEvent.press(screen.getByRole("button", { name: "Повторить" }));
+
+  await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
+  expect(AsyncStorage.getItem).toHaveBeenCalledTimes(1);
+  expect(AsyncStorage.getItem).toHaveBeenCalledWith("divinity-progress");
+  expect(JSON.parse(mockStorage.get("divinity-resources") ?? "{}")).toMatchObject({
+    gemCounts: { 7: 5 },
+  });
+});
+
+test("resets only the damaged local record", async () => {
+  mockStorage.set("divinity-progress", "{broken-json");
+  const savedResources = JSON.stringify({
+    chestCounts: { "600001": 3 },
+    gemCounts: { 7: 5 },
+  });
+  mockStorage.set("divinity-resources", savedResources);
+  render(<DivinityScreen />);
+  await waitFor(() => {
+    expect(screen.getByText("Ошибка загрузки локальных данных.")).toBeTruthy();
+  });
+
+  jest.clearAllMocks();
+  fireEvent.press(screen.getByRole("button", { name: "Сбросить" }));
+
+  await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
+  expect(AsyncStorage.setItem).toHaveBeenCalledTimes(1);
+  expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+    "divinity-progress",
+    expect.any(String),
+  );
+  expect(mockStorage.get("divinity-resources")).toBe(savedResources);
+});
+
+test("resets both damaged records with one action", async () => {
+  mockStorage.set("divinity-progress", "{broken-progress");
+  mockStorage.set("divinity-resources", "{broken-resources");
+  render(<DivinityScreen />);
+  await waitFor(() => {
+    expect(screen.getByText("Ошибка загрузки локальных данных.")).toBeTruthy();
+  });
+
+  jest.clearAllMocks();
+  fireEvent.press(screen.getByRole("button", { name: "Сбросить" }));
+
+  await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
+  expect(AsyncStorage.setItem).toHaveBeenCalledTimes(2);
+  expect(jest.mocked(AsyncStorage.setItem).mock.calls.map(([key]) => key).sort()).toEqual([
+    "divinity-progress",
+    "divinity-resources",
+  ]);
+});
+
+test("waits for both initial reads before offering one recovery action", async () => {
+  mockStorage.set("divinity-progress", "{broken-progress");
+  let resolveResourcesRead: (value: string) => void = () => undefined;
+  const resourcesRead = new Promise<string>((resolve) => {
+    resolveResourcesRead = resolve;
+  });
+  jest.mocked(AsyncStorage.getItem).mockImplementation((key: string) =>
+    key === "divinity-resources"
+      ? resourcesRead
+      : Promise.resolve(mockStorage.get(key) ?? null),
+  );
+
+  render(<DivinityScreen />);
+  await waitFor(() => {
+    expect(screen.getByText("Загрузка прогресса...")).toBeTruthy();
+  });
+  expect(screen.queryByText("Ошибка загрузки локальных данных.")).toBeNull();
+
+  resolveResourcesRead("{broken-resources");
+  await waitFor(() => {
+    expect(screen.getByText("Ошибка загрузки локальных данных.")).toBeTruthy();
+  });
+
+  jest.clearAllMocks();
+  fireEvent.press(screen.getByRole("button", { name: "Сбросить" }));
+  await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
+  expect(jest.mocked(AsyncStorage.setItem).mock.calls.map(([key]) => key).sort()).toEqual([
+    "divinity-progress",
+    "divinity-resources",
+  ]);
+});
+
+test("blocks both screen recovery actions while retry is pending", async () => {
+  mockStorage.set("divinity-progress", "{broken-progress");
+  render(<DivinityScreen />);
+  await waitFor(() => {
+    expect(screen.getByText("Ошибка загрузки локальных данных.")).toBeTruthy();
+  });
+
+  let resolveRetry: (value: string) => void = () => undefined;
+  jest.mocked(AsyncStorage.getItem).mockReturnValueOnce(
+    new Promise<string>((resolve) => {
+      resolveRetry = resolve;
+    }),
+  );
+  fireEvent.press(screen.getByRole("button", { name: "Повторить" }));
+
+  await waitFor(() => {
+    expect(
+      screen.getByRole("button", { name: "Повторить" }).props.accessibilityState.disabled,
+    ).toBe(true);
+    expect(
+      screen.getByRole("button", { name: "Сбросить" }).props.accessibilityState.disabled,
+    ).toBe(true);
+  });
+
+  resolveRetry(JSON.stringify({ currentLevel: 6 }));
+  await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
+});
+
+test("opens the divinity instruction screen", async () => {
   mockRouter.push.mockClear();
   render(<DivinityScreen />);
 
@@ -53,8 +207,6 @@ test("opens the divinity instruction screen", async () => {
 });
 
 test("increments level and shows updated totals", async () => {
-  mockStorage.clear();
-
   render(<DivinityScreen />);
 
   await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
@@ -94,8 +246,6 @@ test("increments level and shows updated totals", async () => {
 });
 
 test("decrements progress with the minus button", async () => {
-  mockStorage.clear();
-
   render(<DivinityScreen />);
 
   await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
@@ -115,7 +265,6 @@ test("decrements progress with the minus button", async () => {
 });
 
 test("preserves progress when the selected range expands", async () => {
-  mockStorage.clear();
   render(<DivinityScreen />);
 
   await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
@@ -145,7 +294,6 @@ test("preserves progress when the selected range expands", async () => {
 });
 
 test("decreasing end level also decreases start level when the range would collapse", async () => {
-  mockStorage.clear();
   render(<DivinityScreen />);
 
   await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
@@ -178,7 +326,6 @@ test("decreasing end level also decreases start level when the range would colla
 });
 
 test("adds bottom safe area space below the reset button", async () => {
-  mockStorage.clear();
   mockUseSafeAreaInsets.mockReturnValue({
     top: 12,
     right: 0,
@@ -210,7 +357,6 @@ test("adds bottom safe area space below the reset button", async () => {
 });
 
 test("autofill completes the selected range and disables manual circle progress", async () => {
-  mockStorage.clear();
   render(<DivinityScreen />);
 
   await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
@@ -242,7 +388,6 @@ test("autofill completes the selected range and disables manual circle progress"
 });
 
 test("autofill leaves the selected end level empty", async () => {
-  mockStorage.clear();
   render(<DivinityScreen />);
 
   await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
@@ -272,7 +417,6 @@ test("autofill leaves the selected end level empty", async () => {
 });
 
 test("changing range during autofill resets manual progress when autofill is turned off", async () => {
-  mockStorage.clear();
   render(<DivinityScreen />);
 
   await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
@@ -306,7 +450,6 @@ test("changing range during autofill resets manual progress when autofill is tur
 });
 
 test("applies confirmed owned resources to the remaining cost", async () => {
-  mockStorage.clear();
   render(<DivinityScreen />);
 
   await waitFor(() => expect(screen.getByText("Рассчитать")).toBeTruthy());
@@ -332,3 +475,6 @@ test("applies confirmed owned resources to the remaining cost", async () => {
     expect(screen.getByLabelText("Осталось самоцветов 1 ур.: 62")).toBeTruthy();
   });
 });
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

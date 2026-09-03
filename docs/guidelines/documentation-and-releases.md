@@ -8,6 +8,7 @@
 - [docs/README.md](../README.md) отвечает на вопрос «что уже есть в проекте».
 - [docs/CHANGELOG.md](../CHANGELOG.md) отвечает на вопрос «что изменилось после версии».
 - Guidelines задают повторяемый процесс и архитектурные границы.
+- [product-contracts.md](product-contracts.md) задаёт постоянное место продуктовых решений и проверяемую связь route, capability spec и behavior tests.
 
 Временный план не является источником продуктовой истины. Если документ описывает задуманное, но код этого не реализует, поведение нельзя представлять как выпущенное.
 
@@ -44,8 +45,9 @@ Spec должен описывать актуальные:
 3. При появлении или существенном изменении функции обновлён `docs/README.md`.
 4. Корневой `README.md` отражает выпущенные возможности, актуальный публичный URL, требования к окружению и основные команды.
 5. Пользовательский результат добавлен в `docs/CHANGELOG.md` под `Unreleased`.
-6. В diff нет `docs/superpowers/`, `.superpowers/` и иных временных планов.
-7. Относительные ссылки документации существуют.
+6. В diff нет `docs/superpowers/`, `.superpowers/` и иных временных планов; Markdown-путь временного материала содержит явный маркер `brainstorm`, `plan` или `plans`, который проверяется по Git index.
+7. Относительные inline/reference-style ссылки документации существуют, а Markdown fragments указывают на существующие headings.
+8. `npm run docs:check` подтверждает единственного владельца каждого route, полный набор capability specs и guideline links.
 
 ## Формат CHANGELOG
 
@@ -70,16 +72,19 @@ Spec должен описывать актуальные:
 ## Воспроизводимая проверка
 
 - Локальная и CI-среда используют точные версии Node.js и npm из `.nvmrc`, `package.json → engines` и `packageManager`; workflow дополнительно проверяет фактическую версию npm.
-- Чистая установка выполняется через `npm ci`. Команда `npm run verify` сама зависимости не устанавливает и одинаково запускает Expo compatibility check, Jest в последовательном режиме, TypeScript и чистый web export. Перед TypeScript-проверкой удаляется только локальная генерируемая декларация `.expo/types/router.d.ts`: она создаётся dev-server, не коммитится и не должна делать результат зависимым от давности локального запуска Expo.
+- `npm run verify` выполняет `npm run architecture:check` и `npm run docs:check` до полного Jest/TypeScript/export-gate, поэтому нарушения owners и постоянных контрактов останавливают проверку рано. После обычного TypeScript для полного test graph отдельно запускается `npm run typecheck:unused` на production-only config; unused production symbols блокируют проверку, а тесты и fixtures не маскируются искусственными использованиями.
+- Чистая установка выполняется через `npm ci`. Команда `npm run verify` сама зависимости не устанавливает и одинаково запускает Expo compatibility check, `npm run test:ci` с последовательным Jest и coverage, TypeScript и чистый web export. Перед TypeScript-проверкой удаляется только локальная генерируемая декларация `.expo/types/router.d.ts`: она создаётся dev-server, не коммитится и не должна делать результат зависимым от давности локального запуска Expo.
+- Полный Jest считается чистым только при неизменном количестве тестов, отсутствии haste collisions, unhandled rejection, `act(...)` и неожиданных `console.error`/`console.warn`; намеренно проверяемый console-вызов регистрируется точными аргументами через общий одноразовый helper, а не подавляется локальным mock или allowlist.
+- Coverage-gate измеряет production TypeScript из `app` и `src` и сохраняет `text-summary`, `json-summary` и `lcov`. Текущий полный baseline: statements `90.28%` (`4844/5365`), branches `82.44%` (`2902/3520`), functions `95.92%` (`1319/1375`), lines `90.48%` (`4661/5151`); значения в Jest намеренно округлены вниз до сотых. Порог нельзя снижать, а production-файл нельзя исключать ради прохождения проверки: исключение или новый baseline требуют документированного архитектурного решения, полного прогона и проверки отчёта на крупные непокрытые owners.
 - Перед выпуском выполняется `npm audit --omit=dev`; полный `npm audit` помогает отдельно оценить dev-only цепочки. Оставшиеся advisories классифицируются по прямой или транзитивной зависимости, runtime/build-time пути и наличию совместимого исправления.
 - Нельзя применять `npm audit fix --force`: предложенный major downgrade или upgrade сначала проверяется на совместимость с текущим Expo SDK и оформляется отдельным осознанным изменением.
 
 ## Performance и operational gates
 
-- `npm run verify` после чистого production web export запускает `npm run budget:web`. Export намеренно использует `expo export --clear`: это медленнее тёплой сборки, но не позволяет Metro cache перенести Supabase env из предыдущего режима. Скрипт требует ровно один Expo entry bundle и проверяет фактические raw/gzip-9 размеры по [scripts/web-bundle-budget.json](../../scripts/web-bundle-budget.json).
+- `npm run verify` после чистого production web export запускает `npm run budget:web`. Export намеренно использует `EXPO_NO_DOTENV=1 expo export --clear`: это исключает developer `.env` из release-измерения и не позволяет Metro cache перенести Supabase env из предыдущего режима. Явные process env из CI сохраняются; E2E отдельно задаёт публичную тестовую конфигурацию. Скрипт требует ровно один Expo entry bundle и проверяет фактические raw/gzip-9 размеры по [scripts/web-bundle-budget.json](../../scripts/web-bundle-budget.json).
 - Baseline обновляется только после измерения `npm run export:web:clean && npm run budget:web`; в конфигурации фиксируются дата, export mode, raw/gzip значения и отдельные ceilings. Нельзя поднимать budget только ради зелёного CI без описанной причины и повторного измерения.
-- Текущий baseline `2026-09-02` для static production export без Supabase env после обязательной очистки Metro cache на закреплённых Node/npm: `2 239 398` raw bytes и `501 581` gzip-9 bytes. Рост относительно контрольной сборки прежнего `main` (`2 186 085` raw bytes и `490 299` gzip-9 bytes) вызван новой самостоятельной функцией талантов божественности: двумя маршрутами, проверяемым локальным snapshot точных цен и UI трёх веток. Ceilings `2 260 000` raw bytes и `510 000` gzip-9 bytes сохраняют отдельный запас над повторным измерением и не маскируют дальнейший незапланированный рост.
-- `npm run e2e` изолированно собирает `dist-e2e` с публичной тестовой конфигурацией, проверяет тот же budget, поднимает локальный static server и запускает exact Playwright Chromium. Release/verify export остаётся в `dist`, поэтому параллельные независимые CI или reviewer gates не смешивают hashed entry bundles. Browser binary устанавливается в CI командой `npx playwright install --with-deps chromium` и не хранится в репозитории.
+- Текущий baseline `2026-09-03` для static production export без developer dotenv после чистого `npm ci` и обязательной очистки Metro cache на закреплённых Node/npm: `2 244 601` raw bytes и `500 240` gzip-9 bytes. Это финальное повторное измерение релизного `v1.7.1` после архитектурного remediation; относительно предыдущего baseline raw вырос на `5 203` bytes, а gzip уменьшился на `1 341` bytes. Ceilings `2 260 000` raw bytes и `510 000` gzip-9 bytes не повышались, сохраняют отдельный запас над измерением и не маскируют дальнейший незапланированный рост.
+- `npm run e2e` изолированно собирает `dist-e2e` с публичной тестовой конфигурацией, проверяет тот же budget, поднимает собственный локальный static server и запускает exact Playwright Chromium. Неизвестный уже запущенный server никогда не переиспользуется: занятый порт обязан остановить gate, а canonical artifact всегда равен свежему `dist-e2e`. Release/verify export остаётся в `dist`, поэтому параллельные независимые CI или reviewer gates не смешивают hashed entry bundles. После чистого `npm ci` локально один раз выполняется `npx playwright install chromium`; CI использует `npx playwright install --with-deps chromium`. Browser binary не хранится в репозитории.
 - Operational E2E обязан сохранять сценарии initial loader, remote и controlled fallback каталога, публичного build view, отказа non-admin и защиты dirty edit; каждый сценарий завершается ошибкой при любом browser `console.error` или `pageerror`. Эти тесты не заменяют реальные cold/repeat измерения GitHub Pages и native runtime из `BL-001`.
 - Pages build повторно выполняет `npm run budget:web` непосредственно после export с реальными deployment env и до загрузки artifact: budget раннего verify/export не считается доказательством для другого bundle.
 - Runtime diagnostic записывает только allowlisted `area`, `event`, `reason`, `resource`, `route`, `heroId`; строки ограничены `64` символами. Нельзя передавать raw error, stack, backend body, payload, token, key или secret.
@@ -110,10 +115,12 @@ Spec должен описывать актуальные:
 git ls-remote origin refs/heads/main
 git ls-remote --tags origin refs/tags/vX.Y.Z refs/tags/vX.Y.Z^{}
 gh release view vX.Y.Z --repo Dmitbd/mh-calculator
-gh run list --workflow "Deploy GitHub Pages" --branch main
+gh run list --workflow "Deploy GitHub Pages" --commit <verified-sha> --json databaseId,headSha,status,conclusion,url
+gh run view <run-id> --repo Dmitbd/mh-calculator --json headSha,status,conclusion,url
+gh api repos/Dmitbd/mh-calculator/releases/latest --jq '{tag_name,draft,prerelease,html_url}'
 ```
 
-Peeled SHA `refs/tags/vX.Y.Z^{}` должен совпасть с проверенным релизным commit, ветка `main` должна указывать на него, workflow GitHub Pages для этого SHA должен завершиться успешно, production-маршруты должны быть проверены вручную, а GitHub Release — опубликован и отмечен latest.
+Peeled SHA `refs/tags/vX.Y.Z^{}` должен совпасть с `<verified-sha>`, ветка `main` должна указывать на него, а `headSha` выбранного `<run-id>` обязан точно совпасть с тем же SHA и иметь `status: completed`, `conclusion: success`. Production-маршруты проверяются вручную. `gh release view` подтверждает выпуск заданного тега, а endpoint `releases/latest` обязан вернуть тот же `tag_name` с `draft: false` и `prerelease: false`.
 
 ## Версия в интерфейсе
 
@@ -126,4 +133,4 @@ Peeled SHA `refs/tags/vX.Y.Z^{}` должен совпасть с провере
 
 ## Временные материалы агентов
 
-`docs/superpowers/` и `.superpowers/` игнорируются Git. Сгенерированные specs/plans могут использоваться локально во время работы, но перед завершением полезное фактическое содержание переносится в постоянную документацию функции приложения. Временные файлы нельзя добавлять принудительно через `git add -f`.
+`docs/superpowers/` и `.superpowers/` игнорируются Git. Сгенерированные specs/plans могут использоваться локально во время работы, но перед завершением полезное фактическое содержание переносится в постоянную документацию функции приложения. Временные файлы нельзя добавлять принудительно через `git add -f`; их Markdown-пути должны содержать `brainstorm`, `plan` или `plans`, чтобы `npm run docs:check` отклонял tracked-файл независимо от каталога.

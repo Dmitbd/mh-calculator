@@ -12,7 +12,7 @@ import type {
   DivinityBranch,
   DivinityMajorSkill,
 } from "@/features/game-data/divinity";
-import { builderTheme } from "@/shared/ui/builderTheme";
+import { builderTheme } from "./builderTheme";
 import { IconPreview } from "@/shared/ui/IconPreview";
 
 type LoadoutRowId = "base" | "awakened";

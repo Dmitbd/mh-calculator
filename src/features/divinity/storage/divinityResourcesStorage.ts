@@ -19,6 +19,30 @@ function defaultRecord(): DivinityResourcesRecord {
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+type DivinityResourcesRecordInput = {
+  chestCounts?: Record<string, unknown> | null;
+  gemCounts?: Record<string, unknown> | null;
+  updatedAt?: string | null;
+};
+
+function isDivinityResourcesRecordInput(
+  value: unknown,
+): value is DivinityResourcesRecordInput {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    (value.chestCounts == null || isRecord(value.chestCounts)) &&
+    (value.gemCounts == null || isRecord(value.gemCounts)) &&
+    (value.updatedAt == null || typeof value.updatedAt === "string")
+  );
+}
+
 export async function loadDivinityResources(): Promise<DivinityResourcesRecord> {
   const storedValue = await AsyncStorage.getItem(STORAGE_KEY);
 
@@ -26,7 +50,11 @@ export async function loadDivinityResources(): Promise<DivinityResourcesRecord> 
     return defaultRecord();
   }
 
-  const parsed = JSON.parse(storedValue) as Partial<DivinityResourcesRecord>;
+  const parsed: unknown = JSON.parse(storedValue);
+
+  if (!isDivinityResourcesRecordInput(parsed)) {
+    throw new TypeError("Invalid divinity resources record");
+  }
   const normalized = normalizeDivinityOwnedResources({
     chestCounts: parsed.chestCounts,
     gemCounts: parsed.gemCounts,

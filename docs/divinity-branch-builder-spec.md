@@ -6,7 +6,7 @@
 - не допустить лишних изменений от будущих агентов или разработчиков;
 - дать опору для переноса на другой стек, включая SPA, без потери функциональности.
 
-Билдер открывается как отдельный маршрут expo-router: `/admin/branch-builder`. Системная шапка маршрута отключена; экран использует единый крупный однострочный заголовок через `ScreenHeader`, сохраняя асинхронный перехват кнопки `Назад` для dirty-формы.
+Билдер открывается как отдельный канонический маршрут expo-router: `/admin/branch-builder`. Отдельного file-based alias `/admin/branch-builder.html` в `app` нет; при статическом web-экспорте файл `admin/branch-builder.html` является физическим artifact именно канонического маршрута и не означает второй route. Системная шапка маршрута отключена; экран использует единый крупный однострочный заголовок через `ScreenHeader`, сохраняя асинхронный перехват кнопки `Назад` для dirty-формы.
 
 ## Scope
 
@@ -15,9 +15,9 @@
 - сетку `30` уровней × `3` столбца с нодами двух типов: минорный стат и мажорный скилл;
 - выбор мажорного скилла из скиллов выбранной ветки столбца;
 - замена выбранного мажорного скилла повторным нажатием по ноде;
-- отметку прогресса (активности) по клику на любую ноду — подсветка ноды и всех нод до неё в этом столбце;
+- отметку прогресса по клику на доступную ноду после выбора всех предыдущих мажорных навыков — подсветка ноды и всех нод до неё в этом столбце;
 - вертикальную линию-«ветку» по каждому столбцу и горизонтальные соединители на уровнях ветвления ствола;
-- сборку и валидацию JSON-выгрузки, включая прогресс и список активных нод.
+- сборку и валидацию полного server payload, включая прогресс и список активных нод.
 
 Билдер НЕ реализует:
 - ручной текстовый ввод значений нод;
@@ -26,18 +26,21 @@
 - offline-only сохранение без Supabase или несколько пользовательских профилей одного героя.
 
 Экран `Divinity Branch Builder` также содержит соседние секции:
-- режим игры PvP/PvE ([GameModeRadio](../src/features/admin/components/GameModeRadio.tsx));
+- выбор целевой PvP/PvE-вкладки ([BuildTargetSection](../src/features/admin/components/branch-builder/BuildTargetSection.tsx));
 - пробуждение оружия ([WeaponAwakeningPicker](../src/features/builds/components/WeaponAwakeningPicker.tsx)).
 
-Эти секции живут в том же экране и в той же JSON-выгрузке. Данный файл является постоянным spec всего билдера, поэтому их общий контракт, серверные черновики, оборудование и публикация зафиксированы ниже.
+Эти секции живут в том же экране и в том же серверном JSON payload. Данный файл является постоянным spec всего билдера, поэтому их общий контракт, серверные черновики, оборудование и публикация зафиксированы ниже.
 
 ## Source Files
 
 Логика билдера дерева распределена так:
 - [app/admin/branch-builder.tsx](../app/admin/branch-builder.tsx) — маршрут
 - [src/features/admin/screens/DivinityBranchBuilderScreen.tsx](../src/features/admin/screens/DivinityBranchBuilderScreen.tsx) — экран, сборка секций
+- [src/features/admin/hooks/useDivinityBranchBuilderController.ts](../src/features/admin/hooks/useDivinityBranchBuilderController.ts) — application-controller auth, entity loads, validation, revisions, server commands и stale-response lifecycle
+- [src/features/admin/components/BuilderActions.tsx](../src/features/admin/components/BuilderActions.tsx) — доступные действия server draft/publication lifecycle
 - [src/shared/ui/ScreenHeader.tsx](../src/shared/ui/ScreenHeader.tsx) — единая шапка и защищённая навигация назад
 - [src/features/builds/components/BranchBuilderGrid.tsx](../src/features/builds/components/BranchBuilderGrid.tsx) — сетка, заголовки-селекторы веток, линии дерева
+- [src/features/builds/model/branchTreeRules.ts](../src/features/builds/model/branchTreeRules.ts) — единые чистые правила последовательного доступа и уникальности веток для build UI и admin editor
 - [src/features/builds/components/BranchNodeCard.tsx](../src/features/builds/components/BranchNodeCard.tsx) — `MinorStatCard` и `MajorNodeCard`
 - [src/features/builds/components/MajorSkillPicker.tsx](../src/features/builds/components/MajorSkillPicker.tsx) — список выбора скилла
 - [src/shared/ui/IconPreview.tsx](../src/shared/ui/IconPreview.tsx) — иконка или пунктирный плейсхолдер
@@ -45,25 +48,27 @@
 - [src/shared/ui/PixelIconLoader.tsx](../src/shared/ui/PixelIconLoader.tsx) — локальная пиксельная анимация «Тетрис-ряд» для иконок
 - [src/shared/ui/useImageLoadingTransition.ts](../src/shared/ui/useImageLoadingTransition.ts) — anti-flicker, завершение движения, error и reduced-motion состояния
 - [src/shared/ui/ScreenLoader.tsx](../src/shared/ui/ScreenLoader.tsx) — общий полноэкранный и встроенный loader
-- [src/features/admin/hooks/useDivinityBranchBuilder.ts](../src/features/admin/hooks/useDivinityBranchBuilder.ts) — состояние и экспорт
+- [src/features/admin/hooks/useDivinityBranchBuilder.ts](../src/features/admin/hooks/useDivinityBranchBuilder.ts) — состояние и сборка payload
 - [src/features/admin/model/builderEditorReducer.ts](../src/features/admin/model/builderEditorReducer.ts) — чистые переходы редактируемого draft
 - [src/features/admin/model/asyncRequestIdentity.ts](../src/features/admin/model/asyncRequestIdentity.ts) — generation identity, атомарные channel-latches и единый controller асинхронных операций screen
 - [src/features/admin/model/validationNavigation.ts](../src/features/admin/model/validationNavigation.ts) — перевод ошибок в leaf/секцию, scroll target и toast
 - [src/features/admin/hooks/useAdminSessionGate.ts](../src/features/admin/hooks/useAdminSessionGate.ts) — восстановление и gate административной сессии
+- [src/features/auth/index.ts](../src/features/auth/index.ts) — публичный административный session/claim API для admin и viewer
+- [src/features/auth/adminSessionRepository.ts](../src/features/auth/adminSessionRepository.ts) — Supabase auth boundary без зависимости от admin UI
+- [src/features/auth/adminAuthDiagnostics.ts](../src/features/auth/adminAuthDiagnostics.ts) — фиксированное безопасное событие отказа non-admin
 - [src/features/admin/hooks/useHeroBuildStatusQuery.ts](../src/features/admin/hooks/useHeroBuildStatusQuery.ts) — current-only запрос status-каталога
 - [src/features/admin/api/builderServerCommands.ts](../src/features/admin/api/builderServerCommands.ts) — типизированные исходы server-команд и revision
 - [src/features/admin/utils/validateBranchBuild.ts](../src/features/admin/utils/validateBranchBuild.ts) — валидация
 - [src/features/builds/model/heroBuildSetSchema.ts](../src/features/builds/model/heroBuildSetSchema.ts) — runtime-валидация загруженных Supabase payload
 - [src/features/builds/api/heroBuildSetRepository.ts](../src/features/builds/api/heroBuildSetRepository.ts) — типизированная граница чтения и lifecycle RPC
-- [src/shared/lib/dataBootstrap.ts](../src/shared/lib/dataBootstrap.ts) — публичный bootstrap-контракт совместимости viewer-данных
+- [src/features/builds/data/dataBootstrap.ts](../src/features/builds/data/dataBootstrap.ts) — build-owned bootstrap-контракт совместимости viewer-данных
 - [src/features/admin/types/admin.types.ts](../src/features/admin/types/admin.types.ts) — типы
-- [src/features/game-data/builds/types.ts](../src/features/game-data/builds/types.ts) — committed и standalone export contracts
+- [src/features/admin/types/validation.types.ts](../src/features/admin/types/validation.types.ts) — полный union кодов валидации
+- [src/features/game-data/builds/types.ts](../src/features/game-data/builds/types.ts) — контракты рабочего и committed payload
 - [src/features/game-data/divinity/types.ts](../src/features/game-data/divinity/types.ts) — ветки, ноды, скиллы и прогресс дерева
 - [src/features/game-data/divinity/tree-template.json](../src/features/game-data/divinity/tree-template.json) — структура дерева
 - [src/features/game-data/divinity/divinity-branches.json](../src/features/game-data/divinity/divinity-branches.json) — ветки
 - [src/features/game-data/divinity/divinity-skills.json](../src/features/game-data/divinity/divinity-skills.json) — мажорные скиллы
-
-`BranchSelector.tsx` существует в коде как legacy-компонент и сейчас НЕ подключён: заголовки-селекторы веток реализованы прямо в `BranchBuilderGrid`.
 
 ## Data Model
 
@@ -185,7 +190,9 @@ type ActiveBranchNode = {
 Правила:
 - список доступных мажорных скиллов столбца фильтруется по выбранной ветке (`skill.branchId === selectedBranch`);
 - пока ветка столбца не выбрана, список выбора скилла показывает `Select branch first`;
-- выбор ветки не сбрасывает уже выбранные мажорные скиллы автоматически (валидатор отдельно проверит соответствие).
+- одна ветка не может одновременно принадлежать нескольким колонкам: selector исключает занятые другими колонками варианты, а reducer независимо отклоняет повторный branch ID;
+- смена ветки очищает выбранные мажорные скиллы и прогресс только изменённой колонки, сохраняя дерево двух остальных колонок;
+- смена ветки полностью очищает base/awakened loadout секции `Навыки божественности` и признак показа awakened-ряда. Если был выбран хотя бы один skill ID, экран показывает `"Навыки божественности" были сброшены`; один только раскрытый пустой awakened-ряд не создаёт ложное уведомление.
 
 ## Circular Nodes And Details
 
@@ -225,7 +232,9 @@ type ActiveBranchNode = {
 
 Прогресс хранится по столбцам отдельно (`progressLevels`).
 
-Клик по любой ноде (`toggleColumnProgress`):
+Клик по доступной ноде (`toggleColumnProgress`):
+- нижний уровень доступен, только если выбраны все предшествующие мажорные навыки этой колонки; правило одинаково для ordinary progress node и открытия major picker;
+- недоступное действие не меняет draft и показывает `Сначала выберите навык выше в этой ветке.`;
 - если кликнут не верхний уровень — прогресс столбца становится равен уровню кликнутой ноды (активны все ноды столбца до неё включительно);
 - если повторно кликнута текущая верхняя активная нода — прогресс откатывается на предыдущую ноду столбца (или снимается полностью, если ниже нод нет).
 
@@ -262,9 +271,9 @@ type ActiveBranchNode = {
 - по X между колонками: `COLUMN_GAP = 16`;
 - по Y между уровнями: `ROW_GAP = 24`.
 
-## JSON Export
+## Server Payload Assembly
 
-`buildExport` (в `useDivinityBranchBuilder`) формирует выгрузку и возвращает `null`, если сборка неполная:
+`buildExport` (в `useDivinityBranchBuilder`) формирует типизированный payload одной рабочей вкладки и возвращает `null`, если сборка неполная:
 - path вкладки не определяет режим игры, ИЛИ
 - не выбран герой из мастер-каталога, ИЛИ
 - нет хотя бы одного артефакта или одной руны, ИЛИ
@@ -272,7 +281,7 @@ type ActiveBranchNode = {
 - заполнены не все мажорные слоты (`majorNodes.length !== число majorSkill-нод`), ИЛИ
 - выбраны не все слоты пробуждения оружия.
 
-Source contract разделяет committed leaf и standalone-выгрузку билдера:
+Source contract разделяет рабочий payload билдера с координатой вкладки и committed leaf внутри `HeroBuildSet`:
 
 ```ts
 type DivinityBranchBuildExport = {
@@ -309,24 +318,35 @@ type DivinityBranchBuilderExport = DivinityBranchBuildExport & {
 ```
 
 Важно:
-- standalone-выгрузка билдера содержит `targetTabPath`; после размещения в `HeroBuildSet` committed leaf хранит вложенный `DivinityBranchBuildExport` без этого поля;
+- рабочий `DivinityBranchBuilderExport` содержит `targetTabPath`; после размещения в `HeroBuildSet` committed leaf хранит вложенный `DivinityBranchBuildExport` без этого поля. Название типа не означает наличие файлового export-действия;
 - `progress` и `activeNodes` сохраняются в JSON и не участвуют в интерактивной проверке незавершённой формы; при чтении готового Supabase payload runtime-схема проверяет диапазоны, tree-template paths и точное соответствие производного `activeNodes` значению `progress`;
 - `activeNodes` — производное от `progress` (все ноды столбца с `level <= progress`).
 
 ## Validation
 
-`validateBranchBuild` собирает список ошибок. Коды, относящиеся к дереву:
+`validateBranchBuild` собирает типизированный список ошибок. Полный union находится в `validation.types.ts`; spec группирует его по владельцам секций:
+
+- герой: `hero.required`, `hero.unknown`, `hero.nameMismatch`;
+- режим: `gameMode.invalid`;
+- варианты экипировки: `equipment.artifactRequired`, `equipment.artifactUnknown`, `equipment.artifactDuplicate`, `equipment.runeRequired`, `equipment.runeUnknown`, `equipment.runeDuplicate`;
+- навыки божественности: `divinitySkills.required`, `divinitySkills.slotLimitExceeded`, `divinitySkills.skillUnknown`, `divinitySkills.duplicate`, `divinitySkills.nodeBudgetExceeded`;
+- прогресс каждой колонки: `progress.minimumLevel`; server-write требует минимум уровень `18` для `left`, `center` и `right`;
+- пробуждение оружия: `weaponAwakening.slotRequired`, `weaponAwakening.colorUnknown`.
+
+Коды дерева:
+
 - `column.branchRequired` — для столбца не выбрана ветка;
 - `column.branchUnknown` — выбрана несуществующая ветка;
 - `majorNode.required` — мажорный слот не заполнен;
 - `majorNode.slotUnknown` — выбран скилл для несуществующего слота;
 - `majorNode.branchMismatch` — ветка ноды не совпадает с веткой столбца;
 - `majorNode.skillUnknown` — выбран несуществующий скилл;
-- `majorNode.skillBranchMismatch` — скилл не принадлежит ветке столбца.
+- `majorNode.skillBranchMismatch` — скилл не принадлежит ветке столбца;
+- `majorNode.skillTierMismatch` — tier скилла не соответствует слоту.
 
-Прочие коды (`gameMode.invalid`, `heroName.required`, `weaponAwakening.*`) относятся к соседним секциям/общим полям.
+Сборка полного комплекта дополнительно использует `multiBuild.missingTab` и `multiBuild.gameModeMismatch`. Пустой выбор героя даёт `hero.required`, а несовпадение имени выбранному каталожному герою — `hero.nameMismatch`.
 
-Кнопка `Проверить JSON` ([DownloadJsonButton](../src/features/admin/components/DownloadJsonButton.tsx)) запускает валидацию и показывает список ошибок.
+Валидация полного payload запускается действиями `Опубликовать` и `Обновить`; `Сохранить вкладку` валидирует текущую вкладку. Ошибки показываются у полей, в общей области вкладок и в ограниченном toast.
 
 ## UI Contract
 
@@ -338,7 +358,7 @@ type DivinityBranchBuilderExport = DivinityBranchBuildExport & {
 - выбор и замена мажорного скилла повторным нажатием по круглой ноде;
 - круглые APK-иконки и постоянная компактная подпись под каждой нодой.
 
-Подпись выбранной мажорной ноды содержит только имя навыка — без уровня и длинного описания. Варианты замены отображаются единым непрозрачным блоком с цветной рамкой ветки, располагаются в обычном потоке под подписью и не перекрывают следующие уровни. Отдельная кнопка сброса `×` отсутствует; смена ветки в шапке очищает относящиеся к ней выбранные ноды и прогресс.
+Подпись выбранной мажорной ноды содержит только имя навыка — без уровня и длинного описания. Варианты замены отображаются единым непрозрачным блоком с цветной рамкой ветки, располагаются в обычном потоке под подписью и не перекрывают следующие уровни. Отдельная кнопка сброса `×` отсутствует; смена ветки в шапке очищает относящиеся к ней выбранные ноды и прогресс, а также весь зависимый divinity-skill loadout с условным уведомлением.
 
 Намеренно убрано и не должно самовольно возвращаться:
 - слово «tier» внутри ноды;
@@ -357,7 +377,9 @@ type DivinityBranchBuilderExport = DivinityBranchBuildExport & {
 - пробуждение оружия и вычисленные бонусы;
 - base/awakened loadout скиллов божественности;
 - локальное сохранение валидной вкладки в комплект;
-- загрузку, серверный черновик, атомарную публикацию и полный JSON-экспорт.
+- загрузку server draft или опубликованного baseline, сохранение текущей вкладки в server draft, атомарную публикацию и обновление опубликованного комплекта.
+
+Файловый импорт/экспорт JSON не является пользовательской возможностью билдера. Кнопки `Скачать полный JSON`, `Загрузить билд` и отдельная `Сохранить черновик` удалены; JSON остаётся только форматом проверяемого server payload.
 
 Новые секции этого экрана дописываются сюда и не получают отдельный постоянный spec.
 
@@ -365,7 +387,7 @@ type DivinityBranchBuilderExport = DivinityBranchBuildExport & {
 
 Административная сессия признаётся только для Supabase-пользователя, у которого `app_metadata.role === "admin"`. Стабильный контракт сессии содержит `id`, `email` и литеральную роль `admin`. Обычная authenticated-сессия не открывает билдер и не даёт доступ к server draft/published данным. Если password login успешен, но admin claim отсутствует, клиент через публичный `signOut({ scope: "local" })` пытается удалить созданную локальную сессию и независимо от результата показывает `Недостаточно прав администратора.`; восстановленная non-admin сессия считается отсутствующей административной сессией. `auth-js` не предоставляет публичного force-clear API: при ошибке local sign-out клиент всё равно не создаёт `AdminSession`, а RLS не допускает non-admin JWT к защищённым данным.
 
-Отказ non-admin дополнительно фиксируется только bounded событием `MH_DIAGNOSTIC { area: "admin-auth", event: "access-denied" }`. Email, JWT, password, raw auth error и backend response в diagnostic не передаются.
+Контракт административной сессии принадлежит нейтральной feature `auth` и доступен admin/viewer только через `@/features/auth`; он не зависит от admin UI, hero screens или игровых каталогов. Отказ non-admin дополнительно фиксируется auth-owned wrapper только bounded событием `MH_DIAGNOSTIC { area: "admin-auth", event: "access-denied" }`. Email, JWT, password, raw auth error и backend response в diagnostic не передаются.
 
 До завершения первоначального восстановления admin-сессии экран показывает общий полноэкранный loader `Проверяем доступ` и не раскрывает форму входа или builder. Полноэкранный и встроенный loader используют одну доступную композицию: emoji-молния мягко пульсирует внутри расходящегося кольца, а две круглые искры движутся по орбите; при reduced motion композиция остаётся статичной. Если восстановленная admin-сессия открывает валидный `mode=edit&heroId=...`, loader продолжает блокировать editor и hero selector до принятия опубликованного комплекта или контролируемой ошибки; между auth и edit effects нет commit пустого редактора. `AdminAuthPanel` поддерживает вход и выход, состояния pending и видимые success/error toast. Если Supabase не настроен, серверное действие завершается контролируемым `Supabase не настроен.`, а не падением.
 
@@ -401,16 +423,16 @@ Supabase возвращает ID отдельно по статусам `draft` 
 
 Повторное сохранение блокируется, пока запрос текущей вкладки не завершён. Выбор другого героя синхронно инвалидирует pending tab-save и publication: поздний ответ предыдущего героя не меняет revision, status-каталог, toast или loading нового героя. Identity формы меняется только после успешного принятия загруженного билда; ошибка, отсутствие строки или недоступный Supabase оставляют прежнюю форму активной и пригодной для повторного сохранения. Устаревший ответ после смены героя/вкладки или закрытия экрана не должен применить snapshot или показать ложный success. Ошибка Supabase сохраняет текущие поля редактирования и показывает backend error, но не выдаёт вкладку за сохранённую. Optimistic conflict также не коммитит подготовленный snapshot и не сбрасывает локальные правки: экран показывает `Билд изменён в другой сессии. Ваши правки сохранены в форме; загрузите актуальную версию.`
 
-В create/draft workflow полный export собирается только из сохранённых leaf-вкладок. Пустые группы и незавершённые drafts не должны маскироваться как готовый комплект. В `mode=edit` полный комплект собирается из текущего локального draft каждого leaf, включая ещё не сохранённые изменения открытой и остальных вкладок.
+В create/draft workflow полный server payload собирается только из сохранённых leaf-вкладок. Пустые группы и незавершённые drafts не должны маскироваться как готовый комплект. В `mode=edit` полный комплект собирается из текущего локального draft каждого leaf, включая ещё не сохранённые изменения открытой и остальных вкладок.
 
 ## Equipment And Weapon Awakening
 
 - Артефакты и руны хранятся отдельными массивами стабильных IDs; они не образуют пары.
-- Варианты принадлежат текущей вкладке, сохраняют порядок добавления и экспортируются как `equipment.artifactIds` и `equipment.runeIds`.
-- В каждом массиве нужен хотя бы один вариант; неизвестный или повторный ID блокирует сохранение и export.
+- Варианты принадлежат текущей вкладке, сохраняют порядок добавления и записываются в payload как `equipment.artifactIds` и `equipment.runeIds`.
+- В каждом массиве нужен хотя бы один вариант; неизвестный или повторный ID блокирует сохранение server payload.
 - Добавление исключает уже выбранные элементы, удаление одного варианта не меняет второй тип экипировки.
 - Пробуждение оружия хранит selections по слотам; бонусы вычисляются из каталога и класса выбранного героя по порогам и правилам из [Hero Builds Spec](hero-builds-spec.md#weapon-awakening).
-- Экспорт содержит исходные selections, а не только отображаемый текст бонуса.
+- Server payload содержит исходные selections, а не только отображаемый текст бонуса.
 
 ## Divinity Skill Loadout
 
@@ -420,14 +442,14 @@ Base и awakened slots редактируются отдельно. Awakened-н�
 
 Таблица `hero_build_sets` хранит для каждого `hero_id` не более одной строки со статусом `draft` или `published`.
 
-- `Сохранить черновик` валидирует полный текущий комплект и создаёт либо обновляет только status `draft`.
+- `Сохранить вкладку` валидирует текущую leaf-вкладку и создаёт либо обновляет server draft полного комплекта, сохраняя уже принятые leaf-вкладки.
 - Выбор героя из `Не опубликованы` загружает только его draft через `fetchDraftHeroBuildSet` и восстанавливает редактируемые вкладки.
 - Повторная загрузка блокируется, пока предыдущая draft-load операция не завершена.
 - Устаревший ответ после выбора другого героя или закрытия селектора не должен менять текущий draft или показывать ложный успех; неуспешный выбор draft не меняет identity уже принятой формы.
 - `Опубликовать` вызывает один RPC, который атомарно обновляет payload существующего draft и переводит ту же строку в status `published`.
 - Если draft отсутствует, RPC завершает публикацию ошибкой и не создаёт отдельную published-строку.
 - После успешной публикации status-каталог обновляется: герой удаляется из draft IDs и добавляется в published IDs.
-- В `mode=edit` действия создания скрыты: нет `Сохранить вкладку`, `Сохранить черновик`, `Опубликовать`, загрузки, JSON-экспорта и удаления. После семантического изменения показывается единственная кнопка `Обновить`, во время запроса — `Обновляем...`; у чистой формы action отсутствует.
+- В `mode=edit` действия создания скрыты: нет `Сохранить вкладку`, `Опубликовать` и удаления. После семантического изменения показывается единственная кнопка `Обновить`, во время запроса — `Обновляем...`; у чистой формы action отсутствует.
 - Загрузка `mode=edit` сохраняет неизменяемый опубликованный baseline и отдельный локальный editable draft для каждого leaf. Структурный `isDirty` сравнивает пользовательские поля всех leaf, сбрасывается при полном возврате значений к baseline и не реагирует на служебные timestamps. Только успешное обновление опубликованного payload принимает текущую форму как новый baseline; revision остаётся отдельным server-конкурентным контрактом.
 - `Обновить` валидирует полный локальный комплект, открывает вкладку и секцию первой ошибки и не выполняет запись при ошибках. Успех принимает отправленный snapshot как новый baseline и скрывает action; конфликт или сетевой сбой сохраняет локальные правки и возможность повторить обновление. Если форма меняется во время запроса, server snapshot принимается как baseline без потери более новых правок, а action остаётся доступным.
 - При несохранённых изменениях кнопка назад в шапке, выход администратора и выбор другого героя требуют подтверждения. Параллельные подтверждения выхода и выбора героя сериализуются по правилу «первое намерение побеждает»: повторное действие игнорируется до завершения текущего диалога, а после размонтирования продолжение запрещено. Ошибка перехватчика ухода закрывает переход, а не выполняет его. На web перезагрузка и закрытие вкладки защищены `beforeunload`; обработчик существует только у dirty-формы и снимается при очистке или размонтировании. Переключение вкладок одного билда остаётся свободным, не запускает валидацию и не требует подтверждения.
@@ -448,11 +470,11 @@ Base и awakened slots редактируются отдельно. Awakened-н�
 - показывает не более пяти уникальных сообщений в toast и число скрытых;
 - после открытия проблемной вкладки прокручивает к точной секции первой ошибки;
 - очищает относящиеся к полю ошибки после исправления;
-- блокирует export/save/publish неполного комплекта.
+- блокирует server save/publish/update неполного комплекта.
 
 Backend success не должен жить дольше актуальной операции или выбранного героя. Loading, error, empty и retry состояния являются частью контракта, а не временным служебным UI.
 
-Внутренняя ownership-граница также является правилом переноса: screen компонует секции и намерения пользователя, hook хранит editor-session, чистый reducer владеет переходами draft, request identity определяет актуальность async-ответов, status query владеет каталогом server-состояний, server-command boundary возвращает типизированный исход с revision, а validation navigation переводит доменные paths в выбранный leaf и секцию. Эти модули не меняют пользовательский контракт, но не должны снова сливаться в route-level screen.
+Внутренняя ownership-граница также является правилом переноса: screen владеет только safe-area, layout/scroll и компоновкой секций; application-controller связывает auth, entity loads, validation, revisions, server commands, dirty transitions и stale-response lifecycle; editor hook хранит editor-session; чистый reducer владеет переходами draft; request identity определяет актуальность async-ответов; status query владеет каталогом server-состояний; validation navigation переводит доменные paths в выбранный leaf и секцию. Эти модули не меняют пользовательский контракт и не должны снова сливаться в route-level screen.
 
 Reducer вычисляет следующий цвет пробуждения из draft, полученного самим state transition, поэтому несколько кликов, объединённых React в один batch, не теряются и проходят каталог последовательно. Screen не ведёт параллельные request-id/in-flight refs для initial edit, draft, entity, auth, dirty-discard, tab-save или publish: атомарный controller сериализует intent, инвалидирует устаревшие поколения и освобождает только актуальный latch.
 
@@ -463,17 +485,18 @@ Reducer вычисляет следующий цвет пробуждения и
 1. Структура дерева задаётся данными (`tree-template.json`), а не кодом UI.
 2. Три столбца `left/center/right`; `center` — основной ствол (`isMain`).
 3. Мажорный слот выбирает скилл только из выбранной ветки своего столбца.
-4. Клик по любой ноде задаёт прогресс столбца до неё; повторный клик по верхней — откат на ноду ниже.
-5. Выбор или замена мажорного скилла ставит прогресс до его ноды; смена ветки очищает ноды и прогресс колонки.
-6. `progress` хранится по столбцам отдельно; `activeNodes` производно от `progress`.
-7. Вертикальная линия идёт только от первой до последней ноды столбца.
-8. Горизонтальные соединители только на уровнях, где у `isMain`-колонки стоит мажорная нода.
-9. Цвет пути определяется колонкой: синий, зелёный, фиолетовый; минорные ноды используют оригинальные APK-иконки и постоянно показывают характеристику, а большие ноды показывают только имя выбранного навыка.
-10. JSON содержит `columns`, `majorNodes`, `progress`, `activeNodes`; экспорт неполной сборки запрещён (`null`).
-11. Вкладки независимы по полному path; data contract и helpers рекурсивны, а текущий builder UI создаёт не более двух отображаемых уровней.
-12. Server build — одна строка на `hero_id`; публикация атомарно переводит эту строку из draft в published.
-13. Устаревшие async-ответы не меняют выбранного героя и не показывают ложный успех.
-14. Admin-доступ требует `app_metadata.role === "admin"` одновременно на клиентской auth-границе и в Supabase RLS.
+4. Нода доступна только после выбора всех предыдущих мажорных навыков её колонки; клик задаёт прогресс до доступной ноды, повторный клик по верхней — откат на ноду ниже.
+5. Выбор или замена мажорного скилла ставит прогресс до его ноды; смена ветки очищает ноды и прогресс изменённой колонки, весь base/awakened divinity loadout и awakened-флаг, не затрагивая дерево других колонок.
+6. Одна ветка может быть выбрана только в одной колонке; запрет обеспечивают независимо UI options и reducer.
+7. `progress` хранится по столбцам отдельно; `activeNodes` производно от `progress`.
+8. Вертикальная линия идёт только от первой до последней ноды столбца.
+9. Горизонтальные соединители только на уровнях, где у `isMain`-колонки стоит мажорная нода.
+10. Цвет пути определяется колонкой: синий, зелёный, фиолетовый; минорные ноды используют оригинальные APK-иконки и постоянно показывают характеристику, а большие ноды показывают только имя выбранного навыка.
+11. Server JSON содержит `columns`, `majorNodes`, `progress`, `activeNodes`; сборка неполного комплекта для server write запрещена (`null`).
+12. Вкладки независимы по полному path; data contract и helpers рекурсивны, а текущий builder UI создаёт не более двух отображаемых уровней.
+13. Server build — одна строка на `hero_id`; публикация атомарно переводит эту строку из draft в published.
+14. Устаревшие async-ответы не меняют выбранного героя и не показывают ложный успех.
+15. Admin-доступ требует `app_metadata.role === "admin"` одновременно на клиентской auth-границе и в Supabase RLS.
 
 ## Change Guardrails
 
@@ -483,12 +506,16 @@ Reducer вычисляет следующий цвет пробуждения и
 - тянуть вертикальную линию выше первой/ниже последней ноды столбца;
 - рисовать горизонтальные соединители вне уровней ветвления ствола;
 - делать прогресс общим (а не по столбцам) или менять смысл `progressLevels`;
+- разрешать использование нижней ноды до выбора всех предшествующих major skills;
+- разрешать один branch ID в нескольких колонках или очищать дерево незатронутых колонок при смене ветки;
+- сохранять divinity-skill loadout после смены ветки без нового продуктового решения;
 - удалять `progress`/`activeNodes` из JSON;
 - заменять найденные APK-иконки самодельными изображениями без отдельного согласования;
 - класть ассеты в `public/assets/...` (конфликт с маршрутом `/assets` дев-сервера) — иконки лежат в `public/img/...`.
 - считать сохранение одной вкладки публикацией полного комплекта;
 - смешивать героев со статусами draft и published в одной группе селектора;
 - создавать для одного героя отдельные draft и published строки;
+- возвращать файловый импорт/экспорт или отдельное действие полного draft-save без нового продуктового решения;
 - удалять или понижать до draft опубликованную строку;
 - хранить computed-текст бонусов вместо selections и каталогов;
 - создавать отдельные постоянные specs для вкладок, экипировки или server drafts этого билдера.
@@ -497,16 +524,20 @@ Reducer вычисляет следующий цвет пробуждения и
 
 Поведение хука и валидации частично покрыто тестами:
 - [operational-smoke.spec.ts](../e2e/operational-smoke.spec.ts) — production-browser отказ non-admin и dirty edit confirmation;
-- [useDivinityBranchBuilder.test.ts](../src/features/admin/__tests__/useDivinityBranchBuilder.test.ts) — пустой драфт и сборка JSON (включая `progress` и `activeNodes`);
-- [validateBranchBuild.test.ts](../src/features/admin/__tests__/validateBranchBuild.test.ts) — валидация и `slugifyFileName`;
+- [useDivinityBranchBuilder.test.ts](../src/features/admin/__tests__/useDivinityBranchBuilder.test.ts) — пустой драфт и сборка server JSON (включая `progress` и `activeNodes`);
+- [validateBranchBuild.test.ts](../src/features/admin/__tests__/validateBranchBuild.test.ts) — доменная валидация вкладки;
+- [BuilderActions.test.tsx](../src/features/admin/__tests__/BuilderActions.test.tsx) — доступные create/edit actions и pending-состояния;
+- [branchTreeRules.test.ts](../src/features/builds/__tests__/branchTreeRules.test.ts) — последовательный доступ и единый контракт уникальности веток;
 - [heroBuildSetSchema.test.ts](../src/features/builds/model/__tests__/heroBuildSetSchema.test.ts) — версия и полная runtime-целостность загруженного комплекта;
-- `DivinityBranchBuilderScreen.*.test.tsx` и [builderScreenFixture.tsx](../src/features/admin/testing/builderScreenFixture.tsx) — auth/load, create/draft/publish, edit/update/conflict, navigation/validation/concurrency через один общий fixture;
+- [useDivinityBranchBuilderController.test.tsx](../src/features/admin/__tests__/useDivinityBranchBuilderController.test.tsx) — публичная grouped-граница controller, auth state и validation handoff;
+- [adminSessionRepository.test.ts](../src/features/auth/__tests__/adminSessionRepository.test.ts) — общий session/claim контракт и безопасный non-admin cleanup;
+- `DivinityBranchBuilderScreen.*.test.tsx` и [builderScreenFixture.tsx](../src/features/admin/testing/builderScreenFixture.tsx) — интеграционное UI-подтверждение auth/load, create/draft/publish, edit/update/conflict и navigation/validation/concurrency через один общий fixture;
 - [builderEditorReducer.test.ts](../src/features/admin/__tests__/builderEditorReducer.test.ts), [asyncRequestIdentity.test.ts](../src/features/admin/__tests__/asyncRequestIdentity.test.ts), [validationNavigation.test.ts](../src/features/admin/__tests__/validationNavigation.test.ts), [useAdminSessionGate.test.ts](../src/features/admin/__tests__/useAdminSessionGate.test.ts), [useHeroBuildStatusQuery.test.ts](../src/features/admin/__tests__/useHeroBuildStatusQuery.test.ts) и [builderServerCommands.test.ts](../src/features/admin/__tests__/builderServerCommands.test.ts) — focused boundaries декомпозированного workflow;
 - [heroBuildSetRepository.test.ts](../src/features/builds/api/__tests__/heroBuildSetRepository.test.ts) — draft/published запросы и явные lifecycle-операции;
 - [branchBuilderTabs.test.ts](../src/features/admin/__tests__/branchBuilderTabs.test.ts) — структура вкладок и path;
 - [multiBuildExport.test.ts](../src/features/admin/__tests__/multiBuildExport.test.ts) — сборка полного комплекта;
 - [publishedBuilderEditModel.test.ts](../src/features/admin/__tests__/publishedBuilderEditModel.test.ts) — immutable baseline, полные локальные leaf-drafts, dirty-state и координаты первой ошибки режима редактирования;
-- [saveAdminHeroBuildSet.test.ts](../src/features/admin/__tests__/saveAdminHeroBuildSet.test.ts) — единая атомарная операция публикации черновика;
+- [publicationRules.test.ts](../src/features/admin/__tests__/publicationRules.test.ts) — обнаружение конфликта create-публикации с уже опубликованным билдом;
 - [heroBuildSetsLifecycleSql.test.js](../src/features/admin/__tests__/heroBuildSetsLifecycleSql.test.js) — структура migration, server trigger и publication RPC;
 - [heroBuildSetRevisionsSql.test.js](../src/features/admin/__tests__/heroBuildSetRevisionsSql.test.js) — revision/history immutability, optimistic predicates и restore RPC;
 - [heroGuideSelectorModel.test.ts](../src/features/admin/__tests__/heroGuideSelectorModel.test.ts) — взаимоисключающие списки героев;

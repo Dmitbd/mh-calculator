@@ -84,3 +84,7 @@ describe("EquipmentVariantTabs", () => {
     expect(screen.queryByText("Air description")).toBeNull();
   });
 });
+
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

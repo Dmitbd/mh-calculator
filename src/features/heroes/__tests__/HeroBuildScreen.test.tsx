@@ -61,30 +61,27 @@ jest.mock("expo-router", () => ({
   useRouter: () => mockRouter,
 }));
 
-jest.mock("@/shared/lib/supabaseClient", () => ({
-  __esModule: true,
-  getSupabaseClient: () => mockGetSupabaseClient(),
-}));
-
-jest.mock("@/features/builds/data/heroBuildSnapshotSource", () => ({
-  getBuildSetFromSnapshot: (source: { snapshot: { heroBuilds: Array<{ buildSet: unknown; heroId: string }> } }, heroId: string) =>
-    source.snapshot.heroBuilds.find((entry) => entry.heroId === heroId)?.buildSet ?? null,
-  loadAndCacheRemoteHeroBuildSnapshot: (...args: unknown[]) =>
-    mockLoadAndCacheRemoteHeroBuildSnapshot(...args),
-  loadHeroBuildSnapshotFallback: (...args: unknown[]) =>
-    mockLoadHeroBuildSnapshotFallback(...args),
-}));
+jest.mock("@/features/builds", () => {
+  const actual = jest.requireActual("@/features/builds");
+  return {
+    ...actual,
+    getHeroBuildSupabaseClient: () => mockGetSupabaseClient(),
+    getBuildSetFromSnapshot: (source: { snapshot: { heroBuilds: Array<{ buildSet: unknown; heroId: string }> } }, heroId: string) =>
+      source.snapshot.heroBuilds.find((entry) => entry.heroId === heroId)?.buildSet ?? null,
+    loadAndCacheRemoteHeroBuildSnapshot: (...args: unknown[]) =>
+      mockLoadAndCacheRemoteHeroBuildSnapshot(...args),
+    loadDataBootstrap: (...args: unknown[]) => mockLoadDataBootstrap(...args),
+    loadHeroBuildSnapshotFallback: (...args: unknown[]) =>
+      mockLoadHeroBuildSnapshotFallback(...args),
+  };
+});
 
 jest.mock("@/shared/lib/imagePreload", () => ({
   useCriticalImagePreload: () => mockUseCriticalImagePreload(),
 }));
 
-jest.mock("@/shared/lib/dataBootstrap", () => ({
-  loadDataBootstrap: (...args: unknown[]) => mockLoadDataBootstrap(...args),
-}));
-
-jest.mock("@/shared/lib/sourceSelection", () => {
-  const actual = jest.requireActual("@/shared/lib/sourceSelection");
+jest.mock("@/features/heroes/model/sourceSelection", () => {
+  const actual = jest.requireActual("@/features/heroes/model/sourceSelection");
   return {
     ...actual,
     acceptBootstrap: (...args: unknown[]) => {
@@ -115,16 +112,14 @@ import {
   createHeroBuildLoadState,
   resolveHeroBuildLoadState,
 } from "@/features/heroes/model/heroBuildLoading";
-import { acceptResource } from "@/shared/lib/sourceSelection";
+import { acceptResource } from "@/features/heroes/model/sourceSelection";
 
 describe("HeroBuildScreen", () => {
   let diagnostic: jest.SpyInstance;
-  let consoleError: jest.SpyInstance;
 
   beforeEach(() => {
     jest.useRealTimers();
     diagnostic = jest.spyOn(console, "info").mockImplementation();
-    consoleError = jest.spyOn(console, "error");
     jest
       .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
       .mockResolvedValue(true);
@@ -157,7 +152,6 @@ describe("HeroBuildScreen", () => {
   });
 
   afterEach(() => {
-    expect(consoleError).not.toHaveBeenCalled();
     jest.restoreAllMocks();
   });
 

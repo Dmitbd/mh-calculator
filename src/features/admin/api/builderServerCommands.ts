@@ -4,8 +4,8 @@ import {
   publishDraftHeroBuildSet,
   updatePublishedHeroBuildSet,
   type HeroBuildSetSupabaseClient,
+  type HeroBuildSet,
 } from "@/features/builds";
-import type { HeroBuildSet } from "@/features/game-data/heroes";
 
 export type BuilderServerCommandOutcome =
   | { kind: "success"; revision: number }

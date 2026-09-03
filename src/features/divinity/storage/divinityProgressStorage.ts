@@ -20,6 +20,40 @@ const defaultRecord = (): DivinityProgressRecord => ({
   updatedAt: new Date(0).toISOString(),
 });
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+type DivinityProgressRecordInput = {
+  [Key in keyof DivinityProgressRecord]?: DivinityProgressRecord[Key] | null;
+};
+
+function hasValidOptionalNumber(
+  record: Record<string, unknown>,
+  key: keyof DivinityProgressRecord,
+): boolean {
+  const value = record[key];
+  return value == null || (typeof value === "number" && Number.isFinite(value));
+}
+
+function isDivinityProgressRecordInput(
+  value: unknown,
+): value is DivinityProgressRecordInput {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    hasValidOptionalNumber(value, "startLevel") &&
+    hasValidOptionalNumber(value, "endLevel") &&
+    hasValidOptionalNumber(value, "currentLevel") &&
+    hasValidOptionalNumber(value, "filledSegments") &&
+    (value.autofillEnabled == null ||
+      typeof value.autofillEnabled === "boolean") &&
+    (value.updatedAt == null || typeof value.updatedAt === "string")
+  );
+}
+
 export async function loadDivinityProgress(): Promise<DivinityProgressRecord> {
   const storedValue = await AsyncStorage.getItem(STORAGE_KEY);
 
@@ -27,7 +61,11 @@ export async function loadDivinityProgress(): Promise<DivinityProgressRecord> {
     return defaultRecord();
   }
 
-  const parsed = JSON.parse(storedValue) as Partial<DivinityProgressRecord>;
+  const parsed: unknown = JSON.parse(storedValue);
+
+  if (!isDivinityProgressRecordInput(parsed)) {
+    throw new TypeError("Invalid divinity progress record");
+  }
 
   return {
     startLevel: parsed.startLevel ?? 1,

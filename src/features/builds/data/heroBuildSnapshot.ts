@@ -1,5 +1,5 @@
 import { parseHeroBuildSet } from "@/features/builds/model/heroBuildSetSchema";
-import type { HeroBuildSet } from "@/features/game-data/heroes/types";
+import type { HeroBuildSet } from "@/features/game-data/builds/types";
 
 export const HERO_BUILD_SNAPSHOT_SCHEMA_VERSION = 1 as const;
 export const HERO_BUILD_SNAPSHOT_RESOURCE_FILE = "hero-builds.json" as const;

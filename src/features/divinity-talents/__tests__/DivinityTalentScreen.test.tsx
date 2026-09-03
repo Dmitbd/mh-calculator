@@ -239,3 +239,6 @@ test("keeps the fixed header and bottom content clear of safe areas", async () =
     ]),
   );
 });
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

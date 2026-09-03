@@ -314,3 +314,6 @@ test("hides decorative connectors on native and web without hiding rendered node
     Object.defineProperty(Platform, "OS", { value: originalPlatform });
   }
 });
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

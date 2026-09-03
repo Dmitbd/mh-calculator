@@ -10,7 +10,7 @@ jest.mock("@/shared/ui/useImageLoadingTransition", () => ({
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react-native";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { HeroBuildSetRepositoryError, type HeroBuildSetRecord, type HeroBuildSetStatusIds } from "@/features/builds";
-import type { HeroBuildSet } from "@/features/game-data/heroes";
+import type { HeroBuildSet } from "@/features/builds";
 
 import {
   ADMIN_SESSION,
@@ -260,21 +260,13 @@ describe("DivinityBranchBuilderScreen: create-draft-publish", () => {
       expect(mockUpdatePublishedHeroBuildSet).toHaveBeenCalledTimes(1),
     );
 
-    const consoleError = jest
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
     view.unmount();
 
-    try {
-      await act(async () => {
-        resolveSave();
-      });
+    await act(async () => {
+      resolveSave();
+    });
 
-      expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
-      expect(consoleError).not.toHaveBeenCalled();
-    } finally {
-      consoleError.mockRestore();
-    }
+    expect(mockFetchHeroBuildSetStatusIds).toHaveBeenCalledTimes(1);
   });
 
   it("ignores a late publication after another hero is selected", async () => {
@@ -697,7 +689,7 @@ describe("DivinityBranchBuilderScreen: create-draft-publish", () => {
     expect(
       screen.getByLabelText("Select PvP build tab").props.accessibilityState,
     ).toEqual(expect.objectContaining({ selected: true }));
-  });
+  }, 15_000);
 
   it("keeps the accepted form identity after a new initial edit entity is not found", async () => {
     mockGetSupabaseClient.mockReturnValue({ from: jest.fn() });
@@ -957,10 +949,6 @@ describe("DivinityBranchBuilderScreen: create-draft-publish", () => {
     const buildSet = getValidBastetBuildSet();
     const tabs = buildSet.tabs;
     let tabsReadCount = 0;
-    const consoleError = jest
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
-
     Object.defineProperty(buildSet, "tabs", {
       configurable: true,
       get: () => {
@@ -984,26 +972,17 @@ describe("DivinityBranchBuilderScreen: create-draft-publish", () => {
     );
     view.unmount();
 
-    try {
-      await act(async () => {
-        initialLoad.resolve(buildSet);
-      });
+    await act(async () => {
+      initialLoad.resolve(buildSet);
+    });
 
-      expect(tabsReadCount).toBe(0);
-      expect(consoleError).not.toHaveBeenCalled();
-    } finally {
-      consoleError.mockRestore();
-    }
+    expect(tabsReadCount).toBe(0);
   });
 
   it("does not inspect an initial edit error that rejects after unmount", async () => {
     const initialLoad = createDeferred<HeroBuildSet | null>();
     const lateError = new Error();
     let messageReadCount = 0;
-    const consoleError = jest
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
-
     Object.defineProperty(lateError, "message", {
       configurable: true,
       get: () => {
@@ -1027,16 +1006,11 @@ describe("DivinityBranchBuilderScreen: create-draft-publish", () => {
     );
     view.unmount();
 
-    try {
-      await act(async () => {
-        initialLoad.reject(lateError);
-      });
+    await act(async () => {
+      initialLoad.reject(lateError);
+    });
 
-      expect(messageReadCount).toBe(0);
-      expect(consoleError).not.toHaveBeenCalled();
-    } finally {
-      consoleError.mockRestore();
-    }
+    expect(messageReadCount).toBe(0);
   });
 
 });

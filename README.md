@@ -47,17 +47,23 @@ Expo dev server предложит доступные web, Android и iOS target
 npm run verify
 ```
 
-Основная проверка запускает Expo compatibility check, Jest, TypeScript, чистый статический web export и проверку размера bundle. Production-browser сценарии запускаются отдельно:
+Основная проверка запускает Expo compatibility check, Jest, TypeScript, чистый статический web export и проверку размера bundle. До тестов `verify` также проверяет архитектурный import graph и соответствие всех Expo routes постоянным capability specs и локальным ссылкам документации.
+
+Production-browser сценарии запускаются отдельно:
 
 ```bash
+npx playwright install chromium
 npm run e2e
 ```
+
+Установка Chromium требуется один раз после чистого `npm ci`; сам `npm run e2e` browser binary не загружает.
 
 Дополнительные команды:
 
 - `npm run android` — открыть Android target;
 - `npm run ios` — открыть iOS target;
 - `npm run export:web` — создать статический web build в `dist/`;
+- `npm run docs:check` — проверить route/spec coverage и ссылки постоянной документации;
 - `npm test` — запустить Jest suite.
 
 ## Публикация
@@ -68,4 +74,4 @@ Push в `main` запускает workflow `Deploy GitHub Pages`: он пров�
 
 ## Данные
 
-Данные прогресса божественности находятся в [divinity-levels.json](src/features/divinity/data/divinity-levels.json). Пользовательский прогресс и ввод калькуляторов сохраняются локально через AsyncStorage. Каталоги событий используют проверенные локальные snapshots, а опубликованные билды героев имеют контролируемый локальный fallback. Подробные источники данных и integrity-правила перечислены в соответствующих capability specs.
+Каталог уровней божественности находится в [divinity-levels.json](src/features/game-data/divinity/divinity-levels.json). Пользовательский прогресс и ввод калькуляторов сохраняются локально через AsyncStorage. Каталоги событий используют проверенные локальные snapshots, а generated fallback опубликованных билдов принадлежит build data pipeline. Подробные источники данных и integrity-правила перечислены в соответствующих capability specs.

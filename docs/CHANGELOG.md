@@ -4,6 +4,25 @@
 
 ## Unreleased
 
+## v1.7.1 - 2026-09-03
+
+### Changed
+
+- Из билдера удалён отменённый файловый JSON-сценарий и его скрытые действия; рабочие server draft, публикация и обновление сохранены в компактном блоке действий.
+- Правила дерева билдера сведены к одному чистому контракту: ветки уникальны по колонкам, нижние ноды требуют предыдущие крупные навыки, а смена ветки атомарно очищает её данные и зависимый divinity-skill loadout.
+- Auth, загрузка сущностей, validation, revision/server lifecycle и защита от устаревших ответов билдера вынесены из большого route-level screen в типизированный application-controller без изменения пользовательского workflow.
+- Admin session, hero-build bootstrap/source selection, build theme и диагностические schemas перенесены из `shared` к явным feature-владельцам с публичными API; поведение auth, remote/fallback и UI не изменено.
+- Каталог уровней божественности и generated fallback билдов перенесены к владельцам `game-data/divinity` и `builds/data`; bytes данных, runtime fallback и атомарный snapshot workflow сохранены.
+- Удалён лишний file-based route `/admin/branch-builder.html`; единственной точкой входа билдера остаётся `/admin/branch-builder`, а exact route inventory и static-export проверки защищают контракт от повторного alias.
+- Удалены недостижимые legacy-компоненты и общий request-helper без production consumers; правило конфликта create-публикации оставлено отдельной чистой моделью, а устаревший `@testing-library/jest-native` удалён в пользу встроенных matchers текущей React Native Testing Library.
+- Архитектурные import-границы переведены с неполных regex-проверок на единый TypeScript import graph для alias, relative, re-export, type-only и dynamic imports; gate также отклоняет недостижимые production-модули и runtime-импорты test fixtures и добавлен в `npm run verify`.
+- Продуктовые решения закреплены за capability specs, полный набор из 18 routes — за единственными владельцами в каталоге; `docs:check` теперь предотвращает потерю screen/spec, orphan-документы, устаревшие локальные ссылки и потерянные ссылки на правила.
+- Транзитивное семейство Metro закреплено на совместимой с Expo SDK 56 версии `0.84.5`, которая удаляет уязвимый build-time parser изображений без смены React Native или публичного runtime-контракта.
+
+### Fixed
+
+- Повреждённый локальный прогресс или инвентарь `Божественности` больше не оставляет экран в бесконечной загрузке: пользователь может повторить чтение или явно сбросить только записи с ошибкой, не затрагивая исправные данные.
+
 ## v1.7.0 - 2026-09-02
 
 ### Added

@@ -1,9 +1,10 @@
 import {
   divinityBranchPointConnector,
   divinityBranches,
+  divinityLevels,
   divinitySkills,
   divinityTreeTemplate,
-} from "../catalog";
+} from "..";
 
 const EXPECTED_TALENT_ICONS: Readonly<Record<string, string>> = {
   "Accuracy": "/img/divinity/talent-icons/talent-01.png",
@@ -30,6 +31,22 @@ const EXPECTED_TALENT_ICONS: Readonly<Record<string, string>> = {
 };
 
 describe("divinity catalogs", () => {
+  test("level costs cover the exact sequential 1..30 catalog", () => {
+    expect(divinityLevels.map(({ level }) => level)).toEqual(
+      Array.from({ length: 30 }, (_, index) => index + 1),
+    );
+    divinityLevels.forEach(({ segmentCost, segmentCount, transitionCost }) => {
+      expect(Number.isSafeInteger(segmentCount)).toBe(true);
+      expect(segmentCount).toBeGreaterThan(0);
+      [...Object.values(segmentCost), ...Object.values(transitionCost)].forEach(
+        (cost) => {
+          expect(Number.isSafeInteger(cost)).toBe(true);
+          expect(cost).toBeGreaterThanOrEqual(0);
+        },
+      );
+    });
+  });
+
   test("branches are sorted and have unique ids", () => {
     expect(new Set(divinityBranches.map((branch) => branch.id)).size).toBe(
       divinityBranches.length,

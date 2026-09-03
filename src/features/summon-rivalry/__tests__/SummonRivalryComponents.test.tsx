@@ -202,3 +202,6 @@ test("renders all 16 reward chests and marks every fourth as major", () => {
       .map((row) => row.props.accessibilityValue?.now),
   ).toEqual([100, 0, 0, 0]);
 });
+jest.mock("@/shared/ui/useImageLoadingTransition", () =>
+  jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
+);

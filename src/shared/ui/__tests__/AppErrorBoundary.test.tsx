@@ -3,25 +3,28 @@ import { Text } from "react-native";
 
 import { AppErrorBoundary } from "../AppErrorBoundary";
 
-const originalConsoleError = console.error;
-const originalConsoleInfo = console.info;
+const { expectConsoleError } = require(
+  "../../../../scripts/testing/consoleGuard.cjs",
+);
 
-beforeEach(() => {
-  console.error = jest.fn();
-  console.info = jest.fn();
-});
+const brokenScreenError = new Error("private backend payload");
 
-afterEach(() => {
-  console.error = originalConsoleError;
-  console.info = originalConsoleInfo;
-});
+function expectReactBoundaryError(error: Error, componentName: string): void {
+  expectConsoleError(
+    "%o\n\n%s\n\n%s\n",
+    error,
+    `The above error occurred in the <${componentName}> component.`,
+    "React will try to recreate this component tree from scratch using the error boundary you provided, AppErrorBoundary.",
+  );
+}
 
 function BrokenScreen(): React.JSX.Element {
-  throw new Error("private backend payload");
+  throw brokenScreenError;
 }
 
 describe("AppErrorBoundary", () => {
   it("shows a controlled recovery view without exposing the thrown error", () => {
+    expectReactBoundaryError(brokenScreenError, "BrokenScreen");
     render(
       <AppErrorBoundary onGoHome={jest.fn()}>
         <BrokenScreen />
@@ -38,12 +41,14 @@ describe("AppErrorBoundary", () => {
 
   it("resets the boundary and delegates safe navigation home", () => {
     const onGoHome = jest.fn();
+    expectReactBoundaryError(brokenScreenError, "BrokenScreen");
     const view = render(
       <AppErrorBoundary onGoHome={onGoHome}>
         <BrokenScreen />
       </AppErrorBoundary>,
     );
 
+    expectReactBoundaryError(brokenScreenError, "BrokenScreen");
     fireEvent.press(screen.getByRole("button", { name: "На главную" }));
     expect(onGoHome).toHaveBeenCalledTimes(1);
 
@@ -59,10 +64,11 @@ describe("AppErrorBoundary", () => {
   it("recovers to healthy home content when navigation keeps resetKey at slash", () => {
     let homeIsBroken = true;
     let view: ReturnType<typeof render>;
+    const homeScreenError = new Error("transient home failure");
 
     function HomeScreen() {
       if (homeIsBroken) {
-        throw new Error("transient home failure");
+        throw homeScreenError;
       }
       return <Text>Главная восстановлена</Text>;
     }
@@ -76,6 +82,7 @@ describe("AppErrorBoundary", () => {
       );
     });
 
+    expectReactBoundaryError(homeScreenError, "HomeScreen");
     view = render(
       <AppErrorBoundary onGoHome={onGoHome} resetKey="/">
         <HomeScreen />

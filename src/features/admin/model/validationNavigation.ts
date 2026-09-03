@@ -9,7 +9,7 @@ export type ValidationScrollSection =
   | "weaponAwakening"
   | "divinitySkills"
   | "branchGrid"
-  | "download";
+  | "actions";
 
 export type PendingValidationScrollTarget = "top" | ValidationScrollSection;
 

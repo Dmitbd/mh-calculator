@@ -2,19 +2,22 @@
 
 ## Status
 
-- These rules are strict defaults for implementation and future refactors.
-- Current code may violate these rules; new code MUST NOT copy current violations.
-- Refactors SHOULD move existing code toward these rules without changing product behavior.
+- These rules are strict defaults for current implementation and refactors.
+- A known exception MUST be named in the architecture guidelines instead of being inferred from old code.
+- Refactors MUST preserve the owning capability spec unless the product contract changes explicitly.
 
 ## TypeScript
 
 - `strict` TypeScript MUST remain enabled.
+- Production TypeScript in `app` and `src` MUST pass `npm run typecheck:unused`: the command rejects standalone `void` expressions without a call before running `noUnusedLocals` and `noUnusedParameters`; tests, testing fixtures, E2E and generated artifacts are excluded by the dedicated config instead of weakening the production rule. `void someAsyncCall()` remains the explicit fire-and-forget Promise pattern and is not a suppression.
+- A production unused diagnostic MUST be resolved by removing the symbol or restoring its real consumer. Prefixing with `_`, adding `void`, broadening an exclusion or exporting a private leftover only to silence the gate is forbidden. An underscore is allowed only for an unavoidable positional callback slot or a destructuring omission that performs real data shaping; removable lifecycle/API parameters do not qualify.
+- Exporting or mutually importing production symbols does not prove use. Every non-route production module MUST be reachable from an application entrypoint; disconnected modules, placeholder barrels and speculative public APIs are forbidden.
 - `any` is FORBIDDEN unless the reason is narrow and documented near the boundary.
 - Domain types MUST be explicit and exported from the owning feature or neutral shared contract.
 - Optional fields MUST mean something specific; they MUST NOT be added for speculative future data.
 - Type assertions MUST stay near external, JSON, platform, or library boundaries.
 - Shared contracts used by multiple features MUST live in a neutral owner.
-- A neutral owner MUST be `src/shared` for domain-agnostic shared UI or library code, `src/features/game-data` for catalog/domain contracts, or `src/features/builds` for reusable build presentation contracts; `src/features/admin` is not neutral.
+- A neutral owner MUST be `src/shared` for domain-agnostic shared UI or library code, `src/features/game-data` for catalog/domain contracts, `src/features/builds` for reusable build presentation/data contracts, or a focused capability such as `src/features/auth` when its public contract is consumed by multiple features; `src/features/admin` is not neutral.
 
 ## React Native Components
 
@@ -35,11 +38,11 @@
 
 ## Model And Utility Code
 
-- Pure calculations MUST live in `model` or `utils`.
+- Feature domain calculations and state transitions MUST live in `model`; stateless feature transformations and view mappers MAY live in `utils`.
 - Pure calculations MUST be testable without rendering React components.
 - Model code MUST NOT import React components, screens, or navigation entrypoints.
-- Utilities SHOULD stay domain-specific unless reuse across features is proven.
-- Cross-feature utility reuse MUST move through a neutral shared owner.
+- Feature utilities SHOULD stay owned by that feature until reuse across features is proven.
+- Cross-feature utility reuse MUST move through a neutral owner and its explicit public API when one exists.
 
 ## JSON Data
 
@@ -50,7 +53,7 @@
 - JSON data MUST map to explicit domain types before reaching UI components.
 - Optional JSON fields MUST mean something specific; they MUST NOT be added for speculative future data.
 - Game object ids, JSON filenames, and asset filenames MUST use `kebab-case`.
-- Domain ids MUST remain stable once referenced by saved data, exported data, or assets.
+- Domain ids MUST remain stable once referenced by saved data, server payloads, routes, or assets.
 
 ## Tests
 
@@ -59,6 +62,14 @@
 - Model and utility tests SHOULD assert edge cases and data boundaries.
 - Screen and component tests SHOULD assert user-visible behavior.
 - Tests MUST NOT depend on private implementation details when visible behavior can be asserted.
+- Import-boundary tests MUST use the TypeScript import graph behind `npm run architecture:check`; regex or substring checks MAY remain only for narrow structural/content invariants and MUST NOT claim complete dependency coverage.
+- Production imports from `__tests__`, `testing`, `*.test.*` or `*.spec.*` are forbidden even when a helper appears reusable; move proven runtime reuse to its owning production module.
+- Architecture fixtures MUST cover alias, relative, re-export, `import type`, inline import types, multiline, literal `require` and dynamic imports with/without attributes plus every governed dependency direction and every narrow exception.
+- Documentation checker fixtures MUST cover an undocumented or duplicated route, missing/orphan/required spec, broken local Markdown target, absent required index link, an untracked temporary-plan exclusion and rejection of the same path when tracked.
+- Tooling fixtures MUST prove that the production unused-code config excludes tests/fixtures and that a temporary unused symbol under production source fails the real TypeScript command.
+- Negative or subprocess fixtures MUST run in an isolated system temporary project and be removed recursively in `finally`; they MUST NOT create discoverable test or production files inside repository `app`, `src` or `scripts`, where concurrent Jest, TypeScript, architecture or export gates could observe them.
+- Jest globally rejects every unexpected `console.error` and `console.warn`. A test MUST NOT replace or spy on these methods. An error or warning that is the behavior under test MUST be registered immediately before the action through `expectConsoleError` or `expectConsoleWarning` from `scripts/testing/consoleGuard.cjs`, with the exact full argument list; one registration permits exactly one matching call and must be consumed.
+- `npm run test:ci` MUST collect coverage from production TypeScript in `app` and `src`; tests, explicit testing fixtures, declarations and generated data MAY be excluded. All four global metrics (statements, branches, functions and lines) MUST retain their measured baseline. Lowering a threshold or broadening an exclusion requires a documented architectural reason and a new full-suite measurement; a focused test MAY use a larger explicit timeout only when coverage instrumentation makes a proven asynchronous scenario exceed Jest's default.
 
 ## Naming
 

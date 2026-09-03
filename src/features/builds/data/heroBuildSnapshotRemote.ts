@@ -1,6 +1,6 @@
 import type { SupabaseConfig } from "@/shared/lib/supabaseConfig";
-import type { DataBootstrapManifest } from "@/shared/lib/dataBootstrap";
-import type { HeroBuildSet } from "@/features/game-data/heroes/types";
+import type { DataBootstrapManifest } from "./dataBootstrap";
+import type { HeroBuildSet } from "@/features/game-data/builds/types";
 
 import {
   createHeroBuildSnapshot,
