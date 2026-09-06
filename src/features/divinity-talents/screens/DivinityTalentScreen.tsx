@@ -28,7 +28,7 @@ export default function DivinityTalentScreen() {
       <View style={styles.screen}>
         <ScreenHeader
           fallbackHref="/"
-          title="Таланты божественности"
+          title="Дерево навыков"
         />
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Загрузка расчёта...</Text>
@@ -41,7 +41,7 @@ export default function DivinityTalentScreen() {
     <View style={styles.screen}>
       <ScreenHeader
         fallbackHref="/"
-        title="Таланты божественности"
+        title="Дерево навыков"
       />
       <ScrollView
         contentContainerStyle={[

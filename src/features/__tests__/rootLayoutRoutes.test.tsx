@@ -66,15 +66,13 @@ test("configures the complete canonical route inventory", () => {
   expect(mockStackScreen.mock.calls.map(([props]) => props)).toEqual(
     expectedRouteEntries.map((name) => ({
       name,
-      options:
-        name === "index"
-          ? { title: "MH Calculator" }
-          : { headerShown: false },
+      options: { headerShown: false },
     })),
   );
 });
 
 test.each([
+  "index",
   "divinity-talents",
   "divinity-talents/manual",
   "summon-rivalry",

@@ -80,24 +80,31 @@ const SummaryMetricView = memo(function SummaryMetricView({
 }) {
   return (
     <View
+      accessible
+      accessibilityLabel={`Требуется ${metric.resource.label}: ${metric.value}`}
+      accessibilityRole="text"
       testID={`divinity-talent-summary-row-${metric.key}`}
       style={styles.metric}
     >
-      <View {...decorativeChildrenAccessibility}>
-        <DivinityTalentResourceIcon
-          accessible={false}
-          resource={metric.resource}
-          size={26}
-          testID={`divinity-talent-summary-icon-${metric.key}`}
-        />
-      </View>
-      <Text
-        accessibilityLabel={`Требуется ${metric.resource.label}: ${metric.value}`}
-        accessibilityRole="text"
-        style={styles.metricText}
-      >
-        {metric.resource.label}: {metric.value}
+      <Text accessible={false} style={[styles.metricText, styles.metricLabel]}>
+        {metric.resource.label}
       </Text>
+      <View style={styles.metricCost}>
+        <View {...decorativeChildrenAccessibility}>
+          <DivinityTalentResourceIcon
+            accessible={false}
+            resource={metric.resource}
+            size={26}
+            testID={`divinity-talent-summary-icon-${metric.key}`}
+          />
+        </View>
+        <Text accessible={false} style={styles.metricText}>
+          :
+        </Text>
+        <Text accessible={false} style={styles.metricText}>
+          {metric.value}
+        </Text>
+      </View>
     </View>
   );
 });
@@ -135,7 +142,7 @@ const styles = StyleSheet.create({
   },
   metric: {
     width: "100%",
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
     gap: 10,
     borderRadius: 14,
@@ -143,8 +150,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
   },
+  metricCost: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  metricLabel: {
+    alignSelf: "stretch",
+    textAlign: "center",
+  },
   metricText: {
-    flex: 1,
     color: "#fff8e7",
     fontSize: 15,
     lineHeight: 20,

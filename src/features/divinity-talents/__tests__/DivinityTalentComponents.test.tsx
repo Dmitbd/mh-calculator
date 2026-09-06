@@ -331,7 +331,7 @@ test("shows exact APK connector meaning without treating it as a purchase", () =
   expect(screen.getAllByRole("button")).toHaveLength(76);
 });
 
-test("shows exactly three branch resources as readable icon-label-value rows", () => {
+test("shows three resource cards with a heading above each icon and cost", () => {
   const resources: DivinityTalentRequiredResources = {
     selectedNodeCount: 2,
     faith: 0,
@@ -359,14 +359,21 @@ test("shows exactly three branch resources as readable icon-label-value rows", (
     ),
   ).toMatchObject({
     alignItems: "center",
-    flexDirection: "row",
+    flexDirection: "column",
     width: "100%",
   });
-  expect(screen.getByText("Очки веры: 0")).toBeTruthy();
-  expect(screen.getByText("Унаследованная божественность: 0")).toBeTruthy();
-  expect(
-    screen.getByText("Резонансный камень божественности: 20"),
-  ).toBeTruthy();
+  [
+    { key: "faith", label: "Очки веры", value: "0" },
+    { key: "inherited", label: "Унаследованная божественность", value: "0" },
+    { key: "resonance", label: "Резонансный камень божественности", value: "20" },
+  ].forEach(({ key, label, value }) => {
+    const row = screen.getByTestId(`divinity-talent-summary-row-${key}`);
+    expect(within(row).getByText(label)).toBeTruthy();
+    expect(within(row).getByText(":")).toBeTruthy();
+    expect(within(row).getByText(value)).toBeTruthy();
+    expect(within(row).getByText(label)).toHaveStyle({ textAlign: "center" });
+    expect(row).toHaveStyle({ flexDirection: "column" });
+  });
   [
     "Требуется Очки веры: 0",
     "Требуется Унаследованная божественность: 0",

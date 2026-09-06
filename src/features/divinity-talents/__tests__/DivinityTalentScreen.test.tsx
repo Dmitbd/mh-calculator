@@ -79,7 +79,7 @@ test("keeps back navigation while loading and renders calculator sections in pro
 
   expect(screen.getByText("Загрузка расчёта...")).toBeTruthy();
   expect(screen.getByTestId("screen-header")).toBeTruthy();
-  expect(screen.getByText("Таланты божественности").props.numberOfLines).toBe(2);
+  expect(screen.getByText("Дерево навыков").props.numberOfLines).toBe(2);
   expect(screen.getByRole("button", { name: "Назад" })).toBeTruthy();
   expect(
     screen.queryByRole("button", {

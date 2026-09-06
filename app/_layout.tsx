@@ -12,7 +12,7 @@ export default function RootLayout() {
       resetKey={pathname}
     >
       <Stack screenOptions={{ headerTitleAlign: "center" }}>
-        <Stack.Screen name="index" options={{ title: "MH Calculator" }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="divinity" options={{ headerShown: false }} />
         <Stack.Screen name="divinity/manual" options={{ headerShown: false }} />
         <Stack.Screen name="divinity-talents" options={{ headerShown: false }} />
