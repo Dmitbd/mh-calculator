@@ -34,6 +34,28 @@ test("generated bundled hero build snapshot is complete and checksum-valid", () 
 });
 
 test.each([
+  ["pvp", null, "yellow"],
+  ["pve", "bosses", "blue"],
+  ["pve", "campaign", "blue"],
+] as const)(
+  "Western Queen keeps %s/%s awakening slots %s in the offline snapshot",
+  (mode, childId, colorId) => {
+    const snapshot = parseBundledHeroBuildSnapshot(manifest, resource);
+    const hero = snapshot.heroBuilds.find(
+      ({ heroId }) => heroId === "western-queen",
+    );
+    const tab = hero?.buildSet.tabs.find(({ id }) => id === mode);
+    const build = childId
+      ? tab?.children?.find(({ id }) => id === childId)?.build
+      : tab?.build;
+
+    expect(build?.weaponAwakening).toEqual(
+      Array.from({ length: 8 }, (_, index) => ({ slot: index + 1, colorId })),
+    );
+  },
+);
+
+test.each([
   ["extra manifest field", { ...manifest, extra: true }, resource],
   ["wrong schema", { ...manifest, schemaVersion: 2 }, resource],
   ["wrong file", { ...manifest, resources: { heroBuilds: { ...manifest.resources.heroBuilds, file: "other.json" } } }, resource],
