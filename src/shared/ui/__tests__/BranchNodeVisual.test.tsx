@@ -6,7 +6,7 @@ import { BranchNodeVisual } from "../BranchNodeVisual";
 const baseProps = {
   accessibilityLabel: "Test node",
   icon: "/img/divinity/talent-icons/talent-10.png",
-  kind: "minor" as const,
+  size: "small" as const,
   testID: "test-branch-node",
   tone: "purple" as const,
 };

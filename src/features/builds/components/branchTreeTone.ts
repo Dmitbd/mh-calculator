@@ -1,14 +1,16 @@
-import type { BranchColumnId } from "@/features/game-data/divinity/types";
+import type { DivinityBranchId } from "@/features/game-data/divinity/types";
 import type { BranchTreeTone } from "@/shared/ui/BranchTreeGrid";
 
-const TONE_BY_COLUMN: Readonly<Record<BranchColumnId, BranchTreeTone>> = {
-  left: "blue",
-  center: "green",
-  right: "purple",
-};
+const TONE_BY_BRANCH = {
+  asterial: "blue",
+  psyche: "green",
+  immortality: "yellow",
+  devoid: "purple",
+  primeval: "red",
+} as const satisfies Readonly<Record<DivinityBranchId, BranchTreeTone>>;
 
-export function getBranchTreeToneForColumn(
-  columnId: BranchColumnId,
+export function getBranchTreeToneForBranch(
+  branchId: DivinityBranchId | null,
 ): BranchTreeTone {
-  return TONE_BY_COLUMN[columnId];
+  return branchId === null ? "neutral" : TONE_BY_BRANCH[branchId];
 }

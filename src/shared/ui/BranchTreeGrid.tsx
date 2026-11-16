@@ -37,6 +37,30 @@ const BRANCH_TREE_TONES = {
     shadow: "0 0 8px rgba(166, 61, 255, 0.9)",
     shadowColor: "rgba(166, 61, 255, 0.95)",
   },
+  yellow: {
+    color: "#ffd34e",
+    inactiveColor: "rgba(255, 211, 78, 0.24)",
+    inactiveLineColor: "#806520",
+    inactiveLineShadow: "0 0 4px rgba(255, 211, 78, 0.32)",
+    shadow: "0 0 8px rgba(255, 211, 78, 0.9)",
+    shadowColor: "rgba(255, 211, 78, 0.95)",
+  },
+  red: {
+    color: "#ff6245",
+    inactiveColor: "rgba(255, 98, 69, 0.24)",
+    inactiveLineColor: "#873c2e",
+    inactiveLineShadow: "0 0 4px rgba(255, 98, 69, 0.32)",
+    shadow: "0 0 8px rgba(255, 98, 69, 0.9)",
+    shadowColor: "rgba(255, 98, 69, 0.95)",
+  },
+  neutral: {
+    color: "#a49a90",
+    inactiveColor: "rgba(164, 154, 144, 0.24)",
+    inactiveLineColor: "#514740",
+    inactiveLineShadow: "0 0 4px rgba(164, 154, 144, 0.32)",
+    shadow: "0 0 8px rgba(164, 154, 144, 0.9)",
+    shadowColor: "rgba(164, 154, 144, 0.95)",
+  },
 } as const;
 
 export type BranchTreeTone = keyof typeof BRANCH_TREE_TONES;

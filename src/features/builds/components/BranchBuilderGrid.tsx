@@ -24,7 +24,7 @@ import {
   BranchTreeGrid,
 } from "@/shared/ui/BranchTreeGrid";
 import { MajorSkillPicker } from "./MajorSkillPicker";
-import { getBranchTreeToneForColumn } from "./branchTreeTone";
+import { getBranchTreeToneForBranch } from "./branchTreeTone";
 import { getAvailableBranchesForColumn } from "../model/branchTreeRules";
 
 // Фиксированная высота ячеек заголовка — иконка + 2 строки текста без сдвига сетки
@@ -87,7 +87,11 @@ export function BranchBuilderGrid({
     return progress !== undefined && level <= progress;
   };
 
+  const getColumnTone = (columnId: BranchColumnId) =>
+    getBranchTreeToneForBranch(selectedBranches[columnId]);
+
   const renderBuildNode = (node: TreeTemplateNode) => {
+    const tone = getColumnTone(node.columnId);
     const selectedSkillId =
       selectedMajorSkills[getMajorSkillKey(node.columnId, node.level)] ?? null;
     const selectedSkill =
@@ -100,6 +104,7 @@ export function BranchBuilderGrid({
           node={node}
           onPress={() => onToggleProgress?.(node.columnId, node.level)}
           readOnly={readOnly}
+          tone={tone}
         />
       );
     }
@@ -111,12 +116,14 @@ export function BranchBuilderGrid({
         onPress={() => onOpenMajorSlot?.(node.columnId, node.level)}
         readOnly={readOnly}
         selectedSkill={selectedSkill}
+        tone={tone}
       />
     );
   };
 
   const renderBuildNodeCaption = (node: TreeTemplateNode) => {
     const active = isNodeActive(node.columnId, node.level);
+    const tone = getColumnTone(node.columnId);
 
     if (node.nodeType === "minorStat") {
       return (
@@ -125,7 +132,7 @@ export function BranchBuilderGrid({
           meta={`+${node.value}${node.unit === "%" ? "%" : ""}`}
           testID={`branch-node-caption-${node.columnId}-${node.level}`}
           title={node.label}
-          tone={getBranchTreeToneForColumn(node.columnId)}
+          tone={tone}
         />
       );
     }
@@ -151,7 +158,7 @@ export function BranchBuilderGrid({
           active={active}
           testID={`branch-node-caption-${node.columnId}-${node.level}`}
           title={selectedSkill?.name ?? "Большой талант"}
-          tone={getBranchTreeToneForColumn(node.columnId)}
+          tone={tone}
         />
         {pickerOpen ? (
           <MajorSkillPicker
@@ -160,7 +167,7 @@ export function BranchBuilderGrid({
               onSelectMajorSkill?.(node.columnId, node.level, skillId)
             }
             skills={availableSkills}
-            tone={getBranchTreeToneForColumn(node.columnId)}
+            tone={tone}
           />
         ) : null}
       </View>
@@ -278,7 +285,7 @@ export function BranchBuilderGrid({
         branchPointConnector={divinityBranchPointConnector}
         columns={columns.map((column) => ({
           ...column,
-          tone: getBranchTreeToneForColumn(column.id),
+          tone: getColumnTone(column.id),
         }))}
         isBranchPoint={(node) => node.nodeType === "majorSkill"}
         isLevelActive={isNodeActive}

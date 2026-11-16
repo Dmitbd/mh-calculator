@@ -42,8 +42,19 @@ const selectedMajorSkills = { "center:1": centerSkill.id };
 
 function renderGrid(
   readOnly: boolean,
-  onOpenMajorSlot = jest.fn(),
-  activeMajorSlot: { columnId: "center"; level: number } | null = null,
+  {
+    activeMajorSlot = null,
+    branchesForGrid = selectedBranches,
+    onOpenMajorSlot = jest.fn(),
+    onToggleProgress = jest.fn(),
+    skillsForGrid = selectedMajorSkills,
+  }: {
+    activeMajorSlot?: { columnId: "center"; level: number } | null;
+    branchesForGrid?: DraftBranchColumns;
+    onOpenMajorSlot?: jest.Mock;
+    onToggleProgress?: jest.Mock;
+    skillsForGrid?: typeof selectedMajorSkills;
+  } = {},
 ) {
   return render(
     <BranchBuilderGrid
@@ -51,10 +62,11 @@ function renderGrid(
       branches={divinityBranches}
       columns={columns}
       onOpenMajorSlot={onOpenMajorSlot}
+      onToggleProgress={onToggleProgress}
       progressLevels={{ left: 30, center: 30, right: 30 }}
       readOnly={readOnly}
-      selectedBranches={selectedBranches}
-      selectedMajorSkills={selectedMajorSkills}
+      selectedBranches={branchesForGrid}
+      selectedMajorSkills={skillsForGrid}
       skillCatalog={divinitySkills}
       skills={divinitySkills}
       template={divinityTreeTemplate}
@@ -91,7 +103,7 @@ test("read-only hero build shows minor effects and compact major labels without 
 
 test("editable builder keeps the circular major node as the skill picker trigger", () => {
   const onOpenMajorSlot = jest.fn();
-  renderGrid(false, onOpenMajorSlot);
+  renderGrid(false, { onOpenMajorSlot });
 
   const majorNode = screen.getByTestId("branch-node-center-1");
   expect(StyleSheet.flatten(majorNode.props.style)).toMatchObject({
@@ -111,7 +123,7 @@ test("editable builder keeps the circular major node as the skill picker trigger
 });
 
 test("lays out the skill picker as one bounded dropdown below the major caption", () => {
-  renderGrid(false, jest.fn(), { columnId: "center", level: 1 });
+  renderGrid(false, { activeMajorSlot: { columnId: "center", level: 1 } });
 
   const picker = screen.getByTestId("major-skill-picker-center-1");
   expect(StyleSheet.flatten(picker.props.style)).toMatchObject({
@@ -149,3 +161,84 @@ test("excludes branches selected by other columns from the picker", () => {
 jest.mock("@/shared/ui/useImageLoadingTransition", () =>
   jest.requireActual("@/shared/ui/testing/stableImageLoadingTransition"),
 );
+
+test.each([false, true])("Hades uses its branch colors, readOnly=%s", (readOnly) => {
+  renderGrid(readOnly, {
+    activeMajorSlot: { columnId: "center", level: 1 },
+    branchesForGrid: { left: "devoid", center: "immortality", right: "primeval" },
+    skillsForGrid: { "center:1": "immortality-tenacious" },
+  });
+  expect(within(screen.getByTestId("branch-node-caption-center-1")).getByText("Tenacious")).toBeTruthy();
+
+  const colors = {
+    left: "#a63dff",
+    center: "#ffd34e",
+    right: "#ff6245",
+  };
+
+  for (const [column, color] of Object.entries(colors)) {
+    for (const prefix of ["branch-node", "branch-node-caption"]) {
+      expect(StyleSheet.flatten(screen.getByTestId(`${prefix}-${column}-4`).props.style))
+        .toMatchObject({ borderColor: color });
+    }
+    expect(StyleSheet.flatten(screen.getByTestId(`branch-tree-upper-${column}-4`).props.style))
+      .toMatchObject({ backgroundColor: color });
+  }
+
+  expect(StyleSheet.flatten(screen.getByTestId("branch-node-center-1").props.style))
+    .toMatchObject({ borderColor: colors.center });
+  for (const side of ["left", "right"] as const) {
+    expect(StyleSheet.flatten(screen.getByTestId(`branch-tree-horizontal-${side}-7`).props.style))
+      .toMatchObject({ backgroundColor: colors[side] });
+  }
+  if (!readOnly) {
+    expect(StyleSheet.flatten(screen.getByTestId("major-skill-picker-center-1").props.style))
+      .toMatchObject({ borderColor: colors.center });
+  }
+});
+
+test("keeps colors with the branches when they are assigned to other columns", () => {
+  renderGrid(false, {
+    branchesForGrid: { left: "immortality", center: "asterial", right: "psyche" },
+  });
+
+  for (const [column, color] of [
+    ["left", "#ffd34e"],
+    ["center", "#2798ff"],
+    ["right", "#62ef45"],
+  ]) {
+    expect(StyleSheet.flatten(screen.getByTestId(`branch-node-${column}-4`).props.style))
+      .toMatchObject({ borderColor: color });
+  }
+});
+
+test.each([false, true])("enlarges all round skill upgrades without turning them into skill slots, readOnly=%s", (readOnly) => {
+  const onOpenMajorSlot = jest.fn();
+  const onToggleProgress = jest.fn();
+  renderGrid(readOnly, { onOpenMajorSlot, onToggleProgress });
+
+  for (const column of ["left", "center", "right"]) {
+    for (const level of [20, 24, 28]) {
+      const node = screen.getByTestId(`branch-node-${column}-${level}`);
+      expect(StyleSheet.flatten(node.props.style)).toMatchObject({
+        borderRadius: 999,
+        height: 64,
+        width: 64,
+      });
+      const caption = within(screen.getByTestId(`branch-node-caption-${column}-${level}`));
+      expect(caption.getByText("Divinity skill level")).toBeTruthy();
+      expect(caption.getByText("+1")).toBeTruthy();
+      expect(node.props.accessibilityRole).toBe(readOnly ? "image" : "button");
+    }
+  }
+
+  const upgrade = screen.getByTestId("branch-node-left-20");
+  if (readOnly) {
+    expect(upgrade.props.onPress).toBeUndefined();
+  } else {
+    fireEvent.press(upgrade);
+    expect(onToggleProgress).toHaveBeenCalledWith("left", 20);
+    expect(onOpenMajorSlot).not.toHaveBeenCalled();
+  }
+  expect(screen.queryByTestId("branch-tree-horizontal-track-20")).toBeNull();
+});

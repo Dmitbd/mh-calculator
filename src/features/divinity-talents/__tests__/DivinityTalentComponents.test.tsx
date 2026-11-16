@@ -142,6 +142,26 @@ test("shows the exact minor APK icon and its description without requiring a pre
   );
 });
 
+test("shows skill upgrades as large round nodes that still select the resource range", () => {
+  const { onSelectNode } = renderTree();
+  for (const branch of ["left", "center", "right"]) {
+    for (const level of [20, 24, 28]) {
+      const node = screen.getByTestId(`divinity-talent-node-${branch}-${level}`);
+      expect(StyleSheet.flatten(node.props.style)).toMatchObject({
+        borderRadius: 999,
+        height: 64,
+        width: 64,
+      });
+      expect(within(node).queryByText("+")).toBeNull();
+      const caption = within(screen.getByTestId(`divinity-talent-node-caption-${branch}-${level}`));
+      expect(caption.getByText("Divinity skill level")).toBeTruthy();
+      expect(caption.getByText("+1")).toBeTruthy();
+    }
+  }
+  fireEvent.press(screen.getByTestId("divinity-talent-node-right-24"));
+  expect(onSelectNode).toHaveBeenCalledWith("right", 24);
+});
+
 test("does not expose endpoint letters and marks the selected range by branch glow", () => {
   const firstSelection: DivinityTalentSelections = {
     ...emptySelections,

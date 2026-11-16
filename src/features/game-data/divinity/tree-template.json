@@ -400,7 +400,7 @@
     "statId": "left-divinity-skill-level-20",
     "label": "Divinity skill level",
     "value": 1,
-    "unit": "flat",
+    "unit": "level",
     "icon": "/img/divinity/talent-icons/talent-25.png"
   },
   {
@@ -410,7 +410,7 @@
     "statId": "center-divinity-skill-level-20",
     "label": "Divinity skill level",
     "value": 1,
-    "unit": "flat",
+    "unit": "level",
     "icon": "/img/divinity/talent-icons/talent-25.png"
   },
   {
@@ -420,7 +420,7 @@
     "statId": "right-divinity-skill-level-20",
     "label": "Divinity skill level",
     "value": 1,
-    "unit": "flat",
+    "unit": "level",
     "icon": "/img/divinity/talent-icons/talent-25.png"
   },
   {
@@ -520,7 +520,7 @@
     "statId": "left-divinity-skill-level-24",
     "label": "Divinity skill level",
     "value": 1,
-    "unit": "flat",
+    "unit": "level",
     "icon": "/img/divinity/talent-icons/talent-25.png"
   },
   {
@@ -530,7 +530,7 @@
     "statId": "center-divinity-skill-level-24",
     "label": "Divinity skill level",
     "value": 1,
-    "unit": "flat",
+    "unit": "level",
     "icon": "/img/divinity/talent-icons/talent-25.png"
   },
   {
@@ -540,7 +540,7 @@
     "statId": "right-divinity-skill-level-24",
     "label": "Divinity skill level",
     "value": 1,
-    "unit": "flat",
+    "unit": "level",
     "icon": "/img/divinity/talent-icons/talent-25.png"
   },
   {
@@ -640,7 +640,7 @@
     "statId": "left-divinity-skill-level-28",
     "label": "Divinity skill level",
     "value": 1,
-    "unit": "flat",
+    "unit": "level",
     "icon": "/img/divinity/talent-icons/talent-25.png"
   },
   {
@@ -650,7 +650,7 @@
     "statId": "center-divinity-skill-level-28",
     "label": "Divinity skill level",
     "value": 1,
-    "unit": "flat",
+    "unit": "level",
     "icon": "/img/divinity/talent-icons/talent-25.png"
   },
   {
@@ -660,7 +660,7 @@
     "statId": "right-divinity-skill-level-28",
     "label": "Divinity skill level",
     "value": 1,
-    "unit": "flat",
+    "unit": "level",
     "icon": "/img/divinity/talent-icons/talent-25.png"
   },
   {

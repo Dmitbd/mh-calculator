@@ -12,9 +12,9 @@ type BranchNodeVisualProps = {
   readonly active: boolean;
   readonly accessibilityLabel: string;
   readonly icon: string | null;
-  readonly kind: "minor" | "major";
   readonly onPress?: () => void;
   readonly showPlus?: boolean;
+  readonly size: "small" | "large";
   readonly testID: string;
   readonly tone: BranchTreeTone;
 };
@@ -23,15 +23,15 @@ export function BranchNodeVisual({
   active,
   accessibilityLabel,
   icon,
-  kind,
   onPress,
   showPlus = false,
+  size: sizeName,
   testID,
   tone: toneName,
 }: BranchNodeVisualProps) {
   const tone = getBranchTreeTone(toneName);
   const size =
-    kind === "major"
+    sizeName === "large"
       ? BRANCH_TREE_MAJOR_NODE_SIZE
       : BRANCH_TREE_MINOR_NODE_SIZE;
   const imageSize = size - 6;

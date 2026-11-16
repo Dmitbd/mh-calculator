@@ -29,9 +29,9 @@ export const DivinityTalentNode = memo(function DivinityTalentNode({
       active={active}
       accessibilityLabel={`${branchLabel} ветка, уровень ${node.level}, ${kindLabel} нода, стоимость: ${costLabel}, состояние: ${stateLabel}`}
       icon={node.kind === "minor" ? node.icon : null}
-      kind={node.kind}
       onPress={onPress}
       showPlus={node.kind === "major"}
+      size={node.kind === "major" || node.unit === "level" ? "large" : "small"}
       testID={`divinity-talent-node-${node.branchId}-${node.level}`}
       tone={tone}
     />

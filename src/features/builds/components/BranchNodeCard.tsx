@@ -6,13 +6,14 @@ import type {
   TreeTemplateMinorStatNode,
 } from "@/features/game-data/divinity/types";
 import { BranchNodeVisual } from "@/shared/ui/BranchNodeVisual";
-import { getBranchTreeToneForColumn } from "./branchTreeTone";
+import type { BranchTreeTone } from "@/shared/ui/BranchTreeGrid";
 
 type MinorStatCardProps = {
   readonly node: TreeTemplateMinorStatNode;
   readonly active: boolean;
   readonly onPress: () => void;
   readonly readOnly?: boolean;
+  readonly tone: BranchTreeTone;
 };
 
 export function MinorStatCard({
@@ -20,6 +21,7 @@ export function MinorStatCard({
   active,
   onPress,
   readOnly = false,
+  tone,
 }: MinorStatCardProps) {
   return (
     <BranchNodeVisual
@@ -30,10 +32,10 @@ export function MinorStatCard({
           : `Toggle progress for ${node.columnId} level ${node.level}`
       }
       icon={node.icon}
-      kind="minor"
+      size={node.unit === "level" ? "large" : "small"}
       onPress={readOnly ? undefined : onPress}
       testID={`branch-node-${node.columnId}-${node.level}`}
-      tone={getBranchTreeToneForColumn(node.columnId)}
+      tone={tone}
     />
   );
 }
@@ -44,6 +46,7 @@ type MajorNodeCardProps = {
   readonly selectedSkill: DivinityMajorSkill | null;
   readonly onPress: () => void;
   readonly readOnly?: boolean;
+  readonly tone: BranchTreeTone;
 };
 
 export function MajorNodeCard({
@@ -52,6 +55,7 @@ export function MajorNodeCard({
   selectedSkill,
   onPress,
   readOnly = false,
+  tone,
 }: MajorNodeCardProps) {
   return (
     <View style={styles.majorContainer}>
@@ -63,11 +67,11 @@ export function MajorNodeCard({
             : `Choose skill for ${node.columnId} level ${node.level}`
         }
         icon={selectedSkill?.icon ?? null}
-        kind="major"
+        size="large"
         onPress={readOnly ? undefined : onPress}
         showPlus={!readOnly && !selectedSkill}
         testID={`branch-node-${node.columnId}-${node.level}`}
-        tone={getBranchTreeToneForColumn(node.columnId)}
+        tone={tone}
       />
     </View>
   );

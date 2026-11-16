@@ -316,7 +316,7 @@
           "level": 20,
           "label": "Divinity skill level",
           "value": 1,
-          "unit": "flat",
+          "unit": "level",
           "icon": "/img/divinity/talent-icons/talent-25.png"
         },
         {
@@ -344,7 +344,7 @@
           "level": 24,
           "label": "Divinity skill level",
           "value": 1,
-          "unit": "flat",
+          "unit": "level",
           "icon": "/img/divinity/talent-icons/talent-25.png"
         },
         {
@@ -372,7 +372,7 @@
           "level": 28,
           "label": "Divinity skill level",
           "value": 1,
-          "unit": "flat",
+          "unit": "level",
           "icon": "/img/divinity/talent-icons/talent-25.png"
         },
         {
@@ -538,7 +538,7 @@
           "level": 20,
           "label": "Divinity skill level",
           "value": 1,
-          "unit": "flat",
+          "unit": "level",
           "icon": "/img/divinity/talent-icons/talent-25.png"
         },
         {
@@ -566,7 +566,7 @@
           "level": 24,
           "label": "Divinity skill level",
           "value": 1,
-          "unit": "flat",
+          "unit": "level",
           "icon": "/img/divinity/talent-icons/talent-25.png"
         },
         {
@@ -594,7 +594,7 @@
           "level": 28,
           "label": "Divinity skill level",
           "value": 1,
-          "unit": "flat",
+          "unit": "level",
           "icon": "/img/divinity/talent-icons/talent-25.png"
         },
         {
@@ -762,7 +762,7 @@
           "level": 20,
           "label": "Divinity skill level",
           "value": 1,
-          "unit": "flat",
+          "unit": "level",
           "icon": "/img/divinity/talent-icons/talent-25.png"
         },
         {
@@ -790,7 +790,7 @@
           "level": 24,
           "label": "Divinity skill level",
           "value": 1,
-          "unit": "flat",
+          "unit": "level",
           "icon": "/img/divinity/talent-icons/talent-25.png"
         },
         {
@@ -818,7 +818,7 @@
           "level": 28,
           "label": "Divinity skill level",
           "value": 1,
-          "unit": "flat",
+          "unit": "level",
           "icon": "/img/divinity/talent-icons/talent-25.png"
         },
         {
