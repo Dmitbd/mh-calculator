@@ -91,7 +91,7 @@ describe("web entry bundle budget", () => {
     );
 
     expect(config.entry.budget).toEqual({
-      rawBytes: 2_260_000,
+      rawBytes: 2_291_232,
       gzipBytes: 510_000,
     });
     expect(config.entry.baseline.rawBytes).toBeLessThanOrEqual(

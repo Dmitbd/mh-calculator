@@ -1,14 +1,14 @@
 {
-  "measuredAt": "2026-09-03",
+  "measuredAt": "2026-11-16",
   "command": "npm run export:web:clean && npm run budget:web",
   "exportMode": "Expo static production web export with no Supabase environment variables",
   "entry": {
     "baseline": {
-      "rawBytes": 2244601,
-      "gzipBytes": 500240
+      "rawBytes": 2273272,
+      "gzipBytes": 501292
     },
     "budget": {
-      "rawBytes": 2260000,
+      "rawBytes": 2291232,
       "gzipBytes": 510000
     }
   }

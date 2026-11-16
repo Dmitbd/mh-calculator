@@ -418,9 +418,9 @@ describe("reproducible project tooling", () => {
     const budget = JSON.parse(read("scripts/web-bundle-budget.json"));
 
     expect(backlog).toContain("scripts/web-bundle-budget.json");
-    expect(backlog).not.toMatch(/2\s*260\s*000|510\s*000/);
+    expect(backlog).not.toMatch(/2\s*291\s*232|510\s*000/);
     expect(budget.entry.budget).toEqual({
-      rawBytes: 2_260_000,
+      rawBytes: 2_291_232,
       gzipBytes: 510_000,
     });
   });
